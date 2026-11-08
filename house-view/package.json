@@ -1,0 +1,15 @@
+{
+  "name": "jachwi-house-view-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "자취 계약 내비 집 보기 시연판 (오프라인, 외부 전송 없음)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/model.test.mjs",
+    "vendor": "node scripts/copy-vendor.mjs"
+  },
+  "devDependencies": {
+    "three": "0.170.0"
+  }
+}

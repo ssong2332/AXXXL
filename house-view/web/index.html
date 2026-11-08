@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>집 보기 시연판 · 자취 계약 내비</title>
+<link rel="stylesheet" href="styles.css">
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10.5 19v-4.5h3V19"/></svg></span>
+      <span>집 보기 시연판 <small>자취 계약 내비 · 계약 전</small></span>
+    </div>
+    <div class="house-bar">
+      <label class="sr" for="houseSelect">보고 있는 집</label>
+      <select id="houseSelect"></select>
+      <button class="btn" id="addHouse" type="button">집 추가</button>
+      <button class="btn" id="exportJson" type="button">JSON 저장</button>
+      <button class="btn" id="importJson" type="button">불러오기</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+  </div>
+</header>
+<p class="notice-bar" id="notice">기록은 이 브라우저 창 안에만 있어요. 새로고침하거나 창을 닫으면 사라질 수 있으니 필요하면 JSON으로 저장해 주세요. 외부로 보내는 데이터는 없어요.</p>
+<nav class="steps" id="steps" aria-label="단계"></nav>
+<main class="layout" id="layout">
+  <aside class="panel" id="panel"></aside>
+  <section class="work" id="work" aria-label="작업 화면">
+    <div class="work-bar">
+      <div class="seg" role="group" aria-label="보기 방식">
+        <button type="button" id="view2d" aria-pressed="true">2D 편집</button>
+        <button type="button" id="view3d" aria-pressed="false">3D 보기</button>
+      </div>
+      <div class="row">
+        <button class="btn subtle" type="button" id="undoBtn">되돌리기</button>
+        <button class="btn subtle icon-btn" type="button" id="zoomIn3d" aria-label="3D 확대" hidden>+</button>
+        <button class="btn subtle icon-btn" type="button" id="zoomOut3d" aria-label="3D 축소" hidden>−</button>
+        <button class="btn subtle" type="button" id="reset3d" hidden>시점 초기화</button>
+        <button class="btn subtle" type="button" id="lowWalls" aria-pressed="false" hidden>벽 낮게</button>
+      </div>
+    </div>
+    <div class="stage" id="stage">
+      <div class="plan-host" id="planHost"></div>
+      <div class="three" id="threeHost" hidden></div>
+      <span class="stage-tag" id="stageTag">배치용 초안 · 격자 한 칸 50cm</span>
+    </div>
+    <div class="warnings" id="warnings" aria-live="polite"></div>
+  </section>
+</main>
+<p class="foot">가상 샘플 2채가 들어 있어요. 이 시연판은 계약 추천·안전 판정·자동 구조 분석을 하지 않아요. 3D·면적 계산은 입력값으로 그린 참고용이에요.</p>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<dialog id="confirmDlg"><form method="dialog" class="dlg"><h2 id="confirmTitle"></h2><p id="confirmBody"></p><div class="row"><button class="btn primary" value="ok" id="confirmOk">확인</button><button class="btn" value="cancel">취소</button></div></form></dialog>
+<dialog id="exportDlg"><div class="dlg"><h2>JSON 저장</h2><p class="hint">집 구조·물체·현장 체크·메모가 들어 있어요. 사진·영상은 들어 있지 않아요. 복사해서 메모장 등에 붙여 두거나 파일로 저장하세요. 공유 페이지에서는 파일 저장이 막힐 수 있어요.</p><label class="field">저장할 내용<textarea id="exportText" readonly rows="8"></textarea></label><div class="row"><button class="btn primary" type="button" id="copyJson">복사</button><button class="btn" type="button" id="downloadJson">파일로 저장</button><button class="btn" type="button" id="exportClose">닫기</button></div></div></dialog>
+<dialog id="importDlg"><div class="dlg"><h2>불러오기</h2><p class="hint">이 시연판에서 저장한 JSON만 받아요. 잘못된 내용이면 지금 작업은 그대로 둬요. 불러온 뒤 사진·영상은 다시 골라야 해요.</p><button class="btn" type="button" id="pickJsonFile">JSON 파일 고르기</button><label class="field">또는 복사해 둔 내용을 붙여 넣기<textarea id="importText" rows="6"></textarea></label><div class="row"><button class="btn primary" type="button" id="importPasted">붙여 넣은 내용 불러오기</button><button class="btn" type="button" id="importClose">닫기</button></div></div></dialog>
+<dialog id="viewerDlg" class="viewer"><div class="dlg"><div class="row" style="justify-content:space-between"><h2 id="viewerTitle"></h2><div class="row"><button class="btn icon-btn" type="button" id="zoomOut" aria-label="축소">−</button><button class="btn icon-btn" type="button" id="zoomIn" aria-label="확대">+</button><button class="btn" type="button" id="viewerClose">닫기</button></div></div><div class="viewer-stage" id="viewerStage"></div></div></dialog>
+</body>
+</html>

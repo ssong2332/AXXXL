@@ -9,7 +9,9 @@
 
 ## 현재 상태
 
-**기획 단계이며 아직 소스 코드가 없다.** 실행 방법은 구현 후 추가 예정이다.
+**필수 기능은 구현 전이다.** 실행 방법은 구현 후 추가 예정이다.
+
+- 선택 ⓪ 계약 전 집 보기: 수동 시연판 v0.1이 [house-view/](house-view/)에 있다. 실행법은 [house-view/README_KO.md](house-view/README_KO.md), 검증 기록은 [house-view/QA.md](house-view/QA.md).
 
 ## 배경
 
