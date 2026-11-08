@@ -12,6 +12,7 @@
 **필수 기능은 구현 전이다.** 실행 방법은 구현 후 추가 예정이다.
 
 - 선택 ⓪ 계약 전 집 보기: 수동 시연판 v0.1이 [house-view/](house-view/)에 있다. 실행법은 [house-view/README_KO.md](house-view/README_KO.md), 검증 기록은 [house-view/QA.md](house-view/QA.md).
+- 웹에서 바로 보기: https://ssong2332.github.io/AXXXL/ (레포 Settings → Pages에서 Source를 GitHub Actions로 켜고 `main`에 병합된 뒤 열린다)
 
 ## 배경
 
