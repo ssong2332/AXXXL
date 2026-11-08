@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>자취 계약 내비</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: sticky top bar, one centered 1120px column per screen; main + aside rows that stack on phones */
+:root {
+  --bg: #F6F8F7; --surface: #FFFFFF; --fg: #1A1D21; --sub: #4A5058; --muted: #646B73;
+  --line: #E4E7EA; --soft: #F1F3F4; --accent: #0A7F5C; --accent-ink: #FFFFFF; --accent-soft: #E6F4EE;
+  --accent-text: #0A6E50; --warn: #B83D0A; --warn-soft: #FFF1E8; --warn-ink: #7A2E07;
+  --bad: #B42318; --bad-soft: #FDECEA; --stage: #EEF2F0; --shadow: rgba(16,40,30,0.10);
+  --demo: #1A1D21; --demo-ink: #FFFFFF;
+  --font: "Noto Sans KR", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111413; --surface: #1A1F1D; --fg: #ECEFEE; --sub: #BAC2BF; --muted: #9AA4A0;
+  --line: #2C3331; --soft: #232928; --accent: #2FB386; --accent-ink: #06261B; --accent-soft: #163A2E;
+  --accent-text: #5CCBA3; --warn: #FF9A62; --warn-soft: #3A2416; --warn-ink: #FFC9A8;
+  --bad: #FF8A80; --bad-soft: #3B1B19; --stage: #1E2523; --shadow: rgba(0,0,0,0.45);
+  --demo: #2FB386; --demo-ink: #06261B; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111413; --surface: #1A1F1D; --fg: #ECEFEE; --sub: #BAC2BF; --muted: #9AA4A0;
+  --line: #2C3331; --soft: #232928; --accent: #2FB386; --accent-ink: #06261B; --accent-soft: #163A2E;
+  --accent-text: #5CCBA3; --warn: #FF9A62; --warn-soft: #3A2416; --warn-ink: #FFC9A8;
+  --bad: #FF8A80; --bad-soft: #3B1B19; --stage: #1E2523; --shadow: rgba(0,0,0,0.45);
+  --demo: #2FB386; --demo-ink: #06261B; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.55; letter-spacing: -0.01em; font-variant-numeric: tabular-nums }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+a { color: var(--accent-text) }
+h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.03em }
+p { margin: 0 }
+button, input, select { font: inherit; color: inherit }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+
+.demo-bar { background: var(--demo); color: var(--demo-ink); font-size: 13px }
+.demo-bar .wrap { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; justify-content: space-between; padding-block: 8px }
+.demo-bar a { color: var(--demo-ink); font-weight: 700 }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: var(--surface); border-bottom: 1px solid var(--line) }
+.top .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 24px; min-height: 60px }
+.logo { display: flex; align-items: center; gap: 10px; min-height: 60px; font-weight: 800; font-size: 18px; color: var(--fg); text-decoration: none; letter-spacing: -0.03em }
+.logo-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); display: inline-flex; align-items: center; justify-content: center }
+.logo-mark svg { stroke: var(--accent-ink) }
+.nav { display: flex; flex-wrap: wrap; gap: 0 20px }
+.nav a { display: inline-flex; align-items: center; min-height: 52px; color: var(--sub); text-decoration: none; font-size: 15px }
+.nav a[aria-current="page"] { color: var(--fg); font-weight: 700; box-shadow: inset 0 -2px 0 var(--accent) }
+
+main { padding-block: 36px 72px; min-height: 60vh }
+.stack { display: flex; flex-direction: column; gap: 20px }
+.row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start }
+.col-main { flex: 999 1 540px; min-width: 0; display: flex; flex-direction: column; gap: 20px }
+.col-side { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px }
+.card { background: var(--surface); border-radius: 20px; padding: 24px }
+.card h2 { font-size: 19px; font-weight: 800 }
+.eyebrow { font-size: 14px; color: var(--sub) }
+.page-title { font-size: clamp(26px, 4vw, 36px); font-weight: 800; line-height: 1.3 }
+.muted { color: var(--muted) }
+.small { font-size: 13px }
+.hl { color: var(--accent-text) }
+.between { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 24px; border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font-size: 16px; font-weight: 700; text-decoration: none; cursor: pointer }
+.btn:hover { filter: brightness(1.06) }
+.btn-soft { background: var(--soft); color: var(--fg) }
+.btn-line { background: var(--surface); color: var(--fg); border: 1px solid var(--line) }
+.btn-sm { min-height: 40px; padding: 0 14px; border-radius: 10px; font-size: 14px }
+.btn-block { width: 100% }
+.link-sm { font-size: 13px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px }
+
+.tag { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: var(--soft); color: var(--sub); white-space: nowrap }
+.tag.ok { background: var(--accent-soft); color: var(--accent-text) }
+.tag.warn { background: var(--warn-soft); color: var(--warn) }
+.tag.bad { background: var(--bad-soft); color: var(--bad) }
+.tag.solid { background: var(--accent); color: var(--accent-ink) }
+
+.notice { display: flex; gap: 10px; align-items: flex-start; border-radius: 14px; padding: 14px 16px; font-size: 15px }
+.notice.warn { background: var(--warn-soft); color: var(--warn-ink) }
+.notice.ok { background: var(--accent-soft); color: var(--accent-text) }
+.notice.info { background: var(--soft); color: var(--sub) }
+
+.list-row { display: flex; align-items: center; gap: 14px; padding: 15px 0; border-top: 1px solid var(--line) }
+.list-row:first-of-type { border-top: 0 }
+.icon-box { width: 44px; height: 44px; flex: 0 0 auto; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--soft) }
+.icon-box.warn { background: var(--warn-soft) }
+
+/* home */
+.hero { background: var(--surface); border-radius: 28px; display: flex; flex-wrap: wrap; gap: 40px; align-items: center; padding: clamp(28px, 5vw, 56px) clamp(20px, 4vw, 48px) }
+.hero h1 { font-size: clamp(32px, 5vw, 48px); font-weight: 800; line-height: 1.22; letter-spacing: -0.04em }
+.hero-copy { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 22px; align-items: flex-start }
+.hero-card { flex: 1 1 380px; min-width: 0; max-width: 460px; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 24px 48px var(--shadow); padding: 26px; display: flex; flex-direction: column; gap: 16px }
+.stages { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px }
+.stages li { background: var(--surface); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px }
+.stages b { font-size: 16px; line-height: 1.45 }
+.stage-no { font-size: 13px; font-weight: 700; color: var(--accent-text) }
+.dark-band { background: var(--fg); color: var(--bg); border-radius: 24px; padding: 36px; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between }
+.dark-band a { display: inline-flex; flex-direction: column; justify-content: center; min-height: 60px; padding: 0 18px; border-radius: 14px; background: color-mix(in srgb, var(--bg) 14%, var(--fg)); color: var(--bg); text-decoration: none }
+
+/* input */
+.progress { height: 3px; background: var(--line) }
+.progress span { display: block; height: 100%; background: var(--accent); transition: width .3s }
+.field { display: flex; flex-direction: column; gap: 8px }
+.field > span:first-child { font-size: 15px; color: var(--sub) }
+.big-input { display: flex; align-items: baseline; gap: 8px; border-bottom: 2px solid var(--fg); padding: 6px 0 10px }
+.big-input:focus-within { border-color: var(--accent) }
+.big-input input { flex: 1 1 auto; min-width: 0; border: 0; outline: none; background: transparent; font-size: 32px; font-weight: 700 }
+.big-input em { font-style: normal; font-size: 20px; font-weight: 600; color: var(--sub) }
+.select, .date { min-height: 54px; border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; font-size: 17px; background: var(--surface) }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chip { min-height: 46px; padding: 0 18px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; font-size: 15px; cursor: pointer }
+.chip[aria-pressed="true"] { border: 2px solid var(--accent); background: var(--accent-soft); color: var(--accent-text); font-weight: 700; padding: 0 17px }
+.radio-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 58px; border: 1px solid var(--line); border-radius: 14px; padding: 0 18px; font-size: 16px; cursor: pointer; background: var(--surface) }
+.radio-card:has(input:checked) { border: 2px solid var(--accent); background: var(--accent-soft); font-weight: 700; padding: 0 17px }
+.radio-card input { width: 22px; height: 22px; accent-color: var(--accent) }
+.sum-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px }
+
+/* timeline */
+.task { display: flex; gap: 14px; align-items: flex-start; padding: 16px 0; border-top: 1px solid var(--line) }
+.task input[type=checkbox] { width: 24px; height: 24px; margin: 0; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer }
+.task label { font-size: 16px; font-weight: 700; cursor: pointer }
+.task.done label { text-decoration: line-through; color: var(--muted) }
+.bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden }
+.bar span { display: block; height: 100%; background: var(--accent) }
+.side-nav a { display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; color: var(--fg); text-decoration: none }
+.side-nav a:hover { background: var(--soft) }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 46px; cursor: pointer }
+.switch-row input { width: 22px; height: 22px; accent-color: var(--accent) }
+
+/* detail */
+.cond { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line) }
+.cond:first-of-type { border-top: 0 }
+.mark { width: 28px; height: 28px; flex: 0 0 auto; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px }
+.mark.ok { background: var(--accent-soft); color: var(--accent-text) }
+.mark.bad { background: var(--bad-soft); color: var(--bad) }
+.mark.q { background: var(--warn-soft); color: var(--warn) }
+.doc-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; padding: 0 16px; border-radius: 14px; background: var(--soft) }
+.doc-row.missing { background: transparent; border: 1px dashed var(--line) }
+
+/* docs */
+.doc-item { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px; border: 0; border-radius: 14px; background: transparent; cursor: pointer }
+.doc-item[aria-pressed="true"] { background: var(--accent-soft) }
+.thumb { width: 42px; height: 54px; flex: 0 0 auto; border-radius: 6px; background: var(--soft); border: 1px solid var(--line) }
+.paper { flex: 1 1 220px; min-width: 0; min-height: 280px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); padding: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 12px; color: var(--sub) }
+.paper i { display: block; height: 6px; border-radius: 2px; background: var(--line) }
+.paper s { display: inline-block; height: 12px; width: 90px; background: var(--fg); border-radius: 2px; text-decoration: none }
+dl.kv { margin: 0; flex: 1 1 260px; min-width: 0 }
+dl.kv div { display: flex; justify-content: space-between; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line) }
+dl.kv div:first-child { border-top: 0 }
+dl.kv dt { color: var(--muted) } dl.kv dd { margin: 0; font-weight: 600; text-align: right }
+
+/* room */
+.viewport { position: relative; height: 560px; border-radius: 16px; background: var(--stage); overflow: hidden; perspective: 1900px; perspective-origin: 50% 35%; display: flex; align-items: center; justify-content: center }
+.scene { position: relative; transform-style: preserve-3d; transition: transform .6s ease }
+.scene > div { position: absolute }
+.face-top { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #3A4048; box-shadow: inset 0 0 0 1px rgba(0,0,0,.05) }
+.seg { display: flex; padding: 4px; background: var(--soft); border-radius: 12px }
+.seg button { min-height: 40px; padding: 0 18px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px var(--shadow) }
+.icon-btn { width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--soft); cursor: pointer; display: inline-flex; align-items: center; justify-content: center }
+.icon-btn svg { stroke: var(--fg) }
+.bed-opt { flex: 1 1 0; min-width: 0; min-height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; cursor: pointer }
+.bed-opt[aria-pressed="true"] { border: 2px solid var(--accent); background: var(--accent-soft) }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 28px; margin: 0 }
+.stat { flex: 1 1 160px; min-width: 0; background: var(--surface); border-radius: 16px; padding: 16px 20px; display: flex; flex-direction: column; gap: 2px }
+.stat b { font-size: 22px; font-weight: 800 }
+
+/* admin */
+.admin-shell { display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch }
+.source-text { flex: 1 1 380px; min-width: 0; max-height: 620px; overflow-y: auto; font-size: 14px; line-height: 1.85; color: var(--sub) }
+.source-text b { color: var(--fg) }
+mark { background: var(--accent-soft); color: var(--fg); padding: 1px 3px; border-radius: 3px }
+mark.chg { background: var(--warn-soft) }
+.tbl-wrap { overflow-x: auto }
+table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 14px }
+th, td { padding: 10px 12px; border-top: 1px solid var(--line); text-align: left; vertical-align: top }
+thead th { color: var(--muted); font-weight: 600; font-size: 13px; border-top: 0 }
+tr.changed { background: var(--warn-soft) }
+td input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: var(--surface) }
+
+footer { border-top: 1px solid var(--line); background: var(--surface) }
+footer .wrap { padding-block: 28px 36px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--muted) }
+footer nav { display: flex; flex-wrap: wrap; gap: 4px 18px }
+footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
+
+#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 20; max-width: calc(100% - 32px) }
+@media (prefers-reduced-motion: reduce) { .scene, .progress span { transition: none } }
+</style>
+
+</head>
+<body>
+<div class="demo-bar"><div class="wrap"><span>시연 버전이에요. 서울 청년 주거지원 공고(2026.10.28 기준) 예시 데이터로 동작해요.</span><span><a href="#admin">관리자 화면 보기</a></span></div></div>
+
+<header class="top"><div class="wrap">
+  <a class="logo" href="#home"><span class="logo-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10.5 19v-4.5h3V19"/></svg></span>자취 계약 내비</a>
+  <nav class="nav" aria-label="주요 메뉴">
+    <a href="#input" data-nav="input">조건 입력</a>
+    <a href="#result" data-nav="result">확인 결과</a>
+    <a href="#timeline" data-nav="timeline">내 타임라인</a>
+    <a href="#docs" data-nav="docs">서류함</a>
+  </nav>
+</div></header>
+
+<main id="app" class="wrap" tabindex="-1"></main>
+
+<footer><div class="wrap">
+  <nav aria-label="시연 화면 바로가기">
+    <a href="#home">홈</a><a href="#input">조건 입력</a><a href="#result">확인 결과</a><a href="#timeline">타임라인</a><a href="#detail-rent">지원 상세</a><a href="#docs">서류함</a><a href="#room">방 크기 미리보기</a><a href="#admin">관리자 · 공고 검수</a>
+  </nav>
+  <p>자취 계약 내비는 법률 자문이나 권리분석을 대신하지 않아요. 지원 자격은 각 기관 심사로 최종 결정돼요.<br>데이터 출처: 온통청년(한국고용정보원), 서울주거포털, 국토교통부, 행정표준코드관리시스템</p>
+</div></footer>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  var GU = ['강남구','강동구','강북구','강서구','관악구','광진구','구로구','금천구','노원구','도봉구','동대문구','동작구','마포구','서대문구','서초구','성동구','성북구','송파구','양천구','영등포구','용산구','은평구','종로구','중구','중랑구'];
+  var POPULAR = ['관악구','동작구','광진구','마포구','동대문구','성북구','서대문구'];
+  var BASIS = '2026.10.28';
+  var DEFAULT = { gu: '관악구', deposit: 1000, rent: 55, age: 24, income: '150', contract: '2026-11-14', move: '2026-12-01',
+    done: { t1: true, t2: true }, step: 1, bed: 'ss', w: 3.2, d: 4.0, desk: true, wardrobe: true, fridge: true, view: '3d', rz: 40,
+    doc: 'contract', extraDocs: [], approved: '' };
+  var S = JSON.parse(JSON.stringify(DEFAULT));
+  try { var saved = JSON.parse(localStorage.getItem('jachwi-demo') || 'null'); if (saved) Object.assign(S, saved); } catch (e) {}
+  function save() { try { localStorage.setItem('jachwi-demo', JSON.stringify(S)); } catch (e) {} }
+
+  var app = document.getElementById('app');
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function won(n) { return n.toLocaleString('ko-KR'); }
+
+  // ---------- dates ----------
+  var WD = ['일','월','화','수','목','금','토'];
+  function pd(s) { var p = String(s || '').split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]); return isNaN(d) ? new Date() : d; }
+  function add(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function md(d) { return (d.getMonth() + 1) + '.' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
+  function ymd(d) { return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); }
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  function dday(d) { var n = Math.round((d - today) / 86400000); return n > 0 ? 'D-' + n : (n === 0 ? 'D-day' : (-n) + '일 지남'); }
+
+  // ---------- rules (승인된 규칙) ----------
+  function incomeOk(limit) { if (S.income === 'unknown') return null; if (S.income === 'over') return false; return +S.income <= limit; }
+  var PROGRAMS = [
+    { id: 'rent', hash: 'detail-rent', name: '서울시 청년월세 지원', org: '서울특별시', amount: 240, amountText: '월 20만 원씩 최대 12개월',
+      period: '다음 모집 공고 때 안내', status: '모집 예정', statusCls: '', channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr', select: '소득 낮은 순 선정',
+      summary: '실제 낸 월세를 매달 최대 20만 원, 12개월 동안 돌려받아요.',
+      docs: [['contract-fixed', '임대차계약서 (확정일자 포함)'], ['rentHistory', '최근 3개월 월세 이체 내역'], ['bank', '본인 명의 통장 사본'], ['resident', '주민등록등본'], ['insurance', '건강보험료 납부확인서']],
+      conds: [
+        { label: '만 19~39세 서울 거주 청년', test: function () { return S.age >= 19 && S.age <= 39; }, mine: function () { return '만 ' + S.age + '세'; } },
+        { label: '기준 중위소득 150% 이하', test: function () { return incomeOk(150); }, mine: incomeLabel },
+        { label: '보증금 8,000만 원 이하, 월세 60만 원 이하', test: function () { return S.deposit <= 8000 && S.rent <= 60; }, mine: function () { return won(S.deposit) + ' / ' + S.rent; } },
+        { label: '무주택자', test: function () { return null; }, mine: function () { return '직접 확인'; } }
+      ] },
+    { id: 'move', hash: 'detail-move', name: '청년 부동산 중개보수·이사비 지원', org: '서울특별시', amount: 40, amountText: '중개보수·이사비 실비, 최대 40만 원',
+      period: '예산 소진 시까지 (선착순)', status: '접수 중', statusCls: 'ok', firstCome: true, channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr', select: '선착순',
+      summary: '이사하면서 낸 중개보수와 이사비를 최대 40만 원까지 돌려받아요.',
+      docs: [['contract', '임대차계약서'], ['brokerFee', '중개보수 영수증'], ['movingFee', '이사비 영수증'], ['resident', '주민등록등본']],
+      conds: [
+        { label: '만 19~39세 무주택 청년', test: function () { return S.age >= 19 && S.age <= 39; }, mine: function () { return '만 ' + S.age + '세'; } },
+        { label: '기준 중위소득 150% 이하', test: function () { return incomeOk(150); }, mine: incomeLabel },
+        { label: '임차보증금 2억 원 이하', test: function () { return S.deposit <= 20000; }, mine: function () { return won(S.deposit) + '만 원'; } },
+        { label: '무주택자', test: function () { return null; }, mine: function () { return '직접 확인'; } }
+      ] }
+  ];
+  function incomeLabel() { return { '100': '100% 이하', '150': '150% 이하', over: '150% 초과', unknown: '모름' }[S.income]; }
+
+  // which uploaded docs count as ready (demo: what is in 서류함)
+  function docStatus(key) {
+    var ready = { contract: 'ok', 'contract-fixed': 'fix', rentHistory: 'ok', bank: 'ok' };
+    return ready[key] || 'missing';
+  }
+
+  function evaluate() {
+    var C = pd(S.contract), M = pd(S.move);
+    var reportRequired = S.deposit > 6000 || S.rent > 30;
+    var reportReason = S.rent > 30 ? '월세 30만 원 초과' : (S.deposit > 6000 ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하');
+    var programs = PROGRAMS.map(function (p) {
+      var res = p.conds.map(function (c) { return { label: c.label, mine: c.mine(), ok: c.test() }; });
+      var failed = res.filter(function (r) { return r.ok === false; });
+      var unknown = res.filter(function (r) { return r.ok === null; });
+      var ready = p.docs.filter(function (d) { return docStatus(d[0]) === 'ok'; }).length;
+      return { p: p, res: res, eligible: failed.length === 0, failed: failed, unknown: unknown, ready: ready };
+    });
+    var eligible = programs.filter(function (x) { return x.eligible; });
+    var others = programs.filter(function (x) { return !x.eligible; }).map(function (x) { return { name: x.p.name, why: x.failed[0].label + ' 조건에 맞지 않아요' }; });
+    var rentOk = programs[0].eligible;
+    others.push({ name: '청년월세 특별지원 (국토교통부)', why: rentOk ? '서울시 청년월세 지원과 함께 받을 수 없어요' : '원가구 소득 등 추가 조건이 있어 따로 확인이 필요해요' });
+    others.push({ name: '청년 임차보증금 이자 지원', why: '보증금 대출을 받을 때만 해당돼요' });
+    var total = eligible.reduce(function (s, x) { return s + x.p.amount; }, 0);
+    return { C: C, M: M, report: { required: reportRequired, reason: reportReason, due: add(C, 30) }, movein: { due: add(M, 14) },
+      programs: programs, eligible: eligible, others: others, total: total };
+  }
+
+  function buildTimeline(R) {
+    var C = R.C, M = R.M, end = add(new Date(C.getFullYear() + 2, C.getMonth(), C.getDate()), -1);
+    var st = [];
+    st.push({ name: '계약 전', when: '~ ' + md(add(C, -1)), at: add(C, -1), tasks: [
+      { id: 't1', title: '안심전세 앱에서 시세·임대인 조회', desc: '보증금이 시세에 맞는지, 보증보험 가입이 막힌 집은 아닌지 봐요.', due: add(C, -1), act: ['안심전세 앱 ↗', 'https://www.khug.or.kr'], src: 'HUG 안심전세 앱' },
+      { id: 't2', title: '등기부등본 확인', desc: '계약할 사람이 실제 집주인인지, 근저당이 얼마나 잡혀 있는지 확인해요.', due: add(C, -1), act: ['인터넷등기소 ↗', 'https://www.iros.go.kr'], src: '대법원 인터넷등기소' },
+      { id: 't3', title: '집 보러 가서 수압·곰팡이 체크', desc: '창틀, 화장실 천장, 싱크대 아래를 열어 보세요. 방 치수도 재 두면 가구가 들어가는지 미리 볼 수 있어요.', due: add(C, -1), act: ['방 크기 미리보기', '#room'], keep: true, src: '자취 계약 내비 기본 체크리스트' },
+      { id: 't4', title: '특약사항 미리 요청하기', desc: '“퇴거 시 보증금 즉시 반환”, “입주 전 도배” 같은 약속은 계약서에 적어야 효력이 있어요.', due: add(C, -1), src: '주택임대차 표준계약서' }
+    ] });
+    st.push({ name: '계약 당일', when: md(C), at: C, tasks: [
+      { id: 't5', title: '계약금은 집주인 명의 계좌로 이체', desc: '현금 대신 이체하고, 이체 확인증을 서류함에 넣어 두세요.', due: C, act: ['서류함에 넣기', '#docs'], src: '자취 계약 내비 기본 체크리스트' },
+      { id: 't6', title: '계약서 사본 받기', desc: '지원금 신청과 전월세 신고에 계속 쓰여요.', due: C, act: ['서류함에 넣기', '#docs'], src: '자취 계약 내비 기본 체크리스트' }
+    ] });
+    st.push({ name: '이사 당일', when: md(M), at: M, tasks: [
+      { id: 't7', title: '전입신고', desc: '이사한 날부터 14일 안에 해야 해요. 정부24에서 온라인으로 할 수 있어요.', due: R.movein.due, urgent: true, act: ['정부24에서 신고 ↗', 'https://www.gov.kr'], src: '주민등록법 제16조' },
+      { id: 't8', title: '집 상태 사진 찍어 두기', desc: '벽지, 바닥, 옵션 가전 상태를 날짜가 보이게 남기면 퇴거 때 분쟁을 줄일 수 있어요.', due: M, act: ['사진 올리기', '#docs'], src: '자취 계약 내비 기본 체크리스트' }
+    ] });
+    var t30 = [];
+    if (R.report.required) {
+      t30.push({ id: 't9', title: '전월세 신고', desc: R.report.reason + '라 신고 대상이에요. 신고하면 확정일자가 자동으로 찍혀요.', due: R.report.due, urgent: true, act: ['부동산거래관리시스템 ↗', 'https://rtms.molit.go.kr'], src: '부동산거래신고법 제6조의2' });
+    } else {
+      t30.push({ id: 't9', title: '확정일자 받기', desc: '신고 대상은 아니지만, 확정일자를 받아 두면 보증금을 지키는 데 도움이 돼요.', due: R.report.due, act: ['인터넷등기소 ↗', 'https://www.iros.go.kr'], src: '주택임대차보호법 제3조의2' });
+    }
+    if (R.eligible.some(function (x) { return x.p.id === 'rent'; })) t30.push({ id: 't10', title: '확정일자 찍힌 계약서 다시 올리기', desc: '청년월세 지원 신청할 때 필요해요.', due: R.report.due, act: ['서류함 열기', '#docs'], src: '청년월세 지원 공고 · ' + BASIS + ' 기준' });
+    st.push({ name: '계약 후 30일', when: '~ ' + md(R.report.due), at: R.report.due, tasks: t30 });
+    if (R.eligible.length) {
+      st.push({ name: '지원 신청', when: '공고별', at: R.report.due, tasks: R.eligible.map(function (x, i) {
+        return { id: 's-' + x.p.id, title: x.p.name + ' 신청', desc: (x.p.firstCome ? '선착순이라 일찍 마감될 수 있어요. ' : '모집이 열리면 알려드릴게요. ') + '서류 ' + x.p.docs.length + '개 중 ' + x.ready + '개 준비됐어요.',
+          dueText: x.p.status, urgent: !!x.p.firstCome, act: ['지원 상세', '#' + x.p.hash], src: x.p.name.replace('서울시 ', '').replace('청년 부동산 ', '') + ' 공고 · ' + BASIS + ' 기준' };
+      }) });
+    }
+    st.push({ name: '퇴거', when: ymd(end) + ' 만료', at: end, tasks: [
+      { id: 't13', title: '갱신 여부 미리 알리기', desc: '계약 만료 2개월 전까지 집주인에게 갱신할지 나갈지 알려요.', due: add(end, -60), src: '주택임대차보호법 제6조' },
+      { id: 't14', title: '보증금 돌려받은 뒤 전출하기', desc: '보증금을 받기 전에 주소를 옮기면 대항력이 사라질 수 있어요.', due: end, src: '주택임대차보호법 제3조' }
+    ] });
+    var nowIdx = 0;
+    for (var i = 0; i < st.length; i++) { if (today <= st[i].at) { nowIdx = i; break; } nowIdx = i; }
+    st.forEach(function (s, i) { s.now = i === nowIdx; });
+    return st;
+  }
+
+  // ---------- small parts ----------
+  var IC = {
+    arrow: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>',
+    chev: '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>',
+    back: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>',
+    alert: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:0 0 auto;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/></svg>',
+    doc: '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6"/><path d="M10 17h4"/></svg>',
+    home: '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg>',
+    lock: '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+    bell: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg>'
+  };
+  function condLine() { return esc(S.gu) + ' · 보증금 ' + won(S.deposit) + '만 원 · 월세 ' + S.rent + '만 원 · 만 ' + S.age + '세 · ' + md(pd(S.move)) + ' 전입'; }
+  function backLink(href, text) { return '<a href="' + href + '" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--sub);text-decoration:none">' + IC.back + text + '</a>'; }
+  function safetyCard() {
+    return '<div class="card stack" style="gap:12px"><b style="font-size:16px">이 집, 안전한지도 확인했나요?</b><p class="muted" style="font-size:14px">적정 보증금, 악성 임대인 여부는 공공 앱에서 무료로 조회할 수 있어요.</p>' +
+      '<a class="btn btn-soft btn-sm" style="justify-content:space-between" href="https://www.khug.or.kr" target="_blank" rel="noopener">안심전세 앱에서 조회 <span aria-hidden="true">↗</span></a>' +
+      '<a class="btn btn-soft btn-sm" style="justify-content:space-between" href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener">공인중개사 무료 상담 예약 <span aria-hidden="true">↗</span></a></div>';
+  }
+
+  // ---------- screens ----------
+  function viewHome() {
+    var R = evaluate(), T = buildTimeline(R), total = 0, done = 0;
+    T.forEach(function (s) { s.tasks.forEach(function (t) { total++; if (S.done[t.id]) done++; }); });
+    var rows = R.eligible.map(function (x) { return '<div class="between" style="padding:12px 0;border-top:1px solid var(--line)"><div><b>' + x.p.name.replace('청년 부동산 ', '') + '</b><div class="small muted">' + x.p.amountText + '</div></div><b>' + x.p.amount + '만 원</b></div>'; }).join('');
+    var report = R.report.required ? '<div class="between" style="padding:12px 0;border-top:1px solid var(--line)"><div><b>전월세 신고</b><div class="small muted">' + R.report.reason + '라 신고 대상</div></div><span class="tag warn">' + md(R.report.due) + '까지</span></div>' : '';
+    return '<div class="hero">' +
+      '<div class="hero-copy"><span class="hl" style="font-weight:700">서울에서 첫 자취를 시작한다면</span>' +
+      '<h1>계약하고 나서<br>놓치는 신고와 지원금,<br>날짜별로 챙겨드려요</h1>' +
+      '<p style="font-size:18px;color:var(--sub)">보증금, 월세, 전입일만 알려주세요.<br>해야 할 신고와 받을 수 있는 지원을 한 번에 정리해요.</p>' +
+      '<a class="btn" href="#input" style="min-height:56px;font-size:17px">내 계약 조건 입력하기 ' + IC.arrow + '</a>' +
+      '<span class="small muted" style="display:flex;align-items:center;gap:6px">' + IC.lock + '입력한 정보는 서버에 저장하지 않아요</span></div>' +
+      '<div class="hero-card"><div class="between"><span class="small muted">' + esc(S.gu) + ' · 보증금 ' + won(S.deposit) + ' / 월세 ' + S.rent + '</span><span class="tag ok">예시 결과</span></div>' +
+      '<div><div class="muted">받을 수 있는 지원</div><div style="font-size:34px;font-weight:800;letter-spacing:-0.03em">' + (R.total ? '최대 ' + R.total + '만 원' : '해당 없음') + '</div></div>' +
+      '<div>' + rows + report + '</div>' +
+      '<div style="background:var(--soft);border-radius:12px;padding:14px 16px" class="stack"><div class="between small"><span class="muted">이사 전후 할 일</span><b>' + total + '개 중 ' + done + '개 완료</b></div><div class="bar"><span style="width:' + Math.round(done / total * 100) + '%"></span></div></div>' +
+      '<a class="btn btn-line btn-sm" href="#result">이 결과 자세히 보기</a></div></div>' +
+      '<section class="stack" style="margin-top:56px"><h2 style="font-size:28px;font-weight:800">계약 전부터 이사 나갈 때까지</h2><p class="muted" style="font-size:16px">내 조건에 해당하는 일만 골라서, 기한이 빠른 순서로 알려드려요.</p>' +
+      '<ol class="stages">' + [['계약 전', '등기부등본으로 집주인 확인'], ['계약 당일', '계약금은 계좌이체로'], ['이사 당일', '14일 안에 전입신고'], ['계약 후 30일', '전월세 신고하고 확정일자 받기'], ['지원 신청', '청년월세·이사비 신청'], ['퇴거', '보증금 받고 나서 이사']].map(function (s, i) { return '<li><span class="stage-no">0' + (i + 1) + ' ' + s[0] + '</span><b>' + s[1] + '</b></li>'; }).join('') + '</ol>' +
+      '<div class="row" style="gap:10px 28px;color:var(--sub)"><span>✓ 지원 자격은 담당자가 공고 원문과 대조해 승인한 기준으로만 계산해요</span><span>✓ 모든 결과에 공고 원문 링크와 기준일을 붙여요</span></div></section>' +
+      '<section style="margin-top:48px"><div class="dark-band"><div style="flex:1 1 360px;min-width:0" class="stack"><h2 style="font-size:24px;font-weight:800">계약하려는 집, 안전한지 먼저 확인하세요</h2><p style="opacity:.8">전세사기 위험 진단과 계약 상담은 공공기관 서비스에서 무료로 받을 수 있어요.</p></div>' +
+      '<div class="row" style="gap:10px"><a href="https://www.khug.or.kr" target="_blank" rel="noopener"><b>안심전세 앱 ↗</b><span class="small" style="opacity:.75">주택도시보증공사</span></a><a href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener"><b>전월세 안심계약 도움서비스 ↗</b><span class="small" style="opacity:.75">서울시 1인가구지원과</span></a></div></div></section>';
+  }
+
+  function viewInput() {
+    var step = S.step, body = '';
+    if (step === 1) {
+      body = '<h1 class="page-title">계약하려는 집이<br>어느 구에 있나요?</h1>' +
+        '<label class="field"><span>시·군·구</span><select id="f-gu" class="select" data-field="gu">' + GU.map(function (g) { return '<option' + (g === S.gu ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select></label>' +
+        '<div class="stack" style="gap:10px"><span class="small muted">청년 1인가구가 많이 사는 곳</span><div class="chips">' + POPULAR.map(function (g) { return '<button type="button" class="chip" data-act="gu" data-v="' + g + '" aria-pressed="' + (g === S.gu) + '">' + g + '</button>'; }).join('') + '</div></div>' +
+        '<p class="small muted">첫 버전은 서울 25개 구만 지원해요 · 법정동코드 기준</p>';
+    } else if (step === 2) {
+      body = '<h1 class="page-title">보증금과 월세를<br>알려주세요</h1>' +
+        '<label class="field"><span>보증금</span><span class="big-input"><input id="f-deposit" inputmode="numeric" data-field="deposit" data-num value="' + S.deposit + '"><em>만 원</em></span></label>' +
+        '<label class="field"><span>월세 (관리비 제외)</span><span class="big-input"><input id="f-rent" inputmode="numeric" data-field="rent" data-num value="' + S.rent + '"><em>만 원</em></span></label>' +
+        '<div id="hint"></div>';
+    } else if (step === 3) {
+      body = '<h1 class="page-title">나이와 소득 구간을<br>골라주세요</h1>' +
+        '<label class="field" style="max-width:220px"><span>만 나이</span><span class="big-input"><input id="f-age" inputmode="numeric" data-field="age" data-num value="' + S.age + '"><em>세</em></span></label>' +
+        '<fieldset style="border:0;margin:0;padding:0" class="stack"><legend class="muted" style="margin-bottom:10px">가구 소득 (기준 중위소득 대비)</legend>' +
+        [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<label class="radio-card"><span>' + o[1] + '</span><input type="radio" name="income" data-field="income" value="' + o[0] + '"' + (S.income === o[0] ? ' checked' : '') + '></label>'; }).join('') +
+        '</fieldset><p class="small muted">잘 모르면 ‘잘 모르겠어요’를 골라도 돼요. 소득 조건은 결과에서 확인 필요로 표시해요.</p>';
+    } else {
+      body = '<h1 class="page-title">계약일과 전입 예정일을<br>알려주세요</h1>' +
+        '<div class="row" style="gap:14px"><label class="field" style="flex:1 1 220px;min-width:0"><span>계약일 (예정)</span><input id="f-contract" type="date" class="date" data-field="contract" value="' + S.contract + '"></label>' +
+        '<label class="field" style="flex:1 1 220px;min-width:0"><span>전입 예정일</span><input id="f-move" type="date" class="date" data-field="move" value="' + S.move + '"></label></div>' +
+        '<p class="muted">전입신고는 이사 후 14일, 전월세 신고는 계약 후 30일 안에 해야 해요.</p><div id="date-hint"></div>';
+    }
+    return '<div class="progress" style="margin:0 0 32px;border-radius:2px;overflow:hidden" aria-hidden="true"><span style="width:' + step * 25 + '%"></span></div>' +
+      '<div class="row" style="gap:40px"><section class="col-main" style="max-width:620px;gap:28px"><span class="hl" style="font-weight:700">' + step + ' / 4</span>' + body +
+      '<div class="row" style="gap:10px">' + (step > 1 ? '<button type="button" class="btn btn-soft" data-act="prev">이전</button>' : '') +
+      (step < 4 ? '<button type="button" class="btn" style="flex:1 1 auto" data-act="next">다음</button>' : '<a class="btn" style="flex:1 1 auto" href="#result">결과 보기</a>') + '</div></section>' +
+      '<aside class="col-side"><div class="card" style="background:var(--surface)" id="sum"></div><p class="small muted" style="padding:0 8px">입력한 정보는 계산에만 써요. 시연 버전은 이 브라우저에만 임시로 기억해요.</p>' +
+      '<button type="button" class="btn btn-line btn-sm" data-act="reset">예시 값으로 되돌리기</button></aside></div>';
+  }
+  function fillInputSide() {
+    var el = document.getElementById('sum'); if (!el) return;
+    var rows = [['지역', '서울 ' + S.gu, 1], ['보증금 · 월세', won(S.deposit) + '만 · ' + S.rent + '만 원', 2], ['나이', '만 ' + S.age + '세', 3], ['소득 구간', incomeLabel(), 3], ['계약일', ymd(pd(S.contract)), 4], ['전입 예정일', ymd(pd(S.move)), 4]];
+    el.innerHTML = '<b style="display:block;margin-bottom:8px">입력한 조건</b>' + rows.map(function (r) { var cur = r[2] === S.step, past = r[2] < S.step; return '<div class="sum-row"><span class="muted">' + r[0] + '</span><span style="font-weight:' + (past || cur ? 700 : 500) + ';color:' + (cur ? 'var(--accent-text)' : past ? 'var(--fg)' : 'var(--muted)') + '">' + (past || cur ? esc(r[1]) : '—') + '</span></div>'; }).join('');
+    var h = document.getElementById('hint');
+    if (h) h.innerHTML = (S.deposit > 6000 || S.rent > 30) ? '<div class="notice warn">' + IC.alert + '<span>' + (S.rent > 30 ? '월세가 30만 원을 넘어서' : '보증금이 6천만 원을 넘어서') + ' <b>전월세 신고 대상</b>이에요. 기한은 다음 단계에서 계산해 드릴게요.</span></div>' : '<div class="notice info">보증금 6천만 원 이하, 월세 30만 원 이하라 전월세 신고 대상은 아니에요.</div>';
+    var dh = document.getElementById('date-hint');
+    if (dh) dh.innerHTML = pd(S.move) < pd(S.contract) ? '<div class="notice warn">' + IC.alert + '<span>전입 예정일이 계약일보다 빨라요. 날짜를 다시 확인해 주세요.</span></div>' : '';
+  }
+
+  function viewResult() {
+    var R = evaluate(), T = buildTimeline(R), count = 0;
+    T.forEach(function (s) { count += s.tasks.length; });
+    var first = null; T.forEach(function (s) { s.tasks.forEach(function (t) { if (!first && !S.done[t.id]) first = t; }); });
+    var reports = '';
+    if (R.report.required) reports += '<div class="list-row"><span class="icon-box warn" style="color:var(--warn)">' + IC.doc + '</span><div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px"><b style="font-size:17px">전월세 신고</b><span class="small muted">' + R.report.reason + ' · 신고하면 확정일자도 함께 받아요</span><a class="link-sm" href="https://www.law.go.kr" target="_blank" rel="noopener">근거 · 부동산거래신고법 제6조의2</a></div><div style="text-align:right;flex:0 0 auto"><b>' + md(R.report.due) + '까지</b><div class="small" style="color:var(--warn);font-weight:700">' + dday(R.report.due) + '</div></div></div>';
+    reports += '<div class="list-row"><span class="icon-box">' + IC.home + '</span><div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px"><b style="font-size:17px">전입신고</b><span class="small muted">정부24 또는 행정복지센터 · 대항력이 생겨요</span><a class="link-sm" href="https://law.go.kr" target="_blank" rel="noopener">근거 · 주민등록법 제16조</a></div><div style="text-align:right;flex:0 0 auto"><b>' + md(R.movein.due) + '까지</b><div class="small muted">' + dday(R.movein.due) + '</div></div></div>';
+    var progs = R.eligible.map(function (x) {
+      return '<div style="border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px"><div class="between" style="align-items:flex-start"><div style="flex:999 1 280px;min-width:0;display:flex;flex-direction:column;gap:6px"><div class="row" style="gap:8px;align-items:center"><b style="font-size:18px">' + x.p.name + '</b><span class="tag ' + x.p.statusCls + '">' + x.p.status + '</span>' + (x.p.firstCome ? '<span class="tag warn">선착순 · 일찍 마감될 수 있음</span>' : '') + '</div>' +
+        '<span class="small muted">' + x.p.amountText + ' · 신청 기간: ' + x.p.period + '</span>' + (x.unknown.length > 1 || (x.unknown.length && x.unknown[0].label !== '무주택자') ? '<span class="tag warn" style="align-self:flex-start">소득 조건 확인 필요</span>' : '') + '</div><b style="font-size:20px">' + x.p.amount + '만 원</b></div>' +
+        '<div class="between" style="border-top:1px solid var(--line);padding-top:10px"><a class="link-sm" href="' + x.p.url + '" target="_blank" rel="noopener">공고 원문 · ' + BASIS + ' 기준</a><a href="#' + x.p.hash + '" style="display:inline-flex;align-items:center;gap:4px;min-height:40px;font-weight:700;text-decoration:none">자세히 보기 ' + IC.chev + '</a></div></div>';
+    }).join('') || '<div class="notice info">지금 입력한 조건으로 받을 수 있는 지원이 없어요. 조건이 바뀌면 다시 확인해 보세요.</div>';
+    var others = R.others.map(function (o) { return '<div style="display:flex;flex-direction:column;gap:2px"><b>' + o.name + '</b><span class="small muted">' + o.why + '</span></div>'; }).join('');
+    return '<div class="stack"><section class="between" style="align-items:flex-end;padding-bottom:8px"><div class="stack" style="gap:8px"><p class="eyebrow">' + condLine() + '</p>' +
+      '<h1 class="page-title">' + (R.total ? '지원금 최대 <span class="hl">' + R.total + '만 원</span>을<br>받을 수 있어요' : '받을 수 있는 지원은 없지만<br>꼭 해야 할 신고가 있어요') + '</h1></div><a class="btn btn-line btn-sm" href="#input">조건 바꾸기</a></section>' +
+      '<div class="row"><div class="col-main"><section class="card"><div class="between" style="margin-bottom:6px"><h2>꼭 해야 하는 신고 ' + (R.report.required ? 2 : 1) + '건</h2><span class="small muted">안 하면 과태료가 나올 수 있어요</span></div>' + reports + '</section>' +
+      '<section class="card stack" style="gap:14px"><div class="between"><h2>받을 수 있는 지원 ' + R.eligible.length + '건</h2><span class="small muted">' + BASIS + ' 공고 기준</span></div>' + progs +
+      '<details style="background:var(--soft);border-radius:16px;padding:2px 20px"><summary style="min-height:50px;display:flex;align-items:center;font-weight:600;color:var(--sub);cursor:pointer">해당되지 않는 지원 ' + R.others.length + '건</summary><div class="stack" style="gap:12px;padding-bottom:18px">' + others + '</div></details></section></div>' +
+      '<aside class="col-side"><div class="card stack" style="background:var(--accent);color:var(--accent-ink);gap:14px"><span style="opacity:.85">이사 전후로 할 일</span><b style="font-size:30px">' + count + '개</b><span style="opacity:.9">' + (first ? '다음 할 일은 ‘' + first.title + '’이에요.' : '할 일을 모두 끝냈어요.') + '</span><a class="btn btn-block" style="background:var(--surface);color:var(--accent-text)" href="#timeline">타임라인으로 보기</a></div>' + safetyCard() + '</aside></div>' +
+      '<p class="small muted">승인된 공고 기준으로 계산한 예상 결과예요. 실제 지원 여부는 기관 심사로 결정되고, 법률 자문을 대신하지 않아요.</p></div>';
+  }
+
+  function viewTimeline() {
+    var R = evaluate(), T = buildTimeline(R), total = 0, done = 0, urgent = null;
+    T.forEach(function (s) { s.tasks.forEach(function (t) { total++; if (S.done[t.id]) done++; else if (t.urgent && t.due && (!urgent || t.due < urgent.due)) urgent = t; }); });
+    var pct = Math.round(done / total * 100);
+    var stages = T.map(function (s, i) {
+      return '<section class="card" id="stage-' + (i + 1) + '" style="padding-bottom:10px"><div class="row" style="gap:6px 12px;align-items:center;padding-bottom:8px"><span class="stage-no">0' + (i + 1) + '</span><h2>' + s.name + '</h2><span class="small muted">' + s.when + '</span>' + (s.now ? '<span class="tag solid">지금 단계</span>' : '') + '</div>' +
+        s.tasks.map(function (t) {
+          var c = !!S.done[t.id];
+          var dueTxt = c ? '완료' : (t.dueText || (md(t.due) + '까지'));
+          var cls = c ? 'ok' : (t.urgent ? 'warn' : '');
+          var act = t.act && (!c || t.keep) ? '<a class="btn btn-soft btn-sm" href="' + t.act[1] + '"' + (t.act[1].charAt(0) === '#' ? '' : ' target="_blank" rel="noopener"') + '>' + t.act[0] + '</a>' : '';
+          var src = /법/.test(t.src) ? '<a class="link-sm" href="https://www.law.go.kr" target="_blank" rel="noopener">근거 · ' + t.src + '</a>' : '<span class="small muted">근거 · ' + t.src + '</span>';
+          return '<div class="task' + (c ? ' done' : '') + '"><input type="checkbox" id="chk-' + t.id + '" data-act="task" data-id="' + t.id + '"' + (c ? ' checked' : '') + '><div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px"><div class="between" style="gap:6px 12px"><label for="chk-' + t.id + '">' + t.title + '</label><span class="tag ' + cls + '">' + dueTxt + (t.due && !c && !t.dueText ? ' · ' + dday(t.due) : '') + '</span></div>' +
+            '<span class="muted" style="font-size:14px">' + t.desc + '</span><div class="row" style="gap:6px 16px;align-items:center;margin-top:2px">' + act + src + '</div></div></div>';
+        }).join('') + '</section>';
+    }).join('');
+    return '<div class="stack" style="gap:24px"><section class="between" style="align-items:flex-end"><div class="stack" style="gap:8px"><p class="eyebrow">' + esc(S.gu) + ' · ' + md(R.C) + ' 계약 · ' + md(R.M) + ' 전입</p><h1 class="page-title">내 자취 타임라인</h1></div><a class="btn btn-line btn-sm" href="#alert">' + IC.bell + '기한 알림 켜기</a></section>' +
+      '<div class="row"><aside class="col-side" style="flex-basis:280px"><div class="card stack" style="gap:12px"><div class="between"><span class="muted">진행률</span><b>' + done + ' / ' + total + '</b></div><b style="font-size:32px">' + pct + '%</b><div class="bar"><span style="width:' + pct + '%"></span></div></div>' +
+      (urgent ? '<div class="card stack" style="gap:8px"><span class="small" style="font-weight:700;color:var(--warn)">가장 급한 기한</span><b style="font-size:18px">' + urgent.title + '</b><span class="muted">' + md(urgent.due) + '까지 · ' + dday(urgent.due) + '</span>' + (urgent.act ? '<a class="btn btn-soft btn-sm" href="' + urgent.act[1] + '" target="_blank" rel="noopener">' + urgent.act[0] + '</a>' : '') + '</div>' : '') +
+      '<form class="card stack" id="alert" style="gap:2px" data-form="alert"><b style="margin-bottom:6px">기한 알림</b>' +
+      '<label class="switch-row"><span>전입신고 <span class="muted">' + md(R.movein.due) + '</span></span><input type="checkbox" checked></label>' +
+      (R.report.required ? '<label class="switch-row"><span>전월세 신고 <span class="muted">' + md(R.report.due) + '</span></span><input type="checkbox" checked></label>' : '') +
+      '<label class="switch-row"><span>지원 신청 시작·마감</span><input type="checkbox" checked></label>' +
+      '<label class="switch-row"><span>미리 알림</span><select id="f-remind" class="select" style="min-height:40px;font-size:14px"><option>3일 전 오전 9시</option><option>하루 전 오전 9시</option><option>당일 오전 9시</option></select></label>' +
+      '<button class="btn btn-sm" style="margin-top:8px" type="submit">이 브라우저로 알림 받기</button><span class="small muted" style="margin-top:6px">선착순 지원은 기간보다 일찍 마감될 수 있어요.</span></form>' +
+      '<nav class="card side-nav" style="padding:8px" aria-label="단계 바로가기">' + T.map(function (s, i) { var d = s.tasks.filter(function (t) { return S.done[t.id]; }).length; return '<a href="#stage-' + (i + 1) + '"><span>' + s.name + '</span><span class="small muted">' + d + ' / ' + s.tasks.length + '</span></a>'; }).join('') + '</nav></aside>' +
+      '<div class="col-main" style="gap:16px">' + stages + '<p class="small muted">기한은 주민등록법(전입신고 14일), 부동산거래신고법(전월세 신고 30일)과 각 지원 공고 기준으로 계산했어요. 해당하지 않는 항목은 빼고 보여줘요.</p></div></div></div>';
+  }
+
+  function viewDetail(id) {
+    var R = evaluate(), x = R.programs.filter(function (q) { return q.p.id === id; })[0]; if (!x) return viewResult();
+    var p = x.p;
+    var conds = x.res.map(function (r) { var m = r.ok === true ? ['ok', '✓'] : r.ok === false ? ['bad', '✕'] : ['q', '?']; return '<div class="cond"><span class="mark ' + m[0] + '" aria-label="' + (r.ok === true ? '충족' : r.ok === false ? '미충족' : '확인 필요') + '">' + m[1] + '</span><span style="flex:1 1 auto;min-width:0">' + r.label + '</span><span class="small" style="color:' + (r.ok === null ? 'var(--warn)' : 'var(--muted)') + ';font-weight:' + (r.ok === null ? 700 : 400) + '">' + esc(r.mine) + '</span></div>'; }).join('');
+    var docs = p.docs.map(function (d) { var s = docStatus(d[0]); return s === 'missing' ? '<div class="doc-row missing"><span>' + d[1] + '</span><a href="#docs" style="font-weight:700;font-size:14px">올리기</a></div>' : '<div class="doc-row"><span>' + d[1] + '</span><span class="small" style="font-weight:700;color:' + (s === 'ok' ? 'var(--accent-text)' : 'var(--warn)') + '">' + (s === 'ok' ? '준비됨' : '확정일자 필요') + '</span></div>'; }).join('');
+    return '<div class="stack" style="gap:22px">' + backLink('#result', '결과로 돌아가기') +
+      '<section class="card between" style="padding:32px;align-items:flex-end;gap:20px"><div style="flex:1 1 420px;min-width:0" class="stack" ><div class="row" style="gap:8px"><span class="tag">' + p.org + '</span><span class="tag ' + (x.eligible ? 'ok' : 'bad') + '">' + (x.eligible ? '자격 충족' : '자격 미충족') + '</span><span class="tag ' + p.statusCls + '">' + p.status + '</span></div><h1 class="page-title">' + p.name + '</h1><p style="font-size:17px;color:var(--sub)">' + p.summary + '</p></div>' +
+      '<div style="text-align:right"><div class="muted">받을 수 있는 금액</div><div style="font-size:38px;font-weight:800;color:var(--accent-text)">' + (x.eligible ? '최대 ' : '') + p.amount + '만 원</div></div></section>' +
+      '<div class="row"><div class="col-main"><section class="card"><h2 style="margin-bottom:8px">신청 자격</h2>' + conds + (p.id === 'rent' ? '<p class="small muted" style="margin-top:10px">국토교통부 청년월세 특별지원을 이미 받고 있다면 중복으로 받을 수 없어요.</p>' : '') + '</section>' +
+      '<section class="card stack" style="gap:10px"><div class="between"><h2>제출 서류</h2><span style="font-weight:700;color:var(--accent-text)">' + p.docs.length + '개 중 ' + x.ready + '개 준비</span></div>' + docs + '</section></div>' +
+      '<aside class="col-side"><div class="card stack" style="gap:12px"><div class="between"><span class="muted">신청 기간</span><b>' + p.period + '</b></div><div class="between"><span class="muted">신청 방법</span><b>' + p.channel + '</b></div><div class="between"><span class="muted">선정 방식</span><b>' + p.select + '</b></div>' +
+      '<a class="btn btn-block" href="' + p.url + '" target="_blank" rel="noopener">서울주거포털에서 신청 ↗</a><a class="link-sm" style="text-align:center" href="' + p.url + '" target="_blank" rel="noopener">공고 원문 보기 · ' + BASIS + ' 기준</a></div>' +
+      '<form class="card stack" style="gap:2px" data-form="alert"><b style="margin-bottom:6px">' + (p.firstCome ? '마감 알림 받기' : '모집 알림 받기') + '</b><label class="switch-row"><span>모집 시작하는 날</span><input type="checkbox" checked></label><label class="switch-row"><span>마감 3일 전</span><input type="checkbox" checked></label><button class="btn btn-soft btn-sm" style="margin-top:8px" type="submit">이 브라우저로 알림 받기</button></form></aside></div>' +
+      '<p class="small muted">담당자가 공고 원문과 대조해 승인한 기준(' + BASIS + ')으로 보여드려요. 실제 지원 여부는 기관 심사로 결정되고, 법률 자문이나 권리분석을 대신하지 않아요.</p></div>';
+  }
+
+  var DOCS = {
+    contract: { name: '임대차계약서', file: '계약서_예시.pdf · 3쪽', tag: ['warn', '1개 확인'], issue: '확정일자 도장이 보이지 않아요. 전월세 신고를 마치면 확정일자가 찍힌 계약서를 다시 올려 주세요.',
+      kv: function () { var C = pd(S.contract); var end = add(new Date(C.getFullYear() + 2, C.getMonth(), C.getDate()), -1); return [['계약 기간', ymd(pd(S.move)) + ' ~ ' + ymd(end)], ['보증금', won(S.deposit * 10000) + '원'], ['월세', won(S.rent * 10000) + '원'], ['임대인·임차인 서명', '있음'], ['확정일자', '없음', true]]; } },
+    transfer: { name: '계약금 이체 확인증', file: '이체확인증_예시.jpg', tag: ['ok', '확인 완료'], kv: function () { return [['받는 사람', '임대인 명의 계좌'], ['금액', won(S.deposit * 1000) + '원'], ['이체일', ymd(pd(S.contract))]]; } },
+    bank: { name: '통장 사본', file: '통장사본_예시.png', tag: ['ok', '확인 완료'], kv: function () { return [['예금주', '본인 명의'], ['계좌번호', '뒤 4자리만 표시']]; } },
+    rentHistory: { name: '월세 이체 내역', file: '이체내역_예시.pdf', tag: ['ok', '확인 완료'], kv: function () { return [['기간', '최근 3개월'], ['월 이체액', won(S.rent * 10000) + '원']]; } },
+    photos: { name: '입주 전 집 사진', file: '사진 6장', tag: ['', '보관용'], kv: function () { return [['찍은 날', ymd(pd(S.move))], ['내용 확인', '하지 않음 (보관용)']]; } }
+  };
+  function viewDocs() {
+    var keys = Object.keys(DOCS), cur = DOCS[S.doc] ? S.doc : 'contract', d = DOCS[cur];
+    var list = keys.map(function (k) { var x = DOCS[k]; return '<button type="button" class="doc-item" data-act="doc" data-v="' + k + '" aria-pressed="' + (k === cur) + '"><span class="thumb" aria-hidden="true"></span><span style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><b>' + x.name + '</b><span class="small muted">' + x.file + '</span></span><span class="tag ' + x.tag[0] + '">' + x.tag[1] + '</span></button>'; }).join('') +
+      S.extraDocs.map(function (n) { return '<div class="doc-item"><span class="thumb" aria-hidden="true"></span><span style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><b style="overflow-wrap:anywhere">' + esc(n) + '</b><span class="small muted">방금 추가 · 이 기기에만 보관</span></span><span class="tag">시연</span></div>'; }).join('');
+    var kv = d.kv().map(function (r) { return '<div><dt>' + r[0] + '</dt><dd' + (r[2] ? ' style="color:var(--warn)"' : '') + '>' + r[1] + '</dd></div>'; }).join('');
+    var paper = cur === 'contract' ? '<div class="paper" role="img" aria-label="주민등록번호가 가려진 계약서 미리보기"><b style="text-align:center;letter-spacing:.2em;color:var(--fg)">주택임대차 표준계약서</b><i style="width:92%"></i><i style="width:80%"></i><span>임대인 주민번호 <s></s></span><i style="width:88%"></i><span>임차인 주민번호 <s></s></span><i style="width:70%"></i><i style="width:84%"></i><span class="tag ok" style="margin-top:auto;align-self:flex-start">주민번호 2곳 가림</span></div>' : '<div class="paper" role="img" aria-label="' + d.name + ' 미리보기"><i style="width:60%"></i><i style="width:90%"></i><i style="width:80%"></i><i style="width:70%"></i></div>';
+    return '<div class="stack" style="gap:22px"><section class="between" style="align-items:flex-end"><div class="stack" style="gap:8px"><h1 class="page-title">서류함</h1><p class="muted" style="display:flex;align-items:center;gap:6px">' + IC.lock + '서류는 이 기기에만 보관돼요. 내용 확인용으로 보낸 파일은 확인이 끝나면 바로 지워요.</p></div>' +
+      '<label class="btn" style="cursor:pointer">+ 서류 추가<input id="f-file" type="file" accept="image/*,.pdf" data-act="file" style="position:absolute;width:1px;height:1px;opacity:0"></label></section>' +
+      '<div class="row"><section class="card" style="flex:1 1 320px;min-width:0;padding:10px" aria-label="내 서류">' + list + '<div style="margin:8px;padding:14px;border:1px dashed var(--line);border-radius:14px" class="small"><b>아직 없는 서류</b><div class="muted">주민등록등본, 건강보험료 납부확인서, 중개보수·이사비 영수증</div></div></section>' +
+      '<section class="card col-main" style="gap:18px" aria-label="서류 확인 결과"><div class="between"><h2 style="font-size:21px">' + d.name + '</h2><span class="small muted">지원 신청 제출 기준으로 확인했어요</span></div>' +
+      (d.issue ? '<div class="notice warn">' + IC.alert + '<span>' + d.issue + '</span></div>' : '<div class="notice ok">제출 요건을 모두 갖췄어요.</div>') +
+      '<div class="row" style="gap:20px">' + paper + '<dl class="kv">' + kv + '</dl></div>' +
+      '<p class="small muted">OCR과 AI가 읽은 값이에요. 원본과 다르면 직접 고쳐 주세요.</p>' +
+      '<div class="row" style="gap:10px;border-top:1px solid var(--line);padding-top:18px"><button type="button" class="btn" data-act="toast" data-v="시연 버전이라 실제 파일은 저장되지 않아요.">제출용 사본 저장</button><button type="button" class="btn btn-soft" data-act="toast" data-v="새 파일을 고르면 다시 확인해요.">새 파일로 바꾸기</button></div></section></div></div>';
+  }
+
+  // room
+  var BEDS = [{ k: 's', label: '싱글', sub: '100×200', w: 1.0 }, { k: 'ss', label: '슈퍼싱글', sub: '110×200', w: 1.1 }, { k: 'q', label: '퀸', sub: '150×200', w: 1.5 }];
+  function roomModel() {
+    var W = S.w, D = S.d, HT = 2.3, SC = Math.min(72, Math.floor(420 / Math.max(W, D)));
+    var px = function (v) { return Math.round(v * SC); };
+    var bed = BEDS.filter(function (b) { return b.k === S.bed; })[0] || BEDS[1], bw = bed.w, faces = [], used = bw * 2;
+    function box(label, x, y, w, d, h, z0, c) {
+      faces.push('<div style="left:' + px(x + w - h) + 'px;top:' + px(y) + 'px;width:' + px(h) + 'px;height:' + px(d) + 'px;transform-origin:100% 50%;transform:translateZ(' + px(z0) + 'px) rotateY(90deg);background:' + c[2] + '"></div>');
+      faces.push('<div style="left:' + px(x) + 'px;top:' + px(y + d - h) + 'px;width:' + px(w) + 'px;height:' + px(h) + 'px;transform-origin:50% 100%;transform:translateZ(' + px(z0) + 'px) rotateX(-90deg);background:' + c[1] + '"></div>');
+      faces.push('<div class="face-top" style="left:' + px(x) + 'px;top:' + px(y) + 'px;width:' + px(w) + 'px;height:' + px(d) + 'px;transform:translateZ(' + px(z0 + h) + 'px);background:' + c[0] + '">' + label + '</div>');
+    }
+    box('', 0, 0, bw, 2.0, 0.45, 0, ['#FFFFFF', '#E3E6E8', '#D3D7DA']);
+    box('', 0.1, 0.08, bw - 0.2, 0.35, 0.08, 0.45, ['#F7F8F9', '#E6E9EB', '#DADEE1']);
+    box('침대', 0, 0.6, bw, 1.4, 0.05, 0.45, ['#A9D1BF', '#8FC0AA', '#7FB29B']);
+    if (S.desk) { used += 0.72; box('책상', W - 1.2, 0, 1.2, 0.6, 0.74, 0, ['#C8A57E', '#B08C66', '#9E7C58']); }
+    if (S.wardrobe) { used += 0.54; box('옷장', W - 0.6, 0.8, 0.6, 0.9, 1.9, 0, ['#ECEEF0', '#D7DBDE', '#C6CBCF']); }
+    if (S.fridge) { used += 0.39; if (D - 1.1 >= 2.75) box('냉장고', 0, 2.1, 0.65, 0.6, 1.4, 0, ['#DDE1E4', '#C9CED2', '#B9BEC2']); else box('냉장고', W - 0.65, D - 0.6, 0.65, 0.6, 1.4, 0, ['#DDE1E4', '#C9CED2', '#B9BEC2']); }
+    var edges = [W]; if (S.desk) edges.push(W - 1.2); if (S.wardrobe) edges.push(W - 0.6);
+    var aisle = Math.min.apply(null, edges) - bw, notes = [];
+    if (aisle < 0) notes.push(['warn', '가구끼리 겹쳐요. 침대를 작은 걸로 바꾸거나 가구를 빼 보세요.']);
+    else if (aisle < 0.6) notes.push(['warn', '침대 옆 통로가 ' + Math.round(aisle * 100) + 'cm라 지나다니기 좁아요.']);
+    if (D - 1.1 < 2.0) notes.push(['warn', '침대가 현관문 여는 자리를 막아요. 세로가 3.1m보다 짧으면 배치를 바꿔야 해요.']);
+    if (!notes.length) notes.push(['ok', '가구를 다 놓아도 통로가 넉넉해요.']);
+    var is3d = S.view === '3d';
+    var scene = '<div class="scene" style="width:' + px(W) + 'px;height:' + px(D) + 'px;transform:' + (is3d ? 'translateY(30px) rotateX(58deg) rotateZ(' + S.rz + 'deg)' : 'none') + '">' +
+      '<div style="left:0;top:0;width:' + px(W) + 'px;height:' + px(D) + 'px;background-color:#E8DCC8;background-image:linear-gradient(to right,rgba(60,40,20,.09) 1px,transparent 1px),linear-gradient(to bottom,rgba(60,40,20,.09) 1px,transparent 1px);background-size:' + px(0.5) + 'px ' + px(0.5) + 'px;' + (is3d ? '' : 'box-shadow:0 0 0 8px var(--sub)') + '"></div>' +
+      '<div style="left:0;top:' + px(-HT) + 'px;width:' + px(W) + 'px;height:' + px(HT) + 'px;transform-origin:50% 100%;transform:rotateX(-90deg);background:#F6F4F0;box-shadow:inset 0 -6px 0 #DDD6CA"><div style="position:absolute;left:' + px((W - 1.2) / 2) + 'px;bottom:' + px(0.9) + 'px;width:' + px(1.2) + 'px;height:' + px(1.2) + 'px;background:#CFE4EE;border:5px solid #FFFFFF;box-sizing:border-box"></div></div>' +
+      '<div style="left:' + px(-HT) + 'px;top:0;width:' + px(HT) + 'px;height:' + px(D) + 'px;transform-origin:100% 50%;transform:rotateY(90deg);background:#EAE6DF;box-shadow:inset -6px 0 0 #D6CEC0"><div style="position:absolute;right:0;top:' + px(D - 1.1) + 'px;width:' + px(2.0) + 'px;height:' + px(0.9) + 'px;background:#CDB592;box-shadow:inset 0 0 0 3px #B89C74"></div></div>' +
+      faces.join('') +
+      '<div style="left:0;top:' + (px(D) + 10) + 'px;width:' + px(W) + 'px;text-align:center;font-weight:700;color:var(--sub)">가로 ' + W.toFixed(1) + 'm</div>' +
+      '<div style="left:' + (px(W) + 10) + 'px;top:0;height:' + px(D) + 'px;writing-mode:vertical-rl;text-align:center;font-weight:700;color:var(--sub)">세로 ' + D.toFixed(1) + 'm</div></div>';
+    var area = W * D, free = Math.max(0, area - used);
+    return { scene: scene, label: '가로 ' + W.toFixed(1) + 'm, 세로 ' + D.toFixed(1) + 'm 방에 ' + bed.label + ' 침대와 가구를 놓은 모습',
+      stats: '<div class="stat"><span class="muted">방 넓이</span><b>' + area.toFixed(1) + '㎡</b><span class="small muted">약 ' + (area / 3.3058).toFixed(1) + '평</span></div>' +
+        '<div class="stat"><span class="muted">가구 놓고 남는 바닥</span><b>' + free.toFixed(1) + '㎡</b><span class="small muted">방의 ' + Math.round(free / area * 100) + '%</span></div>' +
+        '<div class="stat"><span class="muted">침대 옆 통로</span><b style="color:' + (aisle < 0.6 ? 'var(--warn)' : 'var(--fg)') + '">' + (aisle < 0 ? '겹침' : Math.round(aisle * 100) + 'cm') + '</b><span class="small muted">편하게 다니려면 60cm 이상</span></div>',
+      notes: notes.map(function (n) { return '<div class="notice ' + n[0] + '">' + n[1] + '</div>'; }).join('') };
+  }
+  function viewRoom() {
+    var m = roomModel();
+    return '<div class="stack" style="gap:22px">' + backLink('#timeline', '타임라인으로 돌아가기') +
+      '<section class="stack" style="gap:8px"><h1 class="page-title">이 방에 내 짐이 들어갈까?</h1><p class="muted" style="font-size:16px">집 보러 가서 잰 치수를 넣으면, 가구를 놓았을 때 어떤 느낌인지 미리 볼 수 있어요.</p></section>' +
+      '<div class="row"><aside class="col-side"><section class="card stack" style="gap:16px"><h2>방 치수</h2>' +
+      '<div class="stack" style="gap:6px"><div class="between"><label for="f-w" class="muted">가로</label><b id="w-val" style="font-size:18px">' + S.w.toFixed(1) + 'm</b></div><input id="f-w" type="range" min="2.4" max="5" step="0.1" value="' + S.w + '" data-room="w"></div>' +
+      '<div class="stack" style="gap:6px"><div class="between"><label for="f-d" class="muted">세로</label><b id="d-val" style="font-size:18px">' + S.d.toFixed(1) + 'm</b></div><input id="f-d" type="range" min="2.8" max="6" step="0.1" value="' + S.d + '" data-room="d"></div>' +
+      '<span class="small muted">천장 높이 2.3m · 창문은 안쪽 벽, 현관문은 왼쪽 벽 기준</span></section>' +
+      '<section class="card stack" style="gap:12px"><h2>침대</h2><div style="display:flex;gap:8px">' + BEDS.map(function (b) { return '<button type="button" class="bed-opt" data-act="bed" data-v="' + b.k + '" aria-pressed="' + (S.bed === b.k) + '"><b>' + b.label + '</b><span class="small muted">' + b.sub + '</span></button>'; }).join('') + '</div></section>' +
+      '<section class="card" style="padding:14px 24px"><h2 style="margin:6px 0">가구</h2>' + [['desk', '책상', '120×60'], ['wardrobe', '옷장', '90×60'], ['fridge', '냉장고', '60×65']].map(function (f) { return '<label class="switch-row" style="border-top:1px solid var(--line);min-height:52px"><span>' + f[1] + ' <span class="small muted">' + f[2] + '</span></span><input type="checkbox" data-act="furn" data-v="' + f[0] + '"' + (S[f[0]] ? ' checked' : '') + '></label>'; }).join('') + '</section></aside>' +
+      '<section class="col-main" style="gap:14px" aria-label="방 미리보기"><div class="card stack" style="padding:14px;gap:12px"><div class="between"><div class="seg" role="group" aria-label="보기 방식"><button type="button" data-act="view" data-v="3d" aria-pressed="' + (S.view === '3d') + '">3D</button><button type="button" data-act="view" data-v="plan" aria-pressed="' + (S.view === 'plan') + '">평면도</button></div>' +
+      '<div style="display:flex;gap:6px"><button type="button" class="icon-btn" data-act="rot" data-v="-15" aria-label="왼쪽으로 돌리기"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/></svg></button><button type="button" class="icon-btn" data-act="rot" data-v="15" aria-label="오른쪽으로 돌리기"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v4h-4"/></svg></button></div></div>' +
+      '<div class="viewport" id="room-view" role="img" aria-label="' + m.label + '">' + m.scene + '<span class="small" style="position:absolute;left:14px;bottom:12px;background:var(--surface);color:var(--sub);border-radius:6px;padding:4px 8px">바닥 격자 한 칸 = 50cm</span></div></div>' +
+      '<div class="row" style="gap:12px" id="room-stats">' + m.stats + '</div><div id="room-notes" class="stack" style="gap:10px">' + m.notes + '</div>' +
+      '<p class="small muted">입력한 치수로 그린 참고용 그림이에요. 기둥, 보일러실, 붙박이 옵션은 반영되지 않아서 실제 방과 다를 수 있어요.</p></section></div></div>';
+  }
+  function updateRoom() {
+    var m = roomModel(), v = document.getElementById('room-view');
+    if (!v) return;
+    v.querySelector('.scene').outerHTML = m.scene; v.setAttribute('aria-label', m.label);
+    document.getElementById('room-stats').innerHTML = m.stats; document.getElementById('room-notes').innerHTML = m.notes;
+    document.getElementById('w-val').textContent = S.w.toFixed(1) + 'm'; document.getElementById('d-val').textContent = S.d.toFixed(1) + 'm';
+  }
+
+  function viewAdmin() {
+    var rows = [['대상 연령', '만 19 ~ 39세'], ['전입 조건', '서울 전입 또는 서울 내 이사', '타 시도에서 서울로 전입'], ['소득 기준', '기준 중위소득 150% 이하'], ['거래금액 상한', '임차보증금 2억 원 이하', '보증금 및 월세 환산액 기준'], ['지원액', '실비, 1인 최대 40만 원'], ['신청 기간', '예산 소진 시까지 (선착순)'], ['제출 서류', '계약서, 중개보수·이사비 영수증, 등본'], ['접수처', '서울주거포털 온라인']];
+    var status = S.approved === 'ok' ? '<div class="notice ok">승인했어요. 오늘(' + ymd(today) + ') 기준으로 이용자 결과·타임라인에 반영돼요.</div>' : S.approved === 'no' ? '<div class="notice warn">' + IC.alert + '<span>반려했어요. 수집 담당자에게 원문 재확인을 요청했어요.</span></div>' : '<div class="notice info">승인 전에는 이용자 화면에 반영되지 않아요. 원문과 나란히 대조한 뒤 승인해 주세요.</div>';
+    return '<div class="stack" style="gap:18px"><div class="between"><div class="stack" style="gap:6px"><span class="small muted">관리자 · 공고 검수 › 청년 부동산 중개보수·이사비 지원</span><div class="row" style="gap:10px;align-items:center"><h1 style="font-size:24px;font-weight:800">2026년 청년 부동산 중개보수 및 이사비 지원 공고</h1><span class="tag ' + (S.approved === 'ok' ? 'ok' : S.approved === 'no' ? 'bad' : 'warn') + '">' + (S.approved === 'ok' ? '승인됨' : S.approved === 'no' ? '반려됨' : '검수 대기') + '</span></div></div>' +
+      '<div class="row" style="gap:8px"><button type="button" class="btn btn-line btn-sm" data-act="approve" data-v="no">반려</button><button type="button" class="btn btn-line btn-sm" data-act="toast" data-v="임시 저장했어요.">임시 저장</button><button type="button" class="btn btn-sm" data-act="approve" data-v="ok">승인하고 반영</button></div></div>' +
+      '<div class="row small muted" style="gap:6px 22px"><span>원문 <b style="color:var(--fg)">서울주거포털 게시 · HWP</b></span><span>수집 <b style="color:var(--fg)">' + BASIS + ' 09:12</b></span><span>자동 추출 <b style="color:var(--fg)">8개 항목</b></span><span>지난 공고와 다른 항목 <b style="color:var(--warn)">2개</b></span></div>' + status +
+      '<div class="admin-shell"><section class="card source-text" aria-label="공고 원문"><div class="between" style="margin-bottom:12px"><b>공고 원문</b><span class="tag">예시 원문</span></div>' +
+      '<p style="text-align:center"><b>서울특별시 공고</b><br><b>2026년 청년 부동산 중개보수 및 이사비 지원 사업 공고</b></p><p style="margin-top:12px">청년의 주거 이동에 따른 경제적 부담을 덜기 위하여 부동산 중개보수 및 이사비를 다음과 같이 지원합니다.</p>' +
+      '<p style="margin-top:12px"><b>1. 지원 대상</b><br>가. <mark>공고일 현재 만 19세 이상 39세 이하</mark> 무주택 청년으로서<br>나. <mark class="chg">서울시로 전입하였거나 서울시 내에서 이사한 자</mark><br>다. <mark>기준 중위소득 150% 이하</mark>인 자</p>' +
+      '<p style="margin-top:12px"><b>2. 대상 주택</b><br><mark class="chg">임차보증금 2억 원 이하</mark>인 주택(전세·월세)</p><p style="margin-top:12px"><b>3. 지원 내용</b><br>부동산 중개보수 및 이사비 실비, <mark>1인 최대 40만 원</mark></p>' +
+      '<p style="margin-top:12px"><b>4. 신청 기간 및 방법</b><br><mark>예산 소진 시까지</mark> 선착순, <mark>서울주거포털 온라인 신청</mark></p><p style="margin-top:12px"><b>5. 제출 서류</b><br><mark>임대차계약서, 중개보수 영수증, 이사비 영수증, 주민등록등본</mark></p></section>' +
+      '<section class="card" style="flex:1 1 480px;min-width:0;padding:0;overflow:hidden" aria-label="자동 추출 항목"><div class="between" style="padding:14px 20px;border-bottom:1px solid var(--line)"><b>AI 자동 추출 항목</b><span class="small muted">수정하면 저장 시 반영돼요</span></div><div class="tbl-wrap"><table><thead><tr><th scope="col" style="padding-left:20px">항목</th><th scope="col">값</th><th scope="col" style="padding-right:20px">비교</th></tr></thead><tbody>' +
+      rows.map(function (r, i) { return '<tr' + (r[2] ? ' class="changed"' : '') + '><th scope="row" style="padding-left:20px;white-space:nowrap">' + r[0] + '</th><td><input id="adm-' + i + '" aria-label="' + r[0] + '" value="' + r[1] + '">' + (r[2] ? '<div class="small muted" style="margin-top:4px">지난 공고: <s>' + r[2] + '</s></div>' : '') + '</td><td style="padding-right:20px;font-weight:' + (r[2] ? 700 : 400) + ';color:' + (r[2] ? 'var(--warn)' : 'var(--muted)') + '">' + (r[2] ? '변경' : '동일') + '</td></tr>'; }).join('') +
+      '</tbody></table></div></section></div><p class="small muted">시연용 예시 공고와 예시 변경 이력이에요. 실제 운영에서는 수집한 공고 원문이 왼쪽에 표시돼요.</p></div>';
+  }
+
+  // ---------- router ----------
+  var ROUTES = { home: viewHome, input: viewInput, result: viewResult, timeline: viewTimeline, 'detail-rent': function () { return viewDetail('rent'); }, 'detail-move': function () { return viewDetail('move'); }, docs: viewDocs, room: viewRoom, admin: viewAdmin };
+  var lastRoute = '';
+  function route() { var h = (location.hash || '').slice(1); return ROUTES[h] ? h : (h.indexOf('stage-') === 0 || h === 'alert' ? 'timeline' : 'home'); }
+  function render(keepScroll) {
+    var r = route(), active = document.activeElement && document.activeElement.id, y = window.scrollY;
+    app.innerHTML = ROUTES[r]();
+    document.querySelectorAll('[data-nav]').forEach(function (a) { var on = a.dataset.nav === r || (a.dataset.nav === 'result' && r.indexOf('detail') === 0); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    if (r === 'input') fillInputSide();
+    if (keepScroll) { window.scrollTo(0, y); if (active) { var el = document.getElementById(active); if (el) el.focus({ preventScroll: true }); } }
+    else if (r !== lastRoute) { var h = location.hash.slice(1); var target = h && document.getElementById(h); if (target && r === 'timeline' && h !== 'timeline') target.scrollIntoView(); else window.scrollTo(0, 0); }
+    lastRoute = r;
+  }
+  window.addEventListener('hashchange', function () { var h = location.hash.slice(1); if (route() === lastRoute && h && document.getElementById(h)) { document.getElementById(h).scrollIntoView({ behavior: 'smooth' }); return; } render(false); });
+
+  var toastEl = document.getElementById('toast'), toastT;
+  function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { toastEl.hidden = true; }, 2600); }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]'); if (!b) return;
+    var act = b.dataset.act, v = b.dataset.v;
+    if (act === 'next') { S.step = Math.min(4, S.step + 1); save(); render(false); }
+    else if (act === 'prev') { S.step = Math.max(1, S.step - 1); save(); render(false); }
+    else if (act === 'gu') { S.gu = v; save(); render(true); }
+    else if (act === 'reset') { var keep = S.step; S = JSON.parse(JSON.stringify(DEFAULT)); S.step = keep; save(); render(true); toast('예시 값으로 되돌렸어요.'); }
+    else if (act === 'doc') { S.doc = v; save(); render(true); }
+    else if (act === 'bed') { S.bed = v; save(); document.querySelectorAll('.bed-opt').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v); }); updateRoom(); }
+    else if (act === 'view') { S.view = v; save(); document.querySelectorAll('.seg button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v); }); updateRoom(); }
+    else if (act === 'rot') { S.view = '3d'; S.rz = Math.max(10, Math.min(80, S.rz + +v)); save(); document.querySelectorAll('.seg button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === '3d'); }); updateRoom(); }
+    else if (act === 'approve') { S.approved = v; save(); render(true); toast(v === 'ok' ? '승인했어요.' : '반려했어요.'); }
+    else if (act === 'toast') { toast(v); }
+  });
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.dataset.act === 'task') { S.done[t.dataset.id] = t.checked; save(); render(true); }
+    else if (t.dataset.act === 'furn') { S[t.dataset.v] = t.checked; save(); updateRoom(); }
+    else if (t.dataset.act === 'file' && t.files && t.files[0]) { S.extraDocs.push(t.files[0].name); save(); render(true); toast('추가했어요. 시연 버전에서는 내용 확인을 하지 않아요.'); }
+    else if (t.dataset.field) { setField(t); if (t.dataset.field === 'gu') render(true); }
+  });
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.dataset.room) { S[t.dataset.room] = parseFloat(t.value); save(); updateRoom(); }
+    else if (t.dataset.field && t.type !== 'radio') { setField(t); }
+  });
+  function setField(t) {
+    var k = t.dataset.field, v = t.value;
+    if (t.hasAttribute('data-num')) { var n = parseInt(String(v).replace(/[^0-9]/g, ''), 10); v = isNaN(n) ? 0 : n; }
+    S[k] = v; save(); fillInputSide();
+  }
+  document.addEventListener('submit', function (e) { if (e.target.dataset.form === 'alert') { e.preventDefault(); toast('알림을 설정했어요. 시연 버전에서는 실제 알림을 보내지 않아요.'); } });
+
+  render(false);
+})();
+</script>
+
+</body>
+</html>
