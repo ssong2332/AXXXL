@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
 <script src="ics.js" defer></script>
+<script src="places-core.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5B4CDB">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -342,6 +343,9 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 .lmap { width: 100%; height: 100% }
 .lmap.picking, .lmap.picking .leaflet-grab { cursor: crosshair }
 .leaflet-container { font-family: var(--font) }
+.lmap .leaflet-tile-pane { filter: saturate(.55) contrast(.95) brightness(1.03) }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lmap .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9) } }
+:root[data-theme="dark"] .lmap .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9) }
 .lmk { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--surface); color: var(--brand-text); box-shadow: 0 0 0 2px var(--brand), 0 2px 6px rgba(0,0,0,.18) }
 .lmk.on { background: var(--brand); color: #fff; transform: scale(1.18) }
 .lhome { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--surface); box-shadow: 0 0 0 5px rgba(91,76,219,.25) }
@@ -362,6 +366,7 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 .dot.my { background: var(--brand) } .dot.money { background: var(--ink-3) }
 .wk.today .dot { background: #fff }
 .k-ic.my { background: var(--brand-tint); color: var(--brand-text) }
+
 
 #toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px; background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 600 }
 @media (max-width: 899px) { #toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)) } }
@@ -465,6 +470,90 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
 .chat { display: flex; flex-direction: column; gap: 12px }
 .date-line { display: flex; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--hair) }
 .date-line:first-child { border-top: 0; padding-top: 0 }
+/* ============================================================
+   다듬기 (AI 티 빼기)
+   1 색: 보라·그라데이션 제거 → 먹색 버튼 + 짙은 청록 강조 하나, 기한만 주황
+   2 바탕: 차가운 라벤더 → 따뜻한 종이색
+   3 모양: 둥근 정도 20 → 12, 알약 칩 → 각진 칩
+   4 아이콘: 파스텔 네모 → 선 테두리, 반짝이 아이콘 제거
+   5 배지: 상태(기한·완료)에만, 나머지는 글자로
+   6 장식: 일러스트·원형 장식 제거
+   7 밀도: 요약 카드 3개 → 한 줄 띠
+   8 글자: 제목은 더 크고 촘촘하게, 숫자는 고정폭
+   9 지도: 표식을 작고 차분하게
+   ============================================================ */
+:root {
+  --bg: #F7F7F4; --surface: #FFFFFF; --fill: #F0F0EB; --fill-2: #E5E5DF;
+  --ink: #17171A; --ink-2: #44444A; --ink-3: #74747B;
+  --line: #E2E2DC; --hair: rgba(23,23,26,0.08);
+  --brand: #17171A; --brand-ink: #FFFFFF; --brand-tint: #E6F1EC; --brand-text: #0D6650; --brand-deep: #0D6650;
+  --due: #C2410C; --due-tint: #FCEFE6; --due-text: #A6380B;
+  --focus: #0D6650; --r-card: 12px; --r-in: 10px; --r-btn: 9px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111112; --surface: #1A1A1C; --fill: #232326; --fill-2: #2D2D31; --ink: #EDEDEA; --ink-2: #C4C4C0; --ink-3: #95958F; --line: #2E2E32; --hair: rgba(255,255,255,0.08);
+  --brand: #EDEDEA; --brand-ink: #111112; --brand-tint: #14302A; --brand-text: #6FCDB2; --brand-deep: #6FCDB2; --due: #F08A4B; --due-tint: #36231A; --due-text: #F5A673; --focus: #6FCDB2 } }
+:root[data-theme="dark"] {
+  --bg: #111112; --surface: #1A1A1C; --fill: #232326; --fill-2: #2D2D31; --ink: #EDEDEA; --ink-2: #C4C4C0; --ink-3: #95958F; --line: #2E2E32; --hair: rgba(255,255,255,0.08);
+  --brand: #EDEDEA; --brand-ink: #111112; --brand-tint: #14302A; --brand-text: #6FCDB2; --brand-deep: #6FCDB2; --due: #F08A4B; --due-tint: #36231A; --due-text: #F5A673; --focus: #6FCDB2 }
+body { letter-spacing: -0.008em }
+.card { box-shadow: none }
+.page-head h1, .hero-banner h1 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.18 }
+.card-h h2 { font-size: 16px; font-weight: 750; letter-spacing: -0.03em }
+.brand-mark { background: var(--ink); color: var(--surface); border-radius: 9px }
+.g-label { background: none; color: var(--ink-3); padding: 0; margin: 18px 0 6px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em }
+.nav[aria-current="page"] { background: var(--fill); color: var(--ink) }
+.nav[aria-current="page"] svg { color: var(--brand-text) }
+.ptile, .prog-ic, .k-ic { background: transparent !important; border: 1px solid var(--line); color: var(--ink-2) !important }
+.k-ic.task { border-color: var(--due-tint); color: var(--due-text) !important; background: var(--due-tint) !important }
+.k-ic.mark { background: var(--ink) !important; color: var(--surface) !important; border-color: var(--ink) }
+.tile .ptile { background: var(--surface) !important }
+.tile { background: var(--fill); border-radius: var(--r-in) }
+.tile:hover { background: var(--fill-2) }
+.badge { border-radius: 6px; font-weight: 650 }
+.badge.brand { background: transparent; color: var(--brand-text); padding: 0 }
+.badge.solid { background: var(--ink); color: var(--surface) }
+.cat, .chip { border-radius: 8px }
+.cat[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface) }
+.chip[aria-pressed="true"] { background: var(--fill); border-color: var(--ink); color: var(--ink) }
+.search input { border-radius: 10px }
+.hero-banner { background: none; border: 0; padding: 4px 2px 6px; min-height: 0 }
+.hero-banner .art { display: none }
+.dday { background: var(--ink); color: var(--surface) }
+.dday::after { display: none }
+.dday .edit { color: var(--surface) }
+.now-card, .focus-card, .stage.now .card { border: 1px solid var(--ink) }
+.minis { gap: 0; background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r-card); overflow: hidden }
+.minis .mini { border: 0; border-radius: 0; border-left: 1px solid var(--hair) }
+.minis .mini:first-child { border-left: 0 }
+.minis .mini:hover { background: var(--fill) }
+@media (max-width: 899px) { .minis { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-auto-columns: auto; overflow: visible } .minis .mini { border-left: 0; border-top: 1px solid var(--hair) } .minis .mini:first-child { border-top: 0 } }
+.street { background: var(--surface) !important; color: var(--ink); border: 1px solid var(--hair); text-align: left; justify-content: flex-start; min-height: 0 }
+.street-in { align-items: flex-start }
+.street .btn { background: var(--ink); color: var(--surface) } .street .btn.ghost { background: var(--fill); color: var(--ink) }
+.street .row { justify-content: flex-start !important }
+.banner { background: var(--fill); color: var(--ink-2) }
+.banner b, .banner a { color: var(--ink) }
+.banner.due { background: var(--due-tint); color: var(--due-text) }
+.bubble-q { background: var(--ink); color: var(--surface) }
+.journey li.now .bar { background: linear-gradient(90deg, var(--brand-text) 50%, var(--fill-2) 50%) }
+.journey li.done .bar { background: var(--brand-text) }
+.journey li.now b { color: var(--brand-text) }
+.progress-line span { background: var(--brand-text) }
+.wk.today { background: var(--ink); color: var(--surface) } .wk.today .muted, .wk.today .wk-t { color: var(--surface) } .wk.today .dot { background: var(--surface) }
+.lmk { width: 24px; height: 24px; background: var(--surface); color: var(--ink-2); box-shadow: 0 0 0 1.5px var(--ink-3), 0 1px 3px rgba(0,0,0,.15) }
+.lmk svg.i { width: 13px; height: 13px }
+.lmk.on { background: var(--ink); color: var(--surface); box-shadow: 0 0 0 2px var(--surface), 0 2px 6px rgba(0,0,0,.25); transform: scale(1.25) }
+.lhome { background: var(--brand-text); color: #fff; box-shadow: 0 0 0 4px rgba(13,102,80,.18) }
+.mk .b { stroke: var(--ink-3) } .mk .ico * { stroke: var(--ink-2) } .mk.on .b { fill: var(--ink) }
+.dot.my { background: var(--brand-text) }
+.day[aria-pressed="true"] { background: var(--fill-2); box-shadow: inset 0 0 0 1.5px var(--ink) }
+.day.today .n { background: var(--brand-text); color: #fff }
+.stage.done .node { background: var(--brand-text); border-color: var(--brand-text) }
+.stage.now .node { border-color: var(--ink); box-shadow: 0 0 0 4px var(--fill-2) }
+.sw:checked { background: var(--brand-text) }
+.chk:checked { background: var(--ink); border-color: var(--ink) }
+
 </style>
 </head>
 <body>
@@ -478,7 +567,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     </div>
   </aside>
   <div>
-    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><b>자취 계약 내비</b></a><span class="row" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="spark"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
+    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><b>자취 계약 내비</b></a><span class="row" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
     <main class="main" id="app" tabindex="-1"></main>
   </div>
   <nav class="tabbar" id="tab-nav" aria-label="주요 메뉴"></nav>
@@ -526,6 +615,7 @@ document.addEventListener('DOMContentLoaded', function () {
     x: '<path d="M6 6l12 12M18 6 6 18"/>',
     copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     send: '<path d="M4 12 20 4l-6 16-2.5-6.5Z"/><path d="m11.5 13.5 3-3"/>',
+    compass: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/>',
     pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.4"/>'
   };
   function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICON[n] + '</svg>'; }
@@ -878,21 +968,42 @@ document.addEventListener('DOMContentLoaded', function () {
   function findPlace(id) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
   function nearest(cat, re) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].cat === cat && (!re || re.test(l[i].sub) || re.test(l[i].name))) return l[i]; return null; }
   function loadPlaces(force) {
-    var h = home(), key = placeKey(h);
+    var h = home(), key = placeKey(h), c = { lat: +h.lat.toFixed(3), lng: +h.lng.toFixed(3) };
     if (!force && DATA.key === key && DATA.status !== 'idle') return; // 실패했으면 '다시 시도'를 눌렀을 때만 다시 부른다
     DATA = { key: key, status: 'loading', items: [], sources: [], fetchedAt: '', notes: [], error: '' };
-    if (!force) { try { var c = JSON.parse(localStorage.getItem('jachwi-places') || 'null'); if (c && c.key === key && Date.now() - c.at < 3 * 864e5) { applyData(c.data); return; } } catch (e) {} }
-    fetch(API + '/api/places?lat=' + h.lat.toFixed(3) + '&lng=' + h.lng.toFixed(3) + '&r=1000').then(function (r) { return r.json(); }).then(function (j) {
+    if (!force) { try { var cc = JSON.parse(localStorage.getItem('jachwi-places') || 'null'); if (cc && cc.key === key && Date.now() - cc.at < (cc.partial ? 6e5 : 3 * 864e5)) { applyData(cc.data); return; } } catch (e) {} }
+    var PL = window.JachwiPlaces;
+    // 서버가 못 받은 묶음은 이 브라우저가 Photon(OpenStreetMap)에 직접 물어본다 (한 번에 하나씩)
+    function direct(idxs) {
+      var items = [], failed = [];
+      if (!PL) return Promise.resolve({ items: items, failed: idxs });
+      return idxs.reduce(function (pr, i) { return pr.then(function () {
+        return fetch(PL.photonUrl(c, 1000, PL.GROUPS[i])).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(function (j) { items.push.apply(items, PL.fromPhoton(j.features)); }).catch(function () { failed.push(i); });
+      }); }, Promise.resolve()).then(function () { return { items: items, failed: failed }; });
+    }
+    function finishLoad(server, extra) {
       if (DATA.key !== key) return;
-      if (!j.ok) throw new Error(j.error || '');
-      applyData(j);
-      try { localStorage.setItem('jachwi-places', JSON.stringify({ key: key, at: Date.now(), data: j })); } catch (e) {}
+      var base = server && server.ok ? server.items : [], all = base.concat(extra ? extra.items : []);
+      if (!all.length) { DATA.status = 'error'; DATA.error = (server && server.error) || '주변 데이터를 불러오지 못했어요.'; render(true); return; }
+      var srcs = (server && server.ok ? server.sources : []).slice();
+      if (extra && extra.items.length && !srcs.some(function (x) { return /OpenStreetMap/.test(x.name); })) srcs.push({ name: 'OpenStreetMap 기여자 (Photon 검색)', url: 'https://www.openstreetmap.org/copyright', license: 'ODbL' });
+      var data = { items: PL ? PL.finish(all, c, 1000) : all, sources: srcs, fetchedAt: new Date().toISOString(), notes: (server && server.notes) || [] };
+      var partial = !!(extra && extra.failed.length) || !!(server && server.ok && !extra && (server.failedGroups || []).length);
+      applyData(data);
+      try { localStorage.setItem('jachwi-places', JSON.stringify({ key: key, at: Date.now(), partial: partial, data: data })); } catch (e) {}
       render(true);
-    }).catch(function (e) { if (DATA.key !== key) return; DATA.status = 'error'; DATA.error = (e && e.message) || ''; render(true); });
+    }
+    fetch(API + '/api/places?lat=' + c.lat + '&lng=' + c.lng + '&r=1000').then(function (r) { return r.json().catch(function () { return { ok: false }; }); }, function () { return { ok: false }; }).then(function (j) {
+      if (DATA.key !== key) return;
+      var miss = j.ok ? (j.failedGroups || []) : (PL ? PL.GROUPS.map(function (g, i) { return i; }) : []);
+      if (!miss.length) return finishLoad(j, null);
+      return direct(miss).then(function (extra) { finishLoad(j, extra); });
+    });
   }
   function applyData(j) { DATA.status = 'ok'; DATA.items = j.items || []; DATA.sources = j.sources || []; DATA.fetchedAt = j.fetchedAt || ''; DATA.notes = j.notes || []; PC.k = ''; }
   function dataBadge() {
-    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="badge brand" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">실제 데이터 · ' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : 'OpenStreetMap'; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>'; }
+    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="s12 muted" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : 'OpenStreetMap'; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>'; }
     if (DATA.status === 'loading') return '<span class="badge">주변 데이터 불러오는 중…</span>';
     if (DATA.status === 'error') return '<span class="badge due">실제 데이터를 못 불러왔어요' + (S.home ? '' : ' · 예시로 보여줘요') + '</span> <button type="button" class="btn ghost sm" data-act="reload">다시 시도</button>';
     return '<span class="badge due">시연용 예시 데이터</span>';
@@ -960,9 +1071,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!window.L) return null;
     if (LM.map) return LM.map;
     LM.el = document.createElement('div'); LM.el.className = 'lmap';
-    var dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
     LM.map = L.map(LM.el, { zoomControl: true, scrollWheelZoom: false, tap: false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (dark ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> 기여자 &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>' }).addTo(LM.map);
+    // OpenStreetMap 기본 지도 (키 없음, 출처 표시 필수)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> 기여자' }).addTo(LM.map);
     LM.layer = L.layerGroup().addTo(LM.map);
     LM.map.on('click', function (e) { if (S.pickHome) setHome(e.latlng.lat, e.latlng.lng, '지도에서 고른 위치', 'pick'); });
     return LM.map;
@@ -1043,7 +1154,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var d = add(start, i), de = evs.filter(function (e) { return +e.date === +d && !e.done && !e.paid; });
       cells += '<button type="button" class="wk' + (+d === +today ? ' today' : '') + '" data-act="weekday" data-v="' + iso(d) + '"><span class="s12 muted">' + WD[i] + '</span><b>' + d.getDate() + '</b><span class="dots">' + de.slice(0, 3).map(function (e) { return '<i class="dot ' + (e.kind === 'task' ? '' : e.kind === 'mark' ? 'mark' : e.kind === 'my' ? 'my' : 'money') + '"></i>'; }).join('') + '</span><span class="wk-t">' + (de[0] ? esc(de[0].title) : '') + '</span></button>';
     }
-    return '<section class="card c12"><div class="card-h"><h2>' + ic('cal', 'sm') + ' 이번 주 일정</h2><a class="more" href="#calendar">자취 캘린더' + ic('chev', 'sm') + '</a></div><div class="week">' + cells + '</div></section>';
+    return '<section class="card c12"><div class="card-h"><h2>이번 주</h2><a class="more" href="#calendar">자취 캘린더' + ic('chev', 'sm') + '</a></div><div class="week">' + cells + '</div></section>';
   }
 
   // ---------- 홈 ----------
@@ -1066,12 +1177,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var explore = '<section class="card c8"><div class="split" style="flex-wrap:wrap;margin-bottom:12px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="ptile" style="width:44px;height:44px">' + ic('pin') + '</span><div><h2 style="font-size:19px;font-weight:800">우리 동네 탐색하기</h2><p class="s13 muted">' + esc(home().label) + '</p></div></div><a class="more s13" href="#map" style="font-weight:700">크게 보기' + ic('chev', 'sm') + '</a></div>' +
       '<div class="split" style="margin-bottom:10px;flex-wrap:wrap">' + catChips(mc, 'homecat', ['food', 'cafe', 'study', 'gym', 'park', 'life', 'medical']) + '</div><div class="row" style="margin-bottom:10px">' + dataBadge() + (S.home ? '' : ' <a class="s13" href="#map">내 집 위치 정하기</a>') + '</div>' + placeMap(mc, S.mapSel, 360, false) + '<div style="margin-top:8px">' + sourceNote() + '</div></section>';
     var near = [nearest('public', /행정복지센터|주민|관공서/), nearest('safety'), nearest('park'), nearest('study', /도서관/)].filter(Boolean);
-    var nearCard = '<section class="card c4"><div class="card-h"><h2>근처에서 이런 곳도 있어요</h2></div>' + (near.length ? near.map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : '주변 공공시설을 찾지 못했어요.') + '</p>') + '</section>';
-    var week = '<section class="card c8"><div class="card-h"><h2>' + ic('spark', 'sm') + ' 이번 주, 한 번 가 볼까요?</h2><a class="more" href="#recommend">주변 추천' + ic('chev', 'sm') + '</a></div><div class="tiles">' +
+    var nearCard = '<section class="card c4"><div class="card-h"><h2>가까운 공공시설</h2></div>' + (near.length ? near.map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : '주변 공공시설을 찾지 못했어요.') + '</p>') + '</section>';
+    var week = '<section class="card c8"><div class="card-h"><h2>이번 주에 가 볼 곳</h2><a class="more" href="#recommend">주변 추천' + ic('chev', 'sm') + '</a></div><div class="tiles">' +
       REC.slice(0, 5).map(function (r) { var n = nearest(r[0]); return '<button type="button" class="tile" data-act="rec" data-v="' + r[0] + '"><span class="ptile">' + ic(CATS[r[0]][1]) + '</span><b>' + r[1] + '</b><span class="s12 muted">' + (n ? '가장 가까운 곳 ' + n.min + '분' : r[2]) + '</span></button>'; }).join('') + '</div></section>';
     var cd = CHAL.filter(chalDone).length;
-    var chal = '<section class="card c4"><div class="card-h"><h2>입주 한 달 챌린지</h2><span class="s13 muted">' + cd + ' / ' + CHAL.length + ' 완료</span></div><div class="progress-line" style="margin-bottom:8px"><span style="width:' + Math.round(cd / CHAL.length * 100) + '%"></span></div>' +
-      CHAL.map(function (c) { var on = chalDone(c); return '<label class="row" style="flex-wrap:nowrap;min-height:40px;cursor:pointer"><input class="chk" type="checkbox" data-act="chal" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><span' + (on ? ' class="muted" style="text-decoration:line-through"' : '') + '>' + c[2] + '</span></label>'; }).join('') + '<p class="s12 muted" style="margin-top:6px">지도에서 그 분류의 장소를 저장해도 완료돼요.</p></section>';
+    var chal = '<section class="card c4"><div class="card-h"><h2>입주 첫 달 체크리스트</h2><span class="s13 muted">' + cd + ' / ' + CHAL.length + ' 완료</span></div><div class="progress-line" style="margin-bottom:8px"><span style="width:' + Math.round(cd / CHAL.length * 100) + '%"></span></div>' +
+      CHAL.map(function (c) { var on = chalDone(c); return '<label class="row" style="flex-wrap:nowrap;min-height:40px;cursor:pointer"><input class="chk" type="checkbox" data-act="chal" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><span' + (on ? ' class="muted" style="text-decoration:line-through"' : '') + '>' + c[2] + '</span></label>'; }).join('') + '<p class="s12 muted" style="margin-top:6px">그 분류의 장소를 저장하면 자동으로 체크돼요.</p></section>';
     return '<div class="grid">' + banner + '<div class="minis c12">' + todo + pay + sup + '</div>' + tip + weekStrip(R, T) + explore + nearCard + week + chal + '</div>';
   }
 
@@ -1112,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var chk = S.areaChk || {}, cdone = AREA_CHECK.filter(function (c) { return chk[c[0]]; }).length;
     return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · ' + esc(home().label) + '</p><h1>생활 인프라</h1></div><div class="row">' + dataBadge() + '</div></div>' +
       '<div class="grid"><section class="card c7"><div class="card-h"><h2>꼭 필요한 곳까지</h2><span class="s12 muted">도보 = 직선거리 ÷ 분당 67m</span></div>' + rows + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
-      '<aside class="c5 stack"><section class="card stack"><div class="card-h" style="margin:0"><h2>주변 환경 요약</h2><span class="badge brand">데이터로 만든 요약</span></div><p>' + infraSummary() + '</p><p class="s12 muted">좋은 동네·나쁜 동네처럼 판단하거나 점수를 매기지 않아요. 거리와 시설 수만 알려드려요.</p></section>' +
+      '<aside class="c5 stack"><section class="card stack"><div class="card-h" style="margin:0"><h2>주변 환경 요약</h2><span class="s12 muted">데이터로 만든 요약</span></div><p>' + infraSummary() + '</p><p class="s12 muted">좋은 동네·나쁜 동네처럼 판단하거나 점수를 매기지 않아요. 거리와 시설 수만 알려드려요.</p></section>' +
       '<section class="card"><div class="card-h"><h2>현장에서 꼭 볼 것</h2><span class="badge">' + cdone + ' / ' + AREA_CHECK.length + '</span></div>' + AREA_CHECK.map(function (c) { var on = !!chk[c[0]]; return '<div class="task' + (on ? ' done' : '') + '"><input class="chk" type="checkbox" id="ac-' + c[0] + '" data-act="areachk" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><div class="body"><label for="ac-' + c[0] + '">' + c[1] + '</label><p class="d">' + c[2] + '</p></div></div>'; }).join('') + '</section></aside></div>';
   }
 
@@ -1332,9 +1443,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var GROUPS = [
     { k: 'home', label: '', def: 'home', tab: ['홈', 'home'], items: [['home', '홈', 'home']] },
     { k: 'house', label: '내 주거 관리', def: 'timeline', tab: ['내 주거', 'doc'], items: [['contract', '내 계약', 'doc'], ['timeline', '타임라인', 'route'], ['docs', '서류함', 'folder'], ['moveout', '퇴거 준비', 'box']] },
-    { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'spark'], ['infra', '생활 인프라', 'grid']] },
+    { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'compass'], ['infra', '생활 인프라', 'grid']] },
     { k: 'life', label: '생활 관리', def: 'calendar', tab: ['생활', 'chart'], items: [['spend', '지출 관리', 'chart'], ['calendar', '자취 캘린더', 'cal'], ['condition', '집 상태 기록', 'camera']] },
-    { k: 'help', label: '지원 & 상담', def: 'support', tab: ['지원', 'gift'], items: [['support', '지원사업', 'gift'], ['coach', 'AI 자취 코치', 'spark']] }
+    { k: 'help', label: '지원 & 상담', def: 'support', tab: ['지원', 'gift'], items: [['support', '지원사업', 'gift'], ['coach', 'AI 자취 코치', 'chat']] }
   ];
   var ROUTES = { home: viewHome, contract: viewContract, timeline: viewTimeline, docs: viewDocs, moveout: viewMoveout, map: viewMap, recommend: viewRecommend, infra: viewInfra, spend: viewSpend, calendar: viewCalendar, condition: viewCondition, support: viewSupport, coach: viewCoach };
   function groupOf(r) { return GROUPS.filter(function (g) { return g.items.some(function (i) { return i[0] === r; }); })[0]; }
@@ -1352,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var R = evaluate(), T = buildTimeline(R), n = openTasks(R, T).dueNow.length;
     var cnt = function (k) { return k === 'timeline' && n ? '<span class="cnt" aria-label="밀린 할 일 ' + n + '개">' + n + '</span>' : ''; };
     document.getElementById('side-nav').innerHTML = GROUPS.map(function (gr) {
-      return (gr.label ? '<span class="g-label">' + gr.label + (gr.core ? '<span class="core">핵심</span>' : '') + '</span>' : '') + gr.items.map(function (x) { return '<a class="nav" href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + ic(x[2]) + x[1] + cnt(x[0]) + '</a>'; }).join('');
+      return (gr.label ? '<span class="g-label">' + gr.label + '' + '</span>' : '') + gr.items.map(function (x) { return '<a class="nav" href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + ic(x[2]) + x[1] + cnt(x[0]) + '</a>'; }).join('');
     }).join('');
     document.getElementById('tab-nav').innerHTML = GROUPS.map(function (gr) { return '<a class="tab" href="#' + gr.def + '"' + (gr === g ? ' aria-current="page"' : '') + '>' + ic(gr.tab[1]) + gr.tab[0] + (gr.k === 'house' ? cnt('timeline') : '') + '</a>'; }).join('');
     var sub = g.items.length > 1 ? '<nav class="subnav" aria-label="' + g.label + '">' + g.items.map(function (x) { return '<a href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '';

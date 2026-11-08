@@ -3,42 +3,14 @@
 //  - 기본: OpenStreetMap 데이터 (Photon 검색 API, komoot) · 키 필요 없음 · ODbL
 //  - 선택: 공공데이터포털 소상공인시장진흥공단 상가(상권)정보 · 환경변수 DATA_GO_KR_KEY 가 있을 때만
 // 위치는 약 100m 단위로 흐려서 받고, 아무것도 저장하지 않는다.
+// 공개 서버가 느리거나 막혀도 20초 안에 받은 만큼만 돌려주고, 브라우저가 나머지를 직접 시도한다.
 'use strict';
 
-const UA = 'jachwi-navi/0.2 (+https://jachwi-navi.vercel.app; public-service demo)';
-
-const SUB = {
-  cafe: '카페', restaurant: '식당', fast_food: '분식·패스트푸드', food_court: '푸드코트', pharmacy: '약국', hospital: '병원', clinic: '의원', doctors: '의원', dentist: '치과',
-  library: '도서관', police: '경찰', townhall: '행정복지센터·관공서', community_centre: '주민 시설', post_office: '우체국', convenience: '편의점', supermarket: '마트',
-  laundry: '빨래방·세탁소', dry_cleaning: '세탁소', variety_store: '생활용품점', department_store: '백화점', mall: '쇼핑몰', marketplace: '시장', fitness_centre: '헬스장',
-  sports_centre: '체육시설', swimming_pool: '수영장', park: '공원', bus_stop: '버스정류장', station: '역', studycafe: '스터디카페'
-};
-
-function osmCat(t) {
-  const a = t.amenity, s = t.shop, l = t.leisure, name = t['name:ko'] || t.name || '';
-  if (a === 'cafe') return /스터디|study/i.test(name) ? ['study', 'studycafe'] : ['cafe', 'cafe'];
-  if (a === 'restaurant' || a === 'fast_food' || a === 'food_court') return ['food', a];
-  if (['pharmacy', 'hospital', 'clinic', 'doctors', 'dentist'].includes(a)) return ['medical', a];
-  if (a === 'library') return ['study', a];
-  if (a === 'police') return ['safety', a];
-  if (['townhall', 'community_centre', 'post_office'].includes(a)) return ['public', a];
-  if (a === 'marketplace') return ['life', a];
-  if (['convenience', 'supermarket', 'laundry', 'dry_cleaning', 'variety_store', 'department_store', 'mall'].includes(s)) return ['life', s];
-  if (['fitness_centre', 'sports_centre', 'swimming_pool'].includes(l)) return ['gym', l];
-  if (l === 'park') return ['park', 'park'];
-  if (t.highway === 'bus_stop') return ['transit', 'bus_stop'];
-  if (t.railway === 'station' || t.station === 'subway' || (t.public_transport === 'station' && t.railway)) return ['transit', 'station'];
-  return null;
-}
-
-function dist(a, b) {
-  const R = 6371000, toR = Math.PI / 180, dLat = (b.lat - a.lat) * toR, dLng = (b.lng - a.lng) * toR;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLng / 2) ** 2;
-  return Math.round(2 * R * Math.asin(Math.sqrt(h)));
-}
+const P = require('../places-core.js');
+const UA = 'jachwi-navi/0.3 (+https://jachwi-navi.vercel.app; public-service demo)';
 
 async function fetchJson(url, init, ms) {
-  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms || 15000);
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms || 8000);
   try {
     const r = await fetch(url, Object.assign({ signal: ctl.signal }, init));
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -46,40 +18,17 @@ async function fetchJson(url, init, ms) {
   } finally { clearTimeout(timer); }
 }
 
-// OpenStreetMap 데이터를 Photon(komoot) 역지오코딩으로 분류별로 가져온다.
-// (Overpass 공개 서버는 클라우드 서버에서 오는 요청을 막아서 쓰지 않는다)
-const GROUPS = [
-  ['amenity:restaurant', 'amenity:fast_food'],
-  ['amenity:cafe'],
-  ['amenity:pharmacy', 'amenity:hospital', 'amenity:clinic', 'amenity:doctors', 'amenity:dentist'],
-  ['shop:convenience', 'shop:supermarket', 'shop:laundry', 'shop:dry_cleaning', 'shop:variety_store', 'shop:department_store', 'shop:mall', 'amenity:marketplace'],
-  ['amenity:townhall', 'amenity:community_centre', 'amenity:post_office', 'amenity:police', 'amenity:library'],
-  ['leisure:park', 'leisure:fitness_centre', 'leisure:sports_centre', 'leisure:swimming_pool'],
-  ['railway:station', 'highway:bus_stop']
-];
-async function fromOSM(c, r) {
-  // 공개 서버에 부담을 주지 않도록 동시에 3개까지만, 실패하면 잠깐 쉬었다가 한 번 더
-  const one = async (g) => {
-    const url = 'https://photon.komoot.io/reverse?lat=' + c.lat + '&lon=' + c.lng + '&radius=' + (r / 1000) + '&limit=50&' + g.map((t) => 'osm_tag=' + encodeURIComponent(t)).join('&');
-    try { return await fetchJson(url, { headers: { 'User-Agent': UA } }, 8000); }
-    catch (e) { await new Promise((ok) => setTimeout(ok, 700)); return await fetchJson(url, { headers: { 'User-Agent': UA } }, 8000); }
-  };
-  const settled = new Array(GROUPS.length);
-  let next = 0;
-  await Promise.all([0, 1, 2].map(async () => { while (next < GROUPS.length) { const i = next++; try { settled[i] = { status: 'fulfilled', value: await one(GROUPS[i]) }; } catch (e) { settled[i] = { status: 'rejected', reason: e }; } } }));
-  settled.forEach((x, i) => { if (x.status === 'rejected') console.error('[places] photon group', GROUPS[i].join(','), x.reason && x.reason.message); });
-  const ok = settled.filter((x) => x.status === 'fulfilled');
-  if (!ok.length) throw new Error(settled.map((x) => x.reason && x.reason.message).join(' / '));
-  const out = [];
-  ok.forEach((x) => (x.value.features || []).forEach((f) => {
-    const pr = f.properties || {}, co = (f.geometry && f.geometry.coordinates) || [];
-    const t = { name: pr.name }; t[pr.osm_key] = pr.osm_value;
-    const cc = osmCat(t);
-    if (!cc || !pr.name || co.length < 2) return;
-    const addr = [pr.street, pr.housenumber].filter(Boolean).join(' ');
-    out.push({ id: 'osm-' + String(pr.osm_type || 'n').toLowerCase()[0] + pr.osm_id, src: 'osm', cat: cc[0], sub: SUB[cc[1]] || cc[1], name: String(pr.name).slice(0, 40), lat: +(+co[1]).toFixed(6), lng: +(+co[0]).toFixed(6), addr: addr.slice(0, 60), hours: '' });
-  }));
-  return out;
+async function fromOSM(c, r, deadline) {
+  const items = [], failed = [];
+  for (let i = 0; i < P.GROUPS.length; i++) { // 한 번에 하나씩 (공개 서버 예의)
+    const left = deadline - Date.now();
+    if (left < 2500) { failed.push(i); continue; }
+    try {
+      const j = await fetchJson(P.photonUrl(c, r, P.GROUPS[i]), { headers: { 'User-Agent': UA } }, Math.min(7000, left - 1000));
+      items.push.apply(items, P.fromPhoton(j.features));
+    } catch (e) { failed.push(i); console.error('[places] photon group', i, e && e.message); }
+  }
+  return { items, failed };
 }
 
 // 공공데이터포털 · 소상공인시장진흥공단_상가(상권)정보 · 반경 내 상가 조회 (키가 있을 때만)
@@ -100,7 +49,7 @@ function sbizCat(it) {
 async function fromSbiz(c, r, key) {
   const url = 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInRadius?serviceKey=' + encodeURIComponent(key) +
     '&pageNo=1&numOfRows=1000&radius=' + r + '&cx=' + c.lng + '&cy=' + c.lat + '&type=json';
-  const j = await fetchJson(url, { headers: { 'User-Agent': UA } }, 15000);
+  const j = await fetchJson(url, { headers: { 'User-Agent': UA } }, 9000);
   const items = (j.body && j.body.items) || [];
   return items.map((it) => {
     const cc = sbizCat(it), lat = +it.lat, lng = +it.lon;
@@ -111,31 +60,27 @@ async function fromSbiz(c, r, key) {
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  const deadline = Date.now() + 20000;
   const lat = Math.round(parseFloat(req.query.lat) * 1000) / 1000, lng = Math.round(parseFloat(req.query.lng) * 1000) / 1000;
   const r = Math.min(Math.max(parseInt(req.query.r, 10) || 1000, 200), 1500);
-  // 대한민국 범위 밖이거나 숫자가 아니면 거절
   if (!(lat > 33 && lat < 39 && lng > 124 && lng < 132)) return res.status(400).json({ ok: false, error: '위치가 올바르지 않아요.' });
-  const c = { lat, lng }, sources = [], notes = [];
-  let items = [];
-  try {
-    items = await fromOSM(c, r);
-    sources.push({ name: 'OpenStreetMap 기여자 (Photon 검색)', url: 'https://www.openstreetmap.org/copyright', license: 'ODbL' });
-  } catch (e) { notes.push('OpenStreetMap 데이터를 불러오지 못했어요.'); console.error('[places] overpass', e && e.message); }
-  const key = process.env.DATA_GO_KR_KEY;
-  if (key) {
-    try {
-      const sb = await fromSbiz(c, Math.min(r, 1000), key);
-      // 같은 이름이 50m 안에 있으면 하나로 합친다
-      sb.forEach((p) => { if (!items.some((q) => q.name.replace(/\s/g, '') === p.name.replace(/\s/g, '') && dist(p, q) < 50)) items.push(p); });
-      sources.push({ name: '공공데이터포털 · 소상공인시장진흥공단 상가(상권)정보', url: 'https://www.data.go.kr/data/15012005/openapi.do', license: '공공누리' });
-    } catch (e) { notes.push('공공데이터포털 상가정보를 불러오지 못했어요.'); console.error('[places] sbiz', e && e.message); }
+  const c = { lat, lng }, sources = [], notes = [], key = process.env.DATA_GO_KR_KEY;
+  const [osm, sb] = await Promise.all([
+    fromOSM(c, r, deadline),
+    key ? fromSbiz(c, Math.min(r, 1000), key).catch((e) => { console.error('[places] sbiz', e && e.message); notes.push('공공데이터포털 상가정보를 불러오지 못했어요.'); return null; }) : Promise.resolve(null)
+  ]);
+  let items = osm.items;
+  if (osm.items.length) sources.push({ name: 'OpenStreetMap 기여자 (Photon 검색)', url: 'https://www.openstreetmap.org/copyright', license: 'ODbL' });
+  if (sb) {
+    sb.forEach((p) => { if (!items.some((q) => q.name.replace(/\s/g, '') === p.name.replace(/\s/g, '') && P.dist(p, q) < 50)) items.push(p); });
+    sources.push({ name: '공공데이터포털 · 소상공인시장진흥공단 상가(상권)정보', url: 'https://www.data.go.kr/data/15012005/openapi.do', license: '공공누리' });
   }
-  if (!sources.length) return res.status(502).json({ ok: false, error: '주변 데이터를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.', notes });
-  // 같은 역이 여러 점으로 들어오는 경우 등 이름·분류가 같고 60m 안이면 하나만
-  const seen = [];
-  items = items.map((p) => Object.assign(p, { m: dist(c, p) })).filter((p) => p.m <= r).sort((a, b) => a.m - b.m)
-    .filter((p) => { if (seen.some((q) => q.cat === p.cat && q.name === p.name && dist(p, q) < 60)) return false; seen.push(p); return true; })
-    .slice(0, 400);
-  res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
-  res.status(200).json({ ok: true, center: c, radius: r, fetchedAt: new Date().toISOString(), sources, notes, items });
+  if (!items.length) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(503).json({ ok: false, error: '주변 데이터 서버가 바빠요. 잠시 뒤 다시 시도해 주세요.', failedGroups: osm.failed, notes });
+  }
+  items = P.finish(items, c, r);
+  // 다 받았으면 7일, 일부만 받았으면 10분만 캐시 (공개 서버를 덜 부르도록)
+  res.setHeader('Cache-Control', osm.failed.length ? 'public, s-maxage=600' : 'public, s-maxage=604800, stale-while-revalidate=604800');
+  res.status(200).json({ ok: true, center: c, radius: r, fetchedAt: new Date().toISOString(), sources, notes, failedGroups: osm.failed, items });
 };
