@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>자취 계약 내비</title>
+<meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 (시연판)">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* ============================================================
+   자취 내비 디자인 — 계약 후 서비스
+   - 강조색 하나(내비 보라), 기한만 주황으로 구분
+   - 흰 카드 + 헤어라인, 그림자 없음
+   - PC: 왼쪽 사이드바 / 휴대폰: 위 바 + 아래 탭바
+   ============================================================ */
+:root {
+  --bg: #F5F5F9; --surface: #FFFFFF; --fill: #F1F1F6; --fill-2: #E9E9F0;
+  --ink: #16171F; --ink-2: #3D3F4D; --ink-3: #6C6F7D;
+  --line: #E4E4EC; --hair: rgba(22,23,31,0.07);
+  --brand: #5B4CDB; --brand-ink: #FFFFFF; --brand-tint: #EEECFC; --brand-text: #4F40CF; --brand-deep: #2E2580;
+  --due: #D9480F; --due-tint: #FFF0E6; --due-text: #B53A0A;
+  --no: #8A8D99; --no-tint: #F1F1F4;
+  --focus: #7A6DF0;
+  --r-card: 20px; --r-in: 14px; --r-btn: 12px;
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E0E13; --surface: #17171F; --fill: #21212B; --fill-2: #2A2A35;
+  --ink: #EDEDF3; --ink-2: #C3C4CF; --ink-3: #9396A4;
+  --line: #2C2C38; --hair: rgba(255,255,255,0.08);
+  --brand: #6C5FF0; --brand-ink: #FFFFFF; --brand-tint: #25214A; --brand-text: #A99FFF; --brand-deep: #241E5C;
+  --due: #FF8A4C; --due-tint: #3A2416; --due-text: #FFB089;
+  --no: #8A8D99; --no-tint: #23232C; --focus: #A99FFF; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E0E13; --surface: #17171F; --fill: #21212B; --fill-2: #2A2A35;
+  --ink: #EDEDF3; --ink-2: #C3C4CF; --ink-3: #9396A4;
+  --line: #2C2C38; --hair: rgba(255,255,255,0.08);
+  --brand: #6C5FF0; --brand-ink: #FFFFFF; --brand-tint: #25214A; --brand-text: #A99FFF; --brand-deep: #241E5C;
+  --due: #FF8A4C; --due-tint: #3A2416; --due-text: #FFB089;
+  --no: #8A8D99; --no-tint: #23232C; --focus: #A99FFF; color-scheme: dark }
+
+* { box-sizing: border-box }
+html { -webkit-text-size-adjust: 100% }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.55; letter-spacing: -0.012em; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased }
+h1, h2, h3, p { margin: 0 }
+h1, h2, h3 { letter-spacing: -0.03em; text-wrap: balance }
+a { color: var(--brand-text); text-decoration: none }
+a:hover { text-decoration: underline }
+button, input, select { font: inherit; color: inherit }
+[hidden] { display: none !important }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 8px }
+svg.i { width: 20px; height: 20px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round }
+svg.i.sm { width: 16px; height: 16px }
+
+/* ---------- shell ---------- */
+.shell { display: grid; grid-template-columns: 244px minmax(0, 1fr); min-height: 100vh }
+.side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 2px; padding: 22px 14px 18px; background: var(--surface); border-right: 1px solid var(--hair) }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 22px; color: var(--ink); text-decoration: none !important }
+.brand-mark { width: 34px; height: 34px; border-radius: 11px; background: var(--brand); color: var(--brand-ink); display: inline-flex; align-items: center; justify-content: center }
+.brand b { font-size: 17px; font-weight: 800; letter-spacing: -0.04em; line-height: 1.15 }
+.brand small { display: block; font-size: 11px; color: var(--ink-3); font-weight: 500; letter-spacing: 0 }
+.nav { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 12px; border-radius: 12px; color: var(--ink-2); font-weight: 500; text-decoration: none !important }
+.nav:hover { background: var(--fill) }
+.nav[aria-current="page"] { background: var(--brand-tint); color: var(--brand-text); font-weight: 700 }
+.nav .cnt { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--due); color: #fff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center }
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px }
+.privacy { display: flex; gap: 8px; align-items: flex-start; padding: 12px; border-radius: 14px; background: var(--fill); color: var(--ink-3); font-size: 12px; line-height: 1.5 }
+.privacy svg { margin-top: 1px; color: var(--ink-2) }
+.side-foot a.small-link { font-size: 12px; color: var(--ink-3); padding: 0 12px }
+
+.topbar, .tabbar { display: none }
+.main { min-width: 0; width: 100%; max-width: 1200px; padding: 28px clamp(16px, 3.2vw, 44px) 72px }
+
+@media (max-width: 899px) {
+  .shell { display: block }
+  .side { display: none }
+  .topbar { display: flex; position: sticky; top: 0; z-index: 20; align-items: center; justify-content: space-between; gap: 12px; height: calc(56px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); background: color-mix(in srgb, var(--surface) 88%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--hair) }
+  .topbar .brand { padding: 0 }
+  .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); background: color-mix(in srgb, var(--surface) 92%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--hair) }
+  .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; border-radius: 12px; color: var(--ink-3); font-size: 11px; font-weight: 600; text-decoration: none !important; position: relative }
+  .tab[aria-current="page"] { color: var(--brand-text) }
+  .tab .cnt { position: absolute; top: 4px; left: 54%; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--due); color: #fff; font-size: 10px; display: inline-flex; align-items: center; justify-content: center }
+  .main { padding: 20px 16px calc(96px + env(safe-area-inset-bottom, 0px)) }
+}
+
+/* ---------- common ---------- */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 20px; margin-bottom: 22px }
+.page-head h1 { font-size: clamp(26px, 3.6vw, 34px); font-weight: 800; line-height: 1.25 }
+.eyebrow { font-size: 13px; color: var(--ink-3); font-weight: 500; margin-bottom: 6px }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px }
+.c4 { grid-column: span 4 } .c5 { grid-column: span 5 } .c6 { grid-column: span 6 } .c7 { grid-column: span 7 } .c8 { grid-column: span 8 } .c12 { grid-column: 1 / -1 }
+@media (max-width: 1099px) { .c4, .c5, .c6, .c7, .c8 { grid-column: 1 / -1 } }
+.card { background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r-card); padding: 22px; min-width: 0 }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px }
+.card-h h2 { font-size: 17px; font-weight: 700 }
+.card-h .more { font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px }
+.muted { color: var(--ink-3) } .sub { color: var(--ink-2) }
+.s13 { font-size: 13px } .s12 { font-size: 12px }
+.stack { display: flex; flex-direction: column; gap: 12px }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+.split { display: flex; align-items: center; justify-content: space-between; gap: 12px }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 18px; border: 0; border-radius: var(--r-btn); background: var(--brand); color: var(--brand-ink); font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none !important; transition: transform .12s ease, filter .12s ease }
+.btn:hover { filter: brightness(1.06) }
+.btn:active { transform: scale(0.97) }
+.btn.ghost { background: var(--fill); color: var(--ink) }
+.btn.line { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line) }
+.btn.sm { min-height: 38px; padding: 0 12px; border-radius: 10px; font-size: 13px }
+.btn.block { width: 100% }
+.icon-btn { width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--fill); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 auto }
+.icon-btn:active { transform: scale(0.95) }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 7px; font-size: 12px; font-weight: 700; white-space: nowrap; background: var(--fill); color: var(--ink-2) }
+.badge.brand { background: var(--brand-tint); color: var(--brand-text) }
+.badge.due { background: var(--due-tint); color: var(--due-text) }
+.badge.solid { background: var(--brand); color: var(--brand-ink) }
+.badge.no { background: var(--no-tint); color: var(--no) }
+
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r-in); background: var(--brand-tint); color: var(--brand-text); font-size: 14px }
+.banner.due { background: var(--due-tint); color: var(--due-text) }
+.banner b { font-weight: 700 }
+.banner a { color: inherit; text-decoration: underline; text-underline-offset: 2px }
+
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 12px; background: var(--fill) }
+.seg button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: var(--ink-3); font-size: 13px; font-weight: 600; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--hair) }
+
+/* round checkbox */
+.chk { appearance: none; -webkit-appearance: none; width: 24px; height: 24px; margin: 0; flex: 0 0 auto; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); cursor: pointer; display: inline-grid; place-content: center; transition: background .12s }
+.chk:checked { background: var(--brand); border-color: var(--brand) }
+.chk:checked::after { content: ""; width: 11px; height: 6px; border: 2.4px solid #fff; border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg) }
+/* switch */
+.sw { appearance: none; -webkit-appearance: none; width: 44px; height: 26px; margin: 0; flex: 0 0 auto; border-radius: 13px; background: var(--fill-2); position: relative; cursor: pointer; transition: background .15s }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2) }
+.sw:checked { background: var(--brand) }
+.sw:checked::after { transform: translateX(18px) }
+
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.field > span { font-size: 13px; color: var(--ink-3); font-weight: 600 }
+.inp { width: 100%; min-width: 0; min-height: 46px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 15px }
+.inp:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint) }
+.unit { position: relative } .unit .inp { padding-right: 46px } .unit em { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--ink-3); font-size: 14px }
+
+/* ---------- task item ---------- */
+.task { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--hair) }
+.task:first-child { border-top: 0; padding-top: 4px }
+.task .num { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--surface); font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center }
+.task .body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px }
+.task .t { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px }
+.task label { font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: -0.025em }
+.task .d { font-size: 14px; color: var(--ink-2) }
+.task .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.pill { display: inline-flex; gap: 6px; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 8px; background: var(--fill); font-size: 12px; color: var(--ink-2) }
+.pill b { color: var(--ink); font-weight: 700 }
+.task .act { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 2px }
+.src { font-size: 12px; color: var(--ink-3) }
+a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px }
+.task.done label { color: var(--ink-3); text-decoration: line-through }
+.task.done .d { color: var(--ink-3) }
+
+/* ---------- home ---------- */
+.dday { background: var(--brand); color: var(--brand-ink); border: 0; display: flex; flex-direction: column; gap: 18px; position: relative; overflow: hidden }
+.dday::after { content: ""; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,0.08) }
+.dday .lbl { font-size: 13px; font-weight: 600; opacity: .85 }
+.dday .big { font-size: 56px; font-weight: 800; letter-spacing: -0.05em; line-height: 1 }
+.dday .big small { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-left: 6px; opacity: .9 }
+.dday dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; position: relative; z-index: 1 }
+.dday dt { opacity: .75 } .dday dd { margin: 0; font-weight: 700; text-align: right }
+.dday .edit { position: relative; z-index: 1; align-self: flex-start; color: var(--brand-ink); font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px }
+.now-card { border: 2px solid var(--brand) }
+.journey { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px }
+.journey li { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.journey .bar { height: 6px; border-radius: 3px; background: var(--fill-2) }
+.journey li.done .bar { background: var(--brand) }
+.journey li.now .bar { background: linear-gradient(90deg, var(--brand) 50%, var(--fill-2) 50%) }
+.journey b { font-size: 13px; font-weight: 700; color: var(--ink-3); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.journey li.done b, .journey li.now b { color: var(--ink) }
+.journey li.now b { color: var(--brand-text) }
+.journey span { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.journey li.skip { opacity: .5 }
+@media (max-width: 640px) {
+  .journey { grid-template-columns: repeat(7, minmax(64px, 1fr)); overflow-x: auto; padding-bottom: 4px }
+}
+.ev-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--hair) }
+.ev-row:first-child { border-top: 0; padding-top: 0 }
+.date-blk { flex: 0 0 44px; height: 46px; border-radius: 12px; background: var(--fill); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15 }
+.date-blk b { font-size: 16px; font-weight: 800 } .date-blk span { font-size: 11px; color: var(--ink-3) }
+.date-blk.today { background: var(--brand); color: var(--brand-ink) } .date-blk.today span { color: var(--brand-ink); opacity: .85 }
+.ev-row .what { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column }
+.ev-row .what b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.amt { font-weight: 800; white-space: nowrap } .amt.in { color: var(--brand-text) }
+.money-big { font-size: 30px; font-weight: 800; letter-spacing: -0.04em; line-height: 1.2 }
+.kv { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hair); font-size: 14px }
+.kv:first-child { border-top: 0 }
+.prog { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--hair) }
+.prog:first-child { border-top: 0; padding-top: 0 }
+.prog-ic { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px; background: var(--brand-tint); color: var(--brand-text); display: inline-flex; align-items: center; justify-content: center }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chip { min-height: 38px; padding: 0 14px; border-radius: 19px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer }
+.chip[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-tint); color: var(--brand-text) }
+.bubble-q { align-self: flex-end; max-width: 88%; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: var(--brand); color: var(--brand-ink); font-weight: 600 }
+.bubble-a { align-self: flex-start; max-width: 100%; padding: 14px 16px; border-radius: 16px 16px 16px 4px; background: var(--fill); display: flex; flex-direction: column; gap: 8px }
+.ask { display: flex; gap: 8px }
+.ask .inp { flex: 1 1 auto }
+.doc-li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--hair); font-size: 14px }
+.doc-li:first-child { border-top: 0; padding-top: 0 }
+.demo-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 6px }
+@media (max-width: 899px) { .demo-tools { align-items: flex-start } }
+
+/* ---------- timeline ---------- */
+.rail { position: relative; display: flex; flex-direction: column; gap: 16px }
+.stage { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 18px; position: relative }
+.stage::before { content: ""; position: absolute; left: 131px; top: 26px; bottom: -22px; width: 2px; background: var(--line) }
+.stage:last-child::before { display: none }
+.stage-when { text-align: right; padding-top: 18px }
+.stage-when b { display: block; font-size: 14px; font-weight: 800 }
+.stage-when span { font-size: 12px; color: var(--ink-3) }
+.stage .node { position: absolute; left: 125px; top: 20px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 3px solid var(--line); z-index: 1 }
+.stage.done .node { background: var(--brand); border-color: var(--brand) }
+.stage.now .node { border-color: var(--brand); box-shadow: 0 0 0 5px var(--brand-tint) }
+.stage .card { margin-left: 14px }
+.stage.now .card { border: 2px solid var(--brand) }
+@media (max-width: 640px) {
+  .stage { grid-template-columns: minmax(0, 1fr); gap: 6px; padding-left: 22px }
+  .stage::before { left: 6px; top: 8px; bottom: -22px }
+  .stage .node { left: 0; top: 4px }
+  .stage-when { text-align: left; padding-top: 0; display: flex; gap: 8px; align-items: baseline }
+  .stage .card { margin-left: 0 }
+}
+.progress-line { height: 8px; border-radius: 4px; background: var(--fill-2); overflow: hidden }
+.progress-line span { display: block; height: 100%; background: var(--brand); border-radius: 4px }
+
+/* ---------- calendar ---------- */
+.cal-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start }
+@media (max-width: 1099px) { .cal-wrap { grid-template-columns: minmax(0, 1fr) } }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px }
+@media (max-width: 640px) { .stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) } .stats .stat:last-child { grid-column: 1 / -1 } }
+.stat { background: var(--surface); border: 1px solid var(--hair); border-radius: 18px; padding: 16px 18px; min-width: 0 }
+.stat .k { font-size: 13px; color: var(--ink-3); font-weight: 600 }
+.stat .v { font-size: 24px; font-weight: 800; letter-spacing: -0.04em; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.stat .v.in { color: var(--brand-text) } .stat .v.due { color: var(--due-text) }
+.stat .h { font-size: 12px; color: var(--ink-3) }
+.month-nav { display: flex; align-items: center; gap: 8px }
+.month-nav h2 { font-size: 20px; font-weight: 800; min-width: 112px; text-align: center }
+.wd, .days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)) }
+.wd span { text-align: center; font-size: 12px; font-weight: 600; color: var(--ink-3); padding: 8px 0 }
+.wd span:first-child { color: var(--due-text) }
+.days { gap: 4px }
+.day { position: relative; min-height: 92px; min-width: 0; padding: 8px; border: 0; border-radius: 12px; background: var(--fill); display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; cursor: pointer; color: var(--ink) }
+.day.out { background: transparent; cursor: default }
+.day:not(.out):hover { background: var(--fill-2) }
+.day .n { font-size: 13px; font-weight: 700; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin: -3px 0 0 -3px }
+.day.sun .n { color: var(--due-text) }
+.day.today .n { background: var(--ink); color: var(--surface) }
+.day[aria-pressed="true"] { background: var(--brand-tint); box-shadow: inset 0 0 0 2px var(--brand) }
+.day .dots { display: flex; gap: 3px; flex-wrap: wrap }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--due) }
+.dot.mark { background: var(--ink) }
+.day .m { margin-top: auto; font-size: 12px; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100% }
+.day .m.in { color: var(--brand-text) }
+.day .m.paid { color: var(--ink-3); text-decoration: line-through }
+@media (max-width: 640px) {
+  .days { gap: 2px }
+  .day { min-height: 62px; padding: 5px 4px; align-items: center; border-radius: 10px }
+  .day .n { margin: 0; width: 24px; height: 24px; font-size: 12px }
+  .day .m { font-size: 10px; letter-spacing: -0.04em }
+}
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-3); margin: 12px 0 0 }
+.legend span { display: inline-flex; align-items: center; gap: 6px }
+.panel-tabs { display: flex; gap: 4px; padding: 4px; background: var(--fill); border-radius: 12px; margin-bottom: 14px }
+.panel-tabs button { flex: 1 1 0; min-height: 38px; border: 0; border-radius: 9px; background: transparent; font-weight: 700; font-size: 14px; color: var(--ink-3); cursor: pointer }
+.panel-tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--hair) }
+.ag { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--hair) }
+.ag:first-child { border-top: 0 }
+.ag .what { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px }
+.ag .what b { font-weight: 700 }
+.ag.done .what b { color: var(--ink-3); text-decoration: line-through }
+.ag .tick { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); cursor: pointer; flex: 0 0 auto; min-height: 40px }
+.k-ic { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: var(--fill); color: var(--ink-2); font-size: 15px; font-weight: 800 }
+.k-ic.in { background: var(--brand-tint); color: var(--brand-text) }
+.k-ic.task { background: var(--due-tint); color: var(--due-text) }
+.k-ic.mark { background: var(--ink); color: var(--surface) }
+.bill { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--hair) }
+.bill:first-of-type { border-top: 0 }
+.bill .what { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column }
+.bill .what b { font-weight: 700 }
+.bill.off .what b { color: var(--ink-3) }
+.bill-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 14px; margin-bottom: 6px; border-radius: 16px; background: var(--fill) }
+.bill-form .full { grid-column: 1 / -1 }
+.bill-form .inp { min-height: 42px; font-size: 14px }
+
+/* ---------- support / docs / settings ---------- */
+.cond { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--hair); font-size: 14px }
+.cond:first-child { border-top: 0 }
+.cond .mk { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800 }
+.mk.ok { background: var(--brand-tint); color: var(--brand-text) } .mk.q { background: var(--due-tint); color: var(--due-text) } .mk.x { background: var(--no-tint); color: var(--no) }
+.doc-card { display: flex; gap: 14px; align-items: center; padding: 16px 0; border-top: 1px solid var(--hair) }
+.doc-card:first-child { border-top: 0; padding-top: 0 }
+.doc-thumb { flex: 0 0 auto; width: 44px; height: 54px; border-radius: 8px; background: var(--fill); border: 1px solid var(--line); display: inline-flex; align-items: center; justify-content: center; color: var(--ink-3) }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px }
+@media (max-width: 640px) { .form-grid { grid-template-columns: minmax(0, 1fr) } }
+
+/* ---------- area ---------- */
+.street { border-radius: 16px; min-height: 260px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 28px 20px; color: #fff;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 44px), linear-gradient(160deg, #2E2580, #5B4CDB) }
+.street-in { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 360px }
+.street-in b { font-size: 20px; font-weight: 800; letter-spacing: -0.03em }
+.street-in p { opacity: .85 }
+.street-ic { width: 52px; height: 52px; border-radius: 16px; background: rgba(255,255,255,.16); display: inline-flex; align-items: center; justify-content: center }
+.street .btn { background: #fff; color: #2E2580 } .street .btn.ghost { background: rgba(255,255,255,.16); color: #fff }
+.area-map { width: 100%; max-width: 360px; display: block; margin: 0 auto; aspect-ratio: 1 }
+.area-map .ring { fill: var(--brand-tint); fill-opacity: .45; stroke: var(--brand); stroke-opacity: .35; stroke-dasharray: 4 4 }
+.area-map .ring-t { font-size: 11px; fill: var(--brand-text); text-anchor: middle; font-weight: 700 }
+.area-map .poi { cursor: pointer } .area-map .poi circle { fill: var(--surface); stroke: var(--ink-2); stroke-width: 2.5 }
+.area-map .poi text { font-size: 11px; font-weight: 600; fill: var(--ink-2); paint-order: stroke; stroke: var(--surface); stroke-width: 3px }
+.area-map .poi.on circle { fill: var(--brand); stroke: var(--brand) } .area-map .poi.on text { fill: var(--brand-text); font-weight: 800 }
+.area-map .home-pin circle { fill: var(--ink) }
+.poi-list { display: flex; flex-direction: column }
+.poi-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 50px; padding: 0 10px; border: 0; border-top: 1px solid var(--hair); background: transparent; text-align: left; cursor: pointer }
+.poi-row:first-child { border-top: 0 }
+.poi-row b { flex: 1 1 auto; min-width: 0; font-weight: 600 }
+.poi-row .walk { min-width: 48px; text-align: right; font-weight: 800 }
+.poi-row[aria-pressed="true"] { background: var(--brand-tint); border-radius: 12px } .poi-row[aria-pressed="true"] b, .poi-row[aria-pressed="true"] .walk { color: var(--brand-text) }
+.area-cta { display: flex; align-items: center; gap: 14px; color: var(--ink); text-decoration: none !important } .area-cta:hover { border-color: var(--brand) }
+
+#toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px; background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 600 }
+@media (max-width: 899px) { #toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)) } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+
+/* ---------- v3: 그룹 사이드바 · 상단 바 · 동네 탐색 ---------- */
+:root { --map-bg: #EEF0F5; --map-road: #FFFFFF; --map-line: #DCDFE8; --map-green: #D7EED5; --map-water: #CFE2F6 }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --map-bg: #1B1C25; --map-road: #2B2C38; --map-line: #24252F; --map-green: #1F3326; --map-water: #1A2A3D } }
+:root[data-theme="dark"] { --map-bg: #1B1C25; --map-road: #2B2C38; --map-line: #24252F; --map-green: #1F3326; --map-water: #1A2A3D }
+.side { overflow-y: auto }
+.g-label { display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; margin: 14px 0 4px 8px; padding: 2px 10px; border-radius: 8px; background: var(--brand-tint); color: var(--brand-text); font-size: 12px; font-weight: 700 }
+.g-label .core { background: var(--brand); color: #fff; border-radius: 6px; padding: 0 6px; font-size: 10px; line-height: 16px }
+.side .nav { min-height: 42px }
+.hbar { display: flex; align-items: center; gap: 10px; margin-bottom: 22px }
+.search { position: relative; flex: 1 1 auto; max-width: 560px }
+.search input { width: 100%; min-height: 46px; padding: 0 16px 0 44px; border-radius: 23px; border: 1px solid var(--line); background: var(--surface); font-size: 15px }
+.search input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint) }
+.search > svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--ink-3) }
+.q-res { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 6px; box-shadow: 0 12px 32px rgba(22,23,31,.12) }
+.q-item { display: flex; gap: 10px; align-items: center; width: 100%; padding: 8px 10px; border: 0; background: transparent; border-radius: 10px; text-align: left; cursor: pointer }
+.q-item:hover, .q-item:focus-visible { background: var(--fill) }
+.q-item .ptile { width: 36px; height: 36px; border-radius: 10px }
+.hbar-r { margin-left: auto; display: flex; gap: 8px; align-items: center }
+.hbar-r select { min-height: 40px; width: auto; font-size: 13px; padding: 0 10px; border-radius: 12px }
+.bell { position: relative }
+.bell .cnt { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--due); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center }
+@media (max-width: 640px) { .hbar-r select { display: none } .hbar { margin-bottom: 14px } }
+.subnav { display: none }
+@media (max-width: 899px) { .subnav { display: flex; gap: 6px; overflow-x: auto; margin: -4px 0 16px; scrollbar-width: none } .subnav::-webkit-scrollbar { display: none } }
+.subnav a { flex: 0 0 auto; min-height: 36px; padding: 0 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: inline-flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink-2); text-decoration: none !important }
+.subnav a[aria-current="page"] { background: var(--ink); color: var(--surface); border-color: var(--ink) }
+
+.hero-banner { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 26px 28px; border-radius: var(--r-card); background: linear-gradient(115deg, var(--brand-tint) 0%, var(--surface) 75%); border: 1px solid var(--hair); overflow: hidden; min-height: 150px }
+.hero-banner h1 { font-size: clamp(22px, 3vw, 30px); font-weight: 800; line-height: 1.3 }
+.hero-banner p { color: var(--ink-2); margin-top: 6px }
+.hero-banner .art { flex: 0 0 auto; width: 280px; height: 120px }
+@media (max-width: 720px) { .hero-banner .art { display: none } .hero-banner { padding: 22px } }
+.minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px }
+.minis .c4 { grid-column: auto }
+@media (max-width: 899px) { .minis { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; scrollbar-width: none } .minis::-webkit-scrollbar { display: none } .minis .mini { scroll-snap-align: start } }
+.scroll-list { max-height: 520px; overflow-y: auto; margin-right: -8px; padding-right: 8px }
+@media (max-width: 1099px) { .scroll-list { max-height: none } }
+.mini { display: flex; flex-direction: column; gap: 6px; color: var(--ink); text-decoration: none !important; min-width: 0 }
+.mini:hover { border-color: var(--brand) }
+.mini .k { font-size: 13px; color: var(--ink-3); font-weight: 600; display: flex; align-items: center; gap: 6px }
+.mini .v { font-size: 18px; font-weight: 800; letter-spacing: -.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.mini .h { font-size: 13px; color: var(--ink-2) }
+
+.cats { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none }
+.cats::-webkit-scrollbar { display: none }
+.cat { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer }
+.cat[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff }
+.map-box { position: relative; border-radius: 16px; overflow: visible; background: var(--map-bg) }
+.map-box svg.map { display: block; width: 100%; height: auto; border-radius: 16px }
+.map .road { stroke: var(--map-road); stroke-linecap: round; fill: none }
+.map .alley { stroke: var(--map-road); stroke-opacity: .6; stroke-width: 3; fill: none }
+.map .ring { fill: var(--brand); fill-opacity: .07; stroke: var(--brand); stroke-opacity: .45; stroke-dasharray: 5 5 }
+.map .ring-t { font-size: 11px; font-weight: 700; fill: var(--brand-text); text-anchor: middle }
+.mk { cursor: pointer }
+.mk .b { fill: var(--surface); stroke: var(--brand); stroke-width: 2 }
+.mk .ico * { stroke: var(--brand-text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.mk.on .b { fill: var(--brand) }
+.mk.on .ico * { stroke: #fff }
+.mk text { font-size: 11px; font-weight: 700; fill: var(--ink-2); paint-order: stroke; stroke: var(--map-bg); stroke-width: 3px; text-anchor: middle }
+.mk:focus-visible .b { stroke-width: 4 }
+.home-mk .b2 { fill: var(--ink) }
+.pop { position: absolute; width: 290px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: 0 14px 34px rgba(22,23,31,.18); transform: translate(-50%, calc(-100% - 26px)); z-index: 5 }
+.pop.below { transform: translate(-50%, 26px) }
+@media (max-width: 640px) { .pop { position: static; transform: none !important; width: auto; margin-top: 10px; box-shadow: none } }
+.ptile { width: 52px; height: 52px; border-radius: 14px; background: var(--brand-tint); color: var(--brand-text); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto }
+.tags { display: flex; flex-wrap: wrap; gap: 4px }
+.tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 7px; background: var(--fill); font-size: 12px; color: var(--ink-2); font-weight: 600 }
+.place { display: flex; gap: 12px; align-items: center; width: 100%; padding: 12px 0; border: 0; border-top: 1px solid var(--hair); background: none; text-align: left; cursor: pointer; color: var(--ink) }
+.place:first-child { border-top: 0; padding-top: 0 }
+.place .what { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column }
+.place .what b { font-weight: 700 }
+.place[aria-pressed="true"] .what b { color: var(--brand-text) }
+.tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px }
+@media (max-width: 640px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 8px; border-radius: 16px; background: var(--fill); border: 0; cursor: pointer; text-align: center; color: var(--ink) }
+.tile:hover { background: var(--brand-tint) }
+.tile .ptile { width: 44px; height: 44px; background: var(--surface) }
+.tile b { font-size: 14px }
+.save-btn[aria-pressed="true"] { background: var(--brand-tint); color: var(--brand-text) }
+.save-btn[aria-pressed="true"] svg path { fill: currentColor }
+.pcard { display: flex; flex-direction: column; gap: 10px }
+.street.sm { min-height: 0; padding: 18px }
+.street.sm .street-in b { font-size: 16px }
+
+.bar-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; font-size: 14px }
+.bar-track { height: 10px; border-radius: 5px; background: var(--fill-2); overflow: hidden }
+.bar-track span { display: block; height: 100%; background: var(--brand); border-radius: 5px }
+.room { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px 16px; padding: 14px 0; border-top: 1px solid var(--hair); align-items: start }
+.room:first-of-type { border-top: 0 }
+@media (max-width: 640px) { .room { grid-template-columns: minmax(0, 1fr) } }
+.st-opts { display: inline-flex; gap: 4px; padding: 3px; background: var(--fill); border-radius: 10px }
+.st-opts button { min-height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; font-size: 13px; font-weight: 600; color: var(--ink-3); cursor: pointer }
+.st-opts button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--hair) }
+.st-opts button[data-v="bad"][aria-pressed="true"], .st-opts button[data-v="broken"][aria-pressed="true"] { color: var(--due-text) }
+textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize: vertical; font-family: inherit }
+.chat { display: flex; flex-direction: column; gap: 12px }
+.date-line { display: flex; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--hair) }
+.date-line:first-child { border-top: 0; padding-top: 0 }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" aria-label="주요 메뉴">
+    <a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></a>
+    <nav id="side-nav" style="display:flex;flex-direction:column;gap:2px"></nav>
+    <div class="side-foot">
+      <div class="privacy"><span data-icon="lock"></span><span>로그인 없이 쓰고, 입력한 정보는 이 기기에만 저장돼요.</span></div>
+      <a class="small-link" href="index.html">← 계약 전 화면 (조건 입력·집 보기)</a>
+    </div>
+  </aside>
+  <div>
+    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><b>자취 계약 내비</b></a><span class="row" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="spark"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
+    <main class="main" id="app" tabindex="-1"></main>
+  </div>
+  <nav class="tabbar" id="tab-nav" aria-label="주요 메뉴"></nav>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- icons ----------
+  var ICON = {
+    home: '<path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10.5 19v-4.5h3V19"/>',
+    route: '<circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M8.2 6H15a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.8"/>',
+    cal: '<rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10h16"/><path d="M8.5 3.5v4"/><path d="M15.5 3.5v4"/>',
+    gift: '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11"/><path d="M4 13h16"/><path d="M12 9c-2.5 0-4-1.2-4-2.6S9.5 4 12 9Z"/><path d="M12 9c2.5 0 4-1.2 4-2.6S14.5 4 12 9Z"/>',
+    folder: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H10l2 2.2h5.5A2.5 2.5 0 0 1 20 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"/>',
+    lock: '<rect x="5" y="11" width="14" height="9.5" rx="2.2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>',
+    chev: '<path d="m9.5 6 6 6-6 6"/>', back: '<path d="m14.5 6-6 6 6 6"/>',
+    bell: '<path d="M6.5 16v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14Z"/><path d="M10 21h4"/>',
+    doc: '<path d="M7 3.5h7l4.5 4.5v12.5H7Z"/><path d="M14 3.5V8h4.5"/><path d="M10 13h5.5"/><path d="M10 16.5h3.5"/>',
+    info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8v.01"/>',
+    chat: '<path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4 3.5V16h0A2 2 0 0 1 5 14Z"/>',
+    plus: '<path d="M12 5v14"/><path d="M5 12h14"/>', down: '<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/>',
+    out: '<path d="M7 17 17 7"/><path d="M9 7h8v8"/>',
+    box: '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5Z"/><path d="M4 8.5 12 13l8-4.5"/><path d="M12 13v7"/>',
+    spark: '<path d="M12 3.5l1.8 5.2 5.2 1.8-5.2 1.8L12 17.5l-1.8-5.2L5 10.5l5.2-1.8Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
+    chart: '<path d="M5 20V11"/><path d="M10 20V6"/><path d="M15 20v-6"/><path d="M20 20V9"/>',
+    card: '<rect x="3.5" y="6" width="17" height="12" rx="2.5"/><path d="M3.5 10h17"/><path d="M7 14.5h4"/>',
+    camera: '<path d="M4 8.5a2 2 0 0 1 2-2h2l1.5-2h5l1.5 2h2a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>',
+    food: '<path d="M7 3.5v7a2 2 0 0 0 4 0v-7"/><path d="M9 10.5v10"/><path d="M16.5 20.5v-17c-2 1-3 3.5-3 6.5 0 2 1 3 3 3"/>',
+    cup: '<path d="M5 8.5h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5Z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8.5 3.5v2M12 3.5v2"/>',
+    book: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5Z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5Z"/>',
+    dumbbell: '<path d="M3.5 12h17"/><rect x="5" y="8" width="3" height="8" rx="1"/><rect x="16" y="8" width="3" height="8" rx="1"/>',
+    tree: '<path d="M12 21v-6"/><path d="M12 3.5 6.5 11h3L6 15.5h12L14.5 11h3Z"/>',
+    cart: '<path d="M3.5 4.5h2l2 10.5h10l2-7.5H7"/><circle cx="9" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
+    cross: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/>',
+    bus: '<rect x="5" y="3.5" width="14" height="14" rx="3"/><path d="M5 11h14"/><path d="M8 20.5v-3M16 20.5v-3"/><path d="M8.5 14.5h.01M15.5 14.5h.01"/>',
+    building: '<path d="M4.5 20.5V6l7.5-2.5V20.5"/><path d="M12 9h7.5v11.5"/><path d="M3 20.5h18"/><path d="M8 9h.01M8 12.5h.01M8 16h.01M15.5 12.5h.01M15.5 16h.01"/>',
+    shield: '<path d="M12 3.5 19 6v5.5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6Z"/><path d="m9 12 2 2 4-4"/>',
+    bookmark: '<path d="M6.5 4h11v16.5L12 16.5l-5.5 4Z"/>',
+    x: '<path d="M6 6l12 12M18 6 6 18"/>',
+    copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    send: '<path d="M4 12 20 4l-6 16-2.5-6.5Z"/><path d="m11.5 13.5 3-3"/>',
+    pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.4"/>'
+  };
+  function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICON[n] + '</svg>'; }
+  document.querySelectorAll('[data-icon]').forEach(function (el) { el.innerHTML = ic(el.dataset.icon); });
+
+  // ---------- dates ----------
+  var WD = ['일', '월', '화', '수', '목', '금', '토'];
+  function realToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+  function pd(s) { var p = String(s || '').split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]); return isNaN(d) ? realToday() : d; }
+  function add(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function md(d) { return (d.getMonth() + 1) + '.' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
+  function ymd(d) { return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); }
+  var today = realToday();
+  function dday(d) { var n = Math.round((d - today) / 86400000); return n > 0 ? 'D-' + n : n === 0 ? 'D-day' : (-n) + '일 지남'; }
+  function won(n) { return Math.round(n).toLocaleString('ko-KR'); }
+  function man(n) { return n >= 10000 ? (Math.round(n / 1000) / 10) + '만' : won(n) + '원'; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  // ---------- state (이 기기에만 저장) ----------
+  var STORE = 'jachwi-after-v2';
+  var DEFAULT_BILLS = [
+    { id: 'rent', name: '월세', kind: 'out', link: 'rent', day: 0, every: 1, on: true, off: 0 },
+    { id: 'fee', name: '관리비', kind: 'out', link: 'fee', day: 0, every: 1, on: true, off: 0 },
+    { id: 'elec', name: '전기요금', kind: 'out', amount: 25000, day: 18, every: 1, on: true, est: true, off: 1 },
+    { id: 'gas', name: '도시가스', kind: 'out', amount: 30000, day: 25, every: 1, on: true, est: true, off: 1 },
+    { id: 'net', name: '인터넷', kind: 'out', amount: 22000, day: 10, every: 1, on: true, off: 1 },
+    { id: 'water', name: '수도요금', kind: 'out', amount: 16000, day: 20, every: 2, on: false, est: true, off: 1, note: '관리비에 들어 있지 않다면 켜 두세요' },
+    { id: 'sup-rent', name: '청년월세 지원 입금', kind: 'in', amount: 200000, day: 25, every: 1, count: 12, on: false, off: 1, note: '선정되면 켜 두세요. 입금일과 남은 횟수를 챙겨드려요' }
+  ];
+  // 시연 기본값: 2주 전에 계약했고 내일 입주
+  var DEFAULT = { gu: '관악구', addr: '신림동 원룸', deposit: 1000, rent: 45, fee: 7, term: 2, age: 24, income: '150',
+    contract: iso(add(realToday(), -14)), move: iso(add(realToday(), 1)),
+    done: { t1: true, t2: true, t3: true, t4: true, t5: true, t6: true, p1: true, p2: true, p3: true, p4: true },
+    bills: DEFAULT_BILLS, paid: {}, calM: '', calSel: '', calTab: 'day', calEdit: '', nick: '', saved: {}, chal: {}, homeCat: 'all', mapCat: 'all', mapSel: '', recCat: 'park', cond: { in: {}, out: {} }, condTab: 'in', chat: [], areaChk: {}, sim: null, qa: '', remind: '1d', files: [] };
+  var S = JSON.parse(JSON.stringify(DEFAULT));
+  try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved) Object.assign(S, saved); } catch (e) {}
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }
+
+  // ---------- 승인된 규칙 (시연용 예시 공고) ----------
+  var BASIS = '2026.10.28';
+  var LAW = 'https://www.law.go.kr';
+  var BASE_SRC = '자취 계약 내비 기본 체크리스트';
+  function contractEnd() { var M = pd(S.move); return add(new Date(M.getFullYear() + (+S.term || 2), M.getMonth(), M.getDate()), -1); }
+  function incomeOk(limit) { if (S.income === 'unknown') return null; if (S.income === 'over') return false; return +S.income <= limit; }
+  function incomeLabel() { return { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' }[S.income]; }
+  var PROGRAMS = [
+    { id: 'rent', name: '서울시 청년월세 지원', org: '서울특별시', amountText: '월 최대 20만 원 · 최대 12개월', status: '모집 예정', statusCls: '', select: '소득 낮은 순 선정', channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr',
+      docs: ['임대차계약서 (확정일자 포함)', '최근 3개월 월세 이체 내역', '본인 명의 통장 사본', '주민등록등본', '건강보험료 납부확인서'],
+      conds: [
+        { label: '만 19~39세', test: function () { return S.age >= 19 && S.age <= 39; }, mine: function () { return '만 ' + S.age + '세'; } },
+        { label: '기준 중위소득 150% 이하', test: function () { return incomeOk(150); }, mine: incomeLabel },
+        { label: '보증금 8,000만 원·월세 60만 원 이하', test: function () { return S.deposit <= 8000 && S.rent <= 60; }, mine: function () { return won(S.deposit) + '만 / ' + S.rent + '만'; } },
+        { label: '무주택', test: function () { return null; }, mine: function () { return '직접 확인'; } }
+      ] },
+    { id: 'move', name: '청년 부동산 중개보수·이사비 지원', org: '서울특별시', amountText: '실비 · 최대 40만 원', status: '접수 중', statusCls: 'brand', firstCome: true, select: '선착순', channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr',
+      docs: ['임대차계약서', '중개보수 영수증', '이사비 영수증', '주민등록등본'],
+      conds: [
+        { label: '만 19~39세', test: function () { return S.age >= 19 && S.age <= 39; }, mine: function () { return '만 ' + S.age + '세'; } },
+        { label: '기준 중위소득 150% 이하', test: function () { return incomeOk(150); }, mine: incomeLabel },
+        { label: '임차보증금 2억 원 이하', test: function () { return S.deposit <= 20000; }, mine: function () { return won(S.deposit) + '만 원'; } },
+        { label: '무주택', test: function () { return null; }, mine: function () { return '직접 확인'; } }
+      ] }
+  ];
+  function evaluate() {
+    var C = pd(S.contract), M = pd(S.move);
+    var required = S.deposit > 6000 || S.rent > 30;
+    var reason = S.rent > 30 ? '월세 30만 원 초과' : S.deposit > 6000 ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하';
+    var programs = PROGRAMS.map(function (p) {
+      var res = p.conds.map(function (c) { return { label: c.label, mine: c.mine(), ok: c.test() }; });
+      return { p: p, res: res, eligible: !res.some(function (r) { return r.ok === false; }), unknown: res.filter(function (r) { return r.ok === null; }) };
+    });
+    return { C: C, M: M, report: { required: required, reason: reason, due: add(C, 30) }, movein: { due: add(M, 14) }, programs: programs, eligible: programs.filter(function (x) { return x.eligible; }) };
+  }
+  function judge(x) {
+    if (!x.eligible) return ['no', '해당 안 됨'];
+    return x.unknown.some(function (r) { return r.label !== '무주택'; }) ? ['due', '확인 필요'] : ['brand', '해당 가능'];
+  }
+
+  // 기준일 두 개: C = 계약일(전월세 신고 30일), M = 입주일(전입신고 14일). 기간은 첫날을 빼고 센다(민법 제157조).
+  function buildTimeline(R) {
+    var C = R.C, M = R.M, end = contractEnd(), rep = R.report, early = rep.required && rep.due < M, merge = rep.required && !early, st = [];
+    st.push({ key: 'pre', name: '계약 전', when: '~ ' + md(add(C, -1)), at: add(C, -1), tasks: [
+      { id: 't1', title: '안심전세 앱에서 시세·임대인 조회', desc: '보증금이 시세에 맞는지, 보증보험 가입이 막힌 집은 아닌지 봐요.', due: add(C, -1), act: ['안심전세 앱', 'https://www.khug.or.kr'], src: 'HUG 안심전세 앱' },
+      { id: 't2', title: '등기부등본 확인', desc: '계약할 사람이 실제 집주인인지, 근저당이 얼마나 잡혀 있는지 확인해요.', due: add(C, -1), act: ['인터넷등기소', 'https://www.iros.go.kr'], src: '대법원 인터넷등기소' },
+      { id: 't3', title: '집 보러 가서 수압·곰팡이 체크', desc: '창틀, 화장실 천장, 싱크대 아래를 열어 보세요.', due: add(C, -1), src: BASE_SRC },
+      { id: 't4', title: '특약사항 요청하기', desc: '“퇴거 시 보증금 즉시 반환” 같은 약속은 계약서에 적어야 효력이 있어요.', due: add(C, -1), src: '주택임대차 표준계약서' }
+    ] });
+    st.push({ key: 'cday', name: '계약 당일', when: md(C), at: C, tasks: [
+      { id: 't5', title: '계약금은 집주인 명의 계좌로 이체', desc: '이체 확인증을 서류함에 넣어 두세요.', due: C, src: BASE_SRC },
+      { id: 't6', title: '계약서 사본 받기', desc: '지원금 신청과 전월세 신고에 계속 쓰여요.', due: C, src: BASE_SRC }
+    ] });
+    st.push({ key: 'prep', name: '입주 준비', when: md(add(M, -14)) + ' ~ ' + md(add(M, -1)), at: add(M, -1), tasks: [
+      { id: 'p1', title: '이사 수단 예약하기', desc: '용달·이삿짐센터는 손 없는 날과 월말에 비싸고 빨리 차요. 견적은 2~3곳 비교해요.', due: add(M, -14), src: BASE_SRC },
+      { id: 'p2', title: '인터넷 설치 예약', desc: '기사 방문까지 며칠 걸려요. 입주일 오후로 잡아 두면 첫날부터 쓸 수 있어요.', due: add(M, -7), src: BASE_SRC },
+      { id: 'p4', title: '관리비에 들어 있는 항목 확인', desc: '수도·인터넷·전기 중 무엇이 관리비에 포함인지 집주인에게 문자로 받아 두세요.', due: add(M, -7), act: ['캘린더에서 설정', '#calendar'], src: BASE_SRC },
+      { id: 'p3', title: '도시가스 개통 예약', desc: '가스는 기사가 와서 안전점검을 한 뒤 열어 줘요. 관할 도시가스사에 입주일로 예약해요.', due: add(M, -3), src: BASE_SRC },
+      { id: 'p5', title: '잔금 계좌와 이체 한도 확인', desc: '계약서에 적힌 임대인 본인 명의 계좌가 맞는지 다시 보고, 이체 한도를 미리 올려 두세요.', due: add(M, -1), src: BASE_SRC },
+      { id: 'p6', title: '전 세입자 퇴거·공과금 정산 시간 맞추기', desc: '몇 시에 짐을 빼는지, 관리비와 공과금은 누가 언제 정산하는지 집주인과 맞춰 두세요.', due: add(M, -1), src: BASE_SRC }
+    ] });
+    st.push({ key: 'mday', name: '입주 당일', when: md(M), at: M, tasks: [
+      { id: 'm1', title: '잔금 보내기 전 등기부등본 다시 떼기', desc: '계약한 뒤 근저당이나 압류가 새로 잡히지 않았는지 마지막으로 확인해요.', due: M, act: ['인터넷등기소', 'https://www.iros.go.kr'], src: '대법원 인터넷등기소' },
+      { id: 'm2', title: '잔금 이체하고 이체확인증 저장', desc: '임대인 명의 계좌로 보내고, 확인증은 지원 신청·연말정산 증빙으로 서류함에 넣어 두세요.', due: M, act: ['서류함', '#docs'], src: BASE_SRC },
+      { id: 'm3', title: '전기·가스·수도 계량기 사진 찍기', desc: '숫자가 보이게 찍어 두면 전 세입자와 요금을 나눌 때 다툴 일이 없어요.', due: M, src: BASE_SRC },
+      { id: 'm5', title: '짐 넣기 전에 집 상태 사진 찍기', desc: '벽지·바닥·옵션 가전의 흠을 찍어 집주인에게 문자로 보내 두세요. 퇴거 때 원상복구 다툼에서 가장 확실한 증거예요.', due: M, act: ['집 상태 기록', '#condition'], src: BASE_SRC },
+      { id: 'm4', title: '도어락 비밀번호 바꾸기', desc: '전 세입자나 중개인이 알던 번호는 바로 바꿔요.', due: M, src: BASE_SRC },
+      { id: 'mv', title: merge ? '전입신고 + 임대차계약서 제출' : '전입신고', urgent: true, due: M, legal: R.movein.due,
+        desc: '보증금을 지키는 힘(대항력)은 입주와 전입신고를 마친 다음 날 0시에 생겨요. 오늘 하는 게 가장 안전해요. 법정 기한은 ' + md(R.movein.due) + '까지예요.' + (merge ? ' 계약서를 함께 내면 전월세 신고와 확정일자까지 한 번에 끝나요.' : ''),
+        where: '정부24 · 행정복지센터', docs: '신분증' + (merge ? ', 임대차계약서' : ''), act: ['정부24에서 신고', 'https://www.gov.kr'], src: '주민등록법 제16조' }
+    ] });
+    var rt = [];
+    if (rep.required) rt.push({ id: 'rp', title: '전월세 신고', urgent: true, due: rep.due, where: '부동산거래관리시스템 · 행정복지센터', docs: '임대차계약서, 신분증', act: ['부동산거래관리시스템', 'https://rtms.molit.go.kr'], src: '부동산거래신고법 제6조의2·제6조의5',
+      desc: rep.reason + '라 신고 대상이에요. ' + (early ? '입주보다 기한이 먼저 와서 전입신고와 합칠 수 없어요. 기한 안에 따로 신고하세요.' : '전입신고 때 계약서를 함께 냈다면 이미 신고한 것으로 봐요. 따로 한다면 온라인으로 할 수 있고, 접수되면 확정일자도 함께 받아요.') });
+    else rt.push({ id: 'rp', title: '확정일자 받기', desc: '신고 대상은 아니지만, 전입신고 때 확정일자를 함께 받아 두면 보증금을 지키는 데 도움이 돼요.', due: M, where: '행정복지센터 · 인터넷등기소', src: '주택임대차보호법 제3조의6' });
+    rt.push({ id: 'r1', title: '세대주로 등록됐는지 확인', desc: '주민등록등본에서 확인해요. 월세 세액공제와 일부 청년 지원의 조건이에요.', due: R.movein.due, act: ['정부24 등본', 'https://www.gov.kr'], src: '조세특례제한법 제95조의2' });
+    rt.push({ id: 'r2', title: '은행·카드 주소 한 번에 바꾸기', desc: '전입신고할 때 정부24 ‘주소변경 서비스’를 함께 신청하면 금융기관 주소가 한 번에 바뀌어요.', due: R.movein.due, src: '정부24 주소변경 서비스' });
+    var repEnd = rep.due > R.movein.due ? rep.due : R.movein.due;
+    st.push({ key: 'report', name: '신고·정리', when: '~ ' + md(repEnd), at: repEnd, tasks: rt });
+    if (R.eligible.length) st.push({ key: 'apply', name: '지원 신청', when: '공고별', at: rep.due, tasks: R.eligible.map(function (x) {
+      return { id: 's-' + x.p.id, title: x.p.name + ' 신청', desc: (x.p.firstCome ? '선착순이라 일찍 마감될 수 있어요. ' : '모집이 열리면 신청해요. ') + '필요 서류 ' + x.p.docs.length + '개를 미리 모아 두세요.', dueText: x.p.status, urgent: !!x.p.firstCome, act: ['지원 상세', '#support'], src: '공고 · ' + BASIS + ' 기준' };
+    }) });
+    var jan = new Date(M.getFullYear() + 1, 0, 15);
+    st.push({ key: 'live', name: '거주 중', when: '계약 기간', at: add(end, -61), tasks: [
+      { id: 'l1', title: '월세·관리비·공과금 날짜 챙기기', desc: '자취 캘린더에 금액과 날짜를 넣어 두면 매달 낼 돈과 낸 돈을 한눈에 볼 수 있어요.', dueText: '매달', act: ['자취 캘린더', '#calendar'], src: BASE_SRC },
+      { id: 'l2', title: '월세 세액공제 챙기기 (직장인)', desc: '무주택 세대주이고 전입신고를 했다면 연말정산 때 낸 월세 일부를 돌려받아요. 계약서 사본과 월세 이체 내역이 필요해요.', due: jan, dueText: jan.getFullYear() + '년 1월 연말정산', src: '조세특례제한법 제95조의2' }
+    ] });
+    st.push({ key: 'out', name: '만료·퇴거', when: ymd(end), at: end, tasks: [
+      { id: 'o1', title: '갱신 여부 미리 알리기', desc: '계약 만료 2개월 전까지 집주인에게 갱신할지 나갈지 알려요.', due: add(end, -60), src: '주택임대차보호법 제6조' },
+      { id: 'o2', title: '입주 사진과 비교하며 집 점검', desc: '입주 날 찍은 사진과 같은 자리를 찍어 비교하면 원상복구 범위를 두고 다툴 일이 줄어요.', due: add(end, -7), act: ['집 상태 기록', '#condition'], src: BASE_SRC },
+      { id: 'o3', title: '보증금 돌려받은 뒤 전출하기', desc: '보증금을 받기 전에 주소를 옮기면 대항력이 사라질 수 있어요.', due: end, src: '주택임대차보호법 제3조' }
+    ] });
+    return st;
+  }
+  function phase(R) {
+    var dm = Math.round((today - R.M) / 86400000), end = contractEnd();
+    if (today < R.C) return { dm: dm, key: 'pre', title: '아직 계약 전이에요', badge: '계약 전' };
+    if (dm < -1) return { dm: dm, key: 'prep', title: '입주까지 ' + (-dm) + '일 남았어요', badge: '입주 전' };
+    if (dm === -1) return { dm: dm, key: 'prep', title: '내일 입주해요', badge: '입주 D-1' };
+    if (dm === 0) return { dm: dm, key: 'mday', title: '오늘 입주하는 날이에요', badge: '입주 D-day' };
+    if (today <= end) return { dm: dm, key: null, title: '자취 ' + (dm + 1) + '일째예요', badge: '거주 중' };
+    return { dm: dm, key: 'out', title: '계약 기간이 끝났어요', badge: '계약 만료' };
+  }
+  function nowKey(R, T, P) {
+    if (P.key) return P.key;
+    var rep = T.filter(function (s) { return s.key === 'report'; })[0];
+    return today <= rep.at ? 'report' : today < add(contractEnd(), -61) ? 'live' : 'out';
+  }
+  function dueTag(t) {
+    if (S.done[t.id]) return ['brand', '완료'];
+    if (t.dueText) return [t.urgent ? 'due' : '', t.dueText];
+    if (!t.due) return ['', ''];
+    if (t.legal && today > t.due) return ['due', '법정 기한 ' + md(t.legal) + ' · ' + dday(t.legal)];
+    return [t.urgent || t.due <= today ? 'due' : '', md(t.due) + (t.legal ? ' 권장' : '') + ' · ' + dday(t.due)];
+  }
+  function openTasks(R, T) {
+    var skip = today >= R.C ? { pre: 1, cday: 1 } : {}, flat = [];
+    T.forEach(function (s) { s.tasks.forEach(function (t) { flat.push({ t: t, s: s }); }); });
+    var open = flat.filter(function (x) { return !skip[x.s.key] && !S.done[x.t.id] && x.t.due; });
+    var byDue = function (a, b) { return a.t.due - b.t.due; };
+    return { flat: flat, skip: skip, dueNow: open.filter(function (x) { return x.t.due <= today; }).sort(byDue), upcoming: open.filter(function (x) { return x.t.due > today; }).sort(byDue) };
+  }
+
+  // ---------- 캘린더 계산 ----------
+  function ym(d) { return d.getFullYear() * 12 + d.getMonth(); }
+  function ymStr(i) { return Math.floor(i / 12) + '-' + String(i % 12 + 1).padStart(2, '0'); }
+  function findBill(id) { return S.bills.filter(function (b) { return b.id === id; })[0]; }
+  function billAmt(b) { return b.link === 'rent' ? S.rent * 10000 : b.link === 'fee' ? S.fee * 10000 : (+b.amount || 0); }
+  function billDay(b) { if (+b.day) return +b.day; var d = pd(S.move).getDate(); return d > 28 ? 31 : d; }
+  function dayLabel(d) { return d === 31 ? '말일' : d + '일'; }
+  function billStart(b) { if (b.start) { var p = String(b.start).split('-'); return +p[0] * 12 + (+p[1] - 1); } return ym(pd(S.move)) + (+b.off || 0); }
+  function billsInMonth(y, m) {
+    var idx = y * 12 + m, endIdx = ym(contractEnd()), out = [];
+    S.bills.forEach(function (b) {
+      var amt = billAmt(b), s = billStart(b), every = +b.every || 1;
+      if (!b.on || !amt || idx < s || idx > endIdx || (idx - s) % every) return;
+      var k = (idx - s) / every; if (+b.count && k >= +b.count) return;
+      var key = b.id + '@' + y + '-' + (m + 1);
+      out.push({ date: new Date(y, m, Math.min(billDay(b), new Date(y, m + 1, 0).getDate())), kind: b.kind, title: b.name, amount: amt, key: key, paid: !!S.paid[key], est: !!b.est, nth: +b.count ? (k + 1) + '/' + b.count : '' });
+    });
+    return out;
+  }
+  var RANK = { mark: 0, task: 1, out: 2, in: 3 };
+  function monthEvents(y, m, R, T) {
+    var out = billsInMonth(y, m);
+    function inM(d) { return d && d.getFullYear() === y && d.getMonth() === m; }
+    T.forEach(function (s) { s.tasks.forEach(function (t) {
+      if (inM(t.due)) out.push({ date: t.due, kind: 'task', title: t.title, taskId: t.id, done: !!S.done[t.id], sub: s.name });
+      if (t.legal && inM(t.legal)) out.push({ date: t.legal, kind: 'task', title: t.title.replace(/ \+.*$/, '') + ' 법정 기한', taskId: t.id, done: !!S.done[t.id], sub: '이날까지는 꼭 해야 해요' });
+    }); });
+    [[R.C, '계약일'], [R.M, '입주일'], [contractEnd(), '계약 만료']].forEach(function (x) { if (inM(x[0])) out.push({ date: x[0], kind: 'mark', title: x[1] }); });
+    return out.sort(function (a, b) { return a.date - b.date || RANK[a.kind] - RANK[b.kind]; });
+  }
+  function upcoming(n, R, T) {
+    var nx = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    return monthEvents(today.getFullYear(), today.getMonth(), R, T).concat(monthEvents(nx.getFullYear(), nx.getMonth(), R, T))
+      .filter(function (e) { return e.date >= today && !e.done && !e.paid; }).slice(0, n);
+  }
+
+  // ---------- .ics (서버 없이 휴대폰 캘린더가 알림을 보냄) ----------
+  function icsD(d) { return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); }
+  function icsEsc(s) { return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
+  function icsFold(line) { var out = '', bytes = 0, enc = new TextEncoder(); for (var i = 0; i < line.length; i++) { var n = enc.encode(line[i]).length; if (bytes + n > 73) { out += '\r\n '; bytes = 1; } out += line[i]; bytes += n; } return out; }
+  function downloadICS() {
+    var R = evaluate(), T = buildTimeline(R), end = contractEnd(), n = 0;
+    var L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//jachwi-navi//after//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:자취 캘린더'];
+    var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+    var trig = { '3d': '-P2DT15H', '1d': '-PT15H', '0d': 'PT9H' }[S.remind] || '-PT15H';
+    function ev(start, summary, desc, rrule) {
+      L.push('BEGIN:VEVENT', 'UID:jachwi-' + (n++) + '-' + icsD(start) + '@jachwi-navi', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + icsD(start), 'DTEND;VALUE=DATE:' + icsD(add(start, 1)), 'SUMMARY:' + icsEsc(summary));
+      if (desc) L.push('DESCRIPTION:' + icsEsc(desc));
+      if (rrule) L.push('RRULE:' + rrule);
+      L.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(summary), 'TRIGGER:' + trig, 'END:VALARM', 'END:VEVENT');
+    }
+    S.bills.forEach(function (b) {
+      var amt = billAmt(b); if (!b.on || !amt) return;
+      var s = billStart(b), y = Math.floor(s / 12), mo = s % 12, day = billDay(b), first = new Date(y, mo, Math.min(day, new Date(y, mo + 1, 0).getDate()));
+      if (first > end) return;
+      ev(first, b.name + ' ' + won(amt) + '원' + (b.kind === 'in' ? ' 입금' : ' 납부'), (b.est ? '예상 금액이에요. ' : '') + '자취 계약 내비에서 만든 일정이에요.', 'FREQ=MONTHLY;INTERVAL=' + (+b.every || 1) + ';BYMONTHDAY=' + (day === 31 ? -1 : day) + (+b.count ? ';COUNT=' + b.count : ';UNTIL=' + icsD(end)));
+    });
+    T.forEach(function (s) { s.tasks.forEach(function (t) {
+      if (S.done[t.id]) return;
+      if (t.due && t.due >= today) ev(t.due, '[자취] ' + t.title, t.desc + ' (근거: ' + t.src + ')');
+      if (t.legal && t.legal >= today) ev(t.legal, '[자취] ' + t.title.replace(/ \+.*$/, '') + ' 법정 기한', '이날까지는 꼭 해야 해요. (근거: ' + t.src + ')');
+    }); });
+    L.push('END:VCALENDAR');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([L.map(icsFold).join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' })); a.download = 'jachwi-calendar.ics';
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast('캘린더 파일을 만들었어요. 휴대폰 캘린더에서 열면 일정과 알림이 들어가요.');
+  }
+
+  // ---------- 물어보기: 승인된 규칙에서 만든 답만 ----------
+  var QA = ['전월세 신고는 언제, 어디서 해?', '전입신고는 언제 해야 해?', '보증금 지키려면 뭘 해야 해?', '받을 수 있는 지원금 있어?'];
+  function qaAnswer(q, R) {
+    var rep = R.report, early = rep.required && rep.due < R.M;
+    if (/전월세|임대차 ?신고|확정일자/.test(q)) {
+      if (!rep.required) return { a: '보증금 6천만 원 이하, 월세 30만 원 이하라 전월세 신고 대상이 아니에요. 전입신고 때 확정일자를 함께 받아 두면 보증금을 지키는 데 도움이 돼요.', src: [['주택임대차보호법 제3조의6', LAW]] };
+      return { a: rep.reason + '라 신고 대상이에요. 기한은 계약일로부터 30일, <b>' + ymd(rep.due) + '</b>까지예요. ' + (early ? '입주보다 기한이 먼저 와서 부동산거래관리시스템에서 따로 신고해야 해요.' : '가장 쉬운 방법은 <b>전입신고할 때 임대차계약서를 함께 내는 것</b>이에요. 그러면 전월세 신고를 한 것으로 보고 확정일자도 함께 받아요.'), src: [['부동산거래신고법 제6조의2·제6조의5', LAW], ['부동산거래관리시스템', 'https://rtms.molit.go.kr']] };
+    }
+    if (/전입/.test(q)) return { a: '입주한 날부터 14일 안, <b>' + ymd(R.movein.due) + '</b>까지 해야 해요. 다만 보증금을 지키는 힘(대항력)은 전입신고 <b>다음 날 0시</b>부터 생겨서, 입주 당일(' + md(R.M) + ')에 하는 게 가장 안전해요.', src: [['주민등록법 제16조', LAW], ['주택임대차보호법 제3조', LAW]] };
+    if (/보증금|대항력|안전|사기/.test(q)) return { a: '① 잔금 보내기 직전에 등기부등본을 다시 떼어 새 근저당이 없는지 보고, ② 입주 당일 전입신고와 확정일자를 받고, ③ 나갈 때는 보증금을 돌려받은 뒤에 주소를 옮기세요. 집 자체의 위험 진단은 안심전세 앱에서 무료로 할 수 있어요.', src: [['주택임대차보호법 제3조·제3조의2', LAW], ['안심전세 앱', 'https://www.khug.or.kr']] };
+    if (/지원|청년월세|이사비|중개/.test(q)) {
+      var list = R.eligible.map(function (x) { return x.p.name + '(' + judge(x)[1] + ')'; });
+      return { a: list.length ? '지금 조건으로 ' + list.join(', ') + '을 신청해 볼 수 있어요. 금액은 공고마다 따로 보여드리고 합치지 않아요. 최종 선정은 기관 심사로 정해져요.' : '지금 조건으로 해당되는 지원이 없어요.', src: [['서울주거포털 · ' + BASIS + ' 기준', 'https://housing.seoul.go.kr']] };
+    }
+    if (/퇴거|갱신|나가|이사 ?가|만료/.test(q)) { var end = contractEnd(); return { a: '계약 만료는 <b>' + ymd(end) + '</b>이에요. 나갈 거라면 만료 2개월 전(<b>' + ymd(add(end, -60)) + '</b>)까지 집주인에게 알리세요. 둘 다 말이 없으면 같은 조건으로 이어지고(묵시적 갱신), 그때는 언제든 알리면 3개월 뒤에 나갈 수 있어요. 보증금은 꼭 받은 뒤에 전출하세요.', src: [['주택임대차보호법 제6조·제6조의2', LAW], ['퇴거 준비', '#moveout']] }; }
+    if (/세액공제|연말정산/.test(q)) return { a: '직장인이고 무주택 세대주라면 연말정산 때 낸 월세의 일부를 세액공제로 돌려받을 수 있어요. 전입신고가 되어 있어야 하고, 임대차계약서 사본과 월세 이체 내역이 필요해요. 소득 기준과 공제율은 그해 국세청 안내를 확인하세요.', src: [['조세특례제한법 제95조의2', LAW]] };
+    var KW = [[/약국/, 'medical', /약국/], [/병원|의원|치과/, 'medical', /의원|치과/], [/마트|다이소|생활용품|빨래|편의점/, 'life'], [/카페/, 'cafe'], [/지하철|신림역|버스|정류장/, 'transit'], [/공원|산책/, 'park'], [/헬스|운동|체육/, 'gym'], [/도서관|스터디|공부/, 'study'], [/주민센터|행정복지센터|청년센터/, 'public'], [/밥|식당|맛집/, 'food']];
+    for (var i = 0; i < KW.length; i++) if (KW[i][0].test(q)) { var ps = PLACES.filter(function (p) { return p.cat === KW[i][1] && (!KW[i][2] || KW[i][2].test(p.name)); }); return { a: '가장 가까운 ' + CATS[KW[i][1]][0] + ' 장소는 <b>' + ps[0].name + '</b>, 걸어서 ' + ps[0].min + '분(약 ' + ps[0].m + 'm)이에요.' + (ps[1] ? ' 다음은 ' + ps[1].name + '(' + ps[1].min + '분)이에요.' : '') + ' (시연용 예시 데이터)', src: [['지도 탐색에서 보기', '#map']] }; }
+    if (/가스|전기|수도|인터넷|공과금|관리비/.test(q)) return { a: '도시가스는 기사가 와서 안전점검을 해야 열 수 있어서 입주 며칠 전에 예약해야 해요. 입주 당일엔 계량기 숫자를 찍어 두세요. 매달 나가는 공과금은 자취 캘린더에 넣어 두면 챙겨드려요.', src: [['자취 캘린더', '#calendar']] };
+    return null;
+  }
+
+  // ---------- parts ----------
+  function badge(t) { return t[1] ? '<span class="badge ' + t[0] + '">' + t[1] + '</span>' : ''; }
+  function ext(href) { return href.charAt(0) === '#' ? '' : ' target="_blank" rel="noopener"'; }
+  function srcLink(src) { return /법/.test(src) ? '<a class="src" href="' + LAW + '" target="_blank" rel="noopener">근거 · ' + src + '</a>' : '<span class="src">근거 · ' + src + '</span>'; }
+  function taskItem(t, o) {
+    o = o || {};
+    var c = !!S.done[t.id], id = 'k-' + (o.pfx || '') + t.id;
+    var meta = !c && (t.docs || t.where) ? '<div class="meta">' + (t.docs ? '<span class="pill"><b>준비물</b>' + t.docs + '</span>' : '') + (t.where ? '<span class="pill"><b>어디서</b>' + t.where + '</span>' : '') + '</div>' : '';
+    var act = t.act && !c ? '<a class="btn ghost sm" href="' + t.act[1] + '"' + ext(t.act[1]) + '>' + t.act[0] + (t.act[1].charAt(0) === '#' ? '' : ic('out', 'sm')) + '</a>' : '';
+    return '<div class="task' + (c ? ' done' : '') + '">' + (o.num ? '<span class="num" aria-hidden="true">' + o.num + '</span>' : '') +
+      '<input class="chk" type="checkbox" id="' + id + '" data-act="task" data-id="' + t.id + '"' + (c ? ' checked' : '') + '>' +
+      '<div class="body"><div class="t"><label for="' + id + '">' + t.title + '</label>' + badge(dueTag(t)) + '</div><p class="d">' + t.desc + '</p>' + meta +
+      '<div class="act">' + act + srcLink(t.src) + '</div></div></div>';
+  }
+  function remindSelect() {
+    return '<label class="field"><span>미리 알림</span><select class="inp" data-field="remind">' + [['3d', '3일 전 오전 9시'], ['1d', '하루 전 오전 9시'], ['0d', '당일 오전 9시']].map(function (o) { return '<option value="' + o[0] + '"' + (S.remind === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>';
+  }
+  function dateBlk(d) { return '<span class="date-blk' + (+d === +today ? ' today' : '') + '"><b>' + d.getDate() + '</b><span>' + (d.getMonth() + 1) + '월 ' + WD[d.getDay()] + '</span></span>'; }
+
+  // ---------- parts / screens (kept) ----------
+  function viewTimeline() {
+    var R = evaluate(), T = buildTimeline(R), P = phase(R), nk = nowKey(R, T, P), total = 0, done = 0;
+    T.forEach(function (s) { s.tasks.forEach(function (t) { total++; if (S.done[t.id]) done++; }); });
+    var pct = Math.round(done / total * 100);
+    var stages = T.map(function (s) {
+      var all = s.tasks.every(function (t) { return S.done[t.id]; }), cls = s.key === nk ? 'now' : all ? 'done' : '';
+      return '<section class="stage ' + cls + '" id="st-' + s.key + '"><div class="stage-when"><b>' + s.name + '</b><span>' + s.when + '</span></div><span class="node" aria-hidden="true"></span>' +
+        '<div class="card"><div class="card-h"><h2>' + s.name + '</h2>' + (cls === 'now' ? '<span class="badge solid">지금</span>' : '<span class="badge">' + s.tasks.filter(function (t) { return S.done[t.id]; }).length + ' / ' + s.tasks.length + '</span>') + '</div>' + s.tasks.map(function (t) { return taskItem(t); }).join('') + '</div></section>';
+    }).join('');
+    return '<div class="page-head"><div><p class="eyebrow">' + md(R.C) + ' 계약 · ' + md(R.M) + ' 입주 · ' + ymd(contractEnd()) + ' 만료</p><h1>내 자취 타임라인</h1></div><button type="button" class="btn line" data-act="ics">' + ic('bell') + '캘린더 앱에 기한 넣기</button></div>' +
+      '<section class="card" style="margin-bottom:20px"><div class="split" style="margin-bottom:10px"><b>' + done + ' / ' + total + ' 완료</b><span class="muted s13">' + pct + '%</span></div><div class="progress-line"><span style="width:' + pct + '%"></span></div></section>' +
+      '<div class="rail">' + stages + '</div><p class="s12 muted" style="margin-top:20px">기한은 첫날을 빼고 셌어요(민법 제157조). 전입신고 14일은 주민등록법, 전월세 신고 30일은 부동산거래신고법, 지원 일정은 각 공고 기준이에요.</p>';
+  }
+
+  function calBase() { if (S.calM) { var p = S.calM.split('-'); return new Date(+p[0], +p[1] - 1, 1); } return new Date(today.getFullYear(), today.getMonth(), 1); }
+  function dayOptions(cur, withMove) { var o = withMove ? '<option value="0"' + (+cur ? '' : ' selected') + '>입주일과 같은 날</option>' : ''; for (var d = 1; d <= 28; d++) o += '<option value="' + d + '"' + (+cur === d ? ' selected' : '') + '>' + d + '일</option>'; return o + '<option value="31"' + (+cur === 31 ? ' selected' : '') + '>말일</option>'; }
+  function billForm(b) {
+    var L = !!b.link, a = ' data-bill="' + b.id + '" data-k=', f = function (lab, inner, full) { return '<label class="field' + (full ? ' full' : '') + '"><span>' + lab + '</span>' + inner + '</label>'; };
+    return '<div class="bill-form">' +
+      f('이름', '<input class="inp"' + a + '"name" maxlength="20" value="' + esc(b.name) + '">') +
+      f('금액', L ? '<input class="inp" disabled value="' + won(billAmt(b)) + '원">' : '<div class="unit"><input class="inp" inputmode="numeric"' + a + '"amount" value="' + (b.amount || '') + '"><em>원</em></div>') +
+      f('날짜', '<select class="inp"' + a + '"day">' + dayOptions(b.day, L) + '</select>') +
+      f('주기', '<select class="inp"' + a + '"every">' + [[1, '매월'], [2, '2개월마다'], [3, '3개월마다']].map(function (o) { return '<option value="' + o[0] + '"' + ((+b.every || 1) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') +
+      (L ? '<p class="s12 muted full">금액은 계약 정보의 ' + (b.link === 'rent' ? '월세' : '관리비') + '를 따라가요. <a href="#contract">계약 정보</a></p>' : f('구분', '<select class="inp"' + a + '"kind"><option value="out"' + (b.kind === 'out' ? ' selected' : '') + '>나가는 돈</option><option value="in"' + (b.kind === 'in' ? ' selected' : '') + '>들어오는 돈</option></select>')) +
+      f('시작 달', '<input type="month" class="inp"' + a + '"start" value="' + ymStr(billStart(b)) + '">') +
+      f('횟수 (비우면 계약 끝까지)', '<input class="inp" inputmode="numeric"' + a + '"count" value="' + (+b.count || '') + '">', true) +
+      '<label class="split full s13"><span>예상 금액 (매달 달라요)</span><input class="sw" type="checkbox" role="switch"' + a + '"est"' + (b.est ? ' checked' : '') + '></label>' +
+      (L ? '' : '<button type="button" class="btn line sm full" data-act="billdel" data-v="' + b.id + '">이 항목 지우기</button>') + '</div>';
+  }
+  function viewCalendar() {
+    var R = evaluate(), T = buildTimeline(R), b0 = calBase(), y = b0.getFullYear(), m = b0.getMonth(), end = contractEnd();
+    var ev = monthEvents(y, m, R, T), sum = function (a) { return a.reduce(function (s, e) { return s + e.amount; }, 0); };
+    var outs = ev.filter(function (e) { return e.kind === 'out'; }), ins = ev.filter(function (e) { return e.kind === 'in'; }), tasks = ev.filter(function (e) { return e.kind === 'task' && !e.done; });
+    var outSum = sum(outs), paid = sum(outs.filter(function (e) { return e.paid; })), inSum = sum(ins);
+    var dim = new Date(y, m + 1, 0).getDate(), lead = new Date(y, m, 1).getDay(), cells = '', cnt = lead + dim;
+    var selD = S.calSel ? pd(S.calSel) : null; if (!selD || selD.getFullYear() !== y || selD.getMonth() !== m) selD = (today.getFullYear() === y && today.getMonth() === m) ? today : new Date(y, m, 1);
+    for (var i = 0; i < lead; i++) cells += '<span class="day out" aria-hidden="true"></span>';
+    for (var d = 1; d <= dim; d++) {
+      var dt = new Date(y, m, d), de = ev.filter(function (e) { return e.date.getDate() === d; });
+      var o = de.filter(function (e) { return e.kind === 'out'; }), inn = de.filter(function (e) { return e.kind === 'in'; }), tk = de.filter(function (e) { return e.kind === 'task' && !e.done; }), mk = de.filter(function (e) { return e.kind === 'mark'; });
+      var dots = tk.slice(0, 3).map(function () { return '<i class="dot"></i>'; }).join('') + mk.map(function () { return '<i class="dot mark"></i>'; }).join('');
+      var money = (o.length ? '<span class="m' + (o.every(function (e) { return e.paid; }) ? ' paid' : '') + '">−' + man(sum(o)) + '</span>' : '') + (inn.length ? '<span class="m in">+' + man(sum(inn)) + '</span>' : '');
+      cells += '<button type="button" class="day' + (+dt === +today ? ' today' : '') + (dt.getDay() === 0 ? ' sun' : '') + '" data-act="calday" data-v="' + iso(dt) + '" aria-pressed="' + (+dt === +selD) + '" aria-label="' + (m + 1) + '월 ' + d + '일, 일정 ' + de.length + '개"><span class="n">' + d + '</span><span class="dots" aria-hidden="true">' + dots + '</span>' + money + '</button>';
+    }
+    while (cnt % 7) { cells += '<span class="day out" aria-hidden="true"></span>'; cnt++; }
+    var list = ev.filter(function (e) { return +e.date === +selD; });
+    var KI = { out: ['', '₩'], in: ['in', '+'], task: ['task', '!'], mark: ['mark', '★'] };
+    var agenda = list.map(function (e) {
+      var tick = e.kind === 'out' || e.kind === 'in' ? '<label class="tick"><input class="chk" type="checkbox" data-act="paid" data-v="' + e.key + '"' + (e.paid ? ' checked' : '') + '>' + (e.kind === 'in' ? '받음' : '냄') + '</label>'
+        : e.kind === 'task' ? '<label class="tick"><input class="chk" type="checkbox" data-act="task" data-id="' + e.taskId + '"' + (e.done ? ' checked' : '') + '>완료</label>' : '';
+      return '<div class="ag' + (e.paid || e.done ? ' done' : '') + '"><span class="k-ic ' + KI[e.kind][0] + '" aria-hidden="true">' + KI[e.kind][1] + '</span><span class="what"><b>' + esc(e.title) + '</b><span class="s12 muted">' + (e.amount ? won(e.amount) + '원' + (e.est ? ' · 예상' : '') + (e.nth ? ' · ' + e.nth + '회차' : '') : e.sub || '계약') + '</span></span>' + tick + '</div>';
+    }).join('') || '<p class="muted s13" style="padding:8px 0">이날은 일정이 없어요.</p>';
+    var sup = findBill('sup-rent'), rentP = R.programs[0];
+    var bills = S.bills.map(function (b) {
+      var amt = billAmt(b), ed = S.calEdit === b.id;
+      return '<div class="bill' + (b.on ? '' : ' off') + '"><input class="sw" type="checkbox" role="switch" aria-label="' + esc(b.name) + ' 켜기" data-act="billon" data-v="' + b.id + '"' + (b.on ? ' checked' : '') + '><span class="what"><b>' + esc(b.name) + '</b><span class="s12 muted">' + ((+b.every || 1) > 1 ? b.every + '개월마다 ' : '매월 ') + dayLabel(billDay(b)) + ' · ' + (b.kind === 'in' ? '+' : '') + won(amt) + '원' + (b.est ? ' (예상)' : '') + (+b.count ? ' · ' + b.count + '회' : '') + '</span>' + (b.note && !b.on ? '<span class="s12" style="color:var(--brand-text)">' + b.note + '</span>' : '') + '</span>' +
+        '<button type="button" class="btn ghost sm" data-act="billedit" data-v="' + b.id + '" aria-expanded="' + ed + '">' + (ed ? '닫기' : '수정') + '</button></div>' + (ed ? billForm(b) : '');
+    }).join('');
+    var addF = '<form data-form="billadd" class="bill-form" style="margin-top:12px"><b class="full">항목 추가</b><label class="field"><span>이름</span><input class="inp" name="name" maxlength="20" placeholder="휴대폰 요금"></label><label class="field"><span>금액</span><div class="unit"><input class="inp" name="amount" inputmode="numeric" placeholder="55000"><em>원</em></div></label>' +
+      '<label class="field"><span>매월</span><select class="inp" name="day">' + dayOptions(25) + '</select></label><label class="field"><span>구분</span><select class="inp" name="kind"><option value="out">나가는 돈</option><option value="in">들어오는 돈</option></select></label><button class="btn sm full" type="submit">' + ic('plus', 'sm') + '추가</button></form>';
+    var tab = S.calTab === 'money' ? 'money' : 'day';
+    var panel = '<section class="card"><div class="panel-tabs" role="tablist"><button type="button" role="tab" data-act="caltab" data-v="day" aria-selected="' + (tab === 'day') + '">' + md(selD) + ' 일정</button><button type="button" role="tab" data-act="caltab" data-v="money" aria-selected="' + (tab === 'money') + '">매달 돈 설정</button></div>' +
+      (tab === 'day' ? '<div role="tabpanel">' + agenda + '</div>'
+        : '<div role="tabpanel"><p class="s13 muted" style="margin-bottom:6px">계약 기간(' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + ') 동안 반복해서 보여줘요.</p>' + (rentP.eligible && sup && !sup.on ? '<div class="banner" style="margin:8px 0">' + ic('gift') + '<span>청년월세 지원 <b>' + judge(rentP)[1] + '</b> · 선정되면 ‘청년월세 지원 입금’을 켜 두세요.</span></div>' : '') + bills + addF + '</div>') + '</section>' +
+      '<section class="card stack" style="margin-top:16px"><div><h2 style="font-size:16px">휴대폰 캘린더로 알림 받기</h2><p class="s13 muted" style="margin-top:4px">.ics 파일을 열면 납부일과 기한이 알림과 함께 들어가요. 서버 없이 이 기기에서 만들어요.</p></div>' + remindSelect() + '<button type="button" class="btn block" data-act="ics">' + ic('down') + '.ics 파일 받기</button></section>';
+    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.addr || '내 자취방') + ' · ' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + '</p><h1>공과금 & 납부</h1></div><div class="month-nav"><button type="button" class="icon-btn" data-act="calnav" data-v="-1" aria-label="이전 달">' + ic('back') + '</button><h2 aria-live="polite">' + y + '. ' + (m + 1) + '</h2><button type="button" class="icon-btn" data-act="calnav" data-v="1" aria-label="다음 달">' + ic('chev') + '</button><button type="button" class="btn ghost sm" data-act="calnav" data-v="0">오늘</button></div></div>' +
+      '<div class="stats"><div class="stat"><div class="k">' + (m + 1) + '월 나갈 돈</div><div class="v">' + won(outSum) + '원</div><div class="h">낸 돈 ' + won(paid) + ' · 남은 돈 ' + won(outSum - paid) + '</div></div><div class="stat"><div class="k">' + (m + 1) + '월 들어올 돈</div><div class="v' + (inSum ? ' in' : '') + '">' + won(inSum) + '원</div><div class="h">' + (ins.length ? '지원금 입금' : '선정된 지원금을 켜 보세요') + '</div></div><div class="stat"><div class="k">챙길 기한</div><div class="v' + (tasks.length ? ' due' : '') + '">' + tasks.length + '개</div><div class="h">신고·지원 신청 등</div></div></div>' +
+      '<div class="cal-wrap"><section class="card"><div class="wd" aria-hidden="true">' + WD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="days">' + cells + '</div>' +
+      '<div class="legend"><span><i class="dot"></i>기한</span><span><i class="dot mark"></i>계약일·입주일</span><span><b style="color:var(--ink)">−</b>나가는 돈</span><span><b style="color:var(--brand-text)">+</b>들어오는 돈</span></div></section><div>' + panel + '</div></div>';
+  }
+
+  function viewSupport() {
+    var R = evaluate();
+    var cards = R.programs.map(function (x) {
+      var j = judge(x), p = x.p;
+      return '<section class="card c6 stack"><div class="row"><span class="prog-ic">' + ic('gift') + '</span><div style="flex:1 1 200px;min-width:0"><p class="s12 muted">' + p.org + '</p><h2 style="font-size:19px;font-weight:800">' + p.name + '</h2></div></div><div class="row">' + badge(j) + '<span class="badge ' + p.statusCls + '">' + p.status + '</span>' + (p.firstCome ? '<span class="badge due">선착순 · 일찍 마감될 수 있음</span>' : '') + '</div>' +
+        '<div><div class="kv"><span class="muted">지원 내용</span><b>' + p.amountText + '</b></div><div class="kv"><span class="muted">선정 방식</span><b>' + p.select + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + p.channel + '</b></div></div>' +
+        '<div><b class="s13">자격 확인</b><div style="margin-top:6px">' + x.res.map(function (r) { var mk = r.ok === true ? ['ok', '✓'] : r.ok === false ? ['x', '✕'] : ['q', '?']; return '<div class="cond"><span class="mk ' + mk[0] + '" aria-label="' + (r.ok === true ? '충족' : r.ok === false ? '미충족' : '확인 필요') + '">' + mk[1] + '</span><span style="flex:1 1 auto">' + r.label + '</span><span class="s13 ' + (r.ok === null ? '' : 'muted') + '" style="' + (r.ok === null ? 'color:var(--due-text);font-weight:700' : '') + '">' + esc(r.mine) + '</span></div>'; }).join('') + '</div></div>' +
+        '<div><b class="s13">제출 서류 ' + p.docs.length + '개</b><div class="chips" style="margin-top:8px">' + p.docs.map(function (dd) { return '<span class="pill">' + dd + '</span>'; }).join('') + '</div></div>' +
+        '<div class="row" style="margin-top:auto"><a class="btn" href="' + p.url + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a><a class="btn ghost" href="' + p.url + '" target="_blank" rel="noopener">공고 원문 · ' + BASIS + '</a></div></section>';
+    }).join('');
+    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · 만 ' + S.age + '세 · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>지원사업</h1></div><a class="btn line" href="#contract">조건 바꾸기</a></div>' +
+      '<div class="banner" style="margin-bottom:16px">' + ic('info') + '<span>운영자가 공고 원문과 대조해 승인한 기준(' + BASIS + ')으로만 판정해요. 금액은 공고마다 따로 보여주고 합치지 않아요. <b>해당 가능</b>도 최종 선정은 기관 심사로 정해져요.</span></div>' +
+      '<div class="grid">' + cards + '<section class="card c12"><div class="card-h"><h2>함께 확인해 볼 지원</h2></div><div class="kv"><span>청년월세 특별지원 (국토교통부)</span><span class="muted s13">서울시 청년월세 지원과 함께 받을 수 없어요</span></div><div class="kv"><span>청년 임차보증금 이자 지원</span><span class="muted s13">보증금 대출을 받을 때만 해당돼요</span></div></section></div>';
+  }
+
+  var DOCS = [
+    { k: 'contract', name: '임대차계약서', st: ['due', '확정일자 필요'], note: '전입신고 때 확정일자를 받으면 다시 올려 주세요. 청년월세 지원에 필요해요.' },
+    { k: 'transfer', name: '계약금 이체확인증', st: ['brand', '준비됨'], note: '임대인 명의 계좌로 보낸 내역이에요.' },
+    { k: 'bank', name: '본인 명의 통장 사본', st: ['brand', '준비됨'], note: '계좌번호는 뒤 4자리만 보여요.' },
+    { k: 'balance', name: '잔금 이체확인증', st: ['', '입주일에 생겨요'], note: '입주 당일 잔금을 보내고 저장하세요.' },
+    { k: 'photos', name: '입주 날 집 상태 사진', st: ['', '입주일에 찍기'], note: '퇴거 때 비교할 수 있게 같은 자리를 찍어 두세요.' },
+    { k: 'resident', name: '주민등록등본', st: ['', '전입신고 후 발급'], note: '세대주로 등록됐는지도 함께 확인해요.' }
+  ];
+  function viewDocs() {
+    var rows = DOCS.map(function (d) { return '<div class="doc-card"><span class="doc-thumb">' + ic('doc') + '</span><div style="flex:1 1 auto;min-width:0"><b>' + d.name + '</b><p class="s13 muted">' + d.note + '</p></div>' + badge(d.st) + '</div>'; }).join('') +
+      S.files.map(function (n) { return '<div class="doc-card"><span class="doc-thumb">' + ic('doc') + '</span><div style="flex:1 1 auto;min-width:0"><b style="overflow-wrap:anywhere">' + esc(n) + '</b><p class="s13 muted">방금 추가 · 이 기기에만 보관</p></div><span class="badge">시연</span></div>'; }).join('');
+    return '<div class="page-head"><div><p class="eyebrow">지원 신청·연말정산·퇴거 때 쓰는 서류</p><h1>서류함</h1></div><label class="btn" style="cursor:pointer">' + ic('plus') + '서류 추가<input type="file" accept="image/*,.pdf" data-act="file" style="position:absolute;width:1px;height:1px;opacity:0"></label></div>' +
+      '<div class="grid"><section class="card c8">' + rows + '</section><aside class="c4 stack"><div class="card stack"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">서버에 올리지 않아요. 내용 확인(OCR·AI)을 쓸 때만 동의를 받고 보내며, 주민등록번호는 보내기 전에 가리고 확인이 끝나면 바로 지워요.</p></div><div class="card stack"><h2 style="font-size:16px">지원 신청에 필요한 것</h2>' + PROGRAMS[0].docs.map(function (d) { return '<div class="kv"><span class="s13">' + d + '</span></div>'; }).join('') + '<a class="s13" href="#support">지원사업에서 보기</a></div></aside></div>';
+  }
+
+  // ---------- 우리 동네 (시연용 예시 데이터) ----------
+  // 실제 서비스에서는 공공데이터(상가정보·병원정보·역/정류소·공공시설 위치)와 지도 API로 채운다. 별점·리뷰는 만들지 않는다.
+  var HOUSE = { lat: 37.48120, lng: 126.92750 };
+  var CATS = { food: ['맛집', 'food'], cafe: ['카페', 'cup'], study: ['공부·작업', 'book'], gym: ['운동', 'dumbbell'], park: ['공원·산책', 'tree'], life: ['생활 편의', 'cart'], medical: ['병원·약국', 'cross'], transit: ['교통', 'bus'], public: ['공공시설', 'building'], safety: ['안전', 'shield'] };
+  function place(id, cat, name, dx, dy, tags, desc, pub) { var p = { id: id, cat: cat, name: name, lat: HOUSE.lat + dy / 111000, lng: HOUSE.lng + dx / 88200, dx: dx, dy: dy, tags: tags, desc: desc, pub: !!pub }; p.m = Math.round(Math.sqrt(dx * dx + dy * dy)); p.min = Math.max(1, Math.ceil(p.m / 67)); return p; }
+  var PLACES = [
+    place('conv', 'life', '편의점', -44, 28, ['24시간', '택배'], '밤늦게도 열고 택배를 맡기고 찾을 수 있어요.'),
+    place('bus', 'transit', '버스정류장', 97, 50, ['간선', '마을버스'], '마을버스와 간선버스가 서요.'),
+    place('pharm', 'medical', '약국', 132, 89, ['처방전'], '처방전 약을 받을 수 있어요.'),
+    place('laundry', 'life', '셀프 빨래방', -90, -60, ['건조기', '이불 빨래'], '큰 이불은 여기서 빨면 편해요.'),
+    place('food1', 'food', '동네 백반집', 60, 120, ['혼밥', '점심'], '혼자 먹기 편한 1인 좌석이 있는 식당이에요.'),
+    place('gym1', 'gym', '헬스장', 170, 120, ['월 이용권'], '월 단위로 등록하는 헬스장이에요.'),
+    place('clinic', 'medical', '내과 의원', 159, 155, ['감기', '건강검진'], '가벼운 진료와 검진을 받을 수 있어요.'),
+    place('cafe1', 'cafe', '동네 북카페', -170, 60, ['책', '조용한 편'], '책을 읽거나 작업하기 좋은 좌석이 있는 카페예요.'),
+    place('food2', 'food', '국수집', -130, 160, ['저녁', '포장'], '포장도 되는 국수집이에요.'),
+    place('study1', 'study', '스터디카페', 210, 180, ['24시간', '콘센트'], '시간제로 이용하는 스터디카페예요.'),
+    place('daiso', 'life', '생활용품점', 150, 210, ['수납', '청소용품'], '입주 첫 주에 필요한 생활용품을 살 수 있어요.'),
+    place('food3', 'food', '분식집', 30, 230, ['포장', '저렴'], '간단히 먹기 좋은 분식집이에요.'),
+    place('center', 'public', '행정복지센터 (주민센터)', -250, -80, ['전입신고', '확정일자', '등본'], '전입신고·확정일자·등본 발급을 하는 곳이에요.', true),
+    place('mart', 'life', '대형마트', -203, 233, ['장보기', '배달'], '장을 한 번에 보기 좋은 마트예요.'),
+    place('dent', 'medical', '치과', 230, 260, ['스케일링'], '스케일링·충치 치료를 받을 수 있어요.'),
+    place('police', 'safety', '지구대 (경찰)', 291, -122, ['24시간'], '밤늦게 도움이 필요할 때 찾을 수 있는 곳이에요.', true),
+    place('cafe2', 'cafe', '테이크아웃 카페', 120, 300, ['아침', '테이크아웃'], '출근길에 들르기 좋은 작은 카페예요.'),
+    place('park', 'park', '근린공원', -291, -244, ['산책', '운동기구'], '한 바퀴 15분쯤 걷는 동네 공원이에요.', true),
+    place('subway', 'transit', '신림역 (2호선)', 196, 337, ['2호선', '신림선'], '2호선과 신림선을 탈 수 있어요.'),
+    place('library', 'study', '구립 도서관', -360, 150, ['열람실', '무료'], '열람실과 노트북 좌석이 있는 구립 도서관이에요.', true),
+    place('river', 'park', '하천 산책로', 380, -320, ['산책', '자전거'], '물길을 따라 걷거나 자전거를 탈 수 있어요.', true),
+    place('sports', 'gym', '구립 생활체육관', 280, 420, ['수영', '저렴한 강좌'], '구민 할인 강좌가 있는 공공 체육관이에요.', true),
+    place('youth', 'public', '청년센터', 420, 470, ['청년 상담', '공간 대여'], '청년 상담과 모임 공간 대여를 하는 곳이에요.', true)
+  ];
+  function findPlace(id) { return PLACES.filter(function (p) { return p.id === id; })[0]; }
+  function short(n) { return n.replace(/ \(.*\)$/, ''); }
+  function josa(w, a, b) { var c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 ? a : b; }
+  function kakao(kind, p) { return kind === 'rv' ? 'https://map.kakao.com/link/roadview/' + p.lat.toFixed(5) + ',' + p.lng.toFixed(5) : kind === 'to' ? 'https://map.kakao.com/link/to/' + encodeURIComponent(p.name) + ',' + p.lat.toFixed(5) + ',' + p.lng.toFixed(5) : 'https://map.kakao.com/link/map/' + encodeURIComponent(p.name) + ',' + p.lat.toFixed(5) + ',' + p.lng.toFixed(5); }
+  function icoSvg(name, x, y, s) { return '<svg class="ico" x="' + x + '" y="' + y + '" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + ICON[name] + '</svg>'; }
+
+  // 개략 지도 (실제 지도가 아님): 집이 가운데, 1px = 약 3.3m
+  function placeMap(cat, selId, H, labels) {
+    var W = 640, cx = 320, cy = Math.round(H / 2), RR = Math.min(W, H) / 2 - 22;
+    var rad = function (m) { return RR * Math.sqrt(m / 700); }; // 방향은 그대로, 가까운 곳은 넓게
+    var raw = function (p) { var d = p.m || 1, r = rad(d); return [cx + p.dx / d * r, cy - p.dy / d * r]; };
+    var list = PLACES.filter(function (p) { return cat === 'all' || p.cat === cat; });
+    var sel = selId && findPlace(selId);
+    if (sel && list.indexOf(sel) < 0) list.push(sel);
+    var P0 = {}; list.forEach(function (p) { P0[p.id] = raw(p); });
+    for (var it = 0; it < 40; it++) for (var i = 0; i < list.length; i++) for (var j = i + 1; j < list.length; j++) {
+      var a = P0[list[i].id], c = P0[list[j].id], ddx = c[0] - a[0], ddy = c[1] - a[1], dd = Math.sqrt(ddx * ddx + ddy * ddy) || 0.1, need = labels ? 40 : 34;
+      if (dd < need) { var push = (need - dd) / 2, ux = ddx / dd, uy = ddy / dd; a[0] -= ux * push; a[1] -= uy * push; c[0] += ux * push; c[1] += uy * push; }
+    }
+    list.forEach(function (p) { var q = P0[p.id], ddx = q[0] - cx, ddy = q[1] - cy, dd = Math.sqrt(ddx * ddx + ddy * ddy); if (dd < 34) { q[0] = cx + ddx / (dd || 1) * 34; q[1] = cy + ddy / (dd || 1) * 34; } q[0] = Math.max(18, Math.min(W - 18, q[0])); q[1] = Math.max(18, Math.min(H - 30, q[1])); });
+    var at = function (p) { var q = P0[p.id] || raw(p); return [Math.round(q[0]), Math.round(q[1])]; };
+    var bg = '<rect width="' + W + '" height="' + H + '" fill="var(--map-bg)"/>';
+    for (var gx = 24; gx < W; gx += 52) bg += '<path class="alley" d="M' + gx + ' 0V' + H + '"/>';
+    for (var gy = 30; gy < H; gy += 52) bg += '<path class="alley" d="M0 ' + gy + 'H' + W + '"/>';
+    var pk = raw(findPlace('park')), rv = raw(findPlace('river'));
+    bg += '<ellipse cx="' + pk[0] + '" cy="' + pk[1] + '" rx="58" ry="40" fill="var(--map-green)"/>' +
+      '<path d="M' + Math.round(rv[0] - 150) + ' ' + (H + 10) + 'C' + (rv[0] - 60) + ' ' + (rv[1] + 30) + ' ' + (rv[0] + 40) + ' ' + (rv[1] - 10) + ' ' + (W + 10) + ' ' + (rv[1] - 60) + '" stroke="var(--map-water)" stroke-width="26" fill="none"/>' +
+      '<path class="road" stroke-width="16" d="M0 ' + (cy - 46) + 'H' + W + '"/><path class="road" stroke-width="13" d="M' + (cx + 58) + ' 0V' + H + '"/><path class="road" stroke-width="9" d="M0 ' + (cy + 130) + 'L' + W + ' ' + (cy - 170) + '"/>';
+    var r5 = Math.round(rad(335)), r10 = Math.round(rad(670));
+    var rings = '<circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r10 + '"/><circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r5 + '"/>' +
+      '<text class="ring-t" x="' + (cx - r5 - 4) + '" y="' + (cy + 4) + '" style="text-anchor:end">5분</text><text class="ring-t" x="' + (cx - r10 - 4) + '" y="' + (cy + 4) + '" style="text-anchor:end">10분</text>';
+    var marks = list.map(function (p) {
+      var xy = at(p), on = sel && sel.id === p.id, r = on ? 18 : 15, s = on ? 18 : 16;
+      return '<g class="mk' + (on ? ' on' : '') + '" data-act="place" data-v="' + p.id + '" role="button" tabindex="0" aria-label="' + p.name + ', 걸어서 ' + p.min + '분"><circle class="b" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '"/>' + icoSvg(CATS[p.cat][1], xy[0] - s / 2, xy[1] - s / 2, s) +
+        (labels || on ? '<text x="' + xy[0] + '" y="' + (xy[1] + r + 13) + '">' + short(p.name) + '</text>' : '') + '</g>';
+    }).join('');
+    var home = '<g class="home-mk" aria-hidden="true"><circle class="b2" cx="' + cx + '" cy="' + cy + '" r="20"/><path d="M' + (cx - 8) + ' ' + (cy + 1) + 'l8-7 8 7M' + (cx - 5) + ' ' + cy + 'v8h10v-8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>';
+    var pop = '';
+    if (sel) {
+      var xy = at(sel), left = Math.min(78, Math.max(22, xy[0] / W * 100)), top = xy[1] / H * 100, saved = !!S.saved[sel.id];
+      pop = '<div class="pop' + (top < 52 ? ' below' : '') + '" style="left:' + left + '%;top:' + top + '%" role="dialog" aria-label="' + sel.name + '">' +
+        '<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="ptile">' + ic(CATS[sel.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + sel.name + '</b><p class="s12 muted">' + CATS[sel.cat][0] + ' · 걸어서 ' + sel.min + '분 · ' + sel.m + 'm</p></div><button type="button" class="icon-btn" style="width:32px;height:32px;background:transparent" data-act="place" data-v="" aria-label="닫기">' + ic('x', 'sm') + '</button></div>' +
+        '<div class="tags" style="margin:10px 0 6px">' + sel.tags.map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('') + '</div><p class="s13 sub">' + sel.desc + '</p>' +
+        '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + kakao('map', sel) + '" target="_blank" rel="noopener">지도에서 보기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '" target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div></div>';
+    }
+    return '<div class="map-box"><svg class="map" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="집 주변 개략 지도">' + bg + rings + marks + home + '</svg>' + pop + '</div>';
+  }
+  function catChips(cur, act, cats) {
+    return '<div class="cats" role="group" aria-label="분류">' + ['all'].concat(cats || Object.keys(CATS)).map(function (k) { return '<button type="button" class="cat" data-act="' + act + '" data-v="' + k + '" aria-pressed="' + (cur === k) + '">' + (k === 'all' ? '전체' : ic(CATS[k][1], 'sm') + CATS[k][0]) + '</button>'; }).join('') + '</div>';
+  }
+  function placeRow(p, go) {
+    return '<button type="button" class="place" data-act="place" data-v="' + p.id + '"' + (go ? ' data-go="map"' : '') + ' aria-pressed="' + (S.mapSel === p.id) + '"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[p.cat][1]) + '</span><span class="what"><b>' + p.name + '</b><span class="s12 muted">' + CATS[p.cat][0] + ' · ' + p.tags.slice(0, 2).join(' · ') + '</span></span><span class="s13" style="text-align:right;white-space:nowrap"><b>' + p.min + '분</b><br><span class="muted s12">' + p.m + 'm</span></span></button>';
+  }
+  var ART = '<svg class="art" viewBox="0 0 280 120" aria-hidden="true"><g fill="var(--brand)"><rect x="12" y="46" width="40" height="74" rx="4" opacity=".18"/><rect x="58" y="22" width="48" height="98" rx="4" opacity=".28"/><rect x="112" y="54" width="36" height="66" rx="4" opacity=".18"/><rect x="196" y="34" width="52" height="86" rx="4" opacity=".24"/><rect x="252" y="62" width="24" height="58" rx="4" opacity=".16"/></g>' +
+    '<g fill="var(--surface)" opacity=".9"><rect x="66" y="32" width="8" height="8" rx="1.5"/><rect x="80" y="32" width="8" height="8" rx="1.5"/><rect x="66" y="48" width="8" height="8" rx="1.5"/><rect x="94" y="48" width="8" height="8" rx="1.5"/><rect x="204" y="44" width="8" height="8" rx="1.5"/><rect x="218" y="44" width="8" height="8" rx="1.5"/><rect x="232" y="60" width="8" height="8" rx="1.5"/></g>' +
+    '<path d="M150 120V78l24-20 24 20v42Z" fill="var(--brand)"/><rect x="167" y="96" width="14" height="24" rx="2" fill="var(--surface)"/><path d="M140 80l34-28 34 28" fill="none" stroke="var(--brand-deep)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="248" cy="22" r="10" fill="var(--due)" opacity=".8"/></svg>';
+
+  var REC = [['park', '근처 공원', '가벼운 산책 코스'], ['gym', '운동할 곳', '헬스장·체육시설'], ['study', '공부·작업 공간', '스터디카페·도서관'], ['life', '생활 편의', '마트·다이소·빨래방'], ['food', '동네 맛집', '혼밥하기 편한 곳'], ['cafe', '카페', '동네 카페']];
+  var CHAL = [['c-mart', 'life', '주변 마트 찾아보기'], ['c-med', 'medical', '가까운 병원 위치 저장하기'], ['c-cafe', 'cafe', '동네 카페 1곳 가 보기'], ['c-gym', 'gym', '운동할 곳 알아보기'], ['c-park', 'park', '공원이나 산책로 가 보기']];
+  function chalDone(c) { return !!S.chal[c[0]] || PLACES.some(function (p) { return p.cat === c[1] && S.saved[p.id]; }); }
+
+  // ---------- 홈 ----------
+  function viewHome() {
+    var R = evaluate(), T = buildTimeline(R), P = phase(R), O = openTasks(R, T);
+    var nm = S.nick ? esc(S.nick) + '님, ' : '';
+    var g = P.dm < -1 ? [nm + '입주까지 ' + (-P.dm) + '일 남았어요', '이사 전에 우리 동네를 미리 둘러보세요.'] : P.dm === -1 ? [nm + '내일 입주해요', '오늘 챙길 것 먼저 끝내고, 동네도 미리 둘러봐요.'] : P.dm === 0 ? [nm + '오늘은 입주하는 날이에요', '순서대로 하나씩 끝내 봐요. 전입신고는 오늘 하는 게 가장 안전해요.'] : P.dm <= 30 ? [nm + '새 동네는 잘 적응하고 계신가요?', '아직 안 가 본 우리 동네 곳곳을 찾아보세요.'] : [nm + '자취 ' + (P.dm + 1) + '일째예요', '이번 주에 가 볼 만한 곳을 골라 봤어요.'];
+    var banner = '<section class="hero-banner"><div><p class="eyebrow">' + ymd(today) + ' ' + WD[today.getDay()] + '요일 · ' + P.badge + '</p><h1>' + g[0] + '</h1><p>' + g[1] + '</p></div>' + ART + '</section>';
+    // 오늘 챙길 것 3칸
+    var nx = O.dueNow[0] || O.upcoming[0], todo;
+    if (P.dm === 0) { var left = T.filter(function (s) { return s.key === 'mday'; })[0].tasks.filter(function (t) { return !S.done[t.id]; }).length; todo = '<a class="card mini c4" href="#timeline"><span class="k">' + ic('route', 'sm') + '입주 당일 할 일</span><span class="v">' + (left ? left + '개 남았어요' : '모두 끝냈어요') + '</span><span class="h">등기부 재확인 → 잔금 → 전입신고 순서</span></a>'; }
+    else todo = '<a class="card mini c4" href="#timeline"><span class="k">' + ic('route', 'sm') + '다음 할 일 ' + (nx ? badge(dueTag(nx.t)) : '') + '</span><span class="v">' + (nx ? nx.t.title : '챙길 기한이 없어요') + '</span><span class="h">' + (O.dueNow.length > 1 ? '오늘까지 ' + O.dueNow.length + '개' : nx ? nx.s.name : '') + '</span></a>';
+    var bm = billsInMonth(today.getFullYear(), today.getMonth()).filter(function (e) { return e.kind === 'out' && !e.paid; }), nb = bm.filter(function (e) { return e.date >= today; })[0];
+    var pay = '<a class="card mini c4" href="#calendar"><span class="k">' + ic('card', 'sm') + (today.getMonth() + 1) + '월 남은 납부</span><span class="v">' + won(bm.reduce(function (s, e) { return s + e.amount; }, 0)) + '원</span><span class="h">' + (nb ? '다음 · ' + md(nb.date) + ' ' + nb.title : '이번 달 납부를 다 체크했어요') + '</span></a>';
+    var el = R.eligible[0];
+    var sup = '<a class="card mini c4" href="#support"><span class="k">' + ic('gift', 'sm') + '신청해 볼 수 있는 지원</span><span class="v">' + R.eligible.length + '건</span><span class="h">' + (el ? el.p.name + ' · ' + judge(el)[1] + ' · ' + el.p.status : '지금 조건으로는 없어요') + '</span></a>';
+    var tip = R.report.required && R.report.due < R.M ? '<div class="banner due c12">' + ic('info') + '<span>전월세 신고 기한(<b>' + md(R.report.due) + '</b>)이 입주보다 먼저 와요. 전입신고와 합칠 수 없으니 따로 신고하세요.</span></div>'
+      : R.report.required && !S.done.mv && P.dm <= 14 ? '<div class="banner c12">' + ic('info') + '<span><b>전입신고할 때 임대차계약서를 같이 내세요.</b> 전월세 신고와 확정일자까지 한 번에 끝나요. 가까운 <a href="#map" data-act="place" data-v="center" data-go="map">행정복지센터</a>까지 걸어서 ' + findPlace('center').min + '분이에요.</span></div>' : '';
+    // 동네 탐색
+    var mc = S.homeCat || 'all';
+    var explore = '<section class="card c8"><div class="split" style="flex-wrap:wrap;margin-bottom:12px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="ptile" style="width:44px;height:44px">' + ic('pin') + '</span><div><h2 style="font-size:19px;font-weight:800">우리 동네 탐색하기</h2><p class="s13 muted">지도로 주변을 둘러보고, 아직 안 가 본 곳을 찾아보세요.</p></div></div><a class="more s13" href="#map" style="font-weight:700">크게 보기' + ic('chev', 'sm') + '</a></div>' +
+      catChips(mc, 'homecat', ['food', 'cafe', 'study', 'gym', 'park', 'life']) + '<div style="margin-top:12px">' + placeMap(mc, S.mapSel, 360, false) + '</div><p class="s12 muted" style="margin-top:8px">개략도 · 방향은 예시 좌표 기준, 거리는 가까울수록 넓게 그렸어요. 시연용 예시 데이터라 실제 가게 정보가 아니에요.</p></section>';
+    var near = PLACES.filter(function (p) { return p.pub; }).slice(0, 4);
+    var nearCard = '<section class="card c4"><div class="card-h"><h2>근처에서 이런 곳도 있어요</h2></div>' + near.map(function (p) { return placeRow(p, false); }).join('') + '</section>';
+    var week = '<section class="card c8"><div class="card-h"><h2>' + ic('spark', 'sm') + ' 이번 주, 한 번 가 볼까요?</h2><a class="more" href="#recommend">주변 추천' + ic('chev', 'sm') + '</a></div><div class="tiles">' +
+      REC.slice(0, 5).map(function (r) { return '<button type="button" class="tile" data-act="rec" data-v="' + r[0] + '"><span class="ptile">' + ic(CATS[r[0]][1]) + '</span><b>' + r[1] + '</b><span class="s12 muted">' + r[2] + '</span></button>'; }).join('') + '</div></section>';
+    var cd = CHAL.filter(chalDone).length;
+    var chal = '<section class="card c4"><div class="card-h"><h2>입주 한 달 챌린지</h2><span class="s13 muted">' + cd + ' / ' + CHAL.length + ' 완료</span></div><div class="progress-line" style="margin-bottom:8px"><span style="width:' + Math.round(cd / CHAL.length * 100) + '%"></span></div>' +
+      CHAL.map(function (c) { var on = chalDone(c); return '<label class="row" style="flex-wrap:nowrap;min-height:40px;cursor:pointer"><input class="chk" type="checkbox" data-act="chal" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><span' + (on ? ' class="muted" style="text-decoration:line-through"' : '') + '>' + c[2] + '</span></label>'; }).join('') + '<p class="s12 muted" style="margin-top:6px">지도에서 그 분류의 장소를 저장해도 완료돼요.</p></section>';
+    return '<div class="grid">' + banner + '<div class="minis c12">' + todo + pay + sup + '</div>' + tip + explore + nearCard + week + chal + '</div>';
+  }
+
+  // ---------- 주변 탐색 ----------
+  function viewMap() {
+    var cat = S.mapCat || 'all', sel = S.mapSel && findPlace(S.mapSel);
+    var list = PLACES.filter(function (p) { return cat === 'all' || p.cat === cat; });
+    var target = sel || { name: (S.addr || '내 자취방') + ' (집)', lat: HOUSE.lat, lng: HOUSE.lng };
+    return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · 핵심</p><h1>지도 탐색</h1></div><span class="badge due">시연용 예시 데이터</span></div>' +
+      '<div style="margin-bottom:12px">' + catChips(cat, 'mapcat') + '</div>' +
+      '<div class="grid"><section class="card c8">' + placeMap(cat, S.mapSel, 460, true) + '<p class="s12 muted" style="margin-top:10px">개략도예요. 방향은 예시 좌표 기준이고 거리는 가까울수록 넓게 그렸어요. 실제 서비스에서는 지도 API와 공공데이터로 그려요. 도보 시간은 거리 ÷ 분당 67m로 계산해요.</p></section>' +
+      '<aside class="c4 stack"><div class="street sm"><div class="street-in"><b>' + esc(short(target.name)) + ' 앞 골목 걸어 보기</b><div class="row" style="justify-content:center"><a class="btn sm" href="' + kakao('rv', target) + '" target="_blank" rel="noopener">로드뷰' + ic('out', 'sm') + '</a>' + (sel ? '<a class="btn ghost sm" href="' + kakao('to', sel) + '" target="_blank" rel="noopener">길찾기' + ic('out', 'sm') + '</a>' : '') + '</div></div></div>' +
+      '<section class="card"><div class="card-h"><h2>' + (cat === 'all' ? '가까운 순서' : CATS[cat][0]) + '</h2><span class="s12 muted">' + list.length + '곳</span></div><div class="scroll-list">' + list.map(function (p) { return placeRow(p, false); }).join('') + '</div></section></aside></div>';
+  }
+  function viewRecommend() {
+    var rc = S.recCat || 'park', saved = PLACES.filter(function (p) { return S.saved[p.id]; });
+    var list = rc === 'saved' ? saved : PLACES.filter(function (p) { return p.cat === rc; });
+    var cards = list.map(function (p) {
+      var on = !!S.saved[p.id];
+      return '<section class="card c6 pcard"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="ptile">' + ic(CATS[p.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + p.name + '</b><p class="s13 muted">' + CATS[p.cat][0] + ' · 걸어서 ' + p.min + '분 · ' + p.m + 'm' + (p.pub ? ' · 공공' : '') + '</p></div><button type="button" class="icon-btn save-btn" data-act="save" data-v="' + p.id + '" aria-pressed="' + on + '" aria-label="' + (on ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>' +
+        '<div class="tags">' + p.tags.map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('') + '</div><p class="s13 sub">' + p.desc + '</p><div class="row"><button type="button" class="btn ghost sm" data-act="place" data-v="' + p.id + '" data-go="map">지도에서 보기</button><a class="btn ghost sm" href="' + kakao('rv', p) + '" target="_blank" rel="noopener">로드뷰' + ic('out', 'sm') + '</a></div></section>';
+    }).join('') || '<section class="card c12"><p class="muted">' + (rc === 'saved' ? '아직 저장한 곳이 없어요. 마음에 드는 곳의 책갈피를 눌러 보세요.' : '이 분류의 장소가 없어요.') + '</p></section>';
+    return '<div class="page-head"><div><p class="eyebrow">주변 탐색</p><h1>주변 추천</h1></div><span class="badge due">시연용 예시 데이터</span></div>' +
+      '<div class="cats" style="margin-bottom:16px">' + REC.map(function (r) { return '<button type="button" class="cat" data-act="rec" data-v="' + r[0] + '" aria-pressed="' + (rc === r[0]) + '">' + ic(CATS[r[0]][1], 'sm') + r[1] + '</button>'; }).join('') + '<button type="button" class="cat" data-act="rec" data-v="saved" aria-pressed="' + (rc === 'saved') + '">' + ic('bookmark', 'sm') + '저장한 곳 ' + saved.length + '</button></div>' +
+      '<div class="grid">' + cards + '</div><p class="s12 muted" style="margin-top:16px">가까운 순서로 보여줘요. 별점이나 순위는 매기지 않아요. 실제 서비스에서는 공공데이터의 업종 정보로 채워요.</p>';
+  }
+  var AREA_CHECK = [['night', '밤 9시 이후에 한 번 더 가 보기', '골목 조명, 사람이 다니는 정도, 집까지 오는 길을 봐요.'], ['noise', '소음 확인', '큰길·술집·공사장이 창문 쪽에 있는지 들어 봐요.'], ['slope', '역까지 오르막·계단', '짐 들고 매일 오가는 길이라 직접 걸어 봐요.'], ['trash', '쓰레기 버리는 곳과 요일', '건물 앞인지, 정해진 요일이 있는지 집주인에게 물어봐요.'], ['parcel', '택배 받을 곳', '무인택배함·현관 보안이 있는지 봐요.'], ['signal', '휴대폰 신호', '방 안, 특히 화장실·창가에서 확인해요.']];
+  function viewInfra() {
+    var ESS = [['transit', '교통'], ['life', '생활 편의'], ['medical', '병원·약국'], ['safety', '안전'], ['public', '공공시설'], ['park', '공원·산책']];
+    var rows = ESS.map(function (e) { var ps = PLACES.filter(function (p) { return p.cat === e[0]; }), n = ps[0], in5 = ps.filter(function (p) { return p.min <= 5; }).length; return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[1] + '</b><p class="s13 muted">가장 가까운 곳 · ' + n.name + '</p></div><div style="text-align:right"><b style="font-size:18px">' + n.min + '분</b><p class="s12 muted">5분 안 ' + in5 + '곳</p></div></div>'; }).join('');
+    var near = PLACES.filter(function (p) { return p.min <= 5; }).map(function (p) { return short(p.name); }), uniq = near.filter(function (n, i) { return near.indexOf(n) === i; }).slice(0, 6), sub = findPlace('subway');
+    var summary = '걸어서 5분 안에 ' + uniq.join('·') + josa(uniq[uniq.length - 1], '이', '가') + ' 있어요. 지하철은 ' + short(sub.name) + '까지 ' + sub.min + '분(약 ' + sub.m + 'm), 공원은 ' + findPlace('park').min + '분 거리예요.';
+    var chk = S.areaChk || {}, cdone = AREA_CHECK.filter(function (c) { return chk[c[0]]; }).length;
+    return '<div class="page-head"><div><p class="eyebrow">주변 탐색</p><h1>생활 인프라</h1></div><span class="badge due">시연용 예시 데이터</span></div>' +
+      '<div class="grid"><section class="card c7"><div class="card-h"><h2>꼭 필요한 곳까지</h2><span class="s12 muted">도보 = 거리 ÷ 분당 67m</span></div>' + rows + '</section>' +
+      '<aside class="c5 stack"><section class="card stack"><div class="card-h" style="margin:0"><h2>주변 환경 요약</h2><span class="badge brand">데이터로 만든 요약</span></div><p>' + summary + '</p><p class="s12 muted">좋은 동네·나쁜 동네처럼 판단하거나 점수를 매기지 않아요. 거리와 시설 수만 알려드려요.</p><p class="s12 muted">실제 서비스 데이터(예정) · 소상공인 상가(상권)정보, 건강보험심사평가원 병원정보, 서울 열린데이터광장 역·정류소 위치, 경찰청 지구대·파출소 위치, 공원 정보</p></section>' +
+      '<section class="card"><div class="card-h"><h2>현장에서 꼭 볼 것</h2><span class="badge">' + cdone + ' / ' + AREA_CHECK.length + '</span></div>' + AREA_CHECK.map(function (c) { var on = !!chk[c[0]]; return '<div class="task' + (on ? ' done' : '') + '"><input class="chk" type="checkbox" id="ac-' + c[0] + '" data-act="areachk" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><div class="body"><label for="ac-' + c[0] + '">' + c[1] + '</label><p class="d">' + c[2] + '</p></div></div>'; }).join('') + '</section></aside></div>';
+  }
+
+  // ---------- 생활 관리 ----------
+  var SPEND_GROUP = { rent: '월세', fee: '관리비', elec: '공과금·통신', gas: '공과금·통신', water: '공과금·통신', net: '공과금·통신' };
+  function viewSpend() {
+    var b0 = calBase(), y = b0.getFullYear(), m = b0.getMonth(), R = evaluate();
+    var ev = billsInMonth(y, m), outs = ev.filter(function (e) { return e.kind === 'out'; }), ins = ev.filter(function (e) { return e.kind === 'in'; });
+    var sum = function (a) { return a.reduce(function (s, e) { return s + e.amount; }, 0); }, total = sum(outs), paid = sum(outs.filter(function (e) { return e.paid; }));
+    var groups = {}; outs.forEach(function (e) { var gk = SPEND_GROUP[e.key.split('@')[0]] || '기타'; groups[gk] = (groups[gk] || 0) + e.amount; });
+    var bars = ['월세', '관리비', '공과금·통신', '기타'].filter(function (k) { return groups[k]; }).map(function (k) { return '<div class="bar-row"><span class="sub">' + k + '</span><span class="bar-track"><span style="width:' + Math.round(groups[k] / Math.max(total, 1) * 100) + '%"></span></span><b>' + won(groups[k]) + '원</b></div>'; }).join('') || '<p class="muted s13">이 달에는 나갈 돈이 없어요.</p>';
+    var months = ''; for (var k = 0; k < 6; k++) { var d = new Date(y, m + k, 1), e2 = billsInMonth(d.getFullYear(), d.getMonth()); months += '<div class="kv"><span>' + d.getFullYear() + '.' + (d.getMonth() + 1) + '</span><span><b>' + won(sum(e2.filter(function (e) { return e.kind === 'out'; }))) + '원</b>' + (sum(e2.filter(function (e) { return e.kind === 'in'; })) ? ' <span class="s12" style="color:var(--brand-text)">+' + won(sum(e2.filter(function (e) { return e.kind === 'in'; }))) + '</span>' : '') + '</span></div>'; }
+    var nav = '<div class="month-nav"><button type="button" class="icon-btn" data-act="calnav" data-v="-1" aria-label="이전 달">' + ic('back') + '</button><h2 aria-live="polite">' + y + '. ' + (m + 1) + '</h2><button type="button" class="icon-btn" data-act="calnav" data-v="1" aria-label="다음 달">' + ic('chev') + '</button></div>';
+    return '<div class="page-head"><div><p class="eyebrow">생활 관리</p><h1>지출 관리</h1></div>' + nav + '</div>' +
+      '<div class="stats"><div class="stat"><div class="k">' + (m + 1) + '월 나갈 돈</div><div class="v">' + won(total) + '원</div><div class="h">고정비 기준</div></div><div class="stat"><div class="k">낸 돈 / 남은 돈</div><div class="v">' + won(paid) + '원</div><div class="h">남은 돈 ' + won(total - paid) + '원</div></div><div class="stat"><div class="k">들어올 돈</div><div class="v' + (sum(ins) ? ' in' : '') + '">' + won(sum(ins)) + '원</div><div class="h">지원금은 따로 표시해요</div></div></div>' +
+      '<div class="grid"><section class="card c7"><div class="card-h"><h2>어디에 나가나요</h2><a class="more" href="#calendar">납부 체크' + ic('chev', 'sm') + '</a></div>' + bars + '<div class="banner" style="margin-top:14px">' + ic('info') + '<span>직장인이고 무주택 세대주라면 낸 월세 일부를 <b>연말정산 때 돌려받을 수 있어요</b>(월세 세액공제). 월세 이체 내역을 서류함에 모아 두세요.</span></div></section>' +
+      '<section class="card c5"><div class="card-h"><h2>앞으로 6개월</h2><span class="s12 muted">계약 기간 안에서</span></div>' + months + '<p class="s12 muted" style="margin-top:8px">공과금은 예상 금액이에요. 금액과 날짜는 <a href="#calendar">공과금 & 납부</a>에서 바꿔요.</p></section></div>';
+  }
+  var ROOMS = [['door', '현관·도어락'], ['wall', '벽지'], ['floor', '바닥'], ['window', '창문·방충망'], ['bath', '화장실·배수'], ['kitchen', '싱크대·가스레인지'], ['aircon', '에어컨'], ['fridge', '냉장고'], ['washer', '세탁기'], ['boiler', '보일러·온수']];
+  var ST = [['ok', '깨끗해요'], ['bad', '흠 있어요'], ['broken', '고장']];
+  function condMsg(tab) {
+    var rec = S.cond[tab] || {}, rows = ROOMS.filter(function (r) { return rec[r[0]] && rec[r[0]].st && rec[r[0]].st !== 'ok'; });
+    var label = { bad: '흠 있음', broken: '고장' };
+    return '[' + (tab === 'in' ? '입주' : '퇴거') + ' 시 집 상태 공유] ' + (S.addr || '') + '\n' + ymd(tab === 'in' ? pd(S.move) : today) + ' 기준으로 확인한 내용이에요.\n' +
+      (rows.length ? rows.map(function (r) { var x = rec[r[0]]; return '- ' + r[1] + ': ' + label[x.st] + (x.memo ? ' (' + x.memo + ')' : ''); }).join('\n') : '- 따로 표시한 흠이나 고장은 없어요.') + '\n사진도 함께 보내드려요. 확인 부탁드려요.';
+  }
+  function viewCondition() {
+    var tab = S.condTab === 'out' ? 'out' : 'in', rec = S.cond[tab] || {}, other = S.cond[tab === 'in' ? 'out' : 'in'] || {};
+    var rows = ROOMS.map(function (r) {
+      var x = rec[r[0]] || {}, o = other[r[0]];
+      return '<div class="room"><div><b>' + r[1] + '</b>' + (x.at ? '<p class="s12 muted">' + x.at + ' 기록</p>' : '') + (tab === 'out' && o && o.st ? '<p class="s12 muted">입주 때: ' + ST.filter(function (s) { return s[0] === o.st; })[0][1] + '</p>' : '') + '</div>' +
+        '<div class="stack" style="gap:8px"><div class="st-opts" role="group" aria-label="' + r[1] + ' 상태">' + ST.map(function (s) { return '<button type="button" data-act="cond" data-room="' + r[0] + '" data-v="' + s[0] + '" aria-pressed="' + (x.st === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+        (x.st && x.st !== 'ok' ? '<div class="row" style="flex-wrap:nowrap"><input class="inp" data-cond="' + r[0] + '" placeholder="어디가 어떤지 짧게 (예: 창가 쪽 벽지 얼룩)" maxlength="60" value="' + esc(x.memo || '') + '"><label class="icon-btn" style="cursor:pointer" aria-label="사진 고르기">' + ic('camera', 'sm') + '<input type="file" accept="image/*" data-act="condphoto" data-v="' + r[0] + '" style="position:absolute;width:1px;height:1px;opacity:0"></label></div>' + (x.photo ? '<span class="s12 muted">사진: ' + esc(x.photo) + ' (이 기기에만)</span>' : '') : '') + '</div></div>';
+    }).join('');
+    var n = ROOMS.filter(function (r) { return rec[r[0]] && rec[r[0]].st; }).length;
+    return '<div class="page-head"><div><p class="eyebrow">생활 관리 · 퇴거 때 원상복구 다툼을 줄여요</p><h1>집 상태 기록</h1></div><div class="seg" role="group" aria-label="기록 시점"><button type="button" data-act="condtab" data-v="in" aria-pressed="' + (tab === 'in') + '">입주 때</button><button type="button" data-act="condtab" data-v="out" aria-pressed="' + (tab === 'out') + '">퇴거 때</button></div></div>' +
+      '<div class="grid"><section class="card c8"><div class="card-h"><h2>' + (tab === 'in' ? '입주 날 짐 넣기 전에' : '나가기 전에 같은 자리를') + '</h2><span class="badge">' + n + ' / ' + ROOMS.length + '</span></div>' + rows + '</section>' +
+      '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">집주인에게 보낼 문자</h2><textarea class="inp" readonly aria-label="문자 내용">' + esc(condMsg(tab)) + '</textarea><button type="button" class="btn" data-act="copymsg">' + ic('copy', 'sm') + '문자 내용 복사</button><p class="s12 muted">흠이 있는 곳만 모아 문자로 만들어요. 날짜가 남는 문자로 보내 두면 퇴거 때 증거가 돼요.</p></section>' +
+      '<div class="privacy">' + ic('lock', 'sm') + '<span>사진은 서버에 올리지 않고 이 기기에서만 다뤄요. 시연판은 파일 이름만 기억해요.</span></div></aside></div>';
+  }
+
+  // ---------- 퇴거 준비 ----------
+  function viewMoveout() {
+    var R = evaluate(), T = buildTimeline(R), end = contractEnd(), left = Math.round((end - today) / 86400000);
+    var keyDates = [[add(end, -60), '갱신 여부 알리기 마감', '나갈지 더 살지 집주인에게 문자로 남겨 두세요.'], [add(end, -30), '새 집·이사 날짜 정하기', '새 집 계약일과 지금 집 보증금 받는 날을 맞춰요.'], [add(end, -7), '집 상태 점검', '입주 때 기록과 같은 자리를 다시 찍어요.'], [end, '계약 만료 · 보증금 돌려받기', '보증금을 받은 뒤에 전출(새 집 전입신고)해요.']];
+    var extra = [{ id: 'x1', title: '관리비·공과금 정산 요청', desc: '마지막 달 사용량을 계량기 사진으로 남기고 정산 금액을 확인해요.', due: add(end, -1), src: BASE_SRC }, { id: 'x2', title: '원상복구 범위 집주인과 맞추기', desc: '살면서 생긴 자연스러운 낡음은 원상복구 대상이 아니에요. 입주 때 사진과 비교해 이야기해요.', due: add(end, -14), act: ['집 상태 기록', '#condition'], src: BASE_SRC }];
+    var tasks = T.filter(function (s) { return s.key === 'out'; })[0].tasks.concat(extra).sort(function (a, b) { return a.due - b.due; });
+    return '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · ' + ymd(end) + ' 만료</p><h1>퇴거 준비</h1></div><span class="badge ' + (left <= 90 ? 'due' : '') + '">만료까지 ' + (left >= 0 ? left + '일' : '지남') + '</span></div>' +
+      '<div class="grid"><section class="card c7"><div class="card-h"><h2>중요한 날짜</h2></div>' + keyDates.map(function (k) { return '<div class="date-line">' + dateBlk(k[0]) + '<div style="flex:1 1 auto;min-width:0"><b>' + k[1] + '</b><p class="s13 muted">' + k[2] + '</p></div><span class="badge ' + (k[0] < today ? '' : 'brand') + '">' + dday(k[0]) + '</span></div>'; }).join('') + '</section>' +
+      '<section class="card c5 stack"><div class="card-h" style="margin:0"><h2>알아 두면 좋은 규칙</h2></div>' +
+      '<div class="kv" style="display:block"><b>묵시적 갱신</b><p class="s13 sub">둘 다 만료 2개월 전까지 아무 말 없으면 같은 조건으로 계약이 이어져요. 이때 세입자는 언제든 나간다고 알릴 수 있고, 3개월 뒤에 끝나요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제6조·제6조의2</a></div>' +
+      '<div class="kv" style="display:block"><b>계약갱신요구권</b><p class="s13 sub">세입자는 한 번, 2년 더 살겠다고 요구할 수 있어요. 이때 월세·보증금 인상은 5% 안에서만 돼요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제6조의3·제7조</a></div>' +
+      '<div class="kv" style="display:block"><b>보증금을 못 받았다면</b><p class="s13 sub">이사 가야 한다면 먼저 임차권등기명령을 신청해요. 등기가 되면 이사해도 보증금을 지키는 힘이 남아요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제3조의3</a></div></section>' +
+      '<section class="card c12"><div class="card-h"><h2>나가기 전 할 일</h2><a class="more" href="#condition">입주 기록과 비교' + ic('chev', 'sm') + '</a></div>' + tasks.map(function (t) { return taskItem(t); }).join('') + '</section></div>';
+  }
+
+  // ---------- AI 자취 코치 ----------
+  function viewCoach() {
+    var R = evaluate();
+    var thread = S.chat.map(function (q) { var a = qaAnswer(q, R); return '<span class="bubble-q">' + esc(q) + '</span>' + (a ? '<div class="bubble-a"><span>' + a.a + '</span><div class="row" style="gap:4px 12px">' + a.src.map(function (x) { return '<a class="s12" href="' + x[1] + '"' + ext(x[1]) + '>근거 · ' + x[0] + '</a>'; }).join('') + '</div></div>' : '<div class="bubble-a"><span>승인된 안내에서 답을 찾지 못했어요. 틀린 답을 드리지 않으려고 여기서 멈출게요.</span><div class="row" style="gap:4px 12px"><a class="s12" href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener">서울시 전월세 안심계약 도움서비스</a><a class="s12" href="https://120dasan.seoul.go.kr" target="_blank" rel="noopener">120 다산콜센터</a></div></div>'); }).join('');
+    return '<div class="page-head"><div><p class="eyebrow">지원 & 상담</p><h1>AI 자취 코치</h1></div>' + (S.chat.length ? '<button type="button" class="btn line sm" data-act="chatclear">대화 지우기</button>' : '') + '</div>' +
+      '<div class="grid"><section class="card c8 stack"><div class="chat">' + (thread || '<div class="bubble-a"><span>안녕하세요. 계약·신고·지원·퇴거·동네에 대해 물어보세요. <b>근거가 있는 답만</b> 드리고, 모르는 건 모른다고 할게요.</span></div>') + '</div>' +
+      '<form class="ask" data-form="coach"><input class="inp" aria-label="질문" placeholder="궁금한 걸 물어보세요" maxlength="60"><button class="btn" type="submit" aria-label="보내기">' + ic('send') + '</button></form></section>' +
+      '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">이런 걸 물어볼 수 있어요</h2><div class="chips">' + QA.concat(['계약 끝나고 나가려면?', '월세 세액공제 받을 수 있어?', '가까운 병원 어디야?']).map(function (q) { return '<button type="button" class="chip" data-act="ask" data-v="' + q + '">' + q + '</button>'; }).join('') + '</div></section>' +
+      '<div class="privacy">' + ic('info', 'sm') + '<span>시연판은 정해 둔 규칙으로만 답해요. 실제 서비스에서는 AI가 운영자가 승인한 규칙 문서 안에서만 답하고, 근거 링크를 꼭 붙여요. 법률 자문을 대신하지 않아요.</span></div></aside></div>';
+  }
+
+  // ---------- 내 계약 ----------
+  function viewContract() {
+    var R = evaluate(), T = buildTimeline(R), P = phase(R), end = contractEnd();
+    var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
+    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + S[k] + '"><em>' + unit + '</em></div>'; };
+    var GU = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
+    var big = P.dm < 0 ? 'D-' + (-P.dm) : P.dm === 0 ? 'D-day' : (P.dm + 1) + '<small>일째</small>';
+    return '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · 바꾸면 모든 화면이 다시 계산돼요</p><h1>내 계약</h1></div><button type="button" class="btn line sm" data-act="reset">예시 값으로 되돌리기</button></div>' +
+      '<div class="grid"><section class="card dday c4"><div class="split" style="position:relative;z-index:1"><span class="lbl">' + (P.dm <= 0 ? '입주까지' : '자취') + '</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">' + P.badge + '</span></div><div class="big" style="position:relative;z-index:1">' + big + '</div>' +
+      '<dl><dt>집</dt><dd>' + esc(S.addr || '내 자취방') + ' · ' + esc(S.gu) + '</dd><dt>계약일</dt><dd>' + ymd(R.C) + '</dd><dt>입주일</dt><dd>' + ymd(R.M) + '</dd><dt>만료</dt><dd>' + ymd(end) + '</dd><dt>전월세 신고</dt><dd>' + (R.report.required ? md(R.report.due) + '까지' : '대상 아님') + '</dd><dt>전입신고 기한</dt><dd>' + md(R.movein.due) + '</dd></dl></section>' +
+      '<section class="card c8 stack"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
+      f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + f('구', '<select class="inp" data-field="gu">' + GU.map(function (g) { return '<option' + (g === S.gu ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select>') +
+      f('보증금', num('deposit', '만 원')) + f('월세', num('rent', '만 원')) + f('관리비', num('fee', '만 원')) + f('계약 기간', '<select class="inp" data-field="term">' + [1, 2].map(function (n) { return '<option value="' + n + '"' + (+S.term === n ? ' selected' : '') + '>' + n + '년</option>'; }).join('') + '</select>') +
+      f('계약일 (계약서 쓴 날)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">') + f('입주일 (잔금·이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">') + '</div>' +
+      (pd(S.move) < pd(S.contract) ? '<div class="banner due">' + ic('info') + '<span>입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.</span></div>' : R.report.required && R.report.due < R.M ? '<div class="banner due">' + ic('info') + '<span>전월세 신고 기한(' + md(R.report.due) + ')이 입주보다 먼저 와요. 전입신고와 합칠 수 없어요.</span></div>' : '') +
+      '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' + f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + f('만 나이', num('age', '세')) +
+      f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + '</div>' +
+      '<label class="field"><span>시연용 날짜 (발표용)</span><select class="inp" data-sim>' + [['', '실제 오늘'], ['-1', '입주 전날'], ['0', '입주 당일'], ['10', '입주 10일 후'], ['40', '입주 40일 후']].map(function (o) { var sv = S.sim === null || S.sim === undefined ? '' : String(S.sim); return '<option value="' + o[0] + '"' + (sv === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+      '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div></section></div>';
+  }
+
+  // ---------- 메뉴 구조 ----------
+  var GROUPS = [
+    { k: 'home', label: '', def: 'home', tab: ['홈', 'home'], items: [['home', '홈', 'home']] },
+    { k: 'house', label: '내 주거 관리', def: 'timeline', tab: ['내 주거', 'doc'], items: [['contract', '내 계약', 'doc'], ['timeline', '타임라인', 'route'], ['docs', '서류함', 'folder'], ['moveout', '퇴거 준비', 'box']] },
+    { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'spark'], ['infra', '생활 인프라', 'grid']] },
+    { k: 'life', label: '생활 관리', def: 'calendar', tab: ['생활', 'chart'], items: [['spend', '지출 관리', 'chart'], ['calendar', '공과금 & 납부', 'card'], ['condition', '집 상태 기록', 'camera']] },
+    { k: 'help', label: '지원 & 상담', def: 'support', tab: ['지원', 'gift'], items: [['support', '지원사업', 'gift'], ['coach', 'AI 자취 코치', 'spark']] }
+  ];
+  var ROUTES = { home: viewHome, contract: viewContract, timeline: viewTimeline, docs: viewDocs, moveout: viewMoveout, map: viewMap, recommend: viewRecommend, infra: viewInfra, spend: viewSpend, calendar: viewCalendar, condition: viewCondition, support: viewSupport, coach: viewCoach };
+  function groupOf(r) { return GROUPS.filter(function (g) { return g.items.some(function (i) { return i[0] === r; }); })[0]; }
+  var app = document.getElementById('app'), last = '';
+  function route() { var h = location.hash.slice(1); return ROUTES[h] ? h : 'home'; }
+  function headerBar(n) {
+    var simV = S.sim === null || S.sim === undefined ? '' : String(S.sim);
+    return '<div class="hbar desk"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div>' +
+      '<div class="hbar-r"><select class="inp" data-sim aria-label="시연용 날짜">' + [['', '시연: 실제 오늘'], ['-1', '시연: 입주 전날'], ['0', '시연: 입주 당일'], ['10', '시연: 입주 10일 후'], ['40', '시연: 입주 40일 후']].map(function (o) { return '<option value="' + o[0] + '"' + (simV === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+      '<a class="icon-btn bell" href="#timeline" aria-label="할 일 알림' + (n ? ' ' + n + '개' : '') + '">' + ic('bell') + (n ? '<span class="cnt">' + n + '</span>' : '') + '</a></div></div>';
+  }
+  function render(keep) {
+    today = S.sim === null || S.sim === undefined || S.sim === '' ? realToday() : add(pd(S.move), +S.sim);
+    var r = route(), g = groupOf(r), y = window.scrollY, act = document.activeElement && document.activeElement.dataset && (document.activeElement.dataset.field || document.activeElement.dataset.cond);
+    var R = evaluate(), T = buildTimeline(R), n = openTasks(R, T).dueNow.length;
+    var cnt = function (k) { return k === 'timeline' && n ? '<span class="cnt" aria-label="밀린 할 일 ' + n + '개">' + n + '</span>' : ''; };
+    document.getElementById('side-nav').innerHTML = GROUPS.map(function (gr) {
+      return (gr.label ? '<span class="g-label">' + gr.label + (gr.core ? '<span class="core">핵심</span>' : '') + '</span>' : '') + gr.items.map(function (x) { return '<a class="nav" href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + ic(x[2]) + x[1] + cnt(x[0]) + '</a>'; }).join('');
+    }).join('');
+    document.getElementById('tab-nav').innerHTML = GROUPS.map(function (gr) { return '<a class="tab" href="#' + gr.def + '"' + (gr === g ? ' aria-current="page"' : '') + '>' + ic(gr.tab[1]) + gr.tab[0] + (gr.k === 'house' ? cnt('timeline') : '') + '</a>'; }).join('');
+    var sub = g.items.length > 1 ? '<nav class="subnav" aria-label="' + g.label + '">' + g.items.map(function (x) { return '<a href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '';
+    app.innerHTML = headerBar(n) + sub + ROUTES[r]();
+    if (keep) { window.scrollTo(0, y); if (act) { var el = app.querySelector('[data-field="' + act + '"],[data-cond="' + act + '"]'); if (el) el.focus({ preventScroll: true }); } }
+    else if (r !== last) window.scrollTo(0, 0);
+    last = r;
+  }
+  function updateSearch(q) {
+    var box = document.getElementById('q-res'); if (!box) return;
+    q = q.trim(); if (!q) { box.hidden = true; return; }
+    var hits = PLACES.filter(function (p) { return (p.name + ' ' + CATS[p.cat][0] + ' ' + p.tags.join(' ')).indexOf(q) >= 0; }).slice(0, 6);
+    box.innerHTML = hits.map(function (p) { return '<button type="button" class="q-item" data-act="place" data-v="' + p.id + '" data-go="map"><span class="ptile">' + ic(CATS[p.cat][1], 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + p.name + '</b><span class="s12 muted" style="display:block">' + CATS[p.cat][0] + ' · ' + p.tags.join(' · ') + '</span></span><span class="s13"><b>' + p.min + '분</b></span></button>'; }).join('') || '<p class="s13 muted" style="padding:10px">‘' + esc(q) + '’에 맞는 곳이 없어요. 예: 카페, 약국, 전입신고</p>';
+    box.hidden = false;
+  }
+  window.addEventListener('hashchange', function () { render(false); });
+  var toastEl = document.getElementById('toast'), toastT;
+  function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { toastEl.hidden = true; }, 2800); }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]');
+    if (!e.target.closest('.search')) { var qr = document.getElementById('q-res'); if (qr) qr.hidden = true; }
+    if (!b) return;
+    var a = b.dataset.act, v = b.dataset.v;
+    if (a === 'place') { e.preventDefault(); S.mapSel = v; if (v && b.dataset.go) { var pl = findPlace(v); if (S.mapCat && S.mapCat !== 'all' && pl && pl.cat !== S.mapCat) S.mapCat = 'all'; save(); if (location.hash !== '#map') { location.hash = 'map'; return; } } save(); render(true); if (v && b.classList.contains('place')) { var mb = app.querySelector('.map-box'); if (mb && mb.getBoundingClientRect().top < 0) mb.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }
+    else if (a === 'save') { S.saved[v] = !S.saved[v]; save(); render(true); toast(S.saved[v] ? '저장했어요. 주변 추천 › 저장한 곳에서 볼 수 있어요.' : '저장을 취소했어요.'); }
+    else if (a === 'homecat') { S.homeCat = v; S.mapSel = ''; save(); render(true); }
+    else if (a === 'mapcat') { S.mapCat = v; S.mapSel = ''; save(); render(true); }
+    else if (a === 'rec') { S.recCat = v; save(); if (location.hash !== '#recommend') location.hash = 'recommend'; else render(true); }
+    else if (a === 'cond') { var rm = b.dataset.room, tb = S.condTab === 'out' ? 'out' : 'in'; S.cond[tb] = S.cond[tb] || {}; var x = S.cond[tb][rm] || {}; x.st = v; x.at = ymd(today); S.cond[tb][rm] = x; save(); render(true); }
+    else if (a === 'condtab') { S.condTab = v; save(); render(true); }
+    else if (a === 'copymsg') { var txt = condMsg(S.condTab === 'out' ? 'out' : 'in'); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast('복사했어요. 문자 앱에 붙여 넣어 보내세요.'); }, function () { var ta = app.querySelector('textarea'); ta.select(); toast('글자를 길게 눌러 복사해 주세요.'); }); }
+    else if (a === 'ask') { S.chat.push(v); save(); render(true); }
+    else if (a === 'chatclear') { S.chat = []; save(); render(true); }
+    else if (a === 'calnav') { if (v === '0') { S.calM = ''; S.calSel = iso(today); } else { var c = calBase(); c.setMonth(c.getMonth() + (+v)); S.calM = c.getFullYear() + '-' + (c.getMonth() + 1); S.calSel = ''; } save(); render(true); }
+    else if (a === 'calday') { S.calSel = v; S.calTab = 'day'; save(); render(true); }
+    else if (a === 'caltab') { S.calTab = v; save(); render(true); }
+    else if (a === 'billedit') { S.calEdit = S.calEdit === v ? '' : v; save(); render(true); }
+    else if (a === 'billdel') { S.bills = S.bills.filter(function (x) { return x.id !== v; }); S.calEdit = ''; save(); render(true); toast('지웠어요.'); }
+    else if (a === 'ics') downloadICS();
+    else if (a === 'reset') { S = JSON.parse(JSON.stringify(DEFAULT)); save(); render(true); toast('예시 값으로 되돌렸어요.'); }
+  });
+  document.addEventListener('keydown', function (e) { var g = e.target.closest && e.target.closest('g[data-act]'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); } if (e.key === 'Escape') { var qr = document.getElementById('q-res'); if (qr) qr.hidden = true; } });
+  document.addEventListener('change', function (e) {
+    var t = e.target, d = t.dataset;
+    if (t.hasAttribute('data-sim')) { S.sim = t.value === '' ? null : +t.value; save(); render(true); return; }
+    if (d.act === 'task') { S.done[d.id] = t.checked; save(); render(true); if (t.checked) toast('완료로 표시했어요.'); }
+    else if (d.act === 'chal') { S.chal[d.v] = t.checked; save(); render(true); }
+    else if (d.act === 'areachk') { S.areaChk[d.v] = t.checked; save(); render(true); }
+    else if (d.act === 'paid') { S.paid[d.v] = t.checked; save(); render(true); }
+    else if (d.act === 'billon') { var bo = findBill(d.v); if (bo) bo.on = t.checked; save(); render(true); }
+    else if (d.act === 'file' && t.files && t.files[0]) { S.files.push(t.files[0].name); save(); render(true); toast('추가했어요. 시연판에서는 파일을 저장하거나 읽지 않아요.'); }
+    else if (d.act === 'condphoto' && t.files && t.files[0]) { var tb = S.condTab === 'out' ? 'out' : 'in'; S.cond[tb][d.v] = Object.assign(S.cond[tb][d.v] || {}, { photo: t.files[0].name.slice(0, 40) }); save(); render(true); toast('사진을 붙였어요. 서버로 보내지 않아요.'); }
+    else if (d.cond) { var tc = S.condTab === 'out' ? 'out' : 'in'; S.cond[tc][d.cond] = Object.assign(S.cond[tc][d.cond] || {}, { memo: t.value.slice(0, 60) }); save(); render(true); }
+    else if (d.bill) {
+      var bb = findBill(d.bill), k = d.k, v = t.type === 'checkbox' ? t.checked : t.value; if (!bb) return;
+      if (k === 'amount' || k === 'count' || k === 'day' || k === 'every') { v = parseInt(String(v).replace(/[^0-9]/g, ''), 10); if (isNaN(v)) v = k === 'every' ? 1 : 0; }
+      if (k === 'name') v = String(v).trim().slice(0, 20) || bb.name;
+      bb[k] = v; save(); render(true);
+    }
+    else if (d.field) { setField(t); render(true); }
+  });
+  document.addEventListener('input', function (e) { var t = e.target; if (t.id === 'q') updateSearch(t.value); else if (t.dataset.field && t.hasAttribute('data-num')) setField(t); });
+  function setField(t) {
+    var k = t.dataset.field, v = t.value;
+    if (t.hasAttribute('data-num')) { var n = parseInt(String(v).replace(/[^0-9]/g, ''), 10); v = isNaN(n) ? 0 : n; }
+    if ((k === 'contract' || k === 'move') && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+    if (k === 'nick' || k === 'addr') v = String(v).slice(0, k === 'nick' ? 10 : 20);
+    S[k] = v; save();
+  }
+  document.addEventListener('submit', function (e) {
+    var f = e.target.dataset.form; if (!f) return; e.preventDefault();
+    if (f === 'coach') { var q = e.target.querySelector('input').value.trim(); if (q) { S.chat.push(q.slice(0, 60)); if (S.chat.length > 20) S.chat.shift(); save(); render(true); var inp = app.querySelector('form[data-form=coach] input'); if (inp) inp.focus({ preventScroll: true }); } }
+    else if (f === 'billadd') {
+      var fd = new FormData(e.target), name = String(fd.get('name') || '').trim().slice(0, 20), amt = parseInt(String(fd.get('amount') || '').replace(/[^0-9]/g, ''), 10);
+      if (!name || !amt) { toast('이름과 금액을 넣어 주세요.'); return; }
+      S.bills.push({ id: 'c' + Date.now(), name: name, kind: fd.get('kind') === 'in' ? 'in' : 'out', amount: amt, day: +fd.get('day') || 1, every: 1, on: true, start: ymStr(ym(today)) });
+      save(); render(true); toast(name + ' 항목을 추가했어요.');
+    }
+  });
+
+  render(false);
+})();
+</script>
+</body>
+</html>
