@@ -1,0 +1,48 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 에디터
+.vscode/
+.idea/
+*.swp
+
+# 공통 빌드 산출물
+dist/
+build/
+out/
+*.log
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# 환경 변수·비밀 (예시 파일은 추적)
+.env
+.env.*
+!.env.example
+*.local
+
+# 로컬 검증 증거 (커밋 대상 아님)
+.artifacts/verification/
+# 다른 도구 세션과의 핸드오프 파일 (AGENTS.md "다른 도구 세션과의 핸드오프")
+.artifacts/handoff/
+
+# 에이전트 하네스 (GitHub에 올리지 않음 — 2026-11-08 사용자 결정)
+.agents/
+.claude/
+.codex/
+.artifacts/
+AGENTS.md
+CLAUDE.md
+scripts/
+docs/KitFeedback.md
+docs/HarnessAudit.md
+docs/ToolPacks.md
