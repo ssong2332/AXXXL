@@ -1,12 +1,11 @@
 // GET /api/places?lat=37.481&lng=126.928&r=1000
 // 집 주변 생활시설을 실제 데이터로 돌려준다.
-//  - 기본: OpenStreetMap(Overpass API) · 키 필요 없음 · ODbL
+//  - 기본: OpenStreetMap 데이터 (Photon 검색 API, komoot) · 키 필요 없음 · ODbL
 //  - 선택: 공공데이터포털 소상공인시장진흥공단 상가(상권)정보 · 환경변수 DATA_GO_KR_KEY 가 있을 때만
 // 위치는 약 100m 단위로 흐려서 받고, 아무것도 저장하지 않는다.
 'use strict';
 
 const UA = 'jachwi-navi/0.2 (+https://jachwi-navi.vercel.app; public-service demo)';
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 
 const SUB = {
   cafe: '카페', restaurant: '식당', fast_food: '분식·패스트푸드', food_court: '푸드코트', pharmacy: '약국', hospital: '병원', clinic: '의원', doctors: '의원', dentist: '치과',
@@ -47,31 +46,34 @@ async function fetchJson(url, init, ms) {
   } finally { clearTimeout(timer); }
 }
 
+// OpenStreetMap 데이터를 Photon(komoot) 역지오코딩으로 분류별로 가져온다.
+// (Overpass 공개 서버는 클라우드 서버에서 오는 요청을 막아서 쓰지 않는다)
+const GROUPS = [
+  ['amenity:restaurant', 'amenity:fast_food'],
+  ['amenity:cafe'],
+  ['amenity:pharmacy', 'amenity:hospital', 'amenity:clinic', 'amenity:doctors', 'amenity:dentist'],
+  ['shop:convenience', 'shop:supermarket', 'shop:laundry', 'shop:dry_cleaning', 'shop:variety_store', 'shop:department_store', 'shop:mall', 'amenity:marketplace'],
+  ['amenity:townhall', 'amenity:community_centre', 'amenity:post_office', 'amenity:police', 'amenity:library'],
+  ['leisure:park', 'leisure:fitness_centre', 'leisure:sports_centre', 'leisure:swimming_pool'],
+  ['railway:station', 'highway:bus_stop']
+];
 async function fromOSM(c, r) {
-  const A = `(around:${r},${c.lat},${c.lng})`;
-  // 가볍게: 대부분 점(node)으로 찾고, 공원·큰 시설만 면(way)까지 본다
-  const q = `[out:json][timeout:15];(
-    node${A}[amenity~"^(cafe|restaurant|fast_food|pharmacy|hospital|clinic|doctors|dentist|library|police|townhall|community_centre|post_office|marketplace)$"];
-    node${A}[shop~"^(convenience|supermarket|laundry|dry_cleaning|variety_store|department_store|mall)$"];
-    node${A}[leisure~"^(fitness_centre|sports_centre|swimming_pool)$"];
-    way${A}[leisure~"^(park|sports_centre)$"][name];
-    way${A}[amenity~"^(townhall|library|hospital|police|community_centre)$"][name];
-    node${A}[highway=bus_stop][name];
-    node${A}[railway=station];
-  );out center tags 700;`;
-  const body = 'data=' + encodeURIComponent(q);
-  const tries = OVERPASS.map((ep) => fetchJson(ep, { method: 'POST', headers: { 'User-Agent': UA, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body }, 14000)
-    .then((j) => { if (!j || !Array.isArray(j.elements)) throw new Error(ep + ': bad response'); return j; })
-    .catch((e) => { throw new Error(new URL(ep).host + ' ' + (e && e.name === 'AbortError' ? 'timeout' : (e && e.message) || e)); }));
-  let j;
-  try { j = await Promise.any(tries); } catch (agg) { throw new Error((agg.errors || []).map((e) => e.message).join(' / ')); }
-  return (j.elements || []).map((e) => {
-    const t = e.tags || {}, cc = osmCat(t), lat = e.lat != null ? e.lat : e.center && e.center.lat, lng = e.lon != null ? e.lon : e.center && e.center.lon;
-    const name = t['name:ko'] || t.name;
-    if (!cc || lat == null || !name) return null;
-    const addr = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ') || t['addr:full'] || '';
-    return { id: 'osm-' + e.type[0] + e.id, src: 'osm', cat: cc[0], sub: SUB[cc[1]] || cc[1], name: String(name).slice(0, 40), lat: +lat.toFixed(6), lng: +lng.toFixed(6), addr: addr.slice(0, 60), hours: (t.opening_hours || '').slice(0, 60) };
-  }).filter(Boolean);
+  const settled = await Promise.allSettled(GROUPS.map((g) => {
+    const url = 'https://photon.komoot.io/reverse?lat=' + c.lat + '&lon=' + c.lng + '&radius=' + (r / 1000) + '&limit=50&' + g.map((t) => 'osm_tag=' + encodeURIComponent(t)).join('&');
+    return fetchJson(url, { headers: { 'User-Agent': UA } }, 9000);
+  }));
+  const ok = settled.filter((x) => x.status === 'fulfilled');
+  if (!ok.length) throw new Error(settled.map((x) => x.reason && x.reason.message).join(' / '));
+  const out = [];
+  ok.forEach((x) => (x.value.features || []).forEach((f) => {
+    const pr = f.properties || {}, co = (f.geometry && f.geometry.coordinates) || [];
+    const t = { name: pr.name }; t[pr.osm_key] = pr.osm_value;
+    const cc = osmCat(t);
+    if (!cc || !pr.name || co.length < 2) return;
+    const addr = [pr.street, pr.housenumber].filter(Boolean).join(' ');
+    out.push({ id: 'osm-' + String(pr.osm_type || 'n').toLowerCase()[0] + pr.osm_id, src: 'osm', cat: cc[0], sub: SUB[cc[1]] || cc[1], name: String(pr.name).slice(0, 40), lat: +(+co[1]).toFixed(6), lng: +(+co[0]).toFixed(6), addr: addr.slice(0, 60), hours: '' });
+  }));
+  return out;
 }
 
 // 공공데이터포털 · 소상공인시장진흥공단_상가(상권)정보 · 반경 내 상가 조회 (키가 있을 때만)
@@ -111,7 +113,7 @@ module.exports = async (req, res) => {
   let items = [];
   try {
     items = await fromOSM(c, r);
-    sources.push({ name: 'OpenStreetMap 기여자', url: 'https://www.openstreetmap.org/copyright', license: 'ODbL' });
+    sources.push({ name: 'OpenStreetMap 기여자 (Photon 검색)', url: 'https://www.openstreetmap.org/copyright', license: 'ODbL' });
   } catch (e) { notes.push('OpenStreetMap 데이터를 불러오지 못했어요.'); console.error('[places] overpass', e && e.message); }
   const key = process.env.DATA_GO_KR_KEY;
   if (key) {
