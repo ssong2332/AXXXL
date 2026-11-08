@@ -1,0 +1,16 @@
+{
+  "name": "자취 계약 내비",
+  "short_name": "자취내비",
+  "description": "처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이",
+  "lang": "ko",
+  "start_url": "/app.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F9",
+  "theme_color": "#5B4CDB",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
