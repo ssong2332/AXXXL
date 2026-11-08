@@ -58,10 +58,16 @@ const GROUPS = [
   ['railway:station', 'highway:bus_stop']
 ];
 async function fromOSM(c, r) {
-  const settled = await Promise.allSettled(GROUPS.map((g) => {
+  // 공개 서버에 부담을 주지 않도록 동시에 3개까지만, 실패하면 잠깐 쉬었다가 한 번 더
+  const one = async (g) => {
     const url = 'https://photon.komoot.io/reverse?lat=' + c.lat + '&lon=' + c.lng + '&radius=' + (r / 1000) + '&limit=50&' + g.map((t) => 'osm_tag=' + encodeURIComponent(t)).join('&');
-    return fetchJson(url, { headers: { 'User-Agent': UA } }, 9000);
-  }));
+    try { return await fetchJson(url, { headers: { 'User-Agent': UA } }, 8000); }
+    catch (e) { await new Promise((ok) => setTimeout(ok, 700)); return await fetchJson(url, { headers: { 'User-Agent': UA } }, 8000); }
+  };
+  const settled = new Array(GROUPS.length);
+  let next = 0;
+  await Promise.all([0, 1, 2].map(async () => { while (next < GROUPS.length) { const i = next++; try { settled[i] = { status: 'fulfilled', value: await one(GROUPS[i]) }; } catch (e) { settled[i] = { status: 'rejected', reason: e }; } } }));
+  settled.forEach((x, i) => { if (x.status === 'rejected') console.error('[places] photon group', GROUPS[i].join(','), x.reason && x.reason.message); });
   const ok = settled.filter((x) => x.status === 'fulfilled');
   if (!ok.length) throw new Error(settled.map((x) => x.reason && x.reason.message).join(' / '));
   const out = [];
