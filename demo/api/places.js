@@ -49,27 +49,29 @@ async function fetchJson(url, init, ms) {
 
 async function fromOSM(c, r) {
   const A = `(around:${r},${c.lat},${c.lng})`;
-  const q = `[out:json][timeout:20];(
-    nwr${A}[amenity~"^(cafe|restaurant|fast_food|food_court|pharmacy|hospital|clinic|doctors|dentist|library|police|townhall|community_centre|post_office|marketplace)$"];
-    nwr${A}[shop~"^(convenience|supermarket|laundry|dry_cleaning|variety_store|department_store|mall)$"];
-    nwr${A}[leisure~"^(fitness_centre|sports_centre|swimming_pool|park)$"];
-    node${A}[highway=bus_stop];
-    nwr${A}[railway=station];
-  );out center tags 600;`;
-  let last;
-  for (const ep of OVERPASS) {
-    try {
-      const j = await fetchJson(ep, { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) }, 18000);
-      return (j.elements || []).map((e) => {
-        const t = e.tags || {}, cc = osmCat(t), lat = e.lat != null ? e.lat : e.center && e.center.lat, lng = e.lon != null ? e.lon : e.center && e.center.lon;
-        const name = t['name:ko'] || t.name;
-        if (!cc || lat == null || !name) return null;
-        const addr = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ') || t['addr:full'] || '';
-        return { id: 'osm-' + e.type[0] + e.id, src: 'osm', cat: cc[0], sub: SUB[cc[1]] || cc[1], name: String(name).slice(0, 40), lat: +lat.toFixed(6), lng: +lng.toFixed(6), addr: addr.slice(0, 60), hours: (t.opening_hours || '').slice(0, 60) };
-      }).filter(Boolean);
-    } catch (err) { last = err; }
-  }
-  throw last || new Error('overpass unavailable');
+  // 가볍게: 대부분 점(node)으로 찾고, 공원·큰 시설만 면(way)까지 본다
+  const q = `[out:json][timeout:15];(
+    node${A}[amenity~"^(cafe|restaurant|fast_food|pharmacy|hospital|clinic|doctors|dentist|library|police|townhall|community_centre|post_office|marketplace)$"];
+    node${A}[shop~"^(convenience|supermarket|laundry|dry_cleaning|variety_store|department_store|mall)$"];
+    node${A}[leisure~"^(fitness_centre|sports_centre|swimming_pool)$"];
+    way${A}[leisure~"^(park|sports_centre)$"][name];
+    way${A}[amenity~"^(townhall|library|hospital|police|community_centre)$"][name];
+    node${A}[highway=bus_stop][name];
+    node${A}[railway=station];
+  );out center tags 700;`;
+  const body = 'data=' + encodeURIComponent(q);
+  const tries = OVERPASS.map((ep) => fetchJson(ep, { method: 'POST', headers: { 'User-Agent': UA, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body }, 14000)
+    .then((j) => { if (!j || !Array.isArray(j.elements)) throw new Error(ep + ': bad response'); return j; })
+    .catch((e) => { throw new Error(new URL(ep).host + ' ' + (e && e.name === 'AbortError' ? 'timeout' : (e && e.message) || e)); }));
+  let j;
+  try { j = await Promise.any(tries); } catch (agg) { throw new Error((agg.errors || []).map((e) => e.message).join(' / ')); }
+  return (j.elements || []).map((e) => {
+    const t = e.tags || {}, cc = osmCat(t), lat = e.lat != null ? e.lat : e.center && e.center.lat, lng = e.lon != null ? e.lon : e.center && e.center.lon;
+    const name = t['name:ko'] || t.name;
+    if (!cc || lat == null || !name) return null;
+    const addr = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ') || t['addr:full'] || '';
+    return { id: 'osm-' + e.type[0] + e.id, src: 'osm', cat: cc[0], sub: SUB[cc[1]] || cc[1], name: String(name).slice(0, 40), lat: +lat.toFixed(6), lng: +lng.toFixed(6), addr: addr.slice(0, 60), hours: (t.opening_hours || '').slice(0, 60) };
+  }).filter(Boolean);
 }
 
 // 공공데이터포털 · 소상공인시장진흥공단_상가(상권)정보 · 반경 내 상가 조회 (키가 있을 때만)
@@ -110,7 +112,7 @@ module.exports = async (req, res) => {
   try {
     items = await fromOSM(c, r);
     sources.push({ name: 'OpenStreetMap 기여자', url: 'https://www.openstreetmap.org/copyright', license: 'ODbL' });
-  } catch (e) { notes.push('OpenStreetMap 데이터를 불러오지 못했어요.'); }
+  } catch (e) { notes.push('OpenStreetMap 데이터를 불러오지 못했어요.'); console.error('[places] overpass', e && e.message); }
   const key = process.env.DATA_GO_KR_KEY;
   if (key) {
     try {
@@ -118,7 +120,7 @@ module.exports = async (req, res) => {
       // 같은 이름이 50m 안에 있으면 하나로 합친다
       sb.forEach((p) => { if (!items.some((q) => q.name.replace(/\s/g, '') === p.name.replace(/\s/g, '') && dist(p, q) < 50)) items.push(p); });
       sources.push({ name: '공공데이터포털 · 소상공인시장진흥공단 상가(상권)정보', url: 'https://www.data.go.kr/data/15012005/openapi.do', license: '공공누리' });
-    } catch (e) { notes.push('공공데이터포털 상가정보를 불러오지 못했어요.'); }
+    } catch (e) { notes.push('공공데이터포털 상가정보를 불러오지 못했어요.'); console.error('[places] sbiz', e && e.message); }
   }
   if (!sources.length) return res.status(502).json({ ok: false, error: '주변 데이터를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.', notes });
   // 같은 역이 여러 점으로 들어오는 경우 등 이름·분류가 같고 60m 안이면 하나만
