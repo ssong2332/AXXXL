@@ -7,6 +7,17 @@
 <meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 (시연판)">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
+<script src="ics.js" defer></script>
+<script src="places-core.js" defer></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#5B4CDB">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="자취내비">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <style>
 /* ============================================================
    자취 내비 디자인 — 계약 후 서비스
@@ -325,6 +336,38 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 .poi-row[aria-pressed="true"] { background: var(--brand-tint); border-radius: 12px } .poi-row[aria-pressed="true"] b, .poi-row[aria-pressed="true"] .walk { color: var(--brand-text) }
 .area-cta { display: flex; align-items: center; gap: 14px; color: var(--ink); text-decoration: none !important } .area-cta:hover { border-color: var(--brand) }
 
+/* ---------- 실제 지도 · 폰 연동 ---------- */
+.lbox { isolation: isolate }
+.lbox [data-lmap] { border-radius: 16px; overflow: hidden; position: relative; z-index: 0; background: var(--map-bg) }
+@media (max-width: 640px) { .lbox [data-lmap] { height: 320px !important } }
+.lmap { width: 100%; height: 100% }
+.lmap.picking, .lmap.picking .leaflet-grab { cursor: crosshair }
+.leaflet-container { font-family: var(--font) }
+.lmap .leaflet-tile-pane { filter: saturate(.55) contrast(.95) brightness(1.03) }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lmap .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9) } }
+:root[data-theme="dark"] .lmap .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9) }
+.lmk { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--surface); color: var(--brand-text); box-shadow: 0 0 0 2px var(--brand), 0 2px 6px rgba(0,0,0,.18) }
+.lmk.on { background: var(--brand); color: #fff; transform: scale(1.18) }
+.lhome { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--surface); box-shadow: 0 0 0 5px rgba(91,76,219,.25) }
+.leaflet-tooltip.ltip { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-size: 12px; box-shadow: none }
+.pop.pop-fix { left: 12px; bottom: 12px; top: auto; transform: none !important; width: 300px; z-index: 500 }
+@media (max-width: 640px) { .pop.pop-fix { position: static; width: auto } }
+.qr-box { display: flex; gap: 14px; align-items: center; margin-top: 14px; padding: 12px; border-radius: 16px; background: var(--fill) }
+.qr { width: 136px; height: 136px; flex: 0 0 auto; background: #fff; border-radius: 10px; padding: 6px }
+.qr svg { width: 100%; height: 100%; display: block }
+.tips { margin: 12px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px }
+.wk { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px; border-radius: 14px; border: 0; background: var(--fill); cursor: pointer; min-width: 0; color: var(--ink) }
+.wk b { font-size: 17px }
+.wk.today { background: var(--brand); color: #fff } .wk.today .muted, .wk.today .wk-t { color: #fff; opacity: .9 }
+.wk .dots { min-height: 7px; display: flex; gap: 3px }
+.wk-t { font-size: 11px; color: var(--ink-2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+@media (max-width: 640px) { .wk-t { display: none } .week { gap: 4px } }
+.dot.my { background: var(--brand) } .dot.money { background: var(--ink-3) }
+.wk.today .dot { background: #fff }
+.k-ic.my { background: var(--brand-tint); color: var(--brand-text) }
+
+
 #toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px; background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 600 }
 @media (max-width: 899px) { #toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)) } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
@@ -427,6 +470,90 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
 .chat { display: flex; flex-direction: column; gap: 12px }
 .date-line { display: flex; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--hair) }
 .date-line:first-child { border-top: 0; padding-top: 0 }
+/* ============================================================
+   다듬기 (AI 티 빼기)
+   1 색: 보라·그라데이션 제거 → 먹색 버튼 + 짙은 청록 강조 하나, 기한만 주황
+   2 바탕: 차가운 라벤더 → 따뜻한 종이색
+   3 모양: 둥근 정도 20 → 12, 알약 칩 → 각진 칩
+   4 아이콘: 파스텔 네모 → 선 테두리, 반짝이 아이콘 제거
+   5 배지: 상태(기한·완료)에만, 나머지는 글자로
+   6 장식: 일러스트·원형 장식 제거
+   7 밀도: 요약 카드 3개 → 한 줄 띠
+   8 글자: 제목은 더 크고 촘촘하게, 숫자는 고정폭
+   9 지도: 표식을 작고 차분하게
+   ============================================================ */
+:root {
+  --bg: #F7F7F4; --surface: #FFFFFF; --fill: #F0F0EB; --fill-2: #E5E5DF;
+  --ink: #17171A; --ink-2: #44444A; --ink-3: #74747B;
+  --line: #E2E2DC; --hair: rgba(23,23,26,0.08);
+  --brand: #17171A; --brand-ink: #FFFFFF; --brand-tint: #E6F1EC; --brand-text: #0D6650; --brand-deep: #0D6650;
+  --due: #C2410C; --due-tint: #FCEFE6; --due-text: #A6380B;
+  --focus: #0D6650; --r-card: 12px; --r-in: 10px; --r-btn: 9px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111112; --surface: #1A1A1C; --fill: #232326; --fill-2: #2D2D31; --ink: #EDEDEA; --ink-2: #C4C4C0; --ink-3: #95958F; --line: #2E2E32; --hair: rgba(255,255,255,0.08);
+  --brand: #EDEDEA; --brand-ink: #111112; --brand-tint: #14302A; --brand-text: #6FCDB2; --brand-deep: #6FCDB2; --due: #F08A4B; --due-tint: #36231A; --due-text: #F5A673; --focus: #6FCDB2 } }
+:root[data-theme="dark"] {
+  --bg: #111112; --surface: #1A1A1C; --fill: #232326; --fill-2: #2D2D31; --ink: #EDEDEA; --ink-2: #C4C4C0; --ink-3: #95958F; --line: #2E2E32; --hair: rgba(255,255,255,0.08);
+  --brand: #EDEDEA; --brand-ink: #111112; --brand-tint: #14302A; --brand-text: #6FCDB2; --brand-deep: #6FCDB2; --due: #F08A4B; --due-tint: #36231A; --due-text: #F5A673; --focus: #6FCDB2 }
+body { letter-spacing: -0.008em }
+.card { box-shadow: none }
+.page-head h1, .hero-banner h1 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.18 }
+.card-h h2 { font-size: 16px; font-weight: 750; letter-spacing: -0.03em }
+.brand-mark { background: var(--ink); color: var(--surface); border-radius: 9px }
+.g-label { background: none; color: var(--ink-3); padding: 0; margin: 18px 0 6px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em }
+.nav[aria-current="page"] { background: var(--fill); color: var(--ink) }
+.nav[aria-current="page"] svg { color: var(--brand-text) }
+.ptile, .prog-ic, .k-ic { background: transparent !important; border: 1px solid var(--line); color: var(--ink-2) !important }
+.k-ic.task { border-color: var(--due-tint); color: var(--due-text) !important; background: var(--due-tint) !important }
+.k-ic.mark { background: var(--ink) !important; color: var(--surface) !important; border-color: var(--ink) }
+.tile .ptile { background: var(--surface) !important }
+.tile { background: var(--fill); border-radius: var(--r-in) }
+.tile:hover { background: var(--fill-2) }
+.badge { border-radius: 6px; font-weight: 650 }
+.badge.brand { background: transparent; color: var(--brand-text); padding: 0 }
+.badge.solid { background: var(--ink); color: var(--surface) }
+.cat, .chip { border-radius: 8px }
+.cat[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface) }
+.chip[aria-pressed="true"] { background: var(--fill); border-color: var(--ink); color: var(--ink) }
+.search input { border-radius: 10px }
+.hero-banner { background: none; border: 0; padding: 4px 2px 6px; min-height: 0 }
+.hero-banner .art { display: none }
+.dday { background: var(--ink); color: var(--surface) }
+.dday::after { display: none }
+.dday .edit { color: var(--surface) }
+.now-card, .focus-card, .stage.now .card { border: 1px solid var(--ink) }
+.minis { gap: 0; background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r-card); overflow: hidden }
+.minis .mini { border: 0; border-radius: 0; border-left: 1px solid var(--hair) }
+.minis .mini:first-child { border-left: 0 }
+.minis .mini:hover { background: var(--fill) }
+@media (max-width: 899px) { .minis { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-auto-columns: auto; overflow: visible } .minis .mini { border-left: 0; border-top: 1px solid var(--hair) } .minis .mini:first-child { border-top: 0 } }
+.street { background: var(--surface) !important; color: var(--ink); border: 1px solid var(--hair); text-align: left; justify-content: flex-start; min-height: 0 }
+.street-in { align-items: flex-start }
+.street .btn { background: var(--ink); color: var(--surface) } .street .btn.ghost { background: var(--fill); color: var(--ink) }
+.street .row { justify-content: flex-start !important }
+.banner { background: var(--fill); color: var(--ink-2) }
+.banner b, .banner a { color: var(--ink) }
+.banner.due { background: var(--due-tint); color: var(--due-text) }
+.bubble-q { background: var(--ink); color: var(--surface) }
+.journey li.now .bar { background: linear-gradient(90deg, var(--brand-text) 50%, var(--fill-2) 50%) }
+.journey li.done .bar { background: var(--brand-text) }
+.journey li.now b { color: var(--brand-text) }
+.progress-line span { background: var(--brand-text) }
+.wk.today { background: var(--ink); color: var(--surface) } .wk.today .muted, .wk.today .wk-t { color: var(--surface) } .wk.today .dot { background: var(--surface) }
+.lmk { width: 24px; height: 24px; background: var(--surface); color: var(--ink-2); box-shadow: 0 0 0 1.5px var(--ink-3), 0 1px 3px rgba(0,0,0,.15) }
+.lmk svg.i { width: 13px; height: 13px }
+.lmk.on { background: var(--ink); color: var(--surface); box-shadow: 0 0 0 2px var(--surface), 0 2px 6px rgba(0,0,0,.25); transform: scale(1.25) }
+.lhome { background: var(--brand-text); color: #fff; box-shadow: 0 0 0 4px rgba(13,102,80,.18) }
+.mk .b { stroke: var(--ink-3) } .mk .ico * { stroke: var(--ink-2) } .mk.on .b { fill: var(--ink) }
+.dot.my { background: var(--brand-text) }
+.day[aria-pressed="true"] { background: var(--fill-2); box-shadow: inset 0 0 0 1.5px var(--ink) }
+.day.today .n { background: var(--brand-text); color: #fff }
+.stage.done .node { background: var(--brand-text); border-color: var(--brand-text) }
+.stage.now .node { border-color: var(--ink); box-shadow: 0 0 0 4px var(--fill-2) }
+.sw:checked { background: var(--brand-text) }
+.chk:checked { background: var(--ink); border-color: var(--ink) }
+
 </style>
 </head>
 <body>
@@ -440,7 +567,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     </div>
   </aside>
   <div>
-    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><b>자취 계약 내비</b></a><span class="row" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="spark"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
+    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><b>자취 계약 내비</b></a><span class="row" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
     <main class="main" id="app" tabindex="-1"></main>
   </div>
   <nav class="tabbar" id="tab-nav" aria-label="주요 메뉴"></nav>
@@ -448,7 +575,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
   // ---------- icons ----------
@@ -488,6 +615,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     x: '<path d="M6 6l12 12M18 6 6 18"/>',
     copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     send: '<path d="M4 12 20 4l-6 16-2.5-6.5Z"/><path d="m11.5 13.5 3-3"/>',
+    compass: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/>',
     pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.4"/>'
   };
   function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICON[n] + '</svg>'; }
@@ -522,7 +650,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
   var DEFAULT = { gu: '관악구', addr: '신림동 원룸', deposit: 1000, rent: 45, fee: 7, term: 2, age: 24, income: '150',
     contract: iso(add(realToday(), -14)), move: iso(add(realToday(), 1)),
     done: { t1: true, t2: true, t3: true, t4: true, t5: true, t6: true, p1: true, p2: true, p3: true, p4: true },
-    bills: DEFAULT_BILLS, paid: {}, calM: '', calSel: '', calTab: 'day', calEdit: '', nick: '', saved: {}, chal: {}, homeCat: 'all', mapCat: 'all', mapSel: '', recCat: 'park', cond: { in: {}, out: {} }, condTab: 'in', chat: [], areaChk: {}, sim: null, qa: '', remind: '1d', files: [] };
+    bills: DEFAULT_BILLS, paid: {}, calM: '', calSel: '', calTab: 'day', calEdit: '', nick: '', home: null, saved: {}, savedP: {}, events: [], pickHome: false, chal: {}, homeCat: 'all', mapCat: 'all', mapSel: '', recCat: 'park', cond: { in: {}, out: {} }, condTab: 'in', chat: [], areaChk: {}, sim: null, qa: '', remind: '1d', files: [] };
   var S = JSON.parse(JSON.stringify(DEFAULT));
   try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved) Object.assign(S, saved); } catch (e) {}
   function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }
@@ -669,7 +797,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     });
     return out;
   }
-  var RANK = { mark: 0, task: 1, out: 2, in: 3 };
+  var RANK = { mark: 0, task: 1, my: 1, out: 2, in: 3 };
   function monthEvents(y, m, R, T) {
     var out = billsInMonth(y, m);
     function inM(d) { return d && d.getFullYear() === y && d.getMonth() === m; }
@@ -678,6 +806,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
       if (t.legal && inM(t.legal)) out.push({ date: t.legal, kind: 'task', title: t.title.replace(/ \+.*$/, '') + ' 법정 기한', taskId: t.id, done: !!S.done[t.id], sub: '이날까지는 꼭 해야 해요' });
     }); });
     [[R.C, '계약일'], [R.M, '입주일'], [contractEnd(), '계약 만료']].forEach(function (x) { if (inM(x[0])) out.push({ date: x[0], kind: 'mark', title: x[1] }); });
+    (S.events || []).forEach(function (x) { var d = pd(x.date); if (inM(d)) out.push({ date: d, kind: 'my', title: x.title, time: x.time, evId: x.id, sub: (x.time ? x.time + ' · ' : '') + '내 일정' }); });
     return out.sort(function (a, b) { return a.date - b.date || RANK[a.kind] - RANK[b.kind]; });
   }
   function upcoming(n, R, T) {
@@ -690,34 +819,6 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
   function icsD(d) { return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); }
   function icsEsc(s) { return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
   function icsFold(line) { var out = '', bytes = 0, enc = new TextEncoder(); for (var i = 0; i < line.length; i++) { var n = enc.encode(line[i]).length; if (bytes + n > 73) { out += '\r\n '; bytes = 1; } out += line[i]; bytes += n; } return out; }
-  function downloadICS() {
-    var R = evaluate(), T = buildTimeline(R), end = contractEnd(), n = 0;
-    var L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//jachwi-navi//after//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:자취 캘린더'];
-    var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
-    var trig = { '3d': '-P2DT15H', '1d': '-PT15H', '0d': 'PT9H' }[S.remind] || '-PT15H';
-    function ev(start, summary, desc, rrule) {
-      L.push('BEGIN:VEVENT', 'UID:jachwi-' + (n++) + '-' + icsD(start) + '@jachwi-navi', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + icsD(start), 'DTEND;VALUE=DATE:' + icsD(add(start, 1)), 'SUMMARY:' + icsEsc(summary));
-      if (desc) L.push('DESCRIPTION:' + icsEsc(desc));
-      if (rrule) L.push('RRULE:' + rrule);
-      L.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(summary), 'TRIGGER:' + trig, 'END:VALARM', 'END:VEVENT');
-    }
-    S.bills.forEach(function (b) {
-      var amt = billAmt(b); if (!b.on || !amt) return;
-      var s = billStart(b), y = Math.floor(s / 12), mo = s % 12, day = billDay(b), first = new Date(y, mo, Math.min(day, new Date(y, mo + 1, 0).getDate()));
-      if (first > end) return;
-      ev(first, b.name + ' ' + won(amt) + '원' + (b.kind === 'in' ? ' 입금' : ' 납부'), (b.est ? '예상 금액이에요. ' : '') + '자취 계약 내비에서 만든 일정이에요.', 'FREQ=MONTHLY;INTERVAL=' + (+b.every || 1) + ';BYMONTHDAY=' + (day === 31 ? -1 : day) + (+b.count ? ';COUNT=' + b.count : ';UNTIL=' + icsD(end)));
-    });
-    T.forEach(function (s) { s.tasks.forEach(function (t) {
-      if (S.done[t.id]) return;
-      if (t.due && t.due >= today) ev(t.due, '[자취] ' + t.title, t.desc + ' (근거: ' + t.src + ')');
-      if (t.legal && t.legal >= today) ev(t.legal, '[자취] ' + t.title.replace(/ \+.*$/, '') + ' 법정 기한', '이날까지는 꼭 해야 해요. (근거: ' + t.src + ')');
-    }); });
-    L.push('END:VCALENDAR');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([L.map(icsFold).join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' })); a.download = 'jachwi-calendar.ics';
-    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-    toast('캘린더 파일을 만들었어요. 휴대폰 캘린더에서 열면 일정과 알림이 들어가요.');
-  }
-
   // ---------- 물어보기: 승인된 규칙에서 만든 답만 ----------
   var QA = ['전월세 신고는 언제, 어디서 해?', '전입신고는 언제 해야 해?', '보증금 지키려면 뭘 해야 해?', '받을 수 있는 지원금 있어?'];
   function qaAnswer(q, R) {
@@ -735,7 +836,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     if (/퇴거|갱신|나가|이사 ?가|만료/.test(q)) { var end = contractEnd(); return { a: '계약 만료는 <b>' + ymd(end) + '</b>이에요. 나갈 거라면 만료 2개월 전(<b>' + ymd(add(end, -60)) + '</b>)까지 집주인에게 알리세요. 둘 다 말이 없으면 같은 조건으로 이어지고(묵시적 갱신), 그때는 언제든 알리면 3개월 뒤에 나갈 수 있어요. 보증금은 꼭 받은 뒤에 전출하세요.', src: [['주택임대차보호법 제6조·제6조의2', LAW], ['퇴거 준비', '#moveout']] }; }
     if (/세액공제|연말정산/.test(q)) return { a: '직장인이고 무주택 세대주라면 연말정산 때 낸 월세의 일부를 세액공제로 돌려받을 수 있어요. 전입신고가 되어 있어야 하고, 임대차계약서 사본과 월세 이체 내역이 필요해요. 소득 기준과 공제율은 그해 국세청 안내를 확인하세요.', src: [['조세특례제한법 제95조의2', LAW]] };
     var KW = [[/약국/, 'medical', /약국/], [/병원|의원|치과/, 'medical', /의원|치과/], [/마트|다이소|생활용품|빨래|편의점/, 'life'], [/카페/, 'cafe'], [/지하철|신림역|버스|정류장/, 'transit'], [/공원|산책/, 'park'], [/헬스|운동|체육/, 'gym'], [/도서관|스터디|공부/, 'study'], [/주민센터|행정복지센터|청년센터/, 'public'], [/밥|식당|맛집/, 'food']];
-    for (var i = 0; i < KW.length; i++) if (KW[i][0].test(q)) { var ps = PLACES.filter(function (p) { return p.cat === KW[i][1] && (!KW[i][2] || KW[i][2].test(p.name)); }); return { a: '가장 가까운 ' + CATS[KW[i][1]][0] + ' 장소는 <b>' + ps[0].name + '</b>, 걸어서 ' + ps[0].min + '분(약 ' + ps[0].m + 'm)이에요.' + (ps[1] ? ' 다음은 ' + ps[1].name + '(' + ps[1].min + '분)이에요.' : '') + ' (시연용 예시 데이터)', src: [['지도 탐색에서 보기', '#map']] }; }
+    for (var i = 0; i < KW.length; i++) if (KW[i][0].test(q)) { var ps = places().filter(function (p) { return p.cat === KW[i][1] && (!KW[i][2] || KW[i][2].test(p.name) || KW[i][2].test(p.sub)); }); if (!ps.length) return { a: '집 주변 1km 안에서 ' + CATS[KW[i][1]][0] + ' 장소를 찾지 못했어요.', src: [['지도 탐색', '#map']] }; return { a: '가장 가까운 ' + CATS[KW[i][1]][0] + ' 장소는 <b>' + ps[0].name + '</b>, 걸어서 ' + ps[0].min + '분(약 ' + ps[0].m + 'm)이에요.' + (ps[1] ? ' 다음은 ' + ps[1].name + '(' + ps[1].min + '분)이에요.' : '') + ' (' + (isReal() ? 'OpenStreetMap 기준, 직선거리' : '시연용 예시 데이터') + ')', src: [['지도 탐색에서 보기', '#map']] }; }
     if (/가스|전기|수도|인터넷|공과금|관리비/.test(q)) return { a: '도시가스는 기사가 와서 안전점검을 해야 열 수 있어서 입주 며칠 전에 예약해야 해요. 입주 당일엔 계량기 숫자를 찍어 두세요. 매달 나가는 공과금은 자취 캘린더에 넣어 두면 챙겨드려요.', src: [['자취 캘린더', '#calendar']] };
     return null;
   }
@@ -789,48 +890,6 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
       '<label class="split full s13"><span>예상 금액 (매달 달라요)</span><input class="sw" type="checkbox" role="switch"' + a + '"est"' + (b.est ? ' checked' : '') + '></label>' +
       (L ? '' : '<button type="button" class="btn line sm full" data-act="billdel" data-v="' + b.id + '">이 항목 지우기</button>') + '</div>';
   }
-  function viewCalendar() {
-    var R = evaluate(), T = buildTimeline(R), b0 = calBase(), y = b0.getFullYear(), m = b0.getMonth(), end = contractEnd();
-    var ev = monthEvents(y, m, R, T), sum = function (a) { return a.reduce(function (s, e) { return s + e.amount; }, 0); };
-    var outs = ev.filter(function (e) { return e.kind === 'out'; }), ins = ev.filter(function (e) { return e.kind === 'in'; }), tasks = ev.filter(function (e) { return e.kind === 'task' && !e.done; });
-    var outSum = sum(outs), paid = sum(outs.filter(function (e) { return e.paid; })), inSum = sum(ins);
-    var dim = new Date(y, m + 1, 0).getDate(), lead = new Date(y, m, 1).getDay(), cells = '', cnt = lead + dim;
-    var selD = S.calSel ? pd(S.calSel) : null; if (!selD || selD.getFullYear() !== y || selD.getMonth() !== m) selD = (today.getFullYear() === y && today.getMonth() === m) ? today : new Date(y, m, 1);
-    for (var i = 0; i < lead; i++) cells += '<span class="day out" aria-hidden="true"></span>';
-    for (var d = 1; d <= dim; d++) {
-      var dt = new Date(y, m, d), de = ev.filter(function (e) { return e.date.getDate() === d; });
-      var o = de.filter(function (e) { return e.kind === 'out'; }), inn = de.filter(function (e) { return e.kind === 'in'; }), tk = de.filter(function (e) { return e.kind === 'task' && !e.done; }), mk = de.filter(function (e) { return e.kind === 'mark'; });
-      var dots = tk.slice(0, 3).map(function () { return '<i class="dot"></i>'; }).join('') + mk.map(function () { return '<i class="dot mark"></i>'; }).join('');
-      var money = (o.length ? '<span class="m' + (o.every(function (e) { return e.paid; }) ? ' paid' : '') + '">−' + man(sum(o)) + '</span>' : '') + (inn.length ? '<span class="m in">+' + man(sum(inn)) + '</span>' : '');
-      cells += '<button type="button" class="day' + (+dt === +today ? ' today' : '') + (dt.getDay() === 0 ? ' sun' : '') + '" data-act="calday" data-v="' + iso(dt) + '" aria-pressed="' + (+dt === +selD) + '" aria-label="' + (m + 1) + '월 ' + d + '일, 일정 ' + de.length + '개"><span class="n">' + d + '</span><span class="dots" aria-hidden="true">' + dots + '</span>' + money + '</button>';
-    }
-    while (cnt % 7) { cells += '<span class="day out" aria-hidden="true"></span>'; cnt++; }
-    var list = ev.filter(function (e) { return +e.date === +selD; });
-    var KI = { out: ['', '₩'], in: ['in', '+'], task: ['task', '!'], mark: ['mark', '★'] };
-    var agenda = list.map(function (e) {
-      var tick = e.kind === 'out' || e.kind === 'in' ? '<label class="tick"><input class="chk" type="checkbox" data-act="paid" data-v="' + e.key + '"' + (e.paid ? ' checked' : '') + '>' + (e.kind === 'in' ? '받음' : '냄') + '</label>'
-        : e.kind === 'task' ? '<label class="tick"><input class="chk" type="checkbox" data-act="task" data-id="' + e.taskId + '"' + (e.done ? ' checked' : '') + '>완료</label>' : '';
-      return '<div class="ag' + (e.paid || e.done ? ' done' : '') + '"><span class="k-ic ' + KI[e.kind][0] + '" aria-hidden="true">' + KI[e.kind][1] + '</span><span class="what"><b>' + esc(e.title) + '</b><span class="s12 muted">' + (e.amount ? won(e.amount) + '원' + (e.est ? ' · 예상' : '') + (e.nth ? ' · ' + e.nth + '회차' : '') : e.sub || '계약') + '</span></span>' + tick + '</div>';
-    }).join('') || '<p class="muted s13" style="padding:8px 0">이날은 일정이 없어요.</p>';
-    var sup = findBill('sup-rent'), rentP = R.programs[0];
-    var bills = S.bills.map(function (b) {
-      var amt = billAmt(b), ed = S.calEdit === b.id;
-      return '<div class="bill' + (b.on ? '' : ' off') + '"><input class="sw" type="checkbox" role="switch" aria-label="' + esc(b.name) + ' 켜기" data-act="billon" data-v="' + b.id + '"' + (b.on ? ' checked' : '') + '><span class="what"><b>' + esc(b.name) + '</b><span class="s12 muted">' + ((+b.every || 1) > 1 ? b.every + '개월마다 ' : '매월 ') + dayLabel(billDay(b)) + ' · ' + (b.kind === 'in' ? '+' : '') + won(amt) + '원' + (b.est ? ' (예상)' : '') + (+b.count ? ' · ' + b.count + '회' : '') + '</span>' + (b.note && !b.on ? '<span class="s12" style="color:var(--brand-text)">' + b.note + '</span>' : '') + '</span>' +
-        '<button type="button" class="btn ghost sm" data-act="billedit" data-v="' + b.id + '" aria-expanded="' + ed + '">' + (ed ? '닫기' : '수정') + '</button></div>' + (ed ? billForm(b) : '');
-    }).join('');
-    var addF = '<form data-form="billadd" class="bill-form" style="margin-top:12px"><b class="full">항목 추가</b><label class="field"><span>이름</span><input class="inp" name="name" maxlength="20" placeholder="휴대폰 요금"></label><label class="field"><span>금액</span><div class="unit"><input class="inp" name="amount" inputmode="numeric" placeholder="55000"><em>원</em></div></label>' +
-      '<label class="field"><span>매월</span><select class="inp" name="day">' + dayOptions(25) + '</select></label><label class="field"><span>구분</span><select class="inp" name="kind"><option value="out">나가는 돈</option><option value="in">들어오는 돈</option></select></label><button class="btn sm full" type="submit">' + ic('plus', 'sm') + '추가</button></form>';
-    var tab = S.calTab === 'money' ? 'money' : 'day';
-    var panel = '<section class="card"><div class="panel-tabs" role="tablist"><button type="button" role="tab" data-act="caltab" data-v="day" aria-selected="' + (tab === 'day') + '">' + md(selD) + ' 일정</button><button type="button" role="tab" data-act="caltab" data-v="money" aria-selected="' + (tab === 'money') + '">매달 돈 설정</button></div>' +
-      (tab === 'day' ? '<div role="tabpanel">' + agenda + '</div>'
-        : '<div role="tabpanel"><p class="s13 muted" style="margin-bottom:6px">계약 기간(' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + ') 동안 반복해서 보여줘요.</p>' + (rentP.eligible && sup && !sup.on ? '<div class="banner" style="margin:8px 0">' + ic('gift') + '<span>청년월세 지원 <b>' + judge(rentP)[1] + '</b> · 선정되면 ‘청년월세 지원 입금’을 켜 두세요.</span></div>' : '') + bills + addF + '</div>') + '</section>' +
-      '<section class="card stack" style="margin-top:16px"><div><h2 style="font-size:16px">휴대폰 캘린더로 알림 받기</h2><p class="s13 muted" style="margin-top:4px">.ics 파일을 열면 납부일과 기한이 알림과 함께 들어가요. 서버 없이 이 기기에서 만들어요.</p></div>' + remindSelect() + '<button type="button" class="btn block" data-act="ics">' + ic('down') + '.ics 파일 받기</button></section>';
-    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.addr || '내 자취방') + ' · ' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + '</p><h1>공과금 & 납부</h1></div><div class="month-nav"><button type="button" class="icon-btn" data-act="calnav" data-v="-1" aria-label="이전 달">' + ic('back') + '</button><h2 aria-live="polite">' + y + '. ' + (m + 1) + '</h2><button type="button" class="icon-btn" data-act="calnav" data-v="1" aria-label="다음 달">' + ic('chev') + '</button><button type="button" class="btn ghost sm" data-act="calnav" data-v="0">오늘</button></div></div>' +
-      '<div class="stats"><div class="stat"><div class="k">' + (m + 1) + '월 나갈 돈</div><div class="v">' + won(outSum) + '원</div><div class="h">낸 돈 ' + won(paid) + ' · 남은 돈 ' + won(outSum - paid) + '</div></div><div class="stat"><div class="k">' + (m + 1) + '월 들어올 돈</div><div class="v' + (inSum ? ' in' : '') + '">' + won(inSum) + '원</div><div class="h">' + (ins.length ? '지원금 입금' : '선정된 지원금을 켜 보세요') + '</div></div><div class="stat"><div class="k">챙길 기한</div><div class="v' + (tasks.length ? ' due' : '') + '">' + tasks.length + '개</div><div class="h">신고·지원 신청 등</div></div></div>' +
-      '<div class="cal-wrap"><section class="card"><div class="wd" aria-hidden="true">' + WD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="days">' + cells + '</div>' +
-      '<div class="legend"><span><i class="dot"></i>기한</span><span><i class="dot mark"></i>계약일·입주일</span><span><b style="color:var(--ink)">−</b>나가는 돈</span><span><b style="color:var(--brand-text)">+</b>들어오는 돈</span></div></section><div>' + panel + '</div></div>';
-  }
-
   function viewSupport() {
     var R = evaluate();
     var cards = R.programs.map(function (x) {
@@ -861,97 +920,242 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
       '<div class="grid"><section class="card c8">' + rows + '</section><aside class="c4 stack"><div class="card stack"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">서버에 올리지 않아요. 내용 확인(OCR·AI)을 쓸 때만 동의를 받고 보내며, 주민등록번호는 보내기 전에 가리고 확인이 끝나면 바로 지워요.</p></div><div class="card stack"><h2 style="font-size:16px">지원 신청에 필요한 것</h2>' + PROGRAMS[0].docs.map(function (d) { return '<div class="kv"><span class="s13">' + d + '</span></div>'; }).join('') + '<a class="s13" href="#support">지원사업에서 보기</a></div></aside></div>';
   }
 
-  // ---------- 우리 동네 (시연용 예시 데이터) ----------
-  // 실제 서비스에서는 공공데이터(상가정보·병원정보·역/정류소·공공시설 위치)와 지도 API로 채운다. 별점·리뷰는 만들지 않는다.
-  var HOUSE = { lat: 37.48120, lng: 126.92750 };
+  // ---------- 우리 동네: 실제 데이터 ----------
+  // 지도: OpenStreetMap 데이터 기반 CARTO 지도(Leaflet). 장소: /api/places (OpenStreetMap + 키가 있으면 공공데이터포털 상가정보).
+  // 데이터를 못 불러오면(오프라인·파일로 열기 실패 등) 아래 예시 데이터로 대신 보여 주고 화면에 그렇게 표시한다.
+  var API = (function () { try { var o = new URLSearchParams(location.search).get('api'); if (o && /^https:\/\/[\w.-]+$/.test(o)) return o; } catch (e) {} return /^https?:$/.test(location.protocol) ? '' : 'https://jachwi-navi.vercel.app'; })();
+  var ORIGIN = API || location.origin;
+  var DEMO_HOME = { lat: 37.48120, lng: 126.92750, label: '예시 위치 · 서울 관악구 신림역 근처', src: 'demo' };
+  function home() { return S.home && S.home.lat ? S.home : DEMO_HOME; }
+  var HOUSE = DEMO_HOME;
   var CATS = { food: ['맛집', 'food'], cafe: ['카페', 'cup'], study: ['공부·작업', 'book'], gym: ['운동', 'dumbbell'], park: ['공원·산책', 'tree'], life: ['생활 편의', 'cart'], medical: ['병원·약국', 'cross'], transit: ['교통', 'bus'], public: ['공공시설', 'building'], safety: ['안전', 'shield'] };
-  function place(id, cat, name, dx, dy, tags, desc, pub) { var p = { id: id, cat: cat, name: name, lat: HOUSE.lat + dy / 111000, lng: HOUSE.lng + dx / 88200, dx: dx, dy: dy, tags: tags, desc: desc, pub: !!pub }; p.m = Math.round(Math.sqrt(dx * dx + dy * dy)); p.min = Math.max(1, Math.ceil(p.m / 67)); return p; }
-  var PLACES = [
+  function place(id, cat, name, dx, dy, tags, desc, pub, sub) { var p = { id: id, cat: cat, name: name, sub: sub || name.replace(/ \(.*\)$/, ''), lat: HOUSE.lat + dy / 111000, lng: HOUSE.lng + dx / 88200, tags: tags, desc: desc, pub: !!pub, ex: true }; return p; }
+  var EXAMPLE = [
     place('conv', 'life', '편의점', -44, 28, ['24시간', '택배'], '밤늦게도 열고 택배를 맡기고 찾을 수 있어요.'),
     place('bus', 'transit', '버스정류장', 97, 50, ['간선', '마을버스'], '마을버스와 간선버스가 서요.'),
     place('pharm', 'medical', '약국', 132, 89, ['처방전'], '처방전 약을 받을 수 있어요.'),
-    place('laundry', 'life', '셀프 빨래방', -90, -60, ['건조기', '이불 빨래'], '큰 이불은 여기서 빨면 편해요.'),
-    place('food1', 'food', '동네 백반집', 60, 120, ['혼밥', '점심'], '혼자 먹기 편한 1인 좌석이 있는 식당이에요.'),
+    place('laundry', 'life', '셀프 빨래방', -90, -60, ['건조기'], '큰 이불은 여기서 빨면 편해요.', false, '빨래방·세탁소'),
+    place('food1', 'food', '동네 백반집', 60, 120, ['혼밥'], '1인 좌석이 있는 식당이에요.', false, '식당'),
     place('gym1', 'gym', '헬스장', 170, 120, ['월 이용권'], '월 단위로 등록하는 헬스장이에요.'),
-    place('clinic', 'medical', '내과 의원', 159, 155, ['감기', '건강검진'], '가벼운 진료와 검진을 받을 수 있어요.'),
-    place('cafe1', 'cafe', '동네 북카페', -170, 60, ['책', '조용한 편'], '책을 읽거나 작업하기 좋은 좌석이 있는 카페예요.'),
-    place('food2', 'food', '국수집', -130, 160, ['저녁', '포장'], '포장도 되는 국수집이에요.'),
-    place('study1', 'study', '스터디카페', 210, 180, ['24시간', '콘센트'], '시간제로 이용하는 스터디카페예요.'),
-    place('daiso', 'life', '생활용품점', 150, 210, ['수납', '청소용품'], '입주 첫 주에 필요한 생활용품을 살 수 있어요.'),
-    place('food3', 'food', '분식집', 30, 230, ['포장', '저렴'], '간단히 먹기 좋은 분식집이에요.'),
-    place('center', 'public', '행정복지센터 (주민센터)', -250, -80, ['전입신고', '확정일자', '등본'], '전입신고·확정일자·등본 발급을 하는 곳이에요.', true),
-    place('mart', 'life', '대형마트', -203, 233, ['장보기', '배달'], '장을 한 번에 보기 좋은 마트예요.'),
-    place('dent', 'medical', '치과', 230, 260, ['스케일링'], '스케일링·충치 치료를 받을 수 있어요.'),
-    place('police', 'safety', '지구대 (경찰)', 291, -122, ['24시간'], '밤늦게 도움이 필요할 때 찾을 수 있는 곳이에요.', true),
-    place('cafe2', 'cafe', '테이크아웃 카페', 120, 300, ['아침', '테이크아웃'], '출근길에 들르기 좋은 작은 카페예요.'),
-    place('park', 'park', '근린공원', -291, -244, ['산책', '운동기구'], '한 바퀴 15분쯤 걷는 동네 공원이에요.', true),
-    place('subway', 'transit', '신림역 (2호선)', 196, 337, ['2호선', '신림선'], '2호선과 신림선을 탈 수 있어요.'),
-    place('library', 'study', '구립 도서관', -360, 150, ['열람실', '무료'], '열람실과 노트북 좌석이 있는 구립 도서관이에요.', true),
-    place('river', 'park', '하천 산책로', 380, -320, ['산책', '자전거'], '물길을 따라 걷거나 자전거를 탈 수 있어요.', true),
-    place('sports', 'gym', '구립 생활체육관', 280, 420, ['수영', '저렴한 강좌'], '구민 할인 강좌가 있는 공공 체육관이에요.', true),
-    place('youth', 'public', '청년센터', 420, 470, ['청년 상담', '공간 대여'], '청년 상담과 모임 공간 대여를 하는 곳이에요.', true)
+    place('clinic', 'medical', '내과 의원', 159, 155, ['진료'], '가벼운 진료를 받을 수 있어요.', false, '의원'),
+    place('cafe1', 'cafe', '동네 북카페', -170, 60, ['책'], '책을 읽거나 작업하기 좋은 카페예요.', false, '카페'),
+    place('study1', 'study', '스터디카페', 210, 180, ['24시간'], '시간제로 이용하는 스터디카페예요.'),
+    place('center', 'public', '행정복지센터 (주민센터)', -250, -80, ['전입신고', '확정일자'], '전입신고·확정일자·등본 발급을 하는 곳이에요.', true, '행정복지센터·관공서'),
+    place('mart', 'life', '대형마트', -203, 233, ['장보기'], '장을 한 번에 보기 좋은 마트예요.', false, '마트'),
+    place('police', 'safety', '지구대 (경찰)', 291, -122, ['24시간'], '밤늦게 도움이 필요할 때 찾을 수 있는 곳이에요.', true, '경찰'),
+    place('park', 'park', '근린공원', -291, -244, ['산책'], '동네 공원이에요.', true, '공원'),
+    place('subway', 'transit', '신림역 (2호선)', 196, 337, ['2호선'], '2호선과 신림선을 탈 수 있어요.', false, '역'),
+    place('library', 'study', '구립 도서관', -360, 150, ['열람실'], '열람실이 있는 구립 도서관이에요.', true, '도서관')
   ];
-  function findPlace(id) { return PLACES.filter(function (p) { return p.id === id; })[0]; }
+  function distM(a, b) { var R = 6371000, t = Math.PI / 180, dLat = (b.lat - a.lat) * t, dLng = (b.lng - a.lng) * t, h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * t) * Math.cos(b.lat * t) * Math.sin(dLng / 2) * Math.sin(dLng / 2); return Math.round(2 * R * Math.asin(Math.sqrt(h))); }
+  var PUB_SUB = /행정복지센터|관공서|주민 시설|우체국|도서관|경찰|공원|체육시설|수영장/;
+  var DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }, PC = { k: '', list: [] };
+  function placeKey(h) { return h.lat.toFixed(3) + ',' + h.lng.toFixed(3); }
+  function isReal() { return DATA.status === 'ok' && DATA.items.length > 0; }
+  function places() {
+    var h = home(), real = isReal(), k = (real ? DATA.key + DATA.fetchedAt : 'ex') + '|' + h.lat + ',' + h.lng;
+    if (PC.k === k) return PC.list;
+    var src = real ? DATA.items : (h.src === 'demo' || !S.home ? EXAMPLE : []);
+    var list = src.map(function (it) {
+      var m = distM(h, it), p = Object.assign({}, it);
+      p.m = m; p.min = Math.max(1, Math.ceil(m / 67)); p.dx = (it.lng - h.lng) * 111320 * Math.cos(h.lat * Math.PI / 180); p.dy = (it.lat - h.lat) * 110540;
+      if (!p.ex) { p.tags = [it.sub].concat(it.hours ? ['영업시간 정보 있음'] : []); p.desc = it.addr ? it.addr : it.sub + ' · ' + (it.src === 'sbiz' ? '공공데이터포털 상가정보' : 'OpenStreetMap') + ' 기준'; p.pub = PUB_SUB.test(it.sub); }
+      return p;
+    }).sort(function (a, b) { return a.m - b.m; });
+    PC = { k: k, list: list };
+    return list;
+  }
+  function findPlace(id) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
+  function nearest(cat, re) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].cat === cat && (!re || re.test(l[i].sub) || re.test(l[i].name))) return l[i]; return null; }
+  function loadPlaces(force) {
+    var h = home(), key = placeKey(h), c = { lat: +h.lat.toFixed(3), lng: +h.lng.toFixed(3) };
+    if (!force && DATA.key === key && DATA.status !== 'idle') return; // 실패했으면 '다시 시도'를 눌렀을 때만 다시 부른다
+    DATA = { key: key, status: 'loading', items: [], sources: [], fetchedAt: '', notes: [], error: '' };
+    if (!force) { try { var cc = JSON.parse(localStorage.getItem('jachwi-places') || 'null'); if (cc && cc.key === key && Date.now() - cc.at < (cc.partial ? 6e5 : 3 * 864e5)) { applyData(cc.data); return; } } catch (e) {} }
+    var PL = window.JachwiPlaces;
+    // 서버가 못 받은 묶음은 이 브라우저가 Photon(OpenStreetMap)에 직접 물어본다 (한 번에 하나씩)
+    function direct(idxs) {
+      var items = [], failed = [];
+      if (!PL) return Promise.resolve({ items: items, failed: idxs });
+      return idxs.reduce(function (pr, i) { return pr.then(function () {
+        return fetch(PL.photonUrl(c, 1000, PL.GROUPS[i])).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(function (j) { items.push.apply(items, PL.fromPhoton(j.features)); }).catch(function () { failed.push(i); });
+      }); }, Promise.resolve()).then(function () { return { items: items, failed: failed }; });
+    }
+    function finishLoad(server, extra) {
+      if (DATA.key !== key) return;
+      var base = server && server.ok ? server.items : [], all = base.concat(extra ? extra.items : []);
+      if (!all.length) { DATA.status = 'error'; DATA.error = (server && server.error) || '주변 데이터를 불러오지 못했어요.'; render(true); return; }
+      var srcs = (server && server.ok ? server.sources : []).slice();
+      if (extra && extra.items.length && !srcs.some(function (x) { return /OpenStreetMap/.test(x.name); })) srcs.push({ name: 'OpenStreetMap 기여자 (Photon 검색)', url: 'https://www.openstreetmap.org/copyright', license: 'ODbL' });
+      var data = { items: PL ? PL.finish(all, c, 1000) : all, sources: srcs, fetchedAt: new Date().toISOString(), notes: (server && server.notes) || [] };
+      var partial = !!(extra && extra.failed.length) || !!(server && server.ok && !extra && (server.failedGroups || []).length);
+      applyData(data);
+      try { localStorage.setItem('jachwi-places', JSON.stringify({ key: key, at: Date.now(), partial: partial, data: data })); } catch (e) {}
+      render(true);
+    }
+    fetch(API + '/api/places?lat=' + c.lat + '&lng=' + c.lng + '&r=1000').then(function (r) { return r.json().catch(function () { return { ok: false }; }); }, function () { return { ok: false }; }).then(function (j) {
+      if (DATA.key !== key) return;
+      var miss = j.ok ? (j.failedGroups || []) : (PL ? PL.GROUPS.map(function (g, i) { return i; }) : []);
+      if (!miss.length) return finishLoad(j, null);
+      return direct(miss).then(function (extra) { finishLoad(j, extra); });
+    });
+  }
+  function applyData(j) { DATA.status = 'ok'; DATA.items = j.items || []; DATA.sources = j.sources || []; DATA.fetchedAt = j.fetchedAt || ''; DATA.notes = j.notes || []; PC.k = ''; }
+  function dataBadge() {
+    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="s12 muted" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : 'OpenStreetMap'; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>'; }
+    if (DATA.status === 'loading') return '<span class="badge">주변 데이터 불러오는 중…</span>';
+    if (DATA.status === 'error') return '<span class="badge due">실제 데이터를 못 불러왔어요' + (S.home ? '' : ' · 예시로 보여줘요') + '</span> <button type="button" class="btn ghost sm" data-act="reload">다시 시도</button>';
+    return '<span class="badge due">시연용 예시 데이터</span>';
+  }
+  function sourceNote() {
+    return isReal() ? '<p class="s12 muted">장소 정보: ' + DATA.sources.map(function (s) { return '<a href="' + s.url + '" target="_blank" rel="noopener">' + s.name + '</a> (' + s.license + ')'; }).join(', ') + '. 걸리는 시간은 직선거리 ÷ 분당 67m라서 실제로는 조금 더 걸릴 수 있어요. 가게 정보는 바뀌었을 수 있으니 방문 전 확인하세요.</p>'
+      : '<p class="s12 muted">지금은 시연용 예시 데이터예요. 실제 가게 정보가 아니에요.</p>';
+  }
+  function setHome(lat, lng, label, src) {
+    S.home = { lat: +(+lat).toFixed(6), lng: +(+lng).toFixed(6), label: String(label || '내가 고른 위치').slice(0, 60), src: src || 'pick' };
+    S.mapSel = ''; S.pickHome = false; save(); loadPlaces(); render(true); toast('집 위치를 바꿨어요. 주변 장소를 다시 찾고 있어요.');
+  }
+  var GEO = { items: [], status: '', q: '' };
+  function geoSearch(q) {
+    GEO = { items: [], status: 'loading', q: q }; render(true);
+    fetch(API + '/api/geocode?q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (j) {
+      GEO = { items: j.ok ? j.items : [], status: j.ok ? (j.items.length ? 'ok' : 'empty') : 'error', q: q, err: j.error || '', src: j.source }; render(true);
+    }).catch(function () { GEO = { items: [], status: 'error', q: q }; render(true); });
+  }
+  function useGps() {
+    if (!navigator.geolocation) { toast('이 브라우저는 현재 위치를 지원하지 않아요.'); return; }
+    toast('현재 위치를 확인하고 있어요…');
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var la = pos.coords.latitude, ln = pos.coords.longitude;
+      if (!(la > 33 && la < 39 && ln > 124 && ln < 132)) { toast('대한민국 안에서만 쓸 수 있어요.'); return; }
+      setHome(la, ln, '현재 위치', 'gps');
+      fetch(API + '/api/geocode?lat=' + la.toFixed(4) + '&lng=' + ln.toFixed(4)).then(function (r) { return r.json(); }).then(function (j) { if (j.ok && j.label && S.home && S.home.src === 'gps') { S.home.label = '현재 위치 · ' + j.label; save(); render(true); } }).catch(function () {});
+    }, function (err) { toast(err.code === 1 ? '위치 권한을 허용해야 현재 위치를 쓸 수 있어요.' : '현재 위치를 찾지 못했어요.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+  }
+  function homeCard() {
+    var h = home();
+    var res = GEO.status === 'loading' ? '<p class="s13 muted">찾는 중…</p>' : GEO.status === 'ok' ? '<div>' + GEO.items.map(function (g, i) { return '<button type="button" class="place" data-act="sethome" data-i="' + i + '"><span class="ptile" style="width:36px;height:36px;border-radius:10px">' + ic('pin', 'sm') + '</span><span class="what"><b style="font-weight:600">' + esc(g.label) + '</b></span>' + ic('chev', 'sm') + '</button>'; }).join('') + '</div>'
+      : GEO.status === 'empty' ? '<p class="s13 muted">‘' + esc(GEO.q) + '’로 찾은 곳이 없어요. 동 이름이나 큰 건물 이름으로 찾거나 지도에서 직접 골라 주세요.</p>' : GEO.status === 'error' ? '<p class="s13" style="color:var(--due-text)">' + esc(GEO.err || '주소 검색에 실패했어요.') + '</p>' : '';
+    return '<section class="card stack"><div class="card-h" style="margin:0"><h2>우리 집 위치</h2>' + (S.home ? '<button type="button" class="btn ghost sm" data-act="resethome">예시 위치로</button>' : '') + '</div>' +
+      '<div class="row" style="flex-wrap:nowrap"><span class="ptile" style="width:40px;height:40px;border-radius:12px;background:var(--ink);color:var(--surface)">' + ic('home', 'sm') + '</span><div style="min-width:0"><b>' + esc(h.label) + '</b><p class="s12 muted">' + (h.src === 'demo' ? '아직 내 집 위치를 정하지 않았어요' : h.src === 'gps' ? '현재 위치로 정했어요' : '직접 정한 위치예요') + '</p></div></div>' +
+      '<form class="ask" data-form="geo"><input class="inp" aria-label="주소 또는 건물 이름" placeholder="예: 관악구 신림동, 서원동 주민센터" maxlength="80" value="' + esc(GEO.q || '') + '"><button class="btn" type="submit">찾기</button></form>' + res +
+      '<div class="row"><button type="button" class="btn ghost sm" data-act="gps">' + ic('pin', 'sm') + '현재 위치로</button><button type="button" class="btn ghost sm" data-act="pickhome" aria-pressed="' + !!S.pickHome + '">' + (S.pickHome ? '지도를 눌러 주세요…' : '지도에서 직접 고르기') + '</button></div>' +
+      '<p class="s12 muted">주변 장소를 찾을 때 위치를 약 100m 단위로 흐려서 보내고, 서버에 저장하지 않아요. 주소 검색은 OpenStreetMap(Nominatim)을 써요.</p></section>';
+  }
   function short(n) { return n.replace(/ \(.*\)$/, ''); }
   function josa(w, a, b) { var c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 ? a : b; }
-  function kakao(kind, p) { return kind === 'rv' ? 'https://map.kakao.com/link/roadview/' + p.lat.toFixed(5) + ',' + p.lng.toFixed(5) : kind === 'to' ? 'https://map.kakao.com/link/to/' + encodeURIComponent(p.name) + ',' + p.lat.toFixed(5) + ',' + p.lng.toFixed(5) : 'https://map.kakao.com/link/map/' + encodeURIComponent(p.name) + ',' + p.lat.toFixed(5) + ',' + p.lng.toFixed(5); }
+  function kakao(kind, p) { var ll = (+p.lat).toFixed(5) + ',' + (+p.lng).toFixed(5); return kind === 'rv' ? 'https://map.kakao.com/link/roadview/' + ll : kind === 'to' ? 'https://map.kakao.com/link/to/' + encodeURIComponent(p.name) + ',' + ll : 'https://map.kakao.com/link/map/' + encodeURIComponent(p.name) + ',' + ll; }
   function icoSvg(name, x, y, s) { return '<svg class="ico" x="' + x + '" y="' + y + '" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + ICON[name] + '</svg>'; }
 
-  // 개략 지도 (실제 지도가 아님): 집이 가운데, 1px = 약 3.3m
+  // 지도에 올릴 장소: 전체 보기에서는 분류마다 가까운 몇 곳만 (너무 빽빽하지 않게)
+  function mapList(cat, perCat) {
+    var l = places();
+    if (cat !== 'all') return l.filter(function (p) { return p.cat === cat; }).slice(0, 80);
+    var cnt = {}; return l.filter(function (p) { cnt[p.cat] = (cnt[p.cat] || 0) + 1; return cnt[p.cat] <= (p.cat === 'transit' ? 4 : perCat); });
+  }
+  function popCard(sel) {
+    var saved = !!S.saved[sel.id];
+    return '<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="ptile">' + ic(CATS[sel.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(sel.name) + '</b><p class="s12 muted">' + esc(sel.sub) + ' · 걸어서 약 ' + sel.min + '분 · ' + sel.m + 'm</p></div><button type="button" class="icon-btn" style="width:32px;height:32px;background:transparent" data-act="place" data-v="" aria-label="닫기">' + ic('x', 'sm') + '</button></div>' +
+      (sel.desc ? '<p class="s13 sub" style="margin-top:8px">' + esc(sel.desc) + '</p>' : '') + (sel.hours ? '<p class="s12 muted">영업시간(OSM): ' + esc(sel.hours) + '</p>' : '') +
+      '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + kakao('to', sel) + '" target="_blank" rel="noopener">길찾기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '" target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>';
+  }
   function placeMap(cat, selId, H, labels) {
-    var W = 640, cx = 320, cy = Math.round(H / 2), RR = Math.min(W, H) / 2 - 22;
-    var rad = function (m) { return RR * Math.sqrt(m / 700); }; // 방향은 그대로, 가까운 곳은 넓게
-    var raw = function (p) { var d = p.m || 1, r = rad(d); return [cx + p.dx / d * r, cy - p.dy / d * r]; };
-    var list = PLACES.filter(function (p) { return cat === 'all' || p.cat === cat; });
     var sel = selId && findPlace(selId);
+    if (window.L) return '<div class="map-box lbox"><div data-lmap data-cat="' + cat + '" data-labels="' + (labels ? 1 : 0) + '" style="height:' + H + 'px"></div>' + (sel ? '<div class="pop pop-fix" role="dialog" aria-label="' + esc(sel.name) + '">' + popCard(sel) + '</div>' : '') + '</div>';
+    return svgMap(cat, selId, H, labels);
+  }
+  // 실제 지도 (Leaflet) — 화면을 다시 그려도 지도 하나를 계속 옮겨 붙여 쓴다
+  var LM = { map: null, el: null, layer: null, center: '', sel: '' };
+  function ensureMap() {
+    if (!window.L) return null;
+    if (LM.map) return LM.map;
+    LM.el = document.createElement('div'); LM.el.className = 'lmap';
+    LM.map = L.map(LM.el, { zoomControl: true, scrollWheelZoom: false, tap: false });
+    // OpenStreetMap 기본 지도 (키 없음, 출처 표시 필수)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> 기여자' }).addTo(LM.map);
+    LM.layer = L.layerGroup().addTo(LM.map);
+    LM.map.on('click', function (e) { if (S.pickHome) setHome(e.latlng.lat, e.latlng.lng, '지도에서 고른 위치', 'pick'); });
+    return LM.map;
+  }
+  function mountMap() {
+    var ph = app.querySelector('[data-lmap]'); if (!ph || !ensureMap()) return;
+    ph.appendChild(LM.el); LM.el.style.height = '100%';
+    LM.el.classList.toggle('picking', !!S.pickHome);
+    LM.map.invalidateSize();
+    var h = home(), ck = h.lat + ',' + h.lng;
+    if (LM.center !== ck) { LM.map.setView([h.lat, h.lng], 16); LM.center = ck; }
+    LM.layer.clearLayers();
+    var brand = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() || '#5B4CDB';
+    L.circle([h.lat, h.lng], { radius: 670, color: brand, weight: 1, dashArray: '4 6', fillOpacity: 0.04, interactive: false }).addTo(LM.layer);
+    L.circle([h.lat, h.lng], { radius: 335, color: brand, weight: 1, dashArray: '4 6', fillOpacity: 0.06, interactive: false }).addTo(LM.layer);
+    L.marker([h.lat, h.lng], { icon: L.divIcon({ className: '', html: '<span class="lhome" aria-hidden="true">' + ic('home', 'sm') + '</span>', iconSize: [36, 36], iconAnchor: [18, 18] }), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(LM.layer);
+    var cat = ph.dataset.cat || 'all', sel = S.mapSel && findPlace(S.mapSel), list = mapList(cat, ph.dataset.labels === '1' ? 12 : 6);
+    if (sel && list.indexOf(sel) < 0) list.push(sel);
+    list.forEach(function (p) {
+      var on = sel && sel.id === p.id;
+      var mk = L.marker([p.lat, p.lng], { title: p.name + ' · ' + p.min + '분', alt: p.name, zIndexOffset: on ? 900 : 0, icon: L.divIcon({ className: '', html: '<span class="lmk' + (on ? ' on' : '') + '">' + ic(CATS[p.cat][1], 'sm') + '</span>', iconSize: [30, 30], iconAnchor: [15, 15] }) });
+      mk.on('click', function () { S.mapSel = p.id; save(); render(true); });
+      if (on) mk.bindTooltip(esc(short(p.name)), { permanent: true, direction: 'top', offset: [0, -16], className: 'ltip' });
+      mk.addTo(LM.layer);
+    });
+    if (sel && LM.sel !== sel.id) { if (!LM.map.getBounds().pad(-0.15).contains([sel.lat, sel.lng])) LM.map.panTo([sel.lat, sel.lng]); }
+    LM.sel = sel ? sel.id : '';
+  }
+
+  // 지도 라이브러리를 못 불러왔을 때 쓰는 개략도
+  function svgMap(cat, selId, H, labels) {
+    var W = 640, cx = 320, cy = Math.round(H / 2), RR = Math.min(W, H) / 2 - 22;
+    var rad = function (m) { return RR * Math.sqrt(Math.min(m, 900) / 700); };
+    var raw = function (p) { var d = p.m || 1, r = rad(d); return [cx + p.dx / d * r, cy - p.dy / d * r]; };
+    var list = mapList(cat, 4), sel = selId && findPlace(selId);
     if (sel && list.indexOf(sel) < 0) list.push(sel);
     var P0 = {}; list.forEach(function (p) { P0[p.id] = raw(p); });
     for (var it = 0; it < 40; it++) for (var i = 0; i < list.length; i++) for (var j = i + 1; j < list.length; j++) {
       var a = P0[list[i].id], c = P0[list[j].id], ddx = c[0] - a[0], ddy = c[1] - a[1], dd = Math.sqrt(ddx * ddx + ddy * ddy) || 0.1, need = labels ? 40 : 34;
       if (dd < need) { var push = (need - dd) / 2, ux = ddx / dd, uy = ddy / dd; a[0] -= ux * push; a[1] -= uy * push; c[0] += ux * push; c[1] += uy * push; }
     }
-    list.forEach(function (p) { var q = P0[p.id], ddx = q[0] - cx, ddy = q[1] - cy, dd = Math.sqrt(ddx * ddx + ddy * ddy); if (dd < 34) { q[0] = cx + ddx / (dd || 1) * 34; q[1] = cy + ddy / (dd || 1) * 34; } q[0] = Math.max(18, Math.min(W - 18, q[0])); q[1] = Math.max(18, Math.min(H - 30, q[1])); });
+    list.forEach(function (p) { var q = P0[p.id]; q[0] = Math.max(18, Math.min(W - 18, q[0])); q[1] = Math.max(18, Math.min(H - 30, q[1])); });
     var at = function (p) { var q = P0[p.id] || raw(p); return [Math.round(q[0]), Math.round(q[1])]; };
     var bg = '<rect width="' + W + '" height="' + H + '" fill="var(--map-bg)"/>';
     for (var gx = 24; gx < W; gx += 52) bg += '<path class="alley" d="M' + gx + ' 0V' + H + '"/>';
     for (var gy = 30; gy < H; gy += 52) bg += '<path class="alley" d="M0 ' + gy + 'H' + W + '"/>';
-    var pk = raw(findPlace('park')), rv = raw(findPlace('river'));
-    bg += '<ellipse cx="' + pk[0] + '" cy="' + pk[1] + '" rx="58" ry="40" fill="var(--map-green)"/>' +
-      '<path d="M' + Math.round(rv[0] - 150) + ' ' + (H + 10) + 'C' + (rv[0] - 60) + ' ' + (rv[1] + 30) + ' ' + (rv[0] + 40) + ' ' + (rv[1] - 10) + ' ' + (W + 10) + ' ' + (rv[1] - 60) + '" stroke="var(--map-water)" stroke-width="26" fill="none"/>' +
-      '<path class="road" stroke-width="16" d="M0 ' + (cy - 46) + 'H' + W + '"/><path class="road" stroke-width="13" d="M' + (cx + 58) + ' 0V' + H + '"/><path class="road" stroke-width="9" d="M0 ' + (cy + 130) + 'L' + W + ' ' + (cy - 170) + '"/>';
     var r5 = Math.round(rad(335)), r10 = Math.round(rad(670));
-    var rings = '<circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r10 + '"/><circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r5 + '"/>' +
-      '<text class="ring-t" x="' + (cx - r5 - 4) + '" y="' + (cy + 4) + '" style="text-anchor:end">5분</text><text class="ring-t" x="' + (cx - r10 - 4) + '" y="' + (cy + 4) + '" style="text-anchor:end">10분</text>';
+    var rings = '<circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r10 + '"/><circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r5 + '"/>';
     var marks = list.map(function (p) {
       var xy = at(p), on = sel && sel.id === p.id, r = on ? 18 : 15, s = on ? 18 : 16;
-      return '<g class="mk' + (on ? ' on' : '') + '" data-act="place" data-v="' + p.id + '" role="button" tabindex="0" aria-label="' + p.name + ', 걸어서 ' + p.min + '분"><circle class="b" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '"/>' + icoSvg(CATS[p.cat][1], xy[0] - s / 2, xy[1] - s / 2, s) +
-        (labels || on ? '<text x="' + xy[0] + '" y="' + (xy[1] + r + 13) + '">' + short(p.name) + '</text>' : '') + '</g>';
+      return '<g class="mk' + (on ? ' on' : '') + '" data-act="place" data-v="' + p.id + '" role="button" tabindex="0" aria-label="' + esc(p.name) + ', 걸어서 ' + p.min + '분"><circle class="b" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '"/>' + icoSvg(CATS[p.cat][1], xy[0] - s / 2, xy[1] - s / 2, s) +
+        (labels || on ? '<text x="' + xy[0] + '" y="' + (xy[1] + r + 13) + '">' + esc(short(p.name)) + '</text>' : '') + '</g>';
     }).join('');
-    var home = '<g class="home-mk" aria-hidden="true"><circle class="b2" cx="' + cx + '" cy="' + cy + '" r="20"/><path d="M' + (cx - 8) + ' ' + (cy + 1) + 'l8-7 8 7M' + (cx - 5) + ' ' + cy + 'v8h10v-8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>';
-    var pop = '';
-    if (sel) {
-      var xy = at(sel), left = Math.min(78, Math.max(22, xy[0] / W * 100)), top = xy[1] / H * 100, saved = !!S.saved[sel.id];
-      pop = '<div class="pop' + (top < 52 ? ' below' : '') + '" style="left:' + left + '%;top:' + top + '%" role="dialog" aria-label="' + sel.name + '">' +
-        '<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="ptile">' + ic(CATS[sel.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + sel.name + '</b><p class="s12 muted">' + CATS[sel.cat][0] + ' · 걸어서 ' + sel.min + '분 · ' + sel.m + 'm</p></div><button type="button" class="icon-btn" style="width:32px;height:32px;background:transparent" data-act="place" data-v="" aria-label="닫기">' + ic('x', 'sm') + '</button></div>' +
-        '<div class="tags" style="margin:10px 0 6px">' + sel.tags.map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('') + '</div><p class="s13 sub">' + sel.desc + '</p>' +
-        '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + kakao('map', sel) + '" target="_blank" rel="noopener">지도에서 보기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '" target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div></div>';
-    }
-    return '<div class="map-box"><svg class="map" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="집 주변 개략 지도">' + bg + rings + marks + home + '</svg>' + pop + '</div>';
+    var hm = '<g class="home-mk" aria-hidden="true"><circle class="b2" cx="' + cx + '" cy="' + cy + '" r="20"/><path d="M' + (cx - 8) + ' ' + (cy + 1) + 'l8-7 8 7M' + (cx - 5) + ' ' + cy + 'v8h10v-8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>';
+    return '<div class="map-box"><svg class="map" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="집 주변 개략 지도">' + bg + rings + marks + hm + '</svg>' + (sel ? '<div class="pop pop-fix">' + popCard(sel) + '</div>' : '') + '</div>';
   }
   function catChips(cur, act, cats) {
     return '<div class="cats" role="group" aria-label="분류">' + ['all'].concat(cats || Object.keys(CATS)).map(function (k) { return '<button type="button" class="cat" data-act="' + act + '" data-v="' + k + '" aria-pressed="' + (cur === k) + '">' + (k === 'all' ? '전체' : ic(CATS[k][1], 'sm') + CATS[k][0]) + '</button>'; }).join('') + '</div>';
   }
   function placeRow(p, go) {
-    return '<button type="button" class="place" data-act="place" data-v="' + p.id + '"' + (go ? ' data-go="map"' : '') + ' aria-pressed="' + (S.mapSel === p.id) + '"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[p.cat][1]) + '</span><span class="what"><b>' + p.name + '</b><span class="s12 muted">' + CATS[p.cat][0] + ' · ' + p.tags.slice(0, 2).join(' · ') + '</span></span><span class="s13" style="text-align:right;white-space:nowrap"><b>' + p.min + '분</b><br><span class="muted s12">' + p.m + 'm</span></span></button>';
+    return '<button type="button" class="place" data-act="place" data-v="' + p.id + '"' + (go ? ' data-go="map"' : '') + ' aria-pressed="' + (S.mapSel === p.id) + '"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[p.cat][1]) + '</span><span class="what"><b>' + esc(p.name) + '</b><span class="s12 muted">' + esc(p.sub) + (p.addr ? ' · ' + esc(p.addr) : '') + '</span></span><span class="s13" style="text-align:right;white-space:nowrap"><b>' + p.min + '분</b><br><span class="muted s12">' + p.m + 'm</span></span></button>';
   }
   var ART = '<svg class="art" viewBox="0 0 280 120" aria-hidden="true"><g fill="var(--brand)"><rect x="12" y="46" width="40" height="74" rx="4" opacity=".18"/><rect x="58" y="22" width="48" height="98" rx="4" opacity=".28"/><rect x="112" y="54" width="36" height="66" rx="4" opacity=".18"/><rect x="196" y="34" width="52" height="86" rx="4" opacity=".24"/><rect x="252" y="62" width="24" height="58" rx="4" opacity=".16"/></g>' +
     '<g fill="var(--surface)" opacity=".9"><rect x="66" y="32" width="8" height="8" rx="1.5"/><rect x="80" y="32" width="8" height="8" rx="1.5"/><rect x="66" y="48" width="8" height="8" rx="1.5"/><rect x="94" y="48" width="8" height="8" rx="1.5"/><rect x="204" y="44" width="8" height="8" rx="1.5"/><rect x="218" y="44" width="8" height="8" rx="1.5"/><rect x="232" y="60" width="8" height="8" rx="1.5"/></g>' +
     '<path d="M150 120V78l24-20 24 20v42Z" fill="var(--brand)"/><rect x="167" y="96" width="14" height="24" rx="2" fill="var(--surface)"/><path d="M140 80l34-28 34 28" fill="none" stroke="var(--brand-deep)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
     '<circle cx="248" cy="22" r="10" fill="var(--due)" opacity=".8"/></svg>';
 
-  var REC = [['park', '근처 공원', '가벼운 산책 코스'], ['gym', '운동할 곳', '헬스장·체육시설'], ['study', '공부·작업 공간', '스터디카페·도서관'], ['life', '생활 편의', '마트·다이소·빨래방'], ['food', '동네 맛집', '혼밥하기 편한 곳'], ['cafe', '카페', '동네 카페']];
+  var REC = [['park', '근처 공원', '가벼운 산책 코스'], ['gym', '운동할 곳', '헬스장·체육시설'], ['study', '공부·작업 공간', '스터디카페·도서관'], ['life', '생활 편의', '마트·편의점·빨래방'], ['food', '동네 맛집', '가까운 식당'], ['cafe', '카페', '동네 카페']];
   var CHAL = [['c-mart', 'life', '주변 마트 찾아보기'], ['c-med', 'medical', '가까운 병원 위치 저장하기'], ['c-cafe', 'cafe', '동네 카페 1곳 가 보기'], ['c-gym', 'gym', '운동할 곳 알아보기'], ['c-park', 'park', '공원이나 산책로 가 보기']];
-  function chalDone(c) { return !!S.chal[c[0]] || PLACES.some(function (p) { return p.cat === c[1] && S.saved[p.id]; }); }
+  function savedList() { var h = home(); return Object.keys(S.savedP || {}).map(function (id) { var p = Object.assign({}, S.savedP[id]); p.m = distM(h, p); p.min = Math.max(1, Math.ceil(p.m / 67)); p.tags = [p.sub]; p.desc = p.addr || ''; return p; }).sort(function (a, b) { return a.m - b.m; }); }
+  function chalDone(c) { return !!S.chal[c[0]] || savedList().some(function (p) { return p.cat === c[1]; }); }
+
+  // 이번 주 7일
+  function weekStrip(R, T) {
+    var start = add(today, -today.getDay()), cells = '';
+    var evs = monthEvents(start.getFullYear(), start.getMonth(), R, T); var end = add(start, 6); if (end.getMonth() !== start.getMonth()) evs = evs.concat(monthEvents(end.getFullYear(), end.getMonth(), R, T));
+    for (var i = 0; i < 7; i++) {
+      var d = add(start, i), de = evs.filter(function (e) { return +e.date === +d && !e.done && !e.paid; });
+      cells += '<button type="button" class="wk' + (+d === +today ? ' today' : '') + '" data-act="weekday" data-v="' + iso(d) + '"><span class="s12 muted">' + WD[i] + '</span><b>' + d.getDate() + '</b><span class="dots">' + de.slice(0, 3).map(function (e) { return '<i class="dot ' + (e.kind === 'task' ? '' : e.kind === 'mark' ? 'mark' : e.kind === 'my' ? 'my' : 'money') + '"></i>'; }).join('') + '</span><span class="wk-t">' + (de[0] ? esc(de[0].title) : '') + '</span></button>';
+    }
+    return '<section class="card c12"><div class="card-h"><h2>이번 주</h2><a class="more" href="#calendar">자취 캘린더' + ic('chev', 'sm') + '</a></div><div class="week">' + cells + '</div></section>';
+  }
 
   // ---------- 홈 ----------
   function viewHome() {
@@ -959,7 +1163,6 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     var nm = S.nick ? esc(S.nick) + '님, ' : '';
     var g = P.dm < -1 ? [nm + '입주까지 ' + (-P.dm) + '일 남았어요', '이사 전에 우리 동네를 미리 둘러보세요.'] : P.dm === -1 ? [nm + '내일 입주해요', '오늘 챙길 것 먼저 끝내고, 동네도 미리 둘러봐요.'] : P.dm === 0 ? [nm + '오늘은 입주하는 날이에요', '순서대로 하나씩 끝내 봐요. 전입신고는 오늘 하는 게 가장 안전해요.'] : P.dm <= 30 ? [nm + '새 동네는 잘 적응하고 계신가요?', '아직 안 가 본 우리 동네 곳곳을 찾아보세요.'] : [nm + '자취 ' + (P.dm + 1) + '일째예요', '이번 주에 가 볼 만한 곳을 골라 봤어요.'];
     var banner = '<section class="hero-banner"><div><p class="eyebrow">' + ymd(today) + ' ' + WD[today.getDay()] + '요일 · ' + P.badge + '</p><h1>' + g[0] + '</h1><p>' + g[1] + '</p></div>' + ART + '</section>';
-    // 오늘 챙길 것 3칸
     var nx = O.dueNow[0] || O.upcoming[0], todo;
     if (P.dm === 0) { var left = T.filter(function (s) { return s.key === 'mday'; })[0].tasks.filter(function (t) { return !S.done[t.id]; }).length; todo = '<a class="card mini c4" href="#timeline"><span class="k">' + ic('route', 'sm') + '입주 당일 할 일</span><span class="v">' + (left ? left + '개 남았어요' : '모두 끝냈어요') + '</span><span class="h">등기부 재확인 → 잔금 → 전입신고 순서</span></a>'; }
     else todo = '<a class="card mini c4" href="#timeline"><span class="k">' + ic('route', 'sm') + '다음 할 일 ' + (nx ? badge(dueTag(nx.t)) : '') + '</span><span class="v">' + (nx ? nx.t.title : '챙길 기한이 없어요') + '</span><span class="h">' + (O.dueNow.length > 1 ? '오늘까지 ' + O.dueNow.length + '개' : nx ? nx.s.name : '') + '</span></a>';
@@ -967,56 +1170,187 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     var pay = '<a class="card mini c4" href="#calendar"><span class="k">' + ic('card', 'sm') + (today.getMonth() + 1) + '월 남은 납부</span><span class="v">' + won(bm.reduce(function (s, e) { return s + e.amount; }, 0)) + '원</span><span class="h">' + (nb ? '다음 · ' + md(nb.date) + ' ' + nb.title : '이번 달 납부를 다 체크했어요') + '</span></a>';
     var el = R.eligible[0];
     var sup = '<a class="card mini c4" href="#support"><span class="k">' + ic('gift', 'sm') + '신청해 볼 수 있는 지원</span><span class="v">' + R.eligible.length + '건</span><span class="h">' + (el ? el.p.name + ' · ' + judge(el)[1] + ' · ' + el.p.status : '지금 조건으로는 없어요') + '</span></a>';
+    var ctr = nearest('public', /행정복지센터|주민|관공서/);
     var tip = R.report.required && R.report.due < R.M ? '<div class="banner due c12">' + ic('info') + '<span>전월세 신고 기한(<b>' + md(R.report.due) + '</b>)이 입주보다 먼저 와요. 전입신고와 합칠 수 없으니 따로 신고하세요.</span></div>'
-      : R.report.required && !S.done.mv && P.dm <= 14 ? '<div class="banner c12">' + ic('info') + '<span><b>전입신고할 때 임대차계약서를 같이 내세요.</b> 전월세 신고와 확정일자까지 한 번에 끝나요. 가까운 <a href="#map" data-act="place" data-v="center" data-go="map">행정복지센터</a>까지 걸어서 ' + findPlace('center').min + '분이에요.</span></div>' : '';
-    // 동네 탐색
+      : R.report.required && !S.done.mv && P.dm <= 14 ? '<div class="banner c12">' + ic('info') + '<span><b>전입신고할 때 임대차계약서를 같이 내세요.</b> 전월세 신고와 확정일자까지 한 번에 끝나요.' + (ctr ? ' 가까운 <a href="#map" data-act="place" data-v="' + ctr.id + '" data-go="map">' + esc(short(ctr.name)) + '</a>까지 걸어서 약 ' + ctr.min + '분이에요.' : '') + '</span></div>' : '';
     var mc = S.homeCat || 'all';
-    var explore = '<section class="card c8"><div class="split" style="flex-wrap:wrap;margin-bottom:12px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="ptile" style="width:44px;height:44px">' + ic('pin') + '</span><div><h2 style="font-size:19px;font-weight:800">우리 동네 탐색하기</h2><p class="s13 muted">지도로 주변을 둘러보고, 아직 안 가 본 곳을 찾아보세요.</p></div></div><a class="more s13" href="#map" style="font-weight:700">크게 보기' + ic('chev', 'sm') + '</a></div>' +
-      catChips(mc, 'homecat', ['food', 'cafe', 'study', 'gym', 'park', 'life']) + '<div style="margin-top:12px">' + placeMap(mc, S.mapSel, 360, false) + '</div><p class="s12 muted" style="margin-top:8px">개략도 · 방향은 예시 좌표 기준, 거리는 가까울수록 넓게 그렸어요. 시연용 예시 데이터라 실제 가게 정보가 아니에요.</p></section>';
-    var near = PLACES.filter(function (p) { return p.pub; }).slice(0, 4);
-    var nearCard = '<section class="card c4"><div class="card-h"><h2>근처에서 이런 곳도 있어요</h2></div>' + near.map(function (p) { return placeRow(p, false); }).join('') + '</section>';
-    var week = '<section class="card c8"><div class="card-h"><h2>' + ic('spark', 'sm') + ' 이번 주, 한 번 가 볼까요?</h2><a class="more" href="#recommend">주변 추천' + ic('chev', 'sm') + '</a></div><div class="tiles">' +
-      REC.slice(0, 5).map(function (r) { return '<button type="button" class="tile" data-act="rec" data-v="' + r[0] + '"><span class="ptile">' + ic(CATS[r[0]][1]) + '</span><b>' + r[1] + '</b><span class="s12 muted">' + r[2] + '</span></button>'; }).join('') + '</div></section>';
+    var explore = '<section class="card c8"><div class="split" style="flex-wrap:wrap;margin-bottom:12px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="ptile" style="width:44px;height:44px">' + ic('pin') + '</span><div><h2 style="font-size:19px;font-weight:800">우리 동네 탐색하기</h2><p class="s13 muted">' + esc(home().label) + '</p></div></div><a class="more s13" href="#map" style="font-weight:700">크게 보기' + ic('chev', 'sm') + '</a></div>' +
+      '<div class="split" style="margin-bottom:10px;flex-wrap:wrap">' + catChips(mc, 'homecat', ['food', 'cafe', 'study', 'gym', 'park', 'life', 'medical']) + '</div><div class="row" style="margin-bottom:10px">' + dataBadge() + (S.home ? '' : ' <a class="s13" href="#map">내 집 위치 정하기</a>') + '</div>' + placeMap(mc, S.mapSel, 360, false) + '<div style="margin-top:8px">' + sourceNote() + '</div></section>';
+    var near = [nearest('public', /행정복지센터|주민|관공서/), nearest('safety'), nearest('park'), nearest('study', /도서관/)].filter(Boolean);
+    var nearCard = '<section class="card c4"><div class="card-h"><h2>가까운 공공시설</h2></div>' + (near.length ? near.map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : '주변 공공시설을 찾지 못했어요.') + '</p>') + '</section>';
+    var week = '<section class="card c8"><div class="card-h"><h2>이번 주에 가 볼 곳</h2><a class="more" href="#recommend">주변 추천' + ic('chev', 'sm') + '</a></div><div class="tiles">' +
+      REC.slice(0, 5).map(function (r) { var n = nearest(r[0]); return '<button type="button" class="tile" data-act="rec" data-v="' + r[0] + '"><span class="ptile">' + ic(CATS[r[0]][1]) + '</span><b>' + r[1] + '</b><span class="s12 muted">' + (n ? '가장 가까운 곳 ' + n.min + '분' : r[2]) + '</span></button>'; }).join('') + '</div></section>';
     var cd = CHAL.filter(chalDone).length;
-    var chal = '<section class="card c4"><div class="card-h"><h2>입주 한 달 챌린지</h2><span class="s13 muted">' + cd + ' / ' + CHAL.length + ' 완료</span></div><div class="progress-line" style="margin-bottom:8px"><span style="width:' + Math.round(cd / CHAL.length * 100) + '%"></span></div>' +
-      CHAL.map(function (c) { var on = chalDone(c); return '<label class="row" style="flex-wrap:nowrap;min-height:40px;cursor:pointer"><input class="chk" type="checkbox" data-act="chal" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><span' + (on ? ' class="muted" style="text-decoration:line-through"' : '') + '>' + c[2] + '</span></label>'; }).join('') + '<p class="s12 muted" style="margin-top:6px">지도에서 그 분류의 장소를 저장해도 완료돼요.</p></section>';
-    return '<div class="grid">' + banner + '<div class="minis c12">' + todo + pay + sup + '</div>' + tip + explore + nearCard + week + chal + '</div>';
+    var chal = '<section class="card c4"><div class="card-h"><h2>입주 첫 달 체크리스트</h2><span class="s13 muted">' + cd + ' / ' + CHAL.length + ' 완료</span></div><div class="progress-line" style="margin-bottom:8px"><span style="width:' + Math.round(cd / CHAL.length * 100) + '%"></span></div>' +
+      CHAL.map(function (c) { var on = chalDone(c); return '<label class="row" style="flex-wrap:nowrap;min-height:40px;cursor:pointer"><input class="chk" type="checkbox" data-act="chal" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><span' + (on ? ' class="muted" style="text-decoration:line-through"' : '') + '>' + c[2] + '</span></label>'; }).join('') + '<p class="s12 muted" style="margin-top:6px">그 분류의 장소를 저장하면 자동으로 체크돼요.</p></section>';
+    return '<div class="grid">' + banner + '<div class="minis c12">' + todo + pay + sup + '</div>' + tip + weekStrip(R, T) + explore + nearCard + week + chal + '</div>';
   }
 
   // ---------- 주변 탐색 ----------
   function viewMap() {
-    var cat = S.mapCat || 'all', sel = S.mapSel && findPlace(S.mapSel);
-    var list = PLACES.filter(function (p) { return cat === 'all' || p.cat === cat; });
-    var target = sel || { name: (S.addr || '내 자취방') + ' (집)', lat: HOUSE.lat, lng: HOUSE.lng };
-    return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · 핵심</p><h1>지도 탐색</h1></div><span class="badge due">시연용 예시 데이터</span></div>' +
+    var cat = S.mapCat || 'all', sel = S.mapSel && findPlace(S.mapSel), h = home();
+    var list = places().filter(function (p) { return cat === 'all' || p.cat === cat; });
+    var target = sel || { name: '우리 집 앞', lat: h.lat, lng: h.lng };
+    return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · 핵심</p><h1>지도 탐색</h1></div><div class="row">' + dataBadge() + '</div></div>' +
       '<div style="margin-bottom:12px">' + catChips(cat, 'mapcat') + '</div>' +
-      '<div class="grid"><section class="card c8">' + placeMap(cat, S.mapSel, 460, true) + '<p class="s12 muted" style="margin-top:10px">개략도예요. 방향은 예시 좌표 기준이고 거리는 가까울수록 넓게 그렸어요. 실제 서비스에서는 지도 API와 공공데이터로 그려요. 도보 시간은 거리 ÷ 분당 67m로 계산해요.</p></section>' +
-      '<aside class="c4 stack"><div class="street sm"><div class="street-in"><b>' + esc(short(target.name)) + ' 앞 골목 걸어 보기</b><div class="row" style="justify-content:center"><a class="btn sm" href="' + kakao('rv', target) + '" target="_blank" rel="noopener">로드뷰' + ic('out', 'sm') + '</a>' + (sel ? '<a class="btn ghost sm" href="' + kakao('to', sel) + '" target="_blank" rel="noopener">길찾기' + ic('out', 'sm') + '</a>' : '') + '</div></div></div>' +
-      '<section class="card"><div class="card-h"><h2>' + (cat === 'all' ? '가까운 순서' : CATS[cat][0]) + '</h2><span class="s12 muted">' + list.length + '곳</span></div><div class="scroll-list">' + list.map(function (p) { return placeRow(p, false); }).join('') + '</div></section></aside></div>';
+      '<div class="grid"><section class="card c8">' + placeMap(cat, S.mapSel, 480, true) + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
+      '<aside class="c4 stack">' + homeCard() + '<div class="street sm"><div class="street-in"><b>' + esc(short(target.name)) + ' 골목 걸어 보기</b><div class="row" style="justify-content:center"><a class="btn sm" href="' + kakao('rv', target) + '" target="_blank" rel="noopener">로드뷰' + ic('out', 'sm') + '</a>' + (sel ? '<a class="btn ghost sm" href="' + kakao('to', sel) + '" target="_blank" rel="noopener">길찾기' + ic('out', 'sm') + '</a>' : '') + '</div></div></div>' +
+      '<section class="card"><div class="card-h"><h2>' + (cat === 'all' ? '가까운 순서' : CATS[cat][0]) + '</h2><span class="s12 muted">' + list.length + '곳</span></div><div class="scroll-list">' + (list.length ? list.slice(0, 120).map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : '1km 안에서 찾은 곳이 없어요.') + '</p>') + '</div></section></aside></div>';
   }
   function viewRecommend() {
-    var rc = S.recCat || 'park', saved = PLACES.filter(function (p) { return S.saved[p.id]; });
-    var list = rc === 'saved' ? saved : PLACES.filter(function (p) { return p.cat === rc; });
+    var rc = S.recCat || 'park', saved = savedList();
+    var list = rc === 'saved' ? saved : places().filter(function (p) { return p.cat === rc; }).slice(0, 12);
     var cards = list.map(function (p) {
       var on = !!S.saved[p.id];
-      return '<section class="card c6 pcard"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="ptile">' + ic(CATS[p.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + p.name + '</b><p class="s13 muted">' + CATS[p.cat][0] + ' · 걸어서 ' + p.min + '분 · ' + p.m + 'm' + (p.pub ? ' · 공공' : '') + '</p></div><button type="button" class="icon-btn save-btn" data-act="save" data-v="' + p.id + '" aria-pressed="' + on + '" aria-label="' + (on ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>' +
-        '<div class="tags">' + p.tags.map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('') + '</div><p class="s13 sub">' + p.desc + '</p><div class="row"><button type="button" class="btn ghost sm" data-act="place" data-v="' + p.id + '" data-go="map">지도에서 보기</button><a class="btn ghost sm" href="' + kakao('rv', p) + '" target="_blank" rel="noopener">로드뷰' + ic('out', 'sm') + '</a></div></section>';
-    }).join('') || '<section class="card c12"><p class="muted">' + (rc === 'saved' ? '아직 저장한 곳이 없어요. 마음에 드는 곳의 책갈피를 눌러 보세요.' : '이 분류의 장소가 없어요.') + '</p></section>';
-    return '<div class="page-head"><div><p class="eyebrow">주변 탐색</p><h1>주변 추천</h1></div><span class="badge due">시연용 예시 데이터</span></div>' +
+      return '<section class="card c6 pcard"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="ptile">' + ic(CATS[p.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(p.name) + '</b><p class="s13 muted">' + esc(p.sub) + ' · 걸어서 약 ' + p.min + '분 · ' + p.m + 'm' + (p.pub ? ' · 공공' : '') + '</p></div><button type="button" class="icon-btn save-btn" data-act="save" data-v="' + p.id + '" aria-pressed="' + on + '" aria-label="' + (on ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>' +
+        (p.desc ? '<p class="s13 sub">' + esc(p.desc) + '</p>' : '') + (p.hours ? '<p class="s12 muted">영업시간(OSM): ' + esc(p.hours) + '</p>' : '') + '<div class="row"><button type="button" class="btn ghost sm" data-act="place" data-v="' + p.id + '" data-go="map">지도에서 보기</button><a class="btn ghost sm" href="' + kakao('to', p) + '" target="_blank" rel="noopener">길찾기' + ic('out', 'sm') + '</a></div></section>';
+    }).join('') || '<section class="card c12"><p class="muted">' + (rc === 'saved' ? '아직 저장한 곳이 없어요. 마음에 드는 곳의 책갈피를 눌러 보세요.' : DATA.status === 'loading' ? '불러오는 중…' : '1km 안에서 이 분류의 장소를 찾지 못했어요.') + '</p></section>';
+    return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · ' + esc(home().label) + '</p><h1>주변 추천</h1></div><div class="row">' + dataBadge() + '</div></div>' +
       '<div class="cats" style="margin-bottom:16px">' + REC.map(function (r) { return '<button type="button" class="cat" data-act="rec" data-v="' + r[0] + '" aria-pressed="' + (rc === r[0]) + '">' + ic(CATS[r[0]][1], 'sm') + r[1] + '</button>'; }).join('') + '<button type="button" class="cat" data-act="rec" data-v="saved" aria-pressed="' + (rc === 'saved') + '">' + ic('bookmark', 'sm') + '저장한 곳 ' + saved.length + '</button></div>' +
-      '<div class="grid">' + cards + '</div><p class="s12 muted" style="margin-top:16px">가까운 순서로 보여줘요. 별점이나 순위는 매기지 않아요. 실제 서비스에서는 공공데이터의 업종 정보로 채워요.</p>';
+      '<div class="grid">' + cards + '</div><div style="margin-top:16px">' + sourceNote() + '<p class="s12 muted">가까운 순서로 보여줘요. 별점이나 순위는 매기지 않아요.</p></div>';
   }
   var AREA_CHECK = [['night', '밤 9시 이후에 한 번 더 가 보기', '골목 조명, 사람이 다니는 정도, 집까지 오는 길을 봐요.'], ['noise', '소음 확인', '큰길·술집·공사장이 창문 쪽에 있는지 들어 봐요.'], ['slope', '역까지 오르막·계단', '짐 들고 매일 오가는 길이라 직접 걸어 봐요.'], ['trash', '쓰레기 버리는 곳과 요일', '건물 앞인지, 정해진 요일이 있는지 집주인에게 물어봐요.'], ['parcel', '택배 받을 곳', '무인택배함·현관 보안이 있는지 봐요.'], ['signal', '휴대폰 신호', '방 안, 특히 화장실·창가에서 확인해요.']];
+  var ESS = [['transit', /역$/, '지하철·기차역'], ['transit', /버스/, '버스정류장'], ['life', /편의점/, '편의점'], ['life', /마트|시장/, '마트·시장'], ['medical', /약국/, '약국'], ['medical', /의원|병원/, '병원·의원'], ['safety', null, '경찰'], ['public', /행정복지센터|관공서|주민/, '행정복지센터'], ['park', null, '공원']];
+  function infraSummary() {
+    var parts = ESS.map(function (e) { var p = nearest(e[0], e[1]); return p ? e[2] + ' ' + p.min + '분' : null; }).filter(Boolean);
+    var in5 = places().filter(function (p) { return p.min <= 5 && p.cat !== 'transit'; }).length;
+    if (!parts.length) return '아직 주변 데이터가 없어요.';
+    return '가장 가까운 곳까지 걸어서 ' + parts.join(', ') + '이에요. 걸어서 5분 안에 생활시설이 ' + in5 + '곳 있어요.';
+  }
   function viewInfra() {
-    var ESS = [['transit', '교통'], ['life', '생활 편의'], ['medical', '병원·약국'], ['safety', '안전'], ['public', '공공시설'], ['park', '공원·산책']];
-    var rows = ESS.map(function (e) { var ps = PLACES.filter(function (p) { return p.cat === e[0]; }), n = ps[0], in5 = ps.filter(function (p) { return p.min <= 5; }).length; return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[1] + '</b><p class="s13 muted">가장 가까운 곳 · ' + n.name + '</p></div><div style="text-align:right"><b style="font-size:18px">' + n.min + '분</b><p class="s12 muted">5분 안 ' + in5 + '곳</p></div></div>'; }).join('');
-    var near = PLACES.filter(function (p) { return p.min <= 5; }).map(function (p) { return short(p.name); }), uniq = near.filter(function (n, i) { return near.indexOf(n) === i; }).slice(0, 6), sub = findPlace('subway');
-    var summary = '걸어서 5분 안에 ' + uniq.join('·') + josa(uniq[uniq.length - 1], '이', '가') + ' 있어요. 지하철은 ' + short(sub.name) + '까지 ' + sub.min + '분(약 ' + sub.m + 'm), 공원은 ' + findPlace('park').min + '분 거리예요.';
+    var rows = ESS.map(function (e) { var ps = places().filter(function (p) { return p.cat === e[0] && (!e[1] || e[1].test(p.sub) || e[1].test(p.name)); }), n = ps[0], in5 = ps.filter(function (p) { return p.min <= 5; }).length;
+      return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[2] + '</b><p class="s13 muted">' + (n ? '가장 가까운 곳 · ' + esc(n.name) : '1km 안에서 못 찾았어요') + '</p></div><div style="text-align:right">' + (n ? '<b style="font-size:18px">' + n.min + '분</b><p class="s12 muted">5분 안 ' + in5 + '곳</p>' : '<span class="muted">—</span>') + '</div></div>'; }).join('');
     var chk = S.areaChk || {}, cdone = AREA_CHECK.filter(function (c) { return chk[c[0]]; }).length;
-    return '<div class="page-head"><div><p class="eyebrow">주변 탐색</p><h1>생활 인프라</h1></div><span class="badge due">시연용 예시 데이터</span></div>' +
-      '<div class="grid"><section class="card c7"><div class="card-h"><h2>꼭 필요한 곳까지</h2><span class="s12 muted">도보 = 거리 ÷ 분당 67m</span></div>' + rows + '</section>' +
-      '<aside class="c5 stack"><section class="card stack"><div class="card-h" style="margin:0"><h2>주변 환경 요약</h2><span class="badge brand">데이터로 만든 요약</span></div><p>' + summary + '</p><p class="s12 muted">좋은 동네·나쁜 동네처럼 판단하거나 점수를 매기지 않아요. 거리와 시설 수만 알려드려요.</p><p class="s12 muted">실제 서비스 데이터(예정) · 소상공인 상가(상권)정보, 건강보험심사평가원 병원정보, 서울 열린데이터광장 역·정류소 위치, 경찰청 지구대·파출소 위치, 공원 정보</p></section>' +
+    return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · ' + esc(home().label) + '</p><h1>생활 인프라</h1></div><div class="row">' + dataBadge() + '</div></div>' +
+      '<div class="grid"><section class="card c7"><div class="card-h"><h2>꼭 필요한 곳까지</h2><span class="s12 muted">도보 = 직선거리 ÷ 분당 67m</span></div>' + rows + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
+      '<aside class="c5 stack"><section class="card stack"><div class="card-h" style="margin:0"><h2>주변 환경 요약</h2><span class="s12 muted">데이터로 만든 요약</span></div><p>' + infraSummary() + '</p><p class="s12 muted">좋은 동네·나쁜 동네처럼 판단하거나 점수를 매기지 않아요. 거리와 시설 수만 알려드려요.</p></section>' +
       '<section class="card"><div class="card-h"><h2>현장에서 꼭 볼 것</h2><span class="badge">' + cdone + ' / ' + AREA_CHECK.length + '</span></div>' + AREA_CHECK.map(function (c) { var on = !!chk[c[0]]; return '<div class="task' + (on ? ' done' : '') + '"><input class="chk" type="checkbox" id="ac-' + c[0] + '" data-act="areachk" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><div class="body"><label for="ac-' + c[0] + '">' + c[1] + '</label><p class="d">' + c[2] + '</p></div></div>'; }).join('') + '</section></aside></div>';
+  }
+
+  // ---------- 휴대폰 연동: 캘린더 구독 · .ics · QR · 이어서 보기 ----------
+  // 서버에 저장하지 않는다. 일정은 주소 안에(압축해서) 담기고, /cal.ics 가 그때그때 .ics 로 바꿔 준다.
+  function ymd8(d) { return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); }
+  function calPayload() {
+    var R = evaluate(), T = buildTimeline(R), end = contractEnd(), e = [], t = [], seen = {};
+    function pushE(d, title) { var k = ymd8(d) + title; if (seen[k]) return; seen[k] = 1; e.push([ymd8(d), title]); }
+    T.forEach(function (s) { s.tasks.forEach(function (tk) { if (S.done[tk.id]) return; if (tk.due && tk.due >= today) pushE(tk.due, tk.title); if (tk.legal && tk.legal >= today) pushE(tk.legal, tk.title.replace(/ \+.*$/, '') + ' 법정 기한'); }); });
+    [[R.M, '입주일'], [end, '계약 만료']].forEach(function (x) { if (x[0] >= today) pushE(x[0], x[1]); });
+    (S.events || []).forEach(function (x) { var d = pd(x.date); if (d < today) return; if (x.time) t.push([ymd8(d) + x.time.replace(':', ''), x.title, 60]); else pushE(d, x.title); });
+    var b = S.bills.filter(function (x) { return x.on && billAmt(x); }).map(function (x) { return [x.name, billAmt(x), billDay(x), +x.every || 1, +x.count || 0, ymStr(billStart(x)).replace('-', ''), x.kind === 'in' ? 'i' : 'o', ymd8(end)]; });
+    return { r: S.remind, e: e, t: t, b: b };
+  }
+  function b64url(bytes) { var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function encodePayload(p) {
+    var bytes = new TextEncoder().encode(JSON.stringify(p));
+    if (window.CompressionStream) return new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer().then(function (buf) { return 'z' + b64url(new Uint8Array(buf)); });
+    return Promise.resolve('j' + b64url(bytes));
+  }
+  function decodePayload(d) {
+    var s = d.slice(1).replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - s.length % 4) % 4);
+    var bytes = Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); });
+    if (d[0] === 'z') { if (!window.DecompressionStream) return Promise.reject(new Error('압축 해제를 지원하지 않는 브라우저예요.')); return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text().then(JSON.parse); }
+    return Promise.resolve(JSON.parse(new TextDecoder().decode(bytes)));
+  }
+  var ENC = {};
+  function encoded(name, obj) { // 비동기 압축 결과를 캐시해 두고, 준비되면 화면을 다시 그린다
+    var key = JSON.stringify(obj), c = ENC[name] || {};
+    if (c.key === key) return c.d;
+    if (c.pending !== key) { c.pending = key; ENC[name] = c; encodePayload(obj).then(function (d) { ENC[name] = { key: key, d: d }; render(true); }); }
+    return '';
+  }
+  var PHONE_D = '';
+  function phoneLinks(d) {
+    var host = ORIGIN.replace(/^https?:\/\//, ''), webcal = 'webcal://' + host + '/cal.ics?d=' + d;
+    return { https: ORIGIN + '/cal.ics?d=' + d, webcal: webcal, google: 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcal), handoff: ORIGIN + '/app.html#phone=' + d };
+  }
+  function qrSvg(text) { if (!window.qrcode || !text) return ''; try { var q = qrcode(0, 'L'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 3, margin: 2, scalable: true }); } catch (e) { return ''; } }
+  var UA = navigator.userAgent || '', IS_IOS = /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1), IS_PHONE = IS_IOS || /Android/i.test(UA);
+  function gcalLink(e) {
+    var d = e.date, dates;
+    if (e.time) { var hm = e.time.replace(':', ''), st = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +hm.slice(0, 2), +hm.slice(2, 4) + 60); dates = ymd8(d) + 'T' + hm + '00/' + ymd8(st) + 'T' + String(st.getHours()).padStart(2, '0') + String(st.getMinutes()).padStart(2, '0') + '00'; }
+    else dates = ymd8(d) + '/' + ymd8(add(d, 1));
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(e.title) + '&dates=' + dates + '&ctz=Asia/Seoul&details=' + encodeURIComponent('자취 계약 내비에서 추가한 일정');
+  }
+  function downloadICS() {
+    var body = window.JachwiICS ? JachwiICS.build(calPayload(), { name: '자취 캘린더' }) : '';
+    if (!body) { toast('캘린더 파일을 만들지 못했어요.'); return; }
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([body], { type: 'text/calendar;charset=utf-8' })); a.download = 'jachwi-calendar.ics';
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast('캘린더 파일을 만들었어요. 휴대폰에서 열면 일정과 알림이 들어가요.');
+  }
+  function phonePanel() {
+    var fromPc = !!PHONE_D, d = PHONE_D || encoded('cal', calPayload());
+    if (!d) return '<p class="muted s13">구독 주소를 만드는 중…</p>';
+    var L2 = phoneLinks(d), qr = !IS_PHONE && !fromPc ? qrSvg(L2.handoff) : '';
+    return (fromPc ? '<div class="banner" style="margin-bottom:12px">' + ic('info') + '<span>PC에서 보낸 일정이에요. 아래 버튼으로 이 휴대폰 캘린더에 넣으세요.</span></div>' : '') +
+      '<p class="s13 sub" style="margin-bottom:12px">기한·월세·공과금·내 일정을 휴대폰 기본 캘린더에 넣어요. <b>구독</b>하면 휴대폰 캘린더 앱이 알아서 다시 받아 와요.</p>' +
+      '<div class="stack" style="gap:8px">' +
+      '<a class="btn block" href="' + L2.webcal + '">' + ic('cal', 'sm') + (IS_IOS || !IS_PHONE ? '아이폰 캘린더에 구독' : '휴대폰 캘린더에 구독 (webcal)') + '</a>' +
+      '<a class="btn ghost block" href="' + L2.google + '" target="_blank" rel="noopener">' + ic('cal', 'sm') + '구글 캘린더에 구독 (안드로이드)</a>' +
+      '<button type="button" class="btn ghost block" data-act="ics">' + ic('down', 'sm') + '.ics 파일로 한 번에 넣기</button>' +
+      '<button type="button" class="btn line block" data-act="copysub" data-v="' + L2.https + '">' + ic('copy', 'sm') + '구독 주소 복사</button></div>' +
+      (qr ? '<div class="qr-box"><div class="qr">' + qr + '</div><p class="s13"><b>휴대폰 카메라로 찍어 보세요</b><br><span class="muted">휴대폰에서 이 화면이 열리고, 바로 구독할 수 있어요.</span></p></div>' : '') +
+      '<div style="margin-top:12px">' + remindSelect() + '</div>' +
+      '<ul class="tips s12 muted"><li>아이폰은 구독할 때 ‘알림 제거’를 끄면 미리 알림도 와요.</li><li>구글 캘린더는 새 내용이 반영되기까지 몇 시간 걸릴 수 있어요.</li><li>월세·일정을 바꾸면 주소가 바뀌어요. 예전 구독은 지우고 다시 구독하세요.</li><li>구독 주소에는 날짜·금액·일정 제목만 들어가고, 이름·주소는 들어가지 않아요. 서버는 저장하지 않아요.</li></ul>';
+  }
+
+  function viewCalendar() {
+    var R = evaluate(), T = buildTimeline(R), b0 = calBase(), y = b0.getFullYear(), m = b0.getMonth(), end = contractEnd();
+    var ev = monthEvents(y, m, R, T), sum = function (a) { return a.reduce(function (s, e) { return s + e.amount; }, 0); };
+    var outs = ev.filter(function (e) { return e.kind === 'out'; }), ins = ev.filter(function (e) { return e.kind === 'in'; }), tasks = ev.filter(function (e) { return (e.kind === 'task' || e.kind === 'my') && !e.done; });
+    var outSum = sum(outs), paid = sum(outs.filter(function (e) { return e.paid; })), inSum = sum(ins);
+    var dim = new Date(y, m + 1, 0).getDate(), lead = new Date(y, m, 1).getDay(), cells = '', cnt = lead + dim;
+    var selD = S.calSel ? pd(S.calSel) : null; if (!selD || selD.getFullYear() !== y || selD.getMonth() !== m) selD = (today.getFullYear() === y && today.getMonth() === m) ? today : new Date(y, m, 1);
+    for (var i = 0; i < lead; i++) cells += '<span class="day out" aria-hidden="true"></span>';
+    for (var d = 1; d <= dim; d++) {
+      var dt = new Date(y, m, d), de = ev.filter(function (e) { return e.date.getDate() === d; });
+      var o = de.filter(function (e) { return e.kind === 'out'; }), inn = de.filter(function (e) { return e.kind === 'in'; }), tk = de.filter(function (e) { return e.kind === 'task' && !e.done; }), my = de.filter(function (e) { return e.kind === 'my'; }), mk = de.filter(function (e) { return e.kind === 'mark'; });
+      var dots = tk.slice(0, 3).map(function () { return '<i class="dot"></i>'; }).join('') + my.slice(0, 2).map(function () { return '<i class="dot my"></i>'; }).join('') + mk.map(function () { return '<i class="dot mark"></i>'; }).join('');
+      var money = (o.length ? '<span class="m' + (o.every(function (e) { return e.paid; }) ? ' paid' : '') + '">−' + man(sum(o)) + '</span>' : '') + (inn.length ? '<span class="m in">+' + man(sum(inn)) + '</span>' : '');
+      cells += '<button type="button" class="day' + (+dt === +today ? ' today' : '') + (dt.getDay() === 0 ? ' sun' : '') + '" data-act="calday" data-v="' + iso(dt) + '" aria-pressed="' + (+dt === +selD) + '" aria-label="' + (m + 1) + '월 ' + d + '일, 일정 ' + de.length + '개"><span class="n">' + d + '</span><span class="dots" aria-hidden="true">' + dots + '</span>' + money + '</button>';
+    }
+    while (cnt % 7) { cells += '<span class="day out" aria-hidden="true"></span>'; cnt++; }
+    var list = ev.filter(function (e) { return +e.date === +selD; });
+    var KI = { out: ['', '₩'], in: ['in', '+'], task: ['task', '!'], mark: ['mark', '★'], my: ['my', '●'] };
+    var agenda = list.map(function (e) {
+      var tick = e.kind === 'out' || e.kind === 'in' ? '<label class="tick"><input class="chk" type="checkbox" data-act="paid" data-v="' + e.key + '"' + (e.paid ? ' checked' : '') + '>' + (e.kind === 'in' ? '받음' : '냄') + '</label>'
+        : e.kind === 'task' ? '<label class="tick"><input class="chk" type="checkbox" data-act="task" data-id="' + e.taskId + '"' + (e.done ? ' checked' : '') + '>완료</label>'
+        : e.kind === 'my' ? '<button type="button" class="icon-btn" style="width:34px;height:34px" data-act="evdel" data-v="' + e.evId + '" aria-label="' + esc(e.title) + ' 지우기">' + ic('x', 'sm') + '</button>' : '';
+      var g = e.kind === 'task' || e.kind === 'my' || e.kind === 'mark' ? '<a class="icon-btn" style="width:34px;height:34px" href="' + gcalLink(e) + '" target="_blank" rel="noopener" aria-label="구글 캘린더에 추가" title="구글 캘린더에 추가">' + ic('cal', 'sm') + '</a>' : '';
+      return '<div class="ag' + (e.paid || e.done ? ' done' : '') + '"><span class="k-ic ' + KI[e.kind][0] + '" aria-hidden="true">' + KI[e.kind][1] + '</span><span class="what"><b>' + esc(e.title) + '</b><span class="s12 muted">' + (e.amount ? won(e.amount) + '원' + (e.est ? ' · 예상' : '') + (e.nth ? ' · ' + e.nth + '회차' : '') : e.sub || '계약') + '</span></span>' + g + tick + '</div>';
+    }).join('') || '<p class="muted s13" style="padding:8px 0">이날은 일정이 없어요.</p>';
+    var addEv = '<form data-form="evadd" class="bill-form" style="margin-top:12px"><b class="full">' + ic('plus', 'sm') + ' 내 일정 추가</b><label class="field"><span>날짜</span><input class="inp" type="date" name="date" value="' + iso(selD) + '" required></label><label class="field"><span>시간 (선택)</span><input class="inp" type="time" name="time"></label>' +
+      '<label class="field full"><span>내용</span><input class="inp" name="title" maxlength="30" placeholder="예: 이삿짐 도착, 가스 개통 기사 방문" required></label><button class="btn sm full" type="submit">추가</button></form>';
+    var sup = findBill('sup-rent'), rentP = R.programs[0];
+    var bills = S.bills.map(function (b) {
+      var amt = billAmt(b), ed = S.calEdit === b.id;
+      return '<div class="bill' + (b.on ? '' : ' off') + '"><input class="sw" type="checkbox" role="switch" aria-label="' + esc(b.name) + ' 켜기" data-act="billon" data-v="' + b.id + '"' + (b.on ? ' checked' : '') + '><span class="what"><b>' + esc(b.name) + '</b><span class="s12 muted">' + ((+b.every || 1) > 1 ? b.every + '개월마다 ' : '매월 ') + dayLabel(billDay(b)) + ' · ' + (b.kind === 'in' ? '+' : '') + won(amt) + '원' + (b.est ? ' (예상)' : '') + (+b.count ? ' · ' + b.count + '회' : '') + '</span>' + (b.note && !b.on ? '<span class="s12" style="color:var(--brand-text)">' + b.note + '</span>' : '') + '</span>' +
+        '<button type="button" class="btn ghost sm" data-act="billedit" data-v="' + b.id + '" aria-expanded="' + ed + '">' + (ed ? '닫기' : '수정') + '</button></div>' + (ed ? billForm(b) : '');
+    }).join('');
+    var addF = '<form data-form="billadd" class="bill-form" style="margin-top:12px"><b class="full">항목 추가</b><label class="field"><span>이름</span><input class="inp" name="name" maxlength="20" placeholder="휴대폰 요금"></label><label class="field"><span>금액</span><div class="unit"><input class="inp" name="amount" inputmode="numeric" placeholder="55000"><em>원</em></div></label>' +
+      '<label class="field"><span>매월</span><select class="inp" name="day">' + dayOptions(25) + '</select></label><label class="field"><span>구분</span><select class="inp" name="kind"><option value="out">나가는 돈</option><option value="in">들어오는 돈</option></select></label><button class="btn sm full" type="submit">' + ic('plus', 'sm') + '추가</button></form>';
+    var tab = S.calTab === 'money' ? 'money' : S.calTab === 'phone' ? 'phone' : 'day';
+    var panel = '<section class="card"><div class="panel-tabs" role="tablist"><button type="button" role="tab" data-act="caltab" data-v="day" aria-selected="' + (tab === 'day') + '">' + md(selD) + '</button><button type="button" role="tab" data-act="caltab" data-v="money" aria-selected="' + (tab === 'money') + '">매달 돈</button><button type="button" role="tab" data-act="caltab" data-v="phone" aria-selected="' + (tab === 'phone') + '">' + ic('bell', 'sm') + ' 폰 연동</button></div>' +
+      (tab === 'day' ? '<div role="tabpanel">' + agenda + addEv + '</div>'
+        : tab === 'money' ? '<div role="tabpanel"><p class="s13 muted" style="margin-bottom:6px">계약 기간(' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + ') 동안 반복해서 보여줘요.</p>' + (rentP.eligible && sup && !sup.on ? '<div class="banner" style="margin:8px 0">' + ic('gift') + '<span>청년월세 지원 <b>' + judge(rentP)[1] + '</b> · 선정되면 ‘청년월세 지원 입금’을 켜 두세요.</span></div>' : '') + bills + addF + '</div>'
+        : '<div role="tabpanel">' + phonePanel() + '</div>') + '</section>';
+    return '<div class="page-head"><div><p class="eyebrow">생활 관리 · ' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + '</p><h1>자취 캘린더</h1></div><div class="month-nav"><button type="button" class="icon-btn" data-act="calnav" data-v="-1" aria-label="이전 달">' + ic('back') + '</button><h2 aria-live="polite">' + y + '. ' + (m + 1) + '</h2><button type="button" class="icon-btn" data-act="calnav" data-v="1" aria-label="다음 달">' + ic('chev') + '</button><button type="button" class="btn ghost sm" data-act="calnav" data-v="0">오늘</button></div></div>' +
+      '<div class="stats"><div class="stat"><div class="k">' + (m + 1) + '월 나갈 돈</div><div class="v">' + won(outSum) + '원</div><div class="h">낸 돈 ' + won(paid) + ' · 남은 돈 ' + won(outSum - paid) + '</div></div><div class="stat"><div class="k">' + (m + 1) + '월 들어올 돈</div><div class="v' + (inSum ? ' in' : '') + '">' + won(inSum) + '원</div><div class="h">' + (ins.length ? '지원금 입금' : '선정된 지원금을 켜 보세요') + '</div></div><div class="stat"><div class="k">챙길 일정</div><div class="v' + (tasks.length ? ' due' : '') + '">' + tasks.length + '개</div><div class="h">기한·내 일정</div></div></div>' +
+      '<div class="cal-wrap"><section class="card"><div class="wd" aria-hidden="true">' + WD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="days">' + cells + '</div>' +
+      '<div class="legend"><span><i class="dot"></i>기한</span><span><i class="dot my"></i>내 일정</span><span><i class="dot mark"></i>계약일·입주일</span><span><b style="color:var(--ink)">−</b>나가는 돈</span><span><b style="color:var(--brand-text)">+</b>들어오는 돈</span></div></section><div>' + panel + '</div></div>';
+  }
+
+  // 내 계약: 폰으로 이어서 보기 · 앱처럼 설치
+  var INSTALL = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); INSTALL = e; if (route() === 'contract') render(true); });
+  function exportObj() { var o = {}; ['gu', 'addr', 'deposit', 'rent', 'fee', 'term', 'age', 'income', 'contract', 'move', 'done', 'bills', 'events', 'home', 'remind', 'nick'].forEach(function (k) { o[k] = S[k]; }); return o; }
+  function deviceCards() {
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+    var inst = standalone ? '<p class="s13 sub">이미 앱으로 설치돼 있어요.</p>' : INSTALL ? '<button type="button" class="btn block" data-act="install">' + ic('down', 'sm') + '홈 화면에 앱 설치</button>'
+      : IS_IOS ? '<p class="s13 sub">Safari 아래쪽 <b>공유</b> 버튼 → <b>홈 화면에 추가</b>를 누르면 앱처럼 열려요.</p>' : '<p class="s13 sub">휴대폰 브라우저 메뉴에서 <b>홈 화면에 추가</b>(또는 <b>앱 설치</b>)를 누르면 앱처럼 열려요.</p>';
+    var d = IS_PHONE ? '' : encoded('state', exportObj()), url = d ? ORIGIN + '/app.html#import=' + d : '', qr = url ? qrSvg(url) : '';
+    return '<section class="card stack"><h2 style="font-size:16px">' + ic('home', 'sm') + ' 앱처럼 설치</h2>' + inst + '<p class="s12 muted">설치하면 인터넷이 잠깐 끊겨도 화면이 열려요.</p></section>' +
+      (IS_PHONE ? '' : '<section class="card stack"><h2 style="font-size:16px">휴대폰으로 이어서 보기</h2>' + (qr ? '<div class="qr-box" style="margin:0"><div class="qr">' + qr + '</div><p class="s13"><b>휴대폰 카메라로 찍으면</b><br><span class="muted">지금 계약 정보·일정·집 위치가 휴대폰으로 옮겨 가요.</span></p></div>' : '<p class="s13 muted">QR을 만드는 중…</p>') + '<p class="s12 muted">정보는 QR 주소의 # 뒤에만 담겨 서버로 보내지지 않아요.</p></section>');
   }
 
   // ---------- 생활 관리 ----------
@@ -1101,16 +1435,17 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
       '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' + f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + f('만 나이', num('age', '세')) +
       f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + '</div>' +
       '<label class="field"><span>시연용 날짜 (발표용)</span><select class="inp" data-sim>' + [['', '실제 오늘'], ['-1', '입주 전날'], ['0', '입주 당일'], ['10', '입주 10일 후'], ['40', '입주 40일 후']].map(function (o) { var sv = S.sim === null || S.sim === undefined ? '' : String(S.sim); return '<option value="' + o[0] + '"' + (sv === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
-      '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div></section></div>';
+      '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div></section>' +
+      '<div class="c6">' + homeCard() + '</div><div class="c6 stack">' + deviceCards() + '</div></div>';
   }
 
   // ---------- 메뉴 구조 ----------
   var GROUPS = [
     { k: 'home', label: '', def: 'home', tab: ['홈', 'home'], items: [['home', '홈', 'home']] },
     { k: 'house', label: '내 주거 관리', def: 'timeline', tab: ['내 주거', 'doc'], items: [['contract', '내 계약', 'doc'], ['timeline', '타임라인', 'route'], ['docs', '서류함', 'folder'], ['moveout', '퇴거 준비', 'box']] },
-    { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'spark'], ['infra', '생활 인프라', 'grid']] },
-    { k: 'life', label: '생활 관리', def: 'calendar', tab: ['생활', 'chart'], items: [['spend', '지출 관리', 'chart'], ['calendar', '공과금 & 납부', 'card'], ['condition', '집 상태 기록', 'camera']] },
-    { k: 'help', label: '지원 & 상담', def: 'support', tab: ['지원', 'gift'], items: [['support', '지원사업', 'gift'], ['coach', 'AI 자취 코치', 'spark']] }
+    { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'compass'], ['infra', '생활 인프라', 'grid']] },
+    { k: 'life', label: '생활 관리', def: 'calendar', tab: ['생활', 'chart'], items: [['spend', '지출 관리', 'chart'], ['calendar', '자취 캘린더', 'cal'], ['condition', '집 상태 기록', 'camera']] },
+    { k: 'help', label: '지원 & 상담', def: 'support', tab: ['지원', 'gift'], items: [['support', '지원사업', 'gift'], ['coach', 'AI 자취 코치', 'chat']] }
   ];
   var ROUTES = { home: viewHome, contract: viewContract, timeline: viewTimeline, docs: viewDocs, moveout: viewMoveout, map: viewMap, recommend: viewRecommend, infra: viewInfra, spend: viewSpend, calendar: viewCalendar, condition: viewCondition, support: viewSupport, coach: viewCoach };
   function groupOf(r) { return GROUPS.filter(function (g) { return g.items.some(function (i) { return i[0] === r; }); })[0]; }
@@ -1128,11 +1463,13 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     var R = evaluate(), T = buildTimeline(R), n = openTasks(R, T).dueNow.length;
     var cnt = function (k) { return k === 'timeline' && n ? '<span class="cnt" aria-label="밀린 할 일 ' + n + '개">' + n + '</span>' : ''; };
     document.getElementById('side-nav').innerHTML = GROUPS.map(function (gr) {
-      return (gr.label ? '<span class="g-label">' + gr.label + (gr.core ? '<span class="core">핵심</span>' : '') + '</span>' : '') + gr.items.map(function (x) { return '<a class="nav" href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + ic(x[2]) + x[1] + cnt(x[0]) + '</a>'; }).join('');
+      return (gr.label ? '<span class="g-label">' + gr.label + '' + '</span>' : '') + gr.items.map(function (x) { return '<a class="nav" href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + ic(x[2]) + x[1] + cnt(x[0]) + '</a>'; }).join('');
     }).join('');
     document.getElementById('tab-nav').innerHTML = GROUPS.map(function (gr) { return '<a class="tab" href="#' + gr.def + '"' + (gr === g ? ' aria-current="page"' : '') + '>' + ic(gr.tab[1]) + gr.tab[0] + (gr.k === 'house' ? cnt('timeline') : '') + '</a>'; }).join('');
     var sub = g.items.length > 1 ? '<nav class="subnav" aria-label="' + g.label + '">' + g.items.map(function (x) { return '<a href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '';
+    loadPlaces();
     app.innerHTML = headerBar(n) + sub + ROUTES[r]();
+    mountMap();
     if (keep) { window.scrollTo(0, y); if (act) { var el = app.querySelector('[data-field="' + act + '"],[data-cond="' + act + '"]'); if (el) el.focus({ preventScroll: true }); } }
     else if (r !== last) window.scrollTo(0, 0);
     last = r;
@@ -1140,8 +1477,8 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
   function updateSearch(q) {
     var box = document.getElementById('q-res'); if (!box) return;
     q = q.trim(); if (!q) { box.hidden = true; return; }
-    var hits = PLACES.filter(function (p) { return (p.name + ' ' + CATS[p.cat][0] + ' ' + p.tags.join(' ')).indexOf(q) >= 0; }).slice(0, 6);
-    box.innerHTML = hits.map(function (p) { return '<button type="button" class="q-item" data-act="place" data-v="' + p.id + '" data-go="map"><span class="ptile">' + ic(CATS[p.cat][1], 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + p.name + '</b><span class="s12 muted" style="display:block">' + CATS[p.cat][0] + ' · ' + p.tags.join(' · ') + '</span></span><span class="s13"><b>' + p.min + '분</b></span></button>'; }).join('') || '<p class="s13 muted" style="padding:10px">‘' + esc(q) + '’에 맞는 곳이 없어요. 예: 카페, 약국, 전입신고</p>';
+    var hits = places().filter(function (p) { return (p.name + ' ' + CATS[p.cat][0] + ' ' + p.sub + ' ' + (p.tags || []).join(' ')).indexOf(q) >= 0; }).slice(0, 6);
+    box.innerHTML = hits.map(function (p) { return '<button type="button" class="q-item" data-act="place" data-v="' + p.id + '" data-go="map"><span class="ptile">' + ic(CATS[p.cat][1], 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + esc(p.name) + '</b><span class="s12 muted" style="display:block">' + esc(p.sub) + ' · ' + p.m + 'm</span></span><span class="s13"><b>' + p.min + '분</b></span></button>'; }).join('') || '<p class="s13 muted" style="padding:10px">‘' + esc(q) + '’에 맞는 곳이 없어요. 예: 카페, 약국, 전입신고</p>';
     box.hidden = false;
   }
   window.addEventListener('hashchange', function () { render(false); });
@@ -1154,7 +1491,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     if (!b) return;
     var a = b.dataset.act, v = b.dataset.v;
     if (a === 'place') { e.preventDefault(); S.mapSel = v; if (v && b.dataset.go) { var pl = findPlace(v); if (S.mapCat && S.mapCat !== 'all' && pl && pl.cat !== S.mapCat) S.mapCat = 'all'; save(); if (location.hash !== '#map') { location.hash = 'map'; return; } } save(); render(true); if (v && b.classList.contains('place')) { var mb = app.querySelector('.map-box'); if (mb && mb.getBoundingClientRect().top < 0) mb.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }
-    else if (a === 'save') { S.saved[v] = !S.saved[v]; save(); render(true); toast(S.saved[v] ? '저장했어요. 주변 추천 › 저장한 곳에서 볼 수 있어요.' : '저장을 취소했어요.'); }
+    else if (a === 'save') { S.saved[v] = !S.saved[v]; S.savedP = S.savedP || {}; var spl = findPlace(v) || S.savedP[v]; if (S.saved[v] && spl) S.savedP[v] = { id: spl.id, cat: spl.cat, name: spl.name, sub: spl.sub, lat: spl.lat, lng: spl.lng, addr: spl.addr || '' }; else delete S.savedP[v]; save(); render(true); toast(S.saved[v] ? '저장했어요. 주변 추천 › 저장한 곳에서 볼 수 있어요.' : '저장을 취소했어요.'); }
     else if (a === 'homecat') { S.homeCat = v; S.mapSel = ''; save(); render(true); }
     else if (a === 'mapcat') { S.mapCat = v; S.mapSel = ''; save(); render(true); }
     else if (a === 'rec') { S.recCat = v; save(); if (location.hash !== '#recommend') location.hash = 'recommend'; else render(true); }
@@ -1169,6 +1506,15 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     else if (a === 'billedit') { S.calEdit = S.calEdit === v ? '' : v; save(); render(true); }
     else if (a === 'billdel') { S.bills = S.bills.filter(function (x) { return x.id !== v; }); S.calEdit = ''; save(); render(true); toast('지웠어요.'); }
     else if (a === 'ics') downloadICS();
+    else if (a === 'reload') { try { localStorage.removeItem('jachwi-places'); } catch (er) {} loadPlaces(true); render(true); }
+    else if (a === 'sethome') { var gi = GEO.items[+b.dataset.i]; if (gi) { GEO = { items: [], status: '', q: '' }; setHome(gi.lat, gi.lng, gi.label, 'search'); } }
+    else if (a === 'gps') useGps();
+    else if (a === 'pickhome') { S.pickHome = !S.pickHome; save(); if (S.pickHome && route() !== 'map') { location.hash = 'map'; } else render(true); if (S.pickHome) toast('지도에서 우리 집 자리를 눌러 주세요.'); }
+    else if (a === 'resethome') { S.home = null; S.mapSel = ''; save(); loadPlaces(); render(true); toast('예시 위치로 돌아갔어요.'); }
+    else if (a === 'copysub') { var cu = v; (navigator.clipboard ? navigator.clipboard.writeText(cu) : Promise.reject()).then(function () { toast('구독 주소를 복사했어요. 캘린더 앱의 ‘URL로 추가’에 붙여 넣으세요.'); }, function () { prompt('구독 주소', cu); }); }
+    else if (a === 'evdel') { S.events = (S.events || []).filter(function (x) { return x.id !== v; }); save(); render(true); toast('일정을 지웠어요.'); }
+    else if (a === 'install') { if (INSTALL) { INSTALL.prompt(); INSTALL.userChoice.then(function () { INSTALL = null; render(true); }); } }
+    else if (a === 'weekday') { var wd = pd(v); S.calSel = v; S.calM = wd.getFullYear() + '-' + (wd.getMonth() + 1); S.calTab = 'day'; save(); location.hash = 'calendar'; }
     else if (a === 'reset') { S = JSON.parse(JSON.stringify(DEFAULT)); save(); render(true); toast('예시 값으로 되돌렸어요.'); }
   });
   document.addEventListener('keydown', function (e) { var g = e.target.closest && e.target.closest('g[data-act]'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); } if (e.key === 'Escape') { var qr = document.getElementById('q-res'); if (qr) qr.hidden = true; } });
@@ -1201,6 +1547,8 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
   }
   document.addEventListener('submit', function (e) {
     var f = e.target.dataset.form; if (!f) return; e.preventDefault();
+    if (f === 'geo') { var gq = e.target.querySelector('input').value.trim(); if (gq.length >= 2) geoSearch(gq); else toast('두 글자 이상 입력해 주세요.'); return; }
+    if (f === 'evadd') { var fe = new FormData(e.target), et = String(fe.get('title') || '').trim().slice(0, 30), edt = String(fe.get('date') || ''); if (!et || !/^\d{4}-\d{2}-\d{2}$/.test(edt)) { toast('날짜와 내용을 넣어 주세요.'); return; } S.events = S.events || []; S.events.push({ id: 'ev' + Date.now(), date: edt, time: /^\d{2}:\d{2}$/.test(String(fe.get('time'))) ? String(fe.get('time')) : '', title: et }); S.calSel = edt; save(); render(true); toast('일정을 추가했어요. 폰 연동 탭에서 휴대폰 캘린더에도 넣을 수 있어요.'); return; }
     if (f === 'coach') { var q = e.target.querySelector('input').value.trim(); if (q) { S.chat.push(q.slice(0, 60)); if (S.chat.length > 20) S.chat.shift(); save(); render(true); var inp = app.querySelector('form[data-form=coach] input'); if (inp) inp.focus({ preventScroll: true }); } }
     else if (f === 'billadd') {
       var fd = new FormData(e.target), name = String(fd.get('name') || '').trim().slice(0, 20), amt = parseInt(String(fd.get('amount') || '').replace(/[^0-9]/g, ''), 10);
@@ -1210,8 +1558,18 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
     }
   });
 
-  render(false);
-})();
+  function boot() {
+    var h = location.hash;
+    if (h.indexOf('#phone=') === 0) { PHONE_D = h.slice(7).replace(/[^\w-]/g, ''); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
+    if (h.indexOf('#import=') === 0) {
+      var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
+      decodePayload(dd).then(function (o) { if (o && typeof o === 'object' && confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
+    }
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () {});
+    render(false);
+  }
+  boot();
+});
 </script>
 </body>
 </html>

@@ -1,3 +1,47 @@
 {
-  "redirects": [{ "source": "/", "destination": "/app.html", "permanent": false }]
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/app.html",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/cal.ics",
+      "destination": "/api/calendar"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "api/places.js": {
+      "maxDuration": 30
+    },
+    "api/geocode.js": {
+      "maxDuration": 15
+    }
+  }
 }
