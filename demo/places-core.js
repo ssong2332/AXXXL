@@ -42,8 +42,9 @@
     var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
     return Math.round(2 * R * Math.asin(Math.sqrt(h)));
   }
+  // lang=default: 지도에 등록된 원래 이름(한국은 한글)을 받는다. 빼면 브라우저 언어 설정(ko → 없으면 en)에 따라 영어 이름이 올 수 있다.
   function photonUrl(c, r, g, limit) {
-    return 'https://photon.komoot.io/reverse?lat=' + c.lat + '&lon=' + c.lng + '&radius=' + (r / 1000) + '&limit=' + (limit || 80) + '&' + g.map(function (t) { return 'osm_tag=' + encodeURIComponent(t); }).join('&');
+    return 'https://photon.komoot.io/reverse?lat=' + c.lat + '&lon=' + c.lng + '&radius=' + (r / 1000) + '&limit=' + (limit || 80) + '&lang=default&' + g.map(function (t) { return 'osm_tag=' + encodeURIComponent(t); }).join('&');
   }
   function fromPhoton(features) {
     var out = [];

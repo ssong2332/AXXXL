@@ -42,6 +42,9 @@
     },
     "api/geocode.js": {
       "maxDuration": 15
+    },
+    "api/route.js": {
+      "maxDuration": 15
     }
   }
 }
