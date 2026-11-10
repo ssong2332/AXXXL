@@ -12,6 +12,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
 <script src="ics.js" defer></script>
 <script src="places-core.js" defer></script>
+<script src="rules-core.js" defer></script>
+<script src="rules/seed.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5B4CDB">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -368,6 +370,13 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 .k-ic.my { background: var(--brand-tint); color: var(--brand-text) }
 
 
+details.why { border-top: 1px solid var(--hair); padding-top: 10px }
+details.why summary { cursor: pointer; font-size: 13px; font-weight: 650; color: var(--brand-text); display: flex; align-items: center; gap: 6px; list-style: none }
+details.why summary::-webkit-details-marker { display: none }
+.ev-row { display: flex; flex-direction: column; gap: 2px; font-size: 13px }
+.ev-row q { quotes: "“" "”"; color: var(--ink-2); padding-left: 10px; border-left: 2px solid var(--line) }
+.typing { display: inline-flex; gap: 4px } .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); animation: tp 1s infinite ease-in-out } .typing i:nth-child(2) { animation-delay: .15s } .typing i:nth-child(3) { animation-delay: .3s }
+@keyframes tp { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
 #toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px; background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 600 }
 @media (max-width: 899px) { #toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)) } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
@@ -693,37 +702,41 @@ document.addEventListener('DOMContentLoaded', function () {
   function contractEnd() { var M = pd(S.move); return add(new Date(M.getFullYear() + (+S.term || 2), M.getMonth(), M.getDate()), -1); }
   function incomeOk(limit) { if (S.income === 'unknown') return null; if (S.income === 'over') return false; return +S.income <= limit; }
   function incomeLabel() { return { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' }[S.income]; }
-  var PROGRAMS = [
-    { id: 'rent', name: '서울시 청년월세 지원', org: '서울특별시', amountText: '월 최대 20만 원 · 최대 12개월', status: '모집 예정', statusCls: '', select: '소득 낮은 순 선정', channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr',
-      docs: ['임대차계약서 (확정일자 포함)', '최근 3개월 월세 이체 내역', '본인 명의 통장 사본', '주민등록등본', '건강보험료 납부확인서'],
-      conds: [
-        { label: '만 19~39세', test: function () { return S.age ? S.age >= 19 && S.age <= 39 : null; }, mine: function () { return S.age ? '만 ' + S.age + '세' : '입력 안 함'; } },
-        { label: '기준 중위소득 150% 이하', test: function () { return incomeOk(150); }, mine: incomeLabel },
-        { label: '보증금 8,000만 원·월세 60만 원 이하', test: function () { return S.deposit <= 8000 && S.rent <= 60; }, mine: function () { return won(S.deposit) + '만 / ' + S.rent + '만'; } },
-        { label: '무주택', test: function () { return null; }, mine: function () { return '직접 확인'; } }
-      ] },
-    { id: 'move', name: '청년 부동산 중개보수·이사비 지원', org: '서울특별시', amountText: '실비 · 최대 40만 원', status: '접수 중', statusCls: 'brand', firstCome: true, select: '선착순', channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr',
-      docs: ['임대차계약서', '중개보수 영수증', '이사비 영수증', '주민등록등본'],
-      conds: [
-        { label: '만 19~39세', test: function () { return S.age ? S.age >= 19 && S.age <= 39 : null; }, mine: function () { return S.age ? '만 ' + S.age + '세' : '입력 안 함'; } },
-        { label: '기준 중위소득 150% 이하', test: function () { return incomeOk(150); }, mine: incomeLabel },
-        { label: '임차보증금 2억 원 이하', test: function () { return S.deposit <= 20000; }, mine: function () { return won(S.deposit) + '만 원'; } },
-        { label: '무주택', test: function () { return null; }, mine: function () { return '직접 확인'; } }
-      ] }
-  ];
+  // 지원사업은 운영자가 공고 원문과 대조해 승인한 공고(승인본)에서 만든다. (운영자 콘솔: admin.html)
+  // 순서: 이 브라우저 연습 승인본(운영자 콘솔 연습 모드) → 서버 승인본(/api/rules) → 배포에 들어 있는 처음 승인본
+  var RS = { src: 'seed', published: null, programs: [], cards: [], ai: false, loaded: false };
+  function setRules(published, src) {
+    RS.published = published; RS.src = src;
+    var v = JachwiRules.publicView(published, today);
+    var order = { rent: 0, move: 1 };
+    RS.programs = v.programs.sort(function (a, b) { return (order[a.id] === undefined ? 9 : order[a.id]) - (order[b.id] === undefined ? 9 : order[b.id]); });
+    RS.cards = v.cards;
+  }
+  function practiceRules() { try { var x = JSON.parse(localStorage.getItem('jachwi-admin-local') || 'null'); return x && x.published && x.published.notices ? x.published : null; } catch (e) { return null; } }
+  setRules(practiceRules() || window.JACHWI_SEED, practiceRules() ? 'local' : 'seed');
+  function loadRules() {
+    var pr = practiceRules(); if (pr) { setRules(pr, 'local'); RS.loaded = true; }
+    return fetch('api/rules', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.ok) return;
+      RS.ai = !!j.ai;
+      if (!practiceRules()) setRules({ notices: j.notices, cards: j.cards, meta: { updatedAt: j.updatedAt } }, 'server');
+      RS.loaded = true; render(true);
+    }).catch(function () {});
+  }
+  function userOf() { return { age: +S.age || 0, income: S.income, deposit: +S.deposit || 0, rent: +S.rent || 0, gu: S.gu }; }
+  function progBasis(p) { return 'v' + p.version + (p.basis ? ' · ' + p.basis + ' 승인' : ''); }
   function evaluate() {
     var C = pd(S.contract), M = pd(S.move);
     var required = S.deposit > 6000 || S.rent > 30;
     var reason = S.rent > 30 ? '월세 30만 원 초과' : S.deposit > 6000 ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하';
-    var programs = PROGRAMS.map(function (p) {
-      var res = p.conds.map(function (c) { return { label: c.label, mine: c.mine(), ok: c.test() }; });
-      return { p: p, res: res, eligible: !res.some(function (r) { return r.ok === false; }), unknown: res.filter(function (r) { return r.ok === null; }) };
-    });
+    if (RS.published) { var tk = today.toDateString(); if (RS.day !== tk) { RS.day = tk; setRules(RS.published, RS.src); } }
+    var u = userOf(), programs = RS.programs.map(function (p) { return JachwiRules.evalProgram(p, u); });
     return { C: C, M: M, report: { required: required, reason: reason, due: add(C, 30) }, movein: { due: add(M, 14) }, programs: programs, eligible: programs.filter(function (x) { return x.eligible; }) };
   }
   function judge(x) {
+    if (x.closed) return ['no', '접수 마감'];
     if (!x.eligible) return ['no', '해당 안 됨'];
-    return x.unknown.some(function (r) { return r.label !== '무주택'; }) ? ['due', '확인 필요'] : ['brand', '해당 가능'];
+    return x.unknown.some(function (r) { return r.type !== 'homeless'; }) ? ['due', '확인 필요'] : ['brand', '해당 가능'];
   }
 
   // 기준일 두 개: C = 계약일(전월세 신고 30일), M = 입주일(전입신고 14일). 기간은 첫날을 빼고 센다(민법 제157조).
@@ -766,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var repEnd = rep.due > R.movein.due ? rep.due : R.movein.due;
     st.push({ key: 'report', name: '신고·정리', when: '~ ' + md(repEnd), at: repEnd, tasks: rt });
     if (R.eligible.length) st.push({ key: 'apply', name: '지원 신청', when: '공고별', at: rep.due, tasks: R.eligible.map(function (x) {
-      return { id: 's-' + x.p.id, title: x.p.name + ' 신청', desc: (x.p.firstCome ? '선착순이라 일찍 마감될 수 있어요. ' : '모집이 열리면 신청해요. ') + '필요 서류 ' + x.p.docs.length + '개를 미리 모아 두세요.', dueText: x.p.status, urgent: !!x.p.firstCome, act: ['지원 상세', '#support'], src: '공고 · ' + BASIS + ' 기준' };
+      return { id: 's-' + x.p.id, title: x.p.name + ' 신청', desc: (x.p.firstCome ? '선착순이라 일찍 마감될 수 있어요. ' : '모집이 열리면 신청해요. ') + '필요 서류 ' + x.p.docs.length + '개를 미리 모아 두세요.', dueText: x.p.status + (x.p.period ? ' · ' + x.p.period : ''), urgent: !!x.p.firstCome, act: ['지원 상세', '#support'], src: x.p.name + ' 공고 ' + progBasis(x.p) };
     }) });
     var jan = new Date(M.getFullYear() + 1, 0, 15);
     st.push({ key: 'live', name: '거주 중', when: '계약 기간', at: add(end, -61), tasks: [
@@ -851,6 +864,13 @@ document.addEventListener('DOMContentLoaded', function () {
   function icsEsc(s) { return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
   function icsFold(line) { var out = '', bytes = 0, enc = new TextEncoder(); for (var i = 0; i < line.length; i++) { var n = enc.encode(line[i]).length; if (bytes + n > 73) { out += '\r\n '; bytes = 1; } out += line[i]; bytes += n; } return out; }
   // ---------- 물어보기: 승인된 규칙에서 만든 답만 ----------
+  // 중개보수 상한 (공인중개사법 시행규칙 제20조 · 서울시 조례): 월세는 보증금 + 월세×100, 5천만 원 미만이면 ×70
+  function brokerFee() {
+    var dep = S.deposit * 10000, rent = S.rent * 10000, base = dep + rent * 100; if (base < 5e7) base = dep + rent * 70;
+    var band = base < 5e7 ? [0.005, 200000] : base < 1e8 ? [0.004, 300000] : base < 6e8 ? [0.003, 0] : base < 12e8 ? [0.004, 0] : base < 15e8 ? [0.005, 0] : [0.006, 0];
+    var fee = Math.floor(base * band[0]); if (band[1]) fee = Math.min(fee, band[1]);
+    return { base: base, cap: fee };
+  }
   var QA = ['전월세 신고는 언제, 어디서 해?', '전입신고는 언제 해야 해?', '보증금 지키려면 뭘 해야 해?', '받을 수 있는 지원금 있어?'];
   function qaAnswer(q, R) {
     var rep = R.report, early = rep.required && rep.due < R.M, late = rep.required && !S.done.rp && rep.due < today;
@@ -858,10 +878,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // 더 구체적인 질문을 먼저 본다 (낱말 하나에 엉뚱하게 반응하지 않도록)
     var RULES = [
       [/중개\s?(수수료|보수)|복비|부동산\s?(수수료|비용)/, function () {
-        var dep = S.deposit * 10000, rent = S.rent * 10000, base = dep + rent * 100; if (base < 5e7) base = dep + rent * 70;
-        var band = base < 5e7 ? [0.005, 200000] : base < 1e8 ? [0.004, 300000] : base < 6e8 ? [0.003, 0] : base < 12e8 ? [0.004, 0] : [0.005, 0];
-        var fee = Math.floor(base * band[0]); if (band[1]) fee = Math.min(fee, band[1]);
-        return { a: '월세 계약은 <b>보증금 + 월세×100</b>(이 값이 5천만 원 미만이면 ×70)으로 거래 금액을 계산해요. 지금 조건이면 거래 금액 약 ' + won0(base / 10000) + '만 원, 중개보수 <b>상한은 약 ' + won0(fee) + '원</b>(부가세 별도)이에요. 상한 안에서 중개사와 정하는 금액이라 조정할 수 있어요. 서울시 청년 중개보수·이사비 지원도 확인해 보세요. (요율은 시연 중이라 원문 대조 필요)', src: [['공인중개사법 시행규칙 제20조', LAW], ['지원사업', '#support']] };
+        var bf = brokerFee(), base = bf.base, fee = bf.cap;
+        return { a: '월세 계약은 <b>보증금 + 월세×100</b>(이 값이 5천만 원 미만이면 ×70)으로 거래 금액을 계산해요. 지금 조건이면 거래 금액 약 ' + won0(base / 10000) + '만 원, 중개보수 <b>상한은 약 ' + won0(fee) + '원</b>(부가세 별도)이에요. 상한 안에서 중개사와 정하는 금액이라 조정할 수 있어요. 서울시 청년 중개보수·이사비 지원도 확인해 보세요. ', src: [['공인중개사법 시행규칙 제20조', LAW], ['지원사업', '#support']] };
       }],
       [/연체|밀리|밀렸|못\s?내|늦게\s?내/, function () { return { a: '밀린 월세가 <b>두 달 치(2기)에 이르면</b> 집주인이 계약을 끝낼 수 있어요. 밀릴 것 같으면 미리 집주인과 날짜를 정해 문자로 남겨 두세요. 형편이 갑자기 어려워졌다면 120 다산콜센터에서 긴급 지원을 물어볼 수 있어요.', src: [['민법 제640조', LAW], ['120 다산콜센터', 'https://120dasan.seoul.go.kr']] }; }],
       [/(월세|보증금|차임|관리비).*(올|인상)|올려\s?달|인상/, function () { return { a: '계약 기간 중이나 갱신할 때 집주인이 올릴 수 있는 건 <b>5% 안</b>이고, 올린 뒤 1년 안에는 다시 못 올려요. 계약갱신요구권을 쓸 때도 5% 안이에요. 다만 완전히 새로 계약하면 이 제한이 없어요.', src: [['주택임대차보호법 제7조·제6조의3', LAW], ['퇴거 준비', '#moveout']] }; }],
@@ -877,7 +895,7 @@ document.addEventListener('DOMContentLoaded', function () {
       [/퇴거|갱신|나가|이사\s?가|만료|이사\s?나/, function () { var end = contractEnd(); return { a: '계약 만료는 <b>' + ymd(end) + '</b>이에요. 나갈 거라면 만료 2개월 전(<b>' + ymd(add(end, -60)) + '</b>)까지 집주인에게 알리세요. 둘 다 말이 없으면 같은 조건으로 이어지고(묵시적 갱신), 그때는 언제든 알리면 3개월 뒤에 나갈 수 있어요. 보증금은 꼭 받은 뒤에 전출하세요.', src: [['주택임대차보호법 제6조·제6조의2', LAW], ['퇴거 준비', '#moveout']] }; }],
       [/세액공제|연말정산/, function () { return { a: '직장인이고 무주택 세대주라면 연말정산 때 낸 월세의 일부를 세액공제로 돌려받을 수 있어요. 전입신고가 되어 있어야 하고, 임대차계약서 사본과 월세 이체 내역이 필요해요. 소득 기준과 공제율은 그해 국세청 안내를 확인하세요.', src: [['조세특례제한법 제95조의2', LAW], ['서류함', '#docs']] }; }],
       [/보증금|대항력|안전|사기|경매/, function () { return { a: '① 잔금 보내기 직전에 등기부등본을 다시 떼어 새 근저당이 없는지 보고, ② 입주 당일 전입신고와 확정일자를 받고, ③ 나갈 때는 보증금을 돌려받은 뒤에 주소를 옮기세요. 집 자체의 위험 진단은 안심전세 앱에서 무료로 할 수 있어요.', src: [['주택임대차보호법 제3조·제3조의2', LAW], ['안심전세 앱', 'https://www.khug.or.kr']] }; }],
-      [/지원|청년월세|이사비/, function () { var list = R.eligible.map(function (x) { return x.p.name + '(' + judge(x)[1] + ')'; }); return { a: list.length ? '지금 조건으로 ' + list.join(', ') + '을 신청해 볼 수 있어요. 금액은 공고마다 따로 보여드리고 합치지 않아요. 최종 선정은 기관 심사로 정해져요.' : '지금 조건으로 해당되는 지원이 없어요.', src: [['서울주거포털 · ' + BASIS + ' 기준', 'https://housing.seoul.go.kr']] }; }]
+      [/지원|청년월세|이사비/, function () { var list = R.eligible.map(function (x) { return x.p.name + '(' + judge(x)[1] + ')'; }); return { a: list.length ? '지금 조건으로 ' + list.join(', ') + '을 신청해 볼 수 있어요. 금액은 공고마다 따로 보여드리고 합치지 않아요. 최종 선정은 기관 심사로 정해져요.' : '지금 조건으로 해당되는 지원이 없어요.', src: R.programs.map(function (x) { return [x.p.name + ' 공고 ' + progBasis(x.p), '#support']; }).slice(0, 3) }; }]
     ];
     for (var r = 0; r < RULES.length; r++) if (RULES[r][0].test(q)) return RULES[r][1]();
     var KW = [[/약국/, 'medical', /약국/], [/병원|의원|치과/, 'medical', /의원|병원|치과/], [/마트|다이소|생활용품|빨래|편의점|세탁/, 'life'], [/카페/, 'cafe'], [/지하철|역\b|버스|정류장/, 'transit'], [/공원|산책/, 'park'], [/헬스|운동|체육/, 'gym'], [/도서관|스터디|공부/, 'study'], [/주민센터|행정복지센터|청년센터|우체국/, 'public'], [/밥|식당|맛집/, 'food'], [/경찰|지구대|파출소/, 'safety']];
@@ -946,18 +964,25 @@ document.addEventListener('DOMContentLoaded', function () {
       (L ? '' : '<button type="button" class="btn line sm full" data-act="billdel" data-v="' + b.id + '">이 항목 지우기</button>') + '</div>';
   }
   function viewSupport() {
-    var R = evaluate();
+    var R = evaluate(), demo = RS.programs.some(function (p) { return p.demo; });
+    var srcNote = RS.src === 'local' ? '<span class="badge due">이 브라우저 연습 승인본</span>' : '';
     var cards = R.programs.map(function (x) {
-      var j = judge(x), p = x.p;
-      return '<section class="card c6 stack"><div class="row"><span class="prog-ic">' + ic('gift') + '</span><div style="flex:1 1 200px;min-width:0"><p class="s12 muted">' + p.org + '</p><h2 style="font-size:19px;font-weight:800">' + p.name + '</h2></div></div><div class="row">' + badge(j) + '<span class="badge ' + p.statusCls + '">' + p.status + '</span>' + (p.firstCome ? '<span class="badge due">선착순 · 일찍 마감될 수 있음</span>' : '') + '</div>' +
-        '<div><div class="kv"><span class="muted">지원 내용</span><b>' + p.amountText + '</b></div><div class="kv"><span class="muted">선정 방식</span><b>' + p.select + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + p.channel + '</b></div></div>' +
-        '<div><b class="s13">자격 확인</b><div style="margin-top:6px">' + x.res.map(function (r) { var mk = r.ok === true ? ['ok', '✓'] : r.ok === false ? ['x', '✕'] : ['q', '?']; return '<div class="cond"><span class="mk ' + mk[0] + '" aria-label="' + (r.ok === true ? '충족' : r.ok === false ? '미충족' : '확인 필요') + '">' + mk[1] + '</span><span style="flex:1 1 auto">' + r.label + '</span><span class="s13 ' + (r.ok === null ? '' : 'muted') + '" style="' + (r.ok === null ? 'color:var(--due-text);font-weight:700' : '') + '">' + esc(r.mine) + '</span></div>'; }).join('') + '</div></div>' +
-        '<div><b class="s13">제출 서류 ' + p.docs.length + '개</b><div class="chips" style="margin-top:8px">' + p.docs.map(function (dd) { return '<span class="pill">' + dd + '</span>'; }).join('') + '</div></div>' +
-        '<div class="row" style="margin-top:auto"><a class="btn" href="' + p.url + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a><a class="btn ghost" href="' + p.url + '" target="_blank" rel="noopener">공고 원문 · ' + BASIS + '</a></div></section>';
+      var j = judge(x), p = x.p, ch = (RS.published && RS.published.notices[p.id] && RS.published.notices[p.id].changes) || [];
+      var conds = x.res.map(function (r) { var mk = r.ok === true ? ['ok', '✓'] : r.ok === false ? ['x', '✕'] : ['q', '?']; return '<div class="cond"><span class="mk ' + mk[0] + '" aria-label="' + (r.ok === true ? '충족' : r.ok === false ? '미충족' : '확인 필요') + '">' + mk[1] + '</span><span style="flex:1 1 auto">' + esc(r.label) + '</span><span class="s13 ' + (r.ok === null ? '' : 'muted') + '" style="' + (r.ok === null ? 'color:var(--due-text);font-weight:700' : '') + '">' + esc(r.mine) + '</span></div>'; }).join('');
+      var ev = x.res.filter(function (r) { return r.evidence; }).map(function (r) { return '<div class="ev-row"><b>' + esc(r.label) + '</b><q>' + esc(r.evidence.trim()) + '</q></div>'; }).join('');
+      return '<section class="card c6 stack"><div class="row"><span class="prog-ic">' + ic('gift') + '</span><div style="flex:1 1 200px;min-width:0"><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:19px;font-weight:800">' + esc(p.name) + '</h2></div></div><div class="row">' + badge(j) + '<span class="badge ' + p.statusCls + '">' + p.status + (p.period ? ' · ' + p.period : '') + '</span>' + (p.firstCome ? '<span class="badge due">선착순 · 일찍 마감될 수 있음</span>' : '') + '</div>' +
+        '<div><div class="kv"><span class="muted">지원 내용</span><b>' + esc(p.amountText) + '</b></div><div class="kv"><span class="muted">선정 방식</span><b>' + esc(p.select) + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + esc(p.channel) + '</b></div></div>' +
+        '<div><b class="s13">자격 확인</b><div style="margin-top:6px">' + conds + '</div></div>' +
+        '<div><b class="s13">제출 서류 ' + p.docs.length + '개</b><div class="chips" style="margin-top:8px">' + p.docs.map(function (dd) { return '<span class="pill">' + esc(dd) + '</span>'; }).join('') + '</div></div>' +
+        (p.exclusions.length ? '<div class="banner due" style="padding:10px 12px">' + ic('info') + '<span><b>함께 받을 수 없어요</b> · ' + esc(p.exclusions.join(', ')) + '</span></div>' : '') +
+        '<details class="why"><summary>' + ic('doc', 'sm') + ' 공고 원문 근거 · ' + progBasis(p) + (ch.length ? ' · 지난 버전에서 ' + ch.length + '개 바뀜' : '') + '</summary><div class="stack" style="gap:8px;margin-top:10px">' + (ev || '<p class="s13 muted">근거 문장이 없어요.</p>') +
+        (ch.length ? '<div class="ev-row"><b>이번 버전에서 바뀐 점</b>' + ch.map(function (c) { return '<span class="s13">' + esc(c.label) + ': <s class="muted">' + esc(c.before || '없음') + '</s> → ' + esc(c.after || '없음') + '</span>'; }).join('') + '</div>' : '') +
+        '<p class="s12 muted">운영자 ' + esc(p.approvedBy || '') + '님이 원문과 대조해 승인했어요. ' + (p.source && p.source.name ? '출처: ' + esc(p.source.name) : '') + '</p></div></details>' +
+        '<div class="row" style="margin-top:auto"><a class="btn" href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a><a class="btn ghost" href="' + esc(JachwiRules.safeUrl(p.source && p.source.url) || p.url || '#support') + '" target="_blank" rel="noopener">공고 원문 · ' + esc(p.basis) + '</a></div></section>';
     }).join('');
     return '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · 만 ' + S.age + '세 · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>지원사업</h1></div><a class="btn line" href="#contract">조건 바꾸기</a></div>' +
-      '<div class="banner" style="margin-bottom:16px">' + ic('info') + '<span><b>지금은 시연용 예시 공고예요(금액·모집 상태 검수 전).</b> 실제 서비스에서는 운영자가 공고 원문과 대조해 승인한 기준(' + BASIS + ')으로만 판정해요. 금액은 공고마다 따로 보여주고 합치지 않아요. <b>해당 가능</b>도 최종 선정은 기관 심사로 정해져요.</span></div>' +
-      '<div class="grid">' + cards + '<section class="card c12"><div class="card-h"><h2>함께 확인해 볼 지원</h2></div><div class="kv"><span>청년월세 특별지원 (국토교통부)</span><span class="muted s13">서울시 청년월세 지원과 함께 받을 수 없어요</span></div><div class="kv"><span>청년 임차보증금 이자 지원</span><span class="muted s13">보증금 대출을 받을 때만 해당돼요</span></div></section></div>';
+      '<div class="banner" style="margin-bottom:16px">' + ic('info') + '<span>' + (demo ? '<b>시연용 예시 공고예요.</b> ' : '') + '운영자가 공고 원문과 한 줄씩 대조해 <b>승인한 기준</b>으로만 판정해요. 카드의 ‘공고 원문 근거’에서 조건마다 원문 문장을 볼 수 있어요. 금액은 공고마다 따로 보여주고 합치지 않아요. <b>해당 가능</b>도 최종 선정은 기관 심사로 정해져요. <a href="admin.html">운영자 검수 화면 보기</a> ' + srcNote + '</span></div>' +
+      '<div class="grid">' + (cards || '<section class="card c12"><p class="muted">승인된 공고가 없어요.</p></section>') + '</div>';
   }
 
   // ---------- 이 기기 파일 저장 (IndexedDB) : 서류함 · 집 상태 사진 ----------
@@ -1418,7 +1443,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('') || '<p class="muted s13" style="padding:8px 0">이날은 일정이 없어요.</p>';
     var addEv = '<form data-form="evadd" class="bill-form" style="margin-top:12px"><b class="full">' + ic('plus', 'sm') + ' 내 일정 추가</b><label class="field"><span>날짜</span><input class="inp" type="date" name="date" value="' + iso(selD) + '" required></label><label class="field"><span>시간 (선택)</span><input class="inp" type="time" name="time"></label>' +
       '<label class="field full"><span>내용</span><input class="inp" name="title" maxlength="30" placeholder="예: 이삿짐 도착, 가스 개통 기사 방문" required></label><button class="btn sm full" type="submit">추가</button></form>';
-    var sup = findBill('sup-rent'), rentP = R.programs[0];
+    var sup = findBill('sup-rent'), rentP = R.programs.filter(function (x) { return x.p.id === 'rent'; })[0] || { eligible: false, unknown: [], p: {} };
     var bills = S.bills.map(function (b) {
       var amt = billAmt(b), ed = S.calEdit === b.id;
       return '<div class="bill' + (b.on ? '' : ' off') + '"><input class="sw" type="checkbox" role="switch" aria-label="' + esc(b.name) + ' 켜기" data-act="billon" data-v="' + b.id + '"' + (b.on ? ' checked' : '') + '><span class="what"><b>' + esc(b.name) + '</b><span class="s12 muted">' + ((+b.every || 1) > 1 ? b.every + '개월마다 ' : '매월 ') + dayLabel(billDay(b)) + ' · ' + (b.kind === 'in' ? '+' : '') + won(amt) + '원' + (b.est ? ' (예상)' : '') + (+b.count ? ' · ' + b.count + '회' : '') + '</span>' + (b.note && !b.on ? '<span class="s12" style="color:var(--brand-text)">' + b.note + '</span>' : '') + '</span>' +
@@ -1508,14 +1533,51 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- AI 자취 코치 ----------
+  function md2html(t) { return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
+  var REFUSE = '<div class="bubble-a"><span>승인된 안내에서 답을 찾지 못했어요. 틀린 답을 드리지 않으려고 여기서 멈출게요. 이 질문은 운영자에게 전달해 안내를 보강할게요.</span><div class="row" style="gap:4px 12px"><a class="s12" href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener">서울시 전월세 안심계약 도움서비스</a><a class="s12" href="https://120dasan.seoul.go.kr" target="_blank" rel="noopener">120 다산콜센터</a></div></div>';
+  function chatItem(c, R) {
+    if (typeof c === 'string') c = { q: c, mode: 'local' };
+    var q = '<span class="bubble-q">' + esc(c.q) + '</span>';
+    if (c.mode === 'pending') return q + '<div class="bubble-a" aria-busy="true"><span class="typing"><i></i><i></i><i></i></span><span class="s12 muted">승인된 안내에서 찾는 중…</span></div>';
+    if (c.mode === 'ai') return q + '<div class="bubble-a"><span>' + md2html(c.a) + '</span><div class="row" style="gap:4px 12px">' + (c.cites || []).map(function (ct) { return (ct.src || []).slice(0, 2).map(function (x) { return '<a class="s12" href="' + esc(x[1] || '#coach') + '"' + ext(x[1] || '') + '>근거 · ' + esc(x[0]) + '</a>'; }).join(''); }).join('') + '</div><span class="s12 muted">AI가 승인된 안내 ' + (c.cites || []).length + '개 안에서만 답했어요.</span></div>';
+    if (c.mode === 'refuse') return q + REFUSE;
+    var a = qaAnswer(c.q, R);
+    return q + (a ? '<div class="bubble-a"><span>' + a.a + '</span><div class="row" style="gap:4px 12px">' + a.src.map(function (x) { return '<a class="s12" href="' + x[1] + '"' + ext(x[1]) + '>근거 · ' + x[0] + '</a>'; }).join('') + '</div></div>' : REFUSE);
+  }
+  // AI 코치에 보내는 값: 앱이 계산한 날짜·금액만 (이름·주소·집 위치는 보내지 않음)
+  function coachFacts(R) {
+    var end = contractEnd(), bf = brokerFee();
+    return { today: ymd(today), contract: ymd(R.C), move: ymd(R.M), end: ymd(end), noticeBy: ymd(add(end, -60)), reportRequired: R.report.required, reportReason: R.report.reason, reportDue: R.report.required ? ymd(R.report.due) : '', reportDone: !!S.done.rp, reportEarly: R.report.required && R.report.due < R.M, moveinDue: ymd(R.movein.due), moveinDone: !!S.done.mv, deposit: S.deposit, rent: S.rent, fee: S.fee, brokerBase: bf.base, brokerCap: bf.cap,
+      programs: R.programs.map(function (x) { return x.p.name + ': ' + judge(x)[1] + ' (' + x.p.status + ')'; }) };
+  }
+  var PLACE_Q = /약국|병원|의원|치과|마트|다이소|편의점|세탁|빨래|카페|지하철|정류장|버스|공원|산책|헬스|체육|도서관|스터디|주민센터|행정복지센터|청년센터|우체국|식당|맛집|밥집|경찰|지구대|파출소/;
+  function logMissLocal(q) {
+    try { var k = 'jachwi-coach-miss', m = JSON.parse(localStorage.getItem(k) || '[]'); if (!m.some(function (x) { return x.q === q; })) m.unshift({ id: 'q-l' + Date.now().toString(36), at: new Date().toISOString(), q: q.slice(0, 200), top: [], reason: 'local', count: 1 }); localStorage.setItem(k, JSON.stringify(m.slice(0, 100))); } catch (e) {}
+  }
+  function askCoach(q) {
+    q = q.replace(/\s+/g, ' ').trim().slice(0, 120); if (!q) return;
+    var R = evaluate(), c = { q: q, mode: 'pending' };
+    S.chat.push(c); while (S.chat.length > 20) S.chat.shift();
+    var local = function () { c.mode = qaAnswer(q, R) ? 'local' : 'refuse'; if (c.mode === 'refuse') logMissLocal(q); save(); render(true); };
+    // 동네 장소 질문은 이 기기에 있는 지도 데이터로, AI를 끈 경우와 AI를 쓸 수 없는 경우는 규칙 답으로
+    if (PLACE_Q.test(q) || S.aiCoach === false || !RS.ai || RS.src === 'local') { local(); return; }
+    save(); render(true);
+    fetch('api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: q, facts: coachFacts(R) }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.mode === 'ai') { c.mode = 'ai'; c.a = j.answer; c.cites = j.cites; save(); render(true); }
+      else if (j && j.mode === 'refuse') { if (qaAnswer(q, R)) c.mode = 'local'; else c.mode = 'refuse'; save(); render(true); }
+      else local();
+    }).catch(local);
+  }
   function viewCoach() {
     var R = evaluate();
-    var thread = S.chat.map(function (q) { var a = qaAnswer(q, R); return '<span class="bubble-q">' + esc(q) + '</span>' + (a ? '<div class="bubble-a"><span>' + a.a + '</span><div class="row" style="gap:4px 12px">' + a.src.map(function (x) { return '<a class="s12" href="' + x[1] + '"' + ext(x[1]) + '>근거 · ' + x[0] + '</a>'; }).join('') + '</div></div>' : '<div class="bubble-a"><span>승인된 안내에서 답을 찾지 못했어요. 틀린 답을 드리지 않으려고 여기서 멈출게요.</span><div class="row" style="gap:4px 12px"><a class="s12" href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener">서울시 전월세 안심계약 도움서비스</a><a class="s12" href="https://120dasan.seoul.go.kr" target="_blank" rel="noopener">120 다산콜센터</a></div></div>'); }).join('');
+    var thread = S.chat.map(function (c) { return chatItem(c, R); }).join('');
+    var aiOn = RS.ai && RS.src !== 'local' && S.aiCoach !== false;
     return '<div class="page-head"><div><p class="eyebrow">지원 & 상담</p><h1>AI 자취 코치</h1></div>' + (S.chat.length ? '<button type="button" class="btn line sm" data-act="chatclear">대화 지우기</button>' : '') + '</div>' +
-      '<div class="grid"><section class="card c8 stack"><div class="chat">' + (thread || '<div class="bubble-a"><span>안녕하세요. 계약·신고·지원·퇴거·동네에 대해 물어보세요. <b>근거가 있는 답만</b> 드리고, 모르는 건 모른다고 할게요.</span></div>') + '</div>' +
-      '<form class="ask" data-form="coach"><input class="inp" aria-label="질문" placeholder="궁금한 걸 물어보세요" maxlength="60"><button class="btn" type="submit" aria-label="보내기">' + ic('send') + '</button></form></section>' +
+      '<div class="grid"><section class="card c8 stack"><div class="chat" aria-live="polite">' + (thread || '<div class="bubble-a"><span>안녕하세요. 계약·신고·지원·퇴거·동네에 대해 물어보세요. <b>운영자가 승인한 안내 안에서만</b> 답하고, 모르는 건 모른다고 할게요.</span></div>') + '</div>' +
+      '<form class="ask" data-form="coach"><input class="inp" aria-label="질문" placeholder="궁금한 걸 물어보세요" maxlength="120"><button class="btn" type="submit" aria-label="보내기">' + ic('send') + '</button></form></section>' +
       '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">이런 걸 물어볼 수 있어요</h2><div class="chips">' + QA.concat(['중개수수료 얼마야?', '월세 밀리면 어떻게 돼?', '집주인이 월세 올려 달래', '곰팡이 생기면 누가 고쳐?', '확정일자 꼭 받아야 해?', '계약 끝나고 나가려면?', '가까운 병원 어디야?']).map(function (q) { return '<button type="button" class="chip" data-act="ask" data-v="' + q + '">' + q + '</button>'; }).join('') + '</div></section>' +
-      '<div class="privacy">' + ic('info', 'sm') + '<span>시연판은 정해 둔 규칙으로만 답해요. 실제 서비스에서는 AI가 운영자가 승인한 규칙 문서 안에서만 답하고, 근거 링크를 꼭 붙여요. 법률 자문을 대신하지 않아요.</span></div></aside></div>';
+      (RS.ai && RS.src !== 'local' ? '<label class="card split s13" style="gap:12px"><span><b>AI 답변</b><br><span class="muted">질문과 앱이 계산한 날짜·금액만 보내요. 이름·주소·집 위치는 보내지 않아요.</span></span><input class="sw" type="checkbox" role="switch" data-act="aicoach"' + (aiOn ? ' checked' : '') + '></label>' : '') +
+      '<div class="privacy">' + ic('info', 'sm') + '<span>' + (aiOn ? 'AI(Claude)가 운영자가 승인한 안내 ' + (RS.cards.length + RS.programs.length) + '개 중 질문과 맞는 것만 읽고 답해요. 답에 쓴 근거를 꼭 붙이고, 근거에 없는 숫자가 나오면 답을 버려요. ' : '지금은 정해 둔 규칙으로 답해요. ') + '답하지 못한 질문은 질문 글만 운영자에게 전달돼요. 질문에 이름·연락처는 적지 마세요. 법률 자문을 대신하지 않아요.</span></div></aside></div>';
   }
 
   // ---------- 내 계약 ----------
@@ -1649,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'cond') { var rm = b.dataset.room, tb = S.condTab === 'out' ? 'out' : 'in'; S.cond[tb] = S.cond[tb] || {}; var x = S.cond[tb][rm] || {}; x.st = v; x.at = ymd(today); S.cond[tb][rm] = x; save(); render(true); }
     else if (a === 'condtab') { S.condTab = v; save(); render(true); }
     else if (a === 'copymsg') { var txt = condMsg(S.condTab === 'out' ? 'out' : 'in'); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast('복사했어요. 문자 앱에 붙여 넣어 보내세요.'); }, function () { var ta = app.querySelector('textarea'); ta.select(); toast('글자를 길게 눌러 복사해 주세요.'); }); }
-    else if (a === 'ask') { S.chat.push(v); save(); render(true); }
+    else if (a === 'ask') { askCoach(v); }
     else if (a === 'chatclear') { S.chat = []; save(); render(true); }
     else if (a === 'calnav') { if (v === '0') { S.calM = ''; S.calSel = iso(today); } else { var c = calBase(); c.setMonth(c.getMonth() + (+v)); S.calM = c.getFullYear() + '-' + (c.getMonth() + 1); S.calSel = ''; } save(); render(true); }
     else if (a === 'calday') { S.calSel = v; S.calTab = 'day'; save(); render(true); }
@@ -1695,6 +1757,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (t.hasAttribute('data-sim')) { S.sim = t.value === '' ? null : +t.value; save(); render(true); return; }
     if (d.act === 'task') { S.done[d.id] = t.checked; save(); render(true); if (t.checked) toast('완료로 표시했어요.'); }
     else if (d.act === 'chal') { S.chal[d.v] = t.checked; save(); render(true); }
+    else if (d.act === 'aicoach') { S.aiCoach = t.checked; save(); render(true); toast(t.checked ? 'AI 답변을 켰어요.' : 'AI 답변을 껐어요. 정해 둔 규칙으로만 답해요.'); }
     else if (d.act === 'areachk') { S.areaChk[d.v] = t.checked; save(); render(true); }
     else if (d.act === 'paid') { S.paid[d.v] = t.checked; save(); render(true); }
     else if (d.act === 'billon') { var bo = findBill(d.v); if (bo) bo.on = t.checked; save(); render(true); }
@@ -1721,7 +1784,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var f = e.target.dataset.form; if (!f) return; e.preventDefault();
     if (f === 'geo') { var gq = e.target.querySelector('input').value.trim(); if (gq.length >= 2) geoSearch(gq); else toast('두 글자 이상 입력해 주세요.'); return; }
     if (f === 'evadd') { var fe = new FormData(e.target), et = String(fe.get('title') || '').trim().slice(0, 30), edt = String(fe.get('date') || ''); if (!et || !/^\d{4}-\d{2}-\d{2}$/.test(edt)) { toast('날짜와 내용을 넣어 주세요.'); return; } S.events = S.events || []; S.events.push({ id: 'ev' + Date.now(), date: edt, time: /^\d{2}:\d{2}$/.test(String(fe.get('time'))) ? String(fe.get('time')) : '', title: et }); S.calSel = edt; save(); render(true); toast('일정을 추가했어요. 폰 연동 탭에서 휴대폰 캘린더에도 넣을 수 있어요.'); return; }
-    if (f === 'coach') { var q = e.target.querySelector('input').value.trim(); if (q) { S.chat.push(q.slice(0, 60)); if (S.chat.length > 20) S.chat.shift(); save(); render(true); var inp = app.querySelector('form[data-form=coach] input'); if (inp) inp.focus({ preventScroll: true }); } }
+    if (f === 'coach') { var q = e.target.querySelector('input').value.trim(); if (q) { askCoach(q); var inp = app.querySelector('form[data-form=coach] input'); if (inp) inp.focus({ preventScroll: true }); } }
     else if (f === 'billadd') {
       var fd = new FormData(e.target), name = String(fd.get('name') || '').trim().slice(0, 20), amt = parseInt(String(fd.get('amount') || '').replace(/[^0-9]/g, ''), 10);
       if (!name || !amt) { toast('이름과 금액을 넣어 주세요.'); return; }
@@ -1737,9 +1800,12 @@ document.addEventListener('DOMContentLoaded', function () {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
       decodePayload(dd).then(function (o) { if (o && typeof o === 'object' && confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); S.onboarded = true; S.demo = false; save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
     }
+    S.chat = (S.chat || []).map(function (c) { return c && c.mode === 'pending' ? { q: c.q, mode: 'local' } : c; });
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () {});
     render(false);
     loadFiles().then(function () { if (FILES.length) render(true); });
+    loadRules();
+    window.addEventListener('storage', function (e) { if (e.key === 'jachwi-admin-local') { var pr = practiceRules(); if (pr) setRules(pr, 'local'); render(true); } });
   }
   boot();
 });

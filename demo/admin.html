@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>운영자 콘솔 · 자취 계약 내비</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<script src="rules-core.js" defer></script>
+<script src="rules/seed.js" defer></script>
+<script src="rules/samples.js" defer></script>
+<style>
+/* 운영자 콘솔 — 이용자 화면(app.html)과 같은 색·글꼴, 정보 밀도는 더 높게 */
+:root {
+  --bg: #F7F7F4; --surface: #FFFFFF; --fill: #F0F0EB; --fill-2: #E5E5DF;
+  --ink: #17171A; --ink-2: #44444A; --ink-3: #74747B;
+  --line: #E2E2DC; --hair: rgba(23,23,26,0.08);
+  --brand-tint: #E6F1EC; --brand-text: #0D6650;
+  --due: #C2410C; --due-tint: #FCEFE6; --due-text: #A6380B;
+  --bad-tint: #FBEAEA; --bad-text: #A12A2A;
+  --mark: #FFF1B8; --mark-on: #FFD84D;
+  --r: 12px; --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111112; --surface: #1A1A1C; --fill: #232326; --fill-2: #2D2D31; --ink: #EDEDEA; --ink-2: #C4C4C0; --ink-3: #95958F; --line: #2E2E32; --hair: rgba(255,255,255,0.08);
+  --brand-tint: #14302A; --brand-text: #6FCDB2; --due: #F08A4B; --due-tint: #36231A; --due-text: #F5A673; --bad-tint: #3A1E1E; --bad-text: #F19A9A; --mark: #4A4120; --mark-on: #7A6A1E; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111112; --surface: #1A1A1C; --fill: #232326; --fill-2: #2D2D31; --ink: #EDEDEA; --ink-2: #C4C4C0; --ink-3: #95958F; --line: #2E2E32; --hair: rgba(255,255,255,0.08);
+  --brand-tint: #14302A; --brand-text: #6FCDB2; --due: #F08A4B; --due-tint: #36231A; --due-text: #F5A673; --bad-tint: #3A1E1E; --bad-text: #F19A9A; --mark: #4A4120; --mark-on: #7A6A1E; color-scheme: dark }
+* { box-sizing: border-box }
+html { -webkit-text-size-adjust: 100% }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.55; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased }
+h1, h2, h3, p { margin: 0 }
+a { color: var(--brand-text) }
+button, input, select, textarea { font: inherit; color: inherit }
+:focus-visible { outline: 2px solid var(--brand-text); outline-offset: 2px }
+.shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh }
+.side { position: sticky; top: 0; height: 100vh; padding: 18px 12px; border-right: 1px solid var(--hair); background: var(--surface); display: flex; flex-direction: column; gap: 4px }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 14px; font-weight: 800; letter-spacing: -0.03em }
+.brand i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--surface); font-style: normal; font-size: 13px }
+.brand small { display: block; font-size: 11px; font-weight: 600; color: var(--ink-3) }
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-radius: 9px; color: var(--ink-2); text-decoration: none; font-weight: 600 }
+.nav:hover { background: var(--fill) }
+.nav[aria-current="page"] { background: var(--fill); color: var(--ink) }
+.nav .n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--ink); color: var(--surface); font-size: 11px; display: inline-grid; place-items: center }
+.nav .n.z { background: var(--fill-2); color: var(--ink-3) }
+.side .foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px 6px 0; border-top: 1px solid var(--hair); font-size: 12px; color: var(--ink-3) }
+main { padding: 24px 28px 60px; min-width: 0 }
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 18px }
+.top h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.045em; line-height: 1.2 }
+.eyebrow { font-size: 12px; color: var(--ink-3); font-weight: 600; margin-bottom: 4px }
+.card { background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r); padding: 18px; min-width: 0 }
+.card h2 { font-size: 15px; font-weight: 750; letter-spacing: -0.03em }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap }
+.stack { display: flex; flex-direction: column; gap: 12px }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(12, minmax(0, 1fr)) }
+.c4 { grid-column: span 4 } .c5 { grid-column: span 5 } .c6 { grid-column: span 6 } .c7 { grid-column: span 7 } .c8 { grid-column: span 8 } .c12 { grid-column: span 12 }
+.muted { color: var(--ink-3) } .s12 { font-size: 12px } .s13 { font-size: 13px } .b { font-weight: 700 }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 14px; border: 0; border-radius: 9px; background: var(--ink); color: var(--surface); font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none }
+.btn:disabled { opacity: .4; cursor: not-allowed }
+.btn.ghost { background: var(--fill); color: var(--ink) }
+.btn.line { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line) }
+.btn.bad { background: transparent; color: var(--bad-text); box-shadow: inset 0 0 0 1px var(--line) }
+.btn.sm { min-height: 30px; padding: 0 10px; font-size: 12px; border-radius: 8px }
+.inp, textarea.inp, select.inp { width: 100%; min-height: 38px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface) }
+textarea.inp { resize: vertical; line-height: 1.5 }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-3); font-weight: 600 }
+.badge { display: inline-flex; align-items: center; gap: 4px; height: 21px; padding: 0 7px; border-radius: 6px; font-size: 11.5px; font-weight: 650; white-space: nowrap; background: var(--fill); color: var(--ink-2) }
+.badge.ok { background: var(--brand-tint); color: var(--brand-text) }
+.badge.due { background: var(--due-tint); color: var(--due-text) }
+.badge.bad { background: var(--bad-tint); color: var(--bad-text) }
+.badge.ink { background: var(--ink); color: var(--surface) }
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: var(--fill); color: var(--ink-2); font-size: 13px }
+.banner.due { background: var(--due-tint); color: var(--due-text) }
+.banner.ok { background: var(--brand-tint); color: var(--brand-text) }
+.banner.bad { background: var(--bad-tint); color: var(--bad-text) }
+table { width: 100%; border-collapse: collapse }
+th, td { text-align: left; vertical-align: top; padding: 9px 8px; border-top: 1px solid var(--hair); font-size: 13px }
+thead th { border-top: 0; color: var(--ink-3); font-size: 12px; font-weight: 650 }
+tr.chg td, tr.chg th { background: var(--due-tint) }
+.list-item { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-top: 1px solid var(--hair); text-decoration: none; color: inherit }
+.list-item:first-child { border-top: 0 }
+.list-item:hover { background: var(--fill) }
+.list-item .t { font-weight: 700 }
+.empty { padding: 28px 10px; text-align: center; color: var(--ink-3) }
+/* 검수 화면 */
+.review { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 14px; align-items: start }
+.src { position: sticky; top: 14px; max-height: calc(100vh - 28px); overflow: auto; padding: 0 }
+.src-h { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--hair) }
+.src-body { padding: 10px 6px 14px; font-size: 13.5px; line-height: 1.7 }
+.ln { display: block; padding: 0 10px; border-radius: 6px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; min-height: 1.7em }
+.ln.ev { background: var(--mark); cursor: pointer }
+.ln.on { background: var(--mark-on); box-shadow: inset 3px 0 0 var(--ink) }
+.fld { display: grid; grid-template-columns: 150px minmax(0, 1fr) 92px; gap: 10px; padding: 12px 6px; border-top: 1px solid var(--hair); align-items: start }
+.fld:first-child { border-top: 0 }
+.fld.need { background: linear-gradient(90deg, var(--due-tint), transparent 70%) }
+.fld.focus { box-shadow: inset 3px 0 0 var(--ink) }
+.fld .lab { font-weight: 700; font-size: 13px }
+.fld .lab small { display: block; color: var(--ink-3); font-weight: 500; font-size: 11.5px }
+.quote { margin-top: 6px; padding: 6px 9px; border-left: 2px solid var(--line); color: var(--ink-2); font-size: 12.5px; cursor: pointer; border-radius: 0 6px 6px 0; background: var(--fill) }
+.quote.none { cursor: default; color: var(--ink-3); font-style: italic }
+.flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px }
+.ack { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; cursor: pointer; padding-top: 6px }
+.ack input { width: 18px; height: 18px; accent-color: var(--ink) }
+.grp { font-size: 12px; font-weight: 750; color: var(--ink-3); padding: 14px 6px 4px; letter-spacing: 0.02em }
+.sticky-bar { position: sticky; bottom: 0; z-index: 3; margin-top: 14px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; box-shadow: 0 -6px 20px rgba(0,0,0,.06) }
+.progress { height: 6px; border-radius: 3px; background: var(--fill-2); overflow: hidden; min-width: 120px; flex: 1 1 120px; max-width: 260px }
+.progress span { display: block; height: 100%; background: var(--brand-text) }
+.pv { border: 1px dashed var(--line); border-radius: 10px; padding: 14px }
+.cond { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; font-size: 13px }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; cursor: pointer }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--hair); margin-bottom: 14px; overflow-x: auto }
+.tab { padding: 9px 12px; border: 0; background: none; font-weight: 650; color: var(--ink-3); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink) }
+.spin { width: 16px; height: 16px; border: 2px solid var(--fill-2); border-top-color: var(--ink); border-radius: 50%; animation: sp 0.8s linear infinite; display: inline-block }
+@keyframes sp { to { transform: rotate(360deg) } }
+.selbar { position: fixed; z-index: 20; left: 50%; bottom: 18px; transform: translateX(-50%); max-width: min(560px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 12px; background: var(--ink); color: var(--surface); font-size: 13px; display: flex; gap: 10px; align-items: center }
+.selbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px }
+#toast { position: fixed; left: 50%; top: 18px; transform: translateX(-50%) translateY(-120%); z-index: 30; padding: 10px 16px; border-radius: 10px; background: var(--ink); color: var(--surface); font-weight: 650; transition: transform .2s ease; max-width: calc(100vw - 32px) }
+#toast.on { transform: translateX(-50%) translateY(0) }
+.login { max-width: 420px; margin: 12vh auto 0; padding: 0 16px }
+.kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 12px; font-size: 13px }
+.kv dt { color: var(--ink-3) } .kv dd { margin: 0; white-space: pre-wrap }
+pre.srcbox { white-space: pre-wrap; font-family: inherit; font-size: 12.5px; background: var(--fill); padding: 12px; border-radius: 8px; max-height: 320px; overflow: auto; margin: 0 }
+.mtabs { display: none }
+@media (max-width: 960px) {
+  .shell { grid-template-columns: minmax(0, 1fr) }
+  .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--hair) }
+  .brand { padding: 4px 8px; width: 100% }
+  .side .foot { display: none }
+  .nav { padding: 6px 9px; font-size: 13px }
+  main { padding: 16px 16px 60px }
+  .review { grid-template-columns: minmax(0, 1fr) }
+  .src { position: static; max-height: 46vh }
+  .grid > * { grid-column: span 12 }
+  .fld { grid-template-columns: minmax(0, 1fr) }
+  .kv { grid-template-columns: minmax(0, 1fr) }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+  var J = window.JachwiRules, SEED = window.JACHWI_SEED, SAMPLES = window.JACHWI_SAMPLES || [];
+  var root = document.getElementById('root');
+  var LOCAL = 'jachwi-admin-local', MISS = 'jachwi-coach-miss';
+  function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+  function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { return null; } }
+  function clone(x) { return JSON.parse(JSON.stringify(x)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function when(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return iso; return (d.getMonth() + 1) + '.' + d.getDate() + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  var tt; function toast(m) { var t = document.getElementById('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { t.classList.remove('on'); }, 2400); }
+
+  // ---------- 상태 ----------
+  // mode: 'server'(운영자 코드로 공유 저장소) | 'local'(이 브라우저 연습 모드) | 'login'
+  var A = { mode: 'boot', token: ss('jachwi-admin-token') || '', name: ls('jachwi-admin-name') || '', storage: '', ai: false, st: null, busy: '', focus: '', sel: '', tab: {}, cardEdit: null, test: null, err: '', serverConfigured: false };
+  function localState() {
+    var s = ls(LOCAL);
+    if (!s || !s.published) s = { published: clone(SEED), drafts: { items: [] }, unanswered: { items: [] } };
+    var miss = ls(MISS) || [];
+    miss.forEach(function (m) { if (!s.unanswered.items.some(function (x) { return x.id === m.id; })) s.unanswered.items.unshift(m); });
+    return s;
+  }
+  function saveLocal() { ls(LOCAL, A.st); ls(MISS, (ls(MISS) || []).filter(function (m) { return A.st.unanswered.items.some(function (x) { return x.id === m.id; }); })); }
+  function api(method, path, body) {
+    return fetch(path, { method: method, headers: { 'content-type': 'application/json', 'x-admin-token': A.token }, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().catch(function () { return { ok: false, error: '응답을 읽지 못했어요.' }; }).then(function (j) { j._status = r.status; return j; }); });
+  }
+  function boot() {
+    api('GET', '/api/admin').then(function (j) {
+      if (j.ok) { A.mode = 'server'; A.st = { published: j.published, drafts: j.drafts, unanswered: j.unanswered }; A.storage = j.storage; A.ai = j.ai; A.serverConfigured = true; }
+      else if (j._status !== 401) { startLocal(); }
+      else { A.serverConfigured = true; A.mode = 'login'; if (A.token) A.err = j.error || ''; A.token = ''; ss('jachwi-admin-token', null); }
+      render();
+    }).catch(function () { startLocal(); render(); });
+    fetch('/api/rules').then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) { A.ai = A.ai || j.ai; render(true); } }).catch(function () {});
+  }
+  function startLocal() { A.mode = 'local'; A.storage = 'local'; A.st = localState(); }
+  // 모든 변경은 같은 규칙(applyOp)으로: 서버면 서버가, 연습 모드면 브라우저가 처리
+  function op(o, done) {
+    o.reviewer = A.name || '운영자';
+    if (A.mode === 'server') {
+      A.busy = o.op; render(true);
+      return api('POST', '/api/admin', o).then(function (j) {
+        A.busy = '';
+        if (!j.ok) { toast(j.error || '저장하지 못했어요.'); render(true); return; }
+        A.st = { published: j.published, drafts: j.drafts, unanswered: j.unanswered };
+        if (done) done(j.result); render(true);
+      }).catch(function () { A.busy = ''; toast('서버에 연결하지 못했어요.'); render(true); });
+    }
+    var r = J.applyOp(A.st, o, A.name || '운영자');
+    if (!r.ok) { toast(r.error); return; }
+    saveLocal(); if (done) done(r.result); render(true);
+  }
+
+  // ---------- 화면 공통 ----------
+  function route() { var h = (location.hash || '#queue').slice(1).split('/'); return { r: h[0] || 'queue', id: decodeURIComponent(h[1] || '') }; }
+  function drafts() { return (A.st && A.st.drafts.items) || []; }
+  function notices() { return (A.st && A.st.published.notices) || {}; }
+  function nname(rec) { return rec && rec.fields && rec.fields.name ? J.show('name', J.normalize('name', rec.fields.name.value)) : '(이름 없음)'; }
+  function prevOf(d) { return d.noticeId && notices()[d.noticeId] ? notices()[d.noticeId] : null; }
+  function modeBadge() {
+    if (A.mode === 'server') return A.storage === 'blob' ? '<span class="badge ok">공유 저장소 연결</span>' : '<span class="badge due" title="BLOB_READ_WRITE_TOKEN이 없어 서버 메모리에만 저장돼요">서버 메모리 (재시작하면 사라짐)</span>';
+    return '<span class="badge due">이 브라우저 연습 모드</span>';
+  }
+  function shell(main) {
+    var R = route(), nd = drafts().filter(function (d) { return d.status !== 'rejected'; }).length, nm = A.st ? A.st.unanswered.items.length : 0, nn = Object.keys(notices()).length, nc = A.st ? A.st.published.cards.length : 0;
+    var nav = [['queue', '검수함', nd, true], ['new', '새 공고 추출'], ['published', '승인된 공고', nn], ['cards', '코치 지식', nc], ['missed', '답 못 한 질문', nm, true], ['log', '변경 기록']];
+    var cur = { review: 'queue', notice: 'published' }[R.r] || R.r;
+    return '<div class="shell"><nav class="side" aria-label="운영자 메뉴"><div class="brand"><i>내비</i><div>운영자 콘솔<small>공고 검수 · AI 코치</small></div></div>' +
+      nav.map(function (n) { return '<a class="nav" href="#' + n[0] + '"' + (cur === n[0] ? ' aria-current="page"' : '') + '><span>' + n[1] + '</span>' + (n[2] !== undefined ? '<span class="n' + (n[3] && n[2] ? '' : ' z') + '">' + n[2] + '</span>' : '') + '</a>'; }).join('') +
+      '<div class="foot">' + modeBadge() + (A.ai ? '<span class="badge ok">AI 추출·답변 켜짐</span>' : '<span class="badge" title="서버에 ANTHROPIC_API_KEY가 없어요">AI 꺼짐 · 규칙 기반</span>') +
+      '<label class="field">검수자 이름<input class="inp" data-name value="' + esc(A.name) + '" placeholder="예: 이성준" maxlength="20"></label>' +
+      (A.mode === 'server' ? '<button class="btn sm line" data-act="logout">잠그기</button>' : (A.serverConfigured ? '<button class="btn sm line" data-act="login">운영자 코드로 들어가기</button>' : '') + '<button class="btn sm line" data-act="resetlocal">연습 내용 처음으로</button>') +
+      '<a class="s12" href="app.html#support">이용자 화면 보기 ↗</a></div></nav><main id="main">' + main + '</main></div>' + (A.sel ? '<div class="selbar"><span>선택: “' + esc(A.sel) + '”</span><span class="s12" style="opacity:.75">항목의 [선택 문장을 근거로]를 누르세요</span></div>' : '');
+  }
+  function head(eyebrow, title, right) { return '<div class="top"><div><p class="eyebrow">' + eyebrow + '</p><h1>' + title + '</h1></div><div class="row">' + (right || '') + '</div></div>'; }
+
+  // ---------- 로그인 ----------
+  function viewLogin() {
+    return '<div class="login stack"><div class="brand"><i>내비</i><div>운영자 콘솔<small>자취 계약 내비</small></div></div><div class="card stack"><h2>운영자 코드</h2><p class="s13 muted">공유 저장소의 공고를 승인·발행하려면 운영자 코드가 필요해요. 코드는 이 탭에만 보관되고 닫으면 지워져요.</p>' +
+      (A.err ? '<div class="banner bad">' + esc(A.err) + '</div>' : '') +
+      '<form data-form="login" class="stack"><input class="inp" type="password" autocomplete="current-password" name="t" placeholder="운영자 코드" required><input class="inp" name="n" placeholder="검수자 이름 (기록에 남아요)" value="' + esc(A.name) + '" maxlength="20"><button class="btn">들어가기</button></form>' +
+      '<button class="btn ghost" data-act="practice">코드 없이 연습 모드로 둘러보기</button><p class="s12 muted">연습 모드는 이 브라우저에만 저장돼요. 같은 브라우저의 이용자 화면에서 결과를 바로 확인할 수 있어요.</p></div></div>';
+  }
+
+  // ---------- 검수함 ----------
+  function draftRow(d) {
+    var prev = prevOf(d), c = J.check(d.fields, d.sourceText, prev ? J.values(prev.fields) : null), rd = J.readyToApprove(d.fields, d.sourceText, prev ? J.values(prev.fields) : null, d.acks);
+    var name = d.fields.name ? J.normalize('name', d.fields.name.value) : d.title;
+    return '<a class="list-item" href="#review/' + encodeURIComponent(d.id) + '"><div style="flex:1 1 auto;min-width:0"><div class="t">' + esc(name || '(이름 없음)') + '</div><div class="s12 muted">' + esc(d.source.name || '직접 입력') + ' · ' + when(d.extractedAt) + ' 추출 · ' + (prev ? 'v' + prev.version + ' → v' + (prev.version + 1) : '새 공고') + '</div>' + (d.status === 'rejected' ? '<div class="s12" style="color:var(--bad-text)">반려: ' + esc(d.rejectReason) + '</div>' : '') + '</div>' +
+      '<div class="row" style="justify-content:flex-end">' + (d.mode === 'ai' ? '<span class="badge">AI 추출</span>' : '<span class="badge">규칙 추출</span>') + (d.status === 'rejected' ? '<span class="badge bad">반려됨</span>' : rd.ok ? '<span class="badge ok">승인 가능</span>' : '<span class="badge due">확인 ' + rd.left.length + '개 남음</span>') + '</div></a>';
+  }
+  function viewQueue() {
+    var ds = drafts(), open = ds.filter(function (d) { return d.status !== 'rejected'; }), rej = ds.filter(function (d) { return d.status === 'rejected'; });
+    return head('공고 검수', '검수함', '<a class="btn" href="#new">새 공고 추출</a>') +
+      (A.mode === 'local' ? '<div class="banner due" style="margin-bottom:14px"><b>연습 모드예요.</b>&nbsp;승인하면 이 브라우저의 이용자 화면(지원사업·코치)에 바로 반영돼요. 다른 사람에게는 보이지 않아요.</div>' : '') +
+      '<div class="grid"><section class="card c8"><div class="card-h"><h2>검수 대기 ' + open.length + '건</h2><span class="s12 muted">AI·규칙이 뽑은 값은 승인 전까지 이용자에게 보이지 않아요</span></div>' + (open.length ? open.map(draftRow).join('') : '<div class="empty">검수할 공고가 없어요. <a href="#new">새 공고를 추출</a>해 보세요.</div>') + '</section>' +
+      '<aside class="c4 stack"><section class="card stack"><h2>검수 순서</h2><ol class="s13" style="margin:0;padding-left:18px;line-height:1.8"><li>원문을 붙이거나 올리면 AI가 판정 항목과 <b>근거 문장</b>을 뽑아요</li><li>근거가 원문에 실제로 있는지, 숫자가 맞는지 자동으로 다시 봐요</li><li>표시된 항목만 사람이 원문과 대조해 확인해요</li><li>지난 승인본과 달라진 점, 판정이 바뀌는 사람을 확인해요</li><li>승인하면 새 버전으로 발행돼요. 언제든 되돌릴 수 있어요</li></ol></section>' +
+      (rej.length ? '<section class="card"><div class="card-h"><h2>반려한 초안</h2></div>' + rej.map(draftRow).join('') + '</section>' : '') + '</aside></div>';
+  }
+
+  // ---------- 새 공고 추출 ----------
+  function viewNew() {
+    var t = A.tab.new || 'sample', busy = A.busy === 'extract';
+    var body = '';
+    if (t === 'sample') body = '<div class="grid">' + SAMPLES.map(function (s) {
+      var prev = notices()[s.noticeId];
+      return '<section class="card c4 stack"><div class="row"><span class="badge">' + (prev ? '기존 공고 v' + prev.version + '의 새 버전' : '새 공고') + '</span></div><h2>' + esc(s.title) + '</h2><p class="s13 muted">' + esc(s.hint) + '</p><pre class="srcbox" style="max-height:140px">' + esc(s.text.slice(0, 400)) + '…</pre><button class="btn" data-act="extract-sample" data-v="' + s.id + '"' + (busy ? ' disabled' : '') + '>이 공고 추출하기</button></section>';
+    }).join('') + '</div><p class="s12 muted" style="margin-top:10px">시연용 예시 공고예요. 실제 공고 원문이 아니에요.</p>';
+    else body = '<section class="card stack"><div class="grid"><label class="field c7">공고 이름이나 출처<input class="inp" id="nsrc" placeholder="예: 서울주거포털 · 2026 청년월세 2차 공고" maxlength="120"></label><label class="field c5">원문 주소 (선택)<input class="inp" id="nurl" placeholder="https://" maxlength="300"></label></div>' +
+      '<label class="field">공고 원문<textarea class="inp" id="ntext" rows="14" placeholder="공고문 전체나 지원 대상·지원 내용·접수 기간·제출 서류 부분을 붙여 넣으세요"></textarea></label>' +
+      '<div class="row"><label class="btn ghost">파일에서 불러오기 (PDF · HWPX · TXT)<input type="file" accept=".pdf,.hwpx,.txt,text/plain,application/pdf" data-act="file" hidden></label><span class="s12 muted" id="fileinfo">HWP(구형 한글 파일)는 한글에서 HWPX나 PDF로 저장해 올려 주세요. 파일은 이 브라우저에서 글자만 뽑고, 원문 글자만 서버로 보내요.</span></div>' +
+      '<div class="row"><button class="btn" data-act="extract-text"' + (busy ? ' disabled' : '') + '>추출하기</button><span class="s12 muted">' + (A.mode === 'server' && A.ai ? 'AI(Claude)로 추출해요.' : A.ai ? '직접 올린 공고의 AI 추출은 운영자 코드로 들어와야 돼요. 지금은 규칙 기반으로 추출해요.' : '서버에 AI 키가 없어 규칙 기반으로 추출해요.') + '</span></div></section>';
+    return head('공고 검수', '새 공고 추출') +
+      '<div class="tabs" role="tablist">' + [['sample', '시연 공고로 해 보기'], ['paste', '원문 붙여넣기 · 파일']].map(function (x) { return '<button class="tab" role="tab" aria-selected="' + (t === x[0]) + '" data-act="tab" data-k="new" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      (busy ? '<div class="banner" style="margin-bottom:14px"><span class="spin"></span><span>원문을 읽고 항목과 근거 문장을 뽑는 중이에요. AI는 보통 20~40초 걸려요.</span></div>' : '') + body;
+  }
+  function guessNotice(name) {
+    var n = J.squash(name || ''), best = '';
+    Object.keys(notices()).forEach(function (id) { var m = J.squash(nname(notices()[id])); if (m && n && (n.indexOf(m) >= 0 || m.indexOf(n) >= 0)) best = id; });
+    return best;
+  }
+  function runExtract(payload, meta) {
+    A.busy = 'extract'; render(true);
+    var finish = function (j) {
+      A.busy = '';
+      if (!j || !j.ok) { toast((j && j.error) || '추출하지 못했어요.'); render(true); return; }
+      var name = j.fields.name ? J.normalize('name', j.fields.name.value) : '';
+      var draft = { noticeId: meta.noticeId || guessNotice(name), title: meta.title || name, source: meta.source, sourceText: meta.text, mode: j.mode, model: j.model || '', extractedAt: j.extractedAt || new Date().toISOString(), fields: j.fields, notes: j.notes || [], acks: {} };
+      op({ op: 'saveDraft', draft: draft }, function (d) { toast((j.mode === 'ai' ? 'AI가 ' : '규칙으로 ') + Object.keys(j.fields).length + '개 항목을 뽑았어요' + (j.cached ? ' (저장된 결과)' : '') + '.'); location.hash = '#review/' + encodeURIComponent(d.id); });
+    };
+    fetch('/api/extract', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-token': A.token }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json(); }).then(finish)
+      .catch(function () { finish({ ok: true, mode: 'rules', fields: J.ruleExtract(meta.text), notes: ['서버에 연결하지 못해 이 브라우저에서 규칙 기반으로 추출했어요.'] }); });
+  }
+
+  // 파일에서 글자 뽑기 (PDF: pdf.js · HWPX: JSZip) — 필요할 때만 불러옴
+  function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  function readFile(file) {
+    var info = document.getElementById('fileinfo'), ta = document.getElementById('ntext'), src = document.getElementById('nsrc');
+    if (src && !src.value) src.value = file.name.replace(/\.[^.]+$/, '');
+    info.textContent = file.name + ' 읽는 중…';
+    var done = function (text) { ta.value = text.replace(/\n{3,}/g, '\n\n').trim(); info.textContent = file.name + ' · ' + ta.value.length.toLocaleString() + '자를 불러왔어요. 내용을 확인한 뒤 추출하세요.'; };
+    var fail = function (m) { info.textContent = m; };
+    if (/\.txt$/i.test(file.name) || file.type === 'text/plain') return file.text().then(done);
+    if (/\.hwp$/i.test(file.name)) return fail('HWP는 읽을 수 없어요. 한글에서 HWPX나 PDF로 저장해 올려 주세요.');
+    if (/\.hwpx$/i.test(file.name)) return loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js').then(function () { return window.JSZip.loadAsync(file); }).then(function (zip) {
+      var names = Object.keys(zip.files).filter(function (n) { return /^Contents\/section\d+\.xml$/i.test(n); }).sort(function (a, b) { return parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10); });
+      return Promise.all(names.map(function (n) { return zip.file(n).async('string'); }));
+    }).then(function (xmls) {
+      var out = xmls.map(function (x) { var doc = new DOMParser().parseFromString(x, 'application/xml'), ps = doc.getElementsByTagNameNS('*', 'p'), lines = []; for (var i = 0; i < ps.length; i++) { var ts = ps[i].getElementsByTagNameNS('*', 't'), s = ''; for (var k = 0; k < ts.length; k++) s += ts[k].textContent; lines.push(s); } return lines.join('\n'); }).join('\n');
+      if (!out.trim()) return fail('HWPX에서 글자를 찾지 못했어요.'); done(out);
+    }).catch(function () { fail('HWPX 파일을 읽지 못했어요.'); });
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') return loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js').then(function () {
+      var lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      return file.arrayBuffer().then(function (buf) { return lib.getDocument({ data: buf }).promise; });
+    }).then(function (pdf) {
+      var jobs = []; for (var i = 1; i <= Math.min(pdf.numPages, 30); i++) jobs.push(pdf.getPage(i).then(function (pg) { return pg.getTextContent(); }));
+      return Promise.all(jobs);
+    }).then(function (pages) {
+      var text = pages.map(function (tc) { var out = '', lastY = null; tc.items.forEach(function (it) { var y = it.transform ? Math.round(it.transform[5]) : null; if (lastY !== null && y !== null && Math.abs(y - lastY) > 2) out += '\n'; out += it.str; lastY = y; }); return out; }).join('\n');
+      if (!text.trim()) return fail('글자가 없는 PDF예요(스캔본). 글자를 복사해 붙여 넣어 주세요.'); done(text);
+    }).catch(function () { fail('PDF를 읽지 못했어요.'); });
+    fail('PDF, HWPX, TXT 파일만 읽을 수 있어요.');
+  }
+
+  // ---------- 검수 화면 ----------
+  function lineKeys(d) {
+    var lines = d.sourceText.split('\n'), map = lines.map(function () { return []; });
+    J.FIELDS.forEach(function (f) {
+      var it = d.fields[f.key]; if (!it || !it.evidence) return;
+      var e = J.squash(it.evidence); if (e.length < 2) return;
+      lines.forEach(function (ln, i) { var s = J.squash(ln); if (s.length >= 2 && (s.indexOf(e) >= 0 || (s.length >= 6 && e.indexOf(s) >= 0))) map[i].push(f.key); });
+    });
+    // 목록 항목은 항목이 적힌 줄도 근거로 표시
+    J.FIELDS.forEach(function (f) {
+      if (f.type !== 'list' || !d.fields[f.key]) return;
+      J.toList(J.normalize(f.key, d.fields[f.key].value)).forEach(function (item) { var k = J.squash(item.replace(/\(.*?\)/g, '')); if (k.length < 2) return; lines.forEach(function (ln, i) { if (J.squash(ln).indexOf(k) >= 0 && map[i].indexOf(f.key) < 0) map[i].push(f.key); }); });
+    });
+    return { lines: lines, map: map };
+  }
+  function viewReview(id) {
+    var d = drafts().filter(function (x) { return x.id === id; })[0];
+    if (!d) return head('공고 검수', '초안을 찾지 못했어요') + '<a href="#queue">검수함으로</a>';
+    var prev = prevOf(d), pv = prev ? J.values(prev.fields) : null, chk = J.check(d.fields, d.sourceText, pv), rd = J.readyToApprove(d.fields, d.sourceText, pv, d.acks);
+    var notesLeft = (d.notes || []).filter(function (n, i) { return !d.acks['note-' + i]; }).length;
+    var need = J.FIELDS.filter(function (f) { return chk.byKey[f.key].must; }).length + (d.notes || []).length, left = rd.left.length + notesLeft, pct = need ? Math.round((need - left) / need * 100) : 100;
+    var LK = lineKeys(d), focus = A.focus;
+    var src = LK.lines.map(function (ln, i) { var ks = LK.map[i]; return '<span class="ln' + (ks.length ? ' ev' : '') + (focus && ks.indexOf(focus) >= 0 ? ' on' : '') + '"' + (ks.length ? ' data-act="line" data-v="' + ks[0] + '" title="' + esc(ks.map(function (k) { return J.FIELD[k].label; }).join(', ')) + '"' : '') + ' id="ln-' + i + '">' + (esc(ln) || ' ') + '</span>'; }).join('');
+    var g = '', rows = J.FIELDS.map(function (f) {
+      var it = d.fields[f.key] || {}, c = chk.byKey[f.key], v = J.show(f.key, J.normalize(f.key, it.value));
+      var raw = it.value == null ? '' : (f.type === 'list' ? J.show(f.key, J.normalize(f.key, it.value)) : String(it.value));
+      var grp = f.group !== g ? '<div class="grp">' + f.group + '</div>' : ''; g = f.group;
+      var input = f.type === 'list' ? '<textarea class="inp" rows="' + Math.max(2, Math.min(6, raw.split('\n').length)) + '" data-fv="' + f.key + '">' + esc(raw) + '</textarea>' : f.type === 'bool' ? '<select class="inp" data-fv="' + f.key + '"><option value="">비어 있음</option><option' + (J.normalize(f.key, it.value) === true ? ' selected' : '') + '>예</option><option' + (J.normalize(f.key, it.value) === false ? ' selected' : '') + '>아니오</option></select>' : '<input class="inp" data-fv="' + f.key + '" value="' + esc(raw) + '"' + (f.type === 'date' ? ' placeholder="YYYY-MM-DD"' : f.type === 'num' ? ' inputmode="decimal"' : '') + '>';
+      var miss = f.type === 'list' && c.flags.indexOf('item_not_in_source') >= 0 ? '<div class="s12" style="margin-top:4px;color:var(--bad-text)">원문에서 안 보이는 항목: ' + esc(J.missingItems(J.normalize(f.key, it.value), d.sourceText).join(', ')) + '</div>' : '';
+      var prevV = miss + (pv && c.flags.indexOf('changed') >= 0 ? '<div class="s12 muted" style="margin-top:4px">지난 승인본: <s>' + esc(J.show(f.key, pv[f.key]) || '비어 있음') + '</s></div>' : '');
+      var quote = it.evidence ? '<div class="quote" data-act="quote" data-v="' + f.key + '">“' + esc(it.evidence) + '”</div>' : (v ? '<div class="quote none">근거 문장 없음</div>' : '');
+      var flags = c.flags.length ? '<div class="flags">' + c.flags.map(function (fl) { return '<span class="badge ' + (fl === 'missing' || fl === 'not_in_source' || fl === 'item_not_in_source' ? 'bad' : 'due') + '">' + J.FLAG_TEXT[fl] + '</span>'; }).join('') + '</div>' : '';
+      var right = (c.must && c.flags.indexOf('missing') < 0 ? '<label class="ack"><input type="checkbox" data-ack="' + f.key + '"' + (d.acks[f.key] ? ' checked' : '') + '>확인함</label>' : c.flags.length ? '' : (v ? '<span class="badge ok" style="margin-top:8px">자동 확인</span>' : '')) +
+        (A.sel ? '<button class="btn sm ghost" style="margin-top:6px" data-act="setev" data-v="' + f.key + '">선택 문장을 근거로</button>' : '');
+      return grp + '<div class="fld' + (c.must && !d.acks[f.key] ? ' need' : '') + (focus === f.key ? ' focus' : '') + '" id="f-' + f.key + '"><div class="lab">' + f.label + (f.unit ? '<small>' + f.unit + '</small>' : '') + (f.required ? '<small>필수</small>' : '') + '</div><div>' + input + quote + prevV + flags + '</div><div>' + right + '</div></div>';
+    }).join('');
+    var notes = (d.notes || []).length ? '<section class="card stack"><h2>' + (d.mode === 'ai' ? 'AI가 남긴 확인 사항' : '추출 메모') + '</h2>' + d.notes.map(function (n, i) { return '<label class="ack" style="font-weight:500;align-items:flex-start"><input type="checkbox" data-ack="note-' + i + '"' + (d.acks['note-' + i] ? ' checked' : '') + '><span>' + esc(n) + '</span></label>'; }).join('') + '</section>' : '';
+    var nextRec = { id: d.noticeId || 'new', version: prev ? prev.version + 1 : 1, fields: d.fields, source: d.source };
+    var diffRows = prev ? J.diff(pv, J.values(d.fields)) : [];
+    var sim = J.simulate(prev, nextRec), simChanged = sim.filter(function (x) { return x.changed; }).length;
+    var P = J.toProgram(nextRec);
+    var noticeOpts = '<option value="">새 공고로 등록</option>' + Object.keys(notices()).map(function (nid) { return '<option value="' + esc(nid) + '"' + (d.noticeId === nid ? ' selected' : '') + '>' + esc(nname(notices()[nid])) + ' (v' + notices()[nid].version + ')의 새 버전</option>'; }).join('');
+    var ready = rd.ok && !notesLeft;
+    return head('공고 검수 › ' + esc(d.source.name || '직접 입력'), esc(J.normalize('name', d.fields.name && d.fields.name.value) || d.title || '이름 없는 공고'),
+      (d.mode === 'ai' ? '<span class="badge">AI 추출 · ' + esc(d.model || 'Claude') + '</span>' : '<span class="badge">규칙 기반 추출</span>') + (d.status === 'rejected' ? '<span class="badge bad">반려됨</span>' : '') + '<a class="btn sm line" href="#queue">검수함</a>') +
+      (d.status === 'rejected' ? '<div class="banner bad" style="margin-bottom:12px">반려 사유: ' + esc(d.rejectReason) + ' · 고친 뒤 다시 승인할 수 있어요.</div>' : '') +
+      '<div class="row" style="margin-bottom:12px"><label class="field" style="min-width:280px;flex:1 1 280px">어느 공고인가요<select class="inp" data-act="notice">' + noticeOpts + '</select></label><div class="s12 muted" style="flex:2 1 300px">노란 줄이 근거로 쓰인 원문이에요. 원문 줄을 누르면 그 줄을 쓴 항목으로, 항목의 인용을 누르면 원문 줄로 이동해요. 원문을 드래그해 선택하면 그 문장을 항목 근거로 바꿀 수 있어요.</div></div>' +
+      '<div class="review"><section class="card src" aria-label="공고 원문"><div class="src-h"><b>공고 원문</b><span class="s12 muted">' + LK.lines.length + '줄 · 근거 ' + LK.map.filter(function (k) { return k.length; }).length + '줄</span></div><div class="src-body" data-src>' + src + '</div></section>' +
+      '<div class="stack"><section class="card" style="padding:8px 12px"><div class="card-h" style="padding:8px 6px 0;margin-bottom:4px"><h2>판정 항목 ' + J.FIELDS.length + '개</h2><span class="s12 muted">자동 확인 ' + J.FIELDS.filter(function (f) { return !chk.byKey[f.key].flags.length && !J.blank(J.normalize(f.key, d.fields[f.key] && d.fields[f.key].value)); }).length + ' · 사람 확인 필요 ' + J.FIELDS.filter(function (f) { return chk.byKey[f.key].must; }).length + '</span></div>' + rows + '</section>' + notes +
+      (prev ? '<section class="card"><div class="card-h"><h2>지난 승인본(v' + prev.version + ' · ' + esc(prev.basis) + ')과 다른 점 ' + diffRows.length + '개</h2></div>' + (diffRows.length ? '<table><thead><tr><th>항목</th><th>v' + prev.version + '</th><th>이번 초안</th></tr></thead><tbody>' + diffRows.map(function (r) { return '<tr class="chg"><th>' + r.label + '</th><td style="white-space:pre-wrap"><s>' + esc(r.before || '비어 있음') + '</s></td><td style="white-space:pre-wrap"><b>' + esc(r.after || '비어 있음') + '</b></td></tr>'; }).join('') + '</tbody></table>' : '<p class="s13 muted">달라진 항목이 없어요.</p>') + '</section>' : '') +
+      '<section class="card"><div class="card-h"><h2>대상자 시뮬레이션</h2><span class="s12 ' + (simChanged ? '' : 'muted') + '" style="' + (simChanged ? 'color:var(--due-text);font-weight:700' : '') + '">' + (prev ? (simChanged ? '판정이 바뀌는 사람 ' + simChanged + '명' : '판정이 바뀌는 사람 없음') : '새 공고 · 예시 6명 판정') + '</span></div><table><thead><tr><th>예시 이용자</th><th>조건</th>' + (prev ? '<th>v' + prev.version + '</th>' : '') + '<th>이번 초안</th></tr></thead><tbody>' + sim.map(function (x) { var u = x.persona; return '<tr' + (x.changed ? ' class="chg"' : '') + '><th>' + u.name + '</th><td class="s12 muted">' + { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과' }[u.income] + ' · ' + u.deposit + '/' + u.rent + '만</td>' + (prev ? '<td>' + x.before + '</td>' : '') + '<td><b>' + x.after + '</b></td></tr>'; }).join('') + '</tbody></table></section>' +
+      '<section class="card"><div class="card-h"><h2>이용자 화면 미리보기</h2><span class="s12 muted">승인하면 이렇게 보여요</span></div><div class="pv stack"><div class="row"><b style="font-size:16px">' + esc(P.name) + '</b><span class="badge ' + (P.statusCls === 'brand' ? 'ok' : P.statusCls === 'no' ? 'bad' : '') + '">' + P.status + '</span>' + (P.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div><dl class="kv"><dt>지원 내용</dt><dd>' + esc(P.amountText || '—') + '</dd><dt>접수</dt><dd>' + esc(P.period || '공고 확인') + '</dd><dt>선정 · 신청</dt><dd>' + esc(P.select) + ' · ' + esc(P.channel) + '</dd><dt>자격</dt><dd>' + esc(P.conds.map(function (c) { return c.label; }).join(' / ') || '—') + '</dd><dt>제출 서류</dt><dd>' + esc(P.docs.join(', ') || '—') + '</dd>' + (P.exclusions.length ? '<dt>함께 못 받음</dt><dd>' + esc(P.exclusions.join(', ')) + '</dd>' : '') + '</dl></div></section>' +
+      '<div class="sticky-bar"><div class="row" style="flex:1 1 260px"><div class="progress" aria-label="확인 진행"><span style="width:' + pct + '%"></span></div><span class="s13 b">' + (ready ? '모두 확인했어요' : '확인할 것 ' + left + '개 남음') + '</span>' + (rd.left.some(function (x) { return x.why === 'missing'; }) ? '<span class="badge bad">필수 항목 비어 있음</span>' : '') + '</div>' +
+      '<div class="row"><input class="inp" style="width:200px" data-memo placeholder="검수 메모 (선택)" value="' + esc(d.memo || '') + '" maxlength="200"><button class="btn bad" data-act="reject">반려</button><button class="btn line" data-act="savedraft">임시 저장</button><button class="btn" data-act="publish"' + (ready && !A.busy ? '' : ' disabled') + '>' + (A.busy === 'publish' ? '<span class="spin"></span>' : '') + '승인하고 ' + (prev ? 'v' + (prev.version + 1) + ' 발행' : '발행') + '</button></div></div></div></div>';
+  }
+  function curDraft() { var R = route(); return R.r === 'review' ? drafts().filter(function (x) { return x.id === R.id; })[0] : null; }
+  // 검수 화면의 수정은 바로 화면에 반영하고, 저장은 [임시 저장]·승인 때
+  var dirty = false;
+
+  // ---------- 승인된 공고 ----------
+  function viewPublished() {
+    var ns = notices(), ids = Object.keys(ns);
+    return head('공고 검수', '승인된 공고', '<a class="btn line" href="app.html#support" target="_blank" rel="noopener">이용자 화면 ↗</a>') +
+      '<section class="card">' + (ids.length ? ids.map(function (id) { var n = ns[id], p = J.toProgram(n); return '<a class="list-item" href="#notice/' + encodeURIComponent(id) + '"><div style="flex:1 1 auto;min-width:0"><div class="t">' + esc(p.name) + '</div><div class="s12 muted">' + esc(p.org) + ' · ' + esc(p.amountText) + '</div></div><div class="row" style="justify-content:flex-end"><span class="badge ' + (p.statusCls === 'brand' ? 'ok' : p.statusCls === 'no' ? 'bad' : '') + '">' + p.status + '</span><span class="badge ink">v' + n.version + '</span><span class="s12 muted">' + esc(n.basis) + ' · ' + esc(n.approvedBy) + '</span></div></a>'; }).join('') : '<div class="empty">승인된 공고가 없어요.</div>') + '</section>';
+  }
+  function viewNotice(id) {
+    var n = notices()[id]; if (!n) return head('승인된 공고', '공고를 찾지 못했어요') + '<a href="#published">목록으로</a>';
+    var hist = (A.st.published.history || {})[id] || [];
+    var rows = J.FIELDS.filter(function (f) { return n.fields[f.key]; }).map(function (f) { var it = n.fields[f.key]; return '<tr><th style="white-space:nowrap">' + f.label + '</th><td style="white-space:pre-wrap">' + esc(J.show(f.key, J.normalize(f.key, it.value))) + (f.unit ? ' <span class="muted s12">' + f.unit + '</span>' : '') + '</td><td class="s12 muted">' + esc(it.evidence || '') + '</td></tr>'; }).join('');
+    return head('승인된 공고', esc(nname(n)), '<span class="badge ink">v' + n.version + '</span><a class="btn sm line" href="#published">목록</a>') +
+      '<div class="grid"><section class="card c8"><div class="card-h"><h2>판정 항목과 근거</h2><span class="s12 muted">' + esc(n.basis) + ' 승인 · ' + esc(n.approvedBy) + (n.memo ? ' · 메모: ' + esc(n.memo) : '') + '</span></div><table><thead><tr><th>항목</th><th>값</th><th>원문 근거</th></tr></thead><tbody>' + rows + '</tbody></table></section>' +
+      '<aside class="c4 stack"><section class="card stack"><h2>이번 버전에서 바뀐 점</h2>' + ((n.changes || []).length ? n.changes.map(function (c) { return '<div class="s13"><b>' + esc(c.label) + '</b><br><s class="muted">' + esc(c.before || '비어 있음') + '</s> → ' + esc(c.after || '비어 있음') + '</div>'; }).join('') : '<p class="s13 muted">' + (n.version === 1 ? '첫 버전이에요.' : '바뀐 항목이 없어요.') + '</p>') + '</section>' +
+      '<section class="card stack"><h2>지난 버전</h2>' + (hist.length ? hist.map(function (h) { return '<div class="row" style="justify-content:space-between"><span class="s13"><b>v' + h.version + '</b> · ' + esc(h.basis) + ' · ' + esc(h.approvedBy) + '</span><button class="btn sm line" data-act="rollback" data-v="' + h.version + '" data-k="' + esc(id) + '">이 버전으로 되돌리기</button></div>'; }).join('') : '<p class="s13 muted">지난 버전이 없어요.</p>') + '</section>' +
+      '<section class="card stack"><h2>원문</h2><p class="s12 muted">' + esc(n.source && n.source.name) + (J.safeUrl(n.source && n.source.url) ? ' · <a href="' + esc(J.safeUrl(n.source.url)) + '" target="_blank" rel="noopener">원문 주소</a>' : '') + '</p>' + (n.sourceText ? '<pre class="srcbox">' + esc(n.sourceText) + '</pre>' : '') + '</section></aside></div>';
+  }
+
+  // ---------- 코치 지식 ----------
+  function viewCards() {
+    var cards = A.st.published.cards || [], ed = A.cardEdit, T = A.test;
+    var form = ed ? '<section class="card stack" id="cardform"><h2>' + (ed.id ? '지식 수정' : '새 지식 추가') + '</h2>' + (ed.fromQuestion ? '<div class="banner">이용자 질문에서 만들고 있어요: “' + esc(ed.q) + '”</div>' : '') +
+      '<label class="field">제목<input class="inp" id="ct" value="' + esc(ed.title || '') + '" maxlength="60"></label><label class="field">찾는 말 (쉼표로 구분 · 이용자가 쓸 법한 말)<input class="inp" id="ck" value="' + esc((ed.keywords || []).join(', ')) + '"></label>' +
+      '<label class="field">내용 (코치는 이 글 안에서만 답해요)<textarea class="inp" id="cb" rows="6" maxlength="1500">' + esc(ed.body || '') + '</textarea></label>' +
+      '<label class="field">근거 (한 줄에 하나 · 이름 | 주소)<textarea class="inp" id="cc" rows="3" placeholder="주택임대차보호법 제3조 | https://www.law.go.kr">' + esc((ed.cite || []).map(function (c) { return c[0] + (c[1] ? ' | ' + c[1] : ''); }).join('\n')) + '</textarea></label>' +
+      '<div class="row"><button class="btn" data-act="cardsave">승인하고 저장</button><button class="btn line" data-act="cardcancel">취소</button>' + (ed.id ? '<button class="btn bad" data-act="carddel" data-v="' + esc(ed.id) + '">삭제</button>' : '') + '</div><p class="s12 muted">근거 없는 지식은 저장할 수 없어요. 법령은 국가법령정보센터, 지원 내용은 공고 원문 주소를 적어 주세요.</p></section>' : '';
+    var test = '<section class="card stack"><h2>코치 시험해 보기</h2><form data-form="test" class="row"><input class="inp" name="q" style="flex:1 1 200px" placeholder="예: 전입신고 언제까지 해야 해?" value="' + esc(T ? T.q : '') + '" maxlength="200"><button class="btn">찾기</button></form>' +
+      (T ? '<div class="s13"><b>코치가 읽을 카드</b> ' + (T.hits.length ? '' : '<span class="badge bad">맞는 카드 없음 → 답하지 않음</span>') + '</div>' + T.hits.map(function (h) { return '<div class="row s13"><span class="badge">' + h.score.toFixed(1) + '</span>' + esc(h.card.title) + (h.card.kind === 'notice' ? ' <span class="badge">공고</span>' : '') + '</div>'; }).join('') +
+        (T.ai ? '<div class="banner ' + (T.ai.mode === 'ai' ? 'ok' : T.ai.mode === 'refuse' ? 'due' : '') + '"><span>' + (T.ai.mode === 'ai' ? esc(T.ai.answer) + '<br><span class="s12">근거: ' + T.ai.cites.map(function (c) { return esc(c.title); }).join(', ') + '</span>' : T.ai.mode === 'refuse' ? '답하지 않음 (' + ({ no_card: '맞는 카드 없음', not_covered: '카드로 답할 수 없음', unverified_number: '근거에 없는 숫자' }[T.ai.reason] || T.ai.reason) + ') · 답 못 한 질문에 남았어요' : T.ai.mode === 'pending' ? '<span class="spin"></span> AI 답 만드는 중…' : T.ai.mode === 'unavailable' ? '서버에 AI 키가 없어요. 이용자 화면은 규칙 기반 답을 써요.' : esc(T.ai.error || '오류')) + '</span></div>' : '') : '<p class="s12 muted">질문을 넣으면 어떤 카드를 근거로 쓸지 보여주고, AI가 켜져 있으면 실제 답도 만들어 봐요.</p>') + '</section>';
+    return head('AI 자취 코치', '코치 지식', '<button class="btn" data-act="cardnew">새 지식 추가</button>') +
+      '<div class="grid"><section class="card c7"><div class="card-h"><h2>승인된 지식 ' + cards.length + '개 + 승인된 공고 ' + Object.keys(notices()).length + '개</h2><span class="s12 muted">코치는 여기 있는 내용으로만 답해요</span></div>' +
+      cards.map(function (c) { return '<div class="list-item" style="align-items:flex-start"><div style="flex:1 1 auto;min-width:0"><div class="t">' + esc(c.title) + '</div><div class="s12 muted" style="margin:2px 0 4px">' + esc((c.keywords || []).join(' · ')) + '</div><div class="s13" style="color:var(--ink-2)">' + esc(c.body.slice(0, 140)) + (c.body.length > 140 ? '…' : '') + '</div><div class="s12" style="margin-top:4px">' + c.cite.map(function (x) { return '근거 · ' + esc(x[0]); }).join('  ') + '</div></div><button class="btn sm line" data-act="cardedit" data-v="' + esc(c.id) + '">수정</button></div>'; }).join('') + '</section>' +
+      '<aside class="c5 stack">' + form + test + '</aside></div>';
+  }
+
+  // ---------- 답 못 한 질문 ----------
+  function viewMissed() {
+    var items = A.st.unanswered.items;
+    var why = { no_card: '맞는 지식 없음', not_covered: '지식으로 답할 수 없음', unverified_number: '근거에 없는 숫자', local: '이 브라우저 코치' };
+    return head('AI 자취 코치', '답 못 한 질문', '') +
+      '<div class="banner" style="margin-bottom:14px">코치가 틀린 답 대신 멈춘 질문이에요. 자주 나오는 질문은 근거를 찾아 지식으로 만들면 다음부터 답할 수 있어요. 질문 글만 남고 이름·주소 같은 개인 정보는 남기지 않아요.</div>' +
+      '<section class="card">' + (items.length ? '<table><thead><tr><th>질문</th><th>횟수</th><th>이유</th><th>마지막</th><th></th></tr></thead><tbody>' + items.map(function (q) { return '<tr><td><b>' + esc(q.q) + '</b>' + (q.top && q.top.length ? '<div class="s12 muted">가까웠던 지식: ' + esc(q.top.join(', ')) + '</div>' : '') + '</td><td>' + (q.count || 1) + '</td><td class="s12">' + (why[q.reason] || esc(q.reason)) + '</td><td class="s12 muted">' + when(q.at) + '</td><td><div class="row" style="justify-content:flex-end"><button class="btn sm" data-act="q2card" data-v="' + esc(q.id) + '">지식 만들기</button><button class="btn sm line" data-act="qdone" data-v="' + esc(q.id) + '">처리 완료</button></div></td></tr>'; }).join('') + '</tbody></table>' : '<div class="empty">답 못 한 질문이 없어요.</div>') + '</section>';
+  }
+
+  // ---------- 변경 기록 ----------
+  function viewLog() {
+    var log = A.st.published.log || [];
+    return head('기록', '변경 기록') + '<section class="card">' + (log.length ? '<table><thead><tr><th>언제</th><th>누가</th><th>무엇을</th></tr></thead><tbody>' + log.map(function (l) { return '<tr><td class="s12 muted" style="white-space:nowrap">' + when(l.at) + '</td><td style="white-space:nowrap">' + esc(l.who) + '</td><td>' + esc(l.what) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="empty">기록이 없어요.</div>') + '</section>';
+  }
+
+  // ---------- 그리기 ----------
+  function render(keep) {
+    if (A.mode === 'boot') { root.innerHTML = '<div class="login"><span class="spin"></span></div>'; return; }
+    if (A.mode === 'login') { root.innerHTML = viewLogin(); return; }
+    var R = route(), y = window.scrollY, srcEl = document.querySelector('[data-src]'), srcY = srcEl ? srcEl.parentNode.scrollTop : 0;
+    var V = { queue: viewQueue, new: viewNew, review: function () { return viewReview(R.id); }, published: viewPublished, notice: function () { return viewNotice(R.id); }, cards: viewCards, missed: viewMissed, log: viewLog }[R.r] || viewQueue;
+    root.innerHTML = shell(V());
+    document.title = (R.r === 'review' ? '검수 · ' : '') + '운영자 콘솔 · 자취 계약 내비';
+    if (keep) { window.scrollTo(0, y); var s2 = document.querySelector('[data-src]'); if (s2) s2.parentNode.scrollTop = srcY; }
+  }
+  // 다른 운영자가 바꾼 내용·새로 쌓인 질문을 보도록 화면을 옮길 때마다 다시 불러옴 (검수 중인 초안은 건드리지 않음)
+  function refresh() {
+    if (A.mode === 'local') { var m = ls(MISS) || []; m.forEach(function (x) { if (!A.st.unanswered.items.some(function (y) { return y.id === x.id; })) A.st.unanswered.items.unshift(x); }); render(true); return; }
+    if (A.mode !== 'server' || A.busy || (dirty && curDraft())) return;
+    api('GET', '/api/admin').then(function (j) { if (j.ok && !A.busy && !(dirty && curDraft())) { A.st = { published: j.published, drafts: j.drafts, unanswered: j.unanswered }; A.storage = j.storage; A.ai = j.ai; render(true); } }).catch(function () {});
+  }
+  window.addEventListener('hashchange', function () { A.focus = ''; A.sel = ''; render(); window.scrollTo(0, 0); if (route().r !== 'review') refresh(); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && route().r !== 'review') refresh(); });
+
+  // ---------- 이벤트 ----------
+  function scrollToId(id, container) { var el = document.getElementById(id); if (!el) return; if (container) { var c = el.closest(container); if (c && c.scrollHeight > c.clientHeight) { c.scrollTop = el.offsetTop - c.clientHeight / 3; return; } } el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  root.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]'); if (!t || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && t.type !== 'button')) return;
+    var a = t.getAttribute('data-act'), v = t.getAttribute('data-v'), d = curDraft();
+    if (a === 'tab') { A.tab[t.getAttribute('data-k')] = v; render(true); }
+    else if (a === 'practice') { startLocal(); render(); }
+    else if (a === 'login') { A.mode = 'login'; A.err = ''; render(); }
+    else if (a === 'logout') { A.token = ''; ss('jachwi-admin-token', null); A.mode = 'login'; A.err = ''; render(); }
+    else if (a === 'resetlocal') { if (confirm('이 브라우저의 연습 내용(승인·초안·지식)을 모두 지우고 처음 상태로 돌릴까요?')) { try { localStorage.removeItem(LOCAL); localStorage.removeItem(MISS); } catch (x) {} A.st = localState(); location.hash = '#queue'; render(); toast('처음 상태로 돌렸어요.'); } }
+    else if (a === 'extract-sample') { var s = SAMPLES.filter(function (x) { return x.id === v; })[0]; runExtract({ sample: v }, { noticeId: s.noticeId, title: s.title, source: s.source, text: s.text }); }
+    else if (a === 'extract-text') {
+      var text = (document.getElementById('ntext').value || '').trim(), sn = document.getElementById('nsrc').value.trim(), su = document.getElementById('nurl').value.trim();
+      if (text.length < 40) { toast('공고 원문을 붙여 넣어 주세요.'); return; }
+      runExtract({ text: text, sourceName: sn, sourceUrl: su }, { title: sn, source: { name: sn || '직접 입력', url: su }, text: text });
+    }
+    else if (a === 'line') { A.focus = v; render(true); scrollToId('f-' + v); }
+    else if (a === 'quote') { A.focus = v; render(true); var lk = lineKeys(d), idx = -1; lk.map.forEach(function (ks, i) { if (idx < 0 && ks.indexOf(v) >= 0) idx = i; }); if (idx >= 0) scrollToId('ln-' + idx, '.src'); else toast('원문에서 이 문장을 찾지 못했어요.'); }
+    else if (a === 'setev' && d) { d.fields[v] = d.fields[v] || { value: null, confidence: 'medium' }; d.fields[v].evidence = A.sel; d.fields[v].confidence = 'high'; delete d.acks[v]; A.sel = ''; dirty = true; A.focus = v; render(true); toast(J.FIELD[v].label + ' 근거를 바꿨어요.'); }
+    else if (a === 'savedraft' && d) { op({ op: 'saveDraft', draft: d }, function () { dirty = false; toast('임시 저장했어요.'); }); }
+    else if (a === 'reject' && d) { var why = prompt('반려 사유를 적어 주세요 (예: 원문 접수 기간 확인 필요)'); if (why) op({ op: 'saveDraft', draft: d }, function () { op({ op: 'reject', id: d.id, reason: why }, function () { toast('반려했어요.'); }); }); }
+    else if (a === 'publish' && d) {
+      if (!A.name) { var nm = prompt('검수자 이름을 적어 주세요 (변경 기록에 남아요)'); if (!nm) return; A.name = nm.slice(0, 20); ls('jachwi-admin-name', A.name); }
+      op({ op: 'saveDraft', draft: d }, function () { op({ op: 'publish', id: d.id, memo: d.memo }, function (rec) { dirty = false; toast(nname(rec) + ' v' + rec.version + '을 발행했어요.'); location.hash = '#notice/' + encodeURIComponent(rec.id); }); });
+    }
+    else if (a === 'rollback') { if (confirm('v' + v + ' 내용으로 되돌려 새 버전으로 발행할까요?')) op({ op: 'rollback', noticeId: t.getAttribute('data-k'), version: +v }, function (rec) { toast('v' + v + ' 내용으로 v' + rec.version + '을 발행했어요.'); }); }
+    else if (a === 'cardnew') { A.cardEdit = { title: '', keywords: [], body: '', cite: [] }; render(true); scrollToId('cardform'); }
+    else if (a === 'cardedit') { A.cardEdit = clone(A.st.published.cards.filter(function (c) { return c.id === v; })[0]); render(true); scrollToId('cardform'); }
+    else if (a === 'cardcancel') { A.cardEdit = null; render(true); }
+    else if (a === 'cardsave') {
+      var ed = A.cardEdit, card = { id: ed.id, title: document.getElementById('ct').value.trim(), keywords: document.getElementById('ck').value.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean), body: document.getElementById('cb').value.trim(), cite: document.getElementById('cc').value.split('\n').map(function (l) { var p = l.split('|'); return [p[0].trim(), (p[1] || '').trim()]; }).filter(function (c) { return c[0]; }) };
+      op({ op: 'saveCard', card: card, fromQuestion: ed.fromQuestion }, function () { A.cardEdit = null; toast('지식을 승인하고 저장했어요. 코치가 바로 쓸 수 있어요.'); if (ed.fromQuestion) location.hash = '#cards'; });
+    }
+    else if (a === 'carddel') { if (confirm('이 지식을 지울까요? 코치가 더는 이 내용으로 답하지 않아요.')) op({ op: 'deleteCard', id: v }, function () { A.cardEdit = null; toast('지웠어요.'); }); }
+    else if (a === 'q2card') { var q = A.st.unanswered.items.filter(function (x) { return x.id === v; })[0]; A.cardEdit = { title: '', keywords: Object.keys(J.grams(q.q)).filter(function (g) { return g.indexOf('w:') === 0; }).map(function (g) { return g.slice(2); }).slice(0, 6), body: '', cite: [], fromQuestion: q.id, q: q.q }; location.hash = '#cards'; setTimeout(function () { scrollToId('cardform'); }, 50); }
+    else if (a === 'qdone') op({ op: 'resolveQuestion', id: v }, function () { toast('처리했어요.'); });
+  });
+  root.addEventListener('change', function (e) {
+    var t = e.target, d = curDraft();
+    if (t.hasAttribute('data-name')) { A.name = t.value.trim().slice(0, 20); ls('jachwi-admin-name', A.name); return; }
+    if (t.getAttribute('data-act') === 'file' && t.files && t.files[0]) { readFile(t.files[0]); return; }
+    if (!d) return;
+    if (t.hasAttribute('data-ack')) { d.acks[t.getAttribute('data-ack')] = t.checked; dirty = true; render(true); }
+    else if (t.hasAttribute('data-fv')) {
+      var k = t.getAttribute('data-fv'), f = J.FIELD[k], val = t.value.trim();
+      d.fields[k] = d.fields[k] || { evidence: null, confidence: 'medium' };
+      d.fields[k].value = val === '' ? null : f.type === 'num' ? String(J.normalize(k, val) === null ? val : J.normalize(k, val)) : val;
+      d.fields[k].confidence = 'high'; delete d.acks[k]; dirty = true; A.focus = k; render(true);
+    }
+    else if (t.getAttribute('data-act') === 'notice') { d.noticeId = t.value; d.acks = {}; dirty = true; render(true); }
+    else if (t.hasAttribute('data-memo')) { d.memo = t.value; dirty = true; }
+  });
+  root.addEventListener('submit', function (e) {
+    e.preventDefault(); var f = e.target.getAttribute('data-form');
+    if (f === 'login') {
+      A.token = e.target.t.value; var nm = e.target.n.value.trim(); if (nm) { A.name = nm.slice(0, 20); ls('jachwi-admin-name', A.name); }
+      ss('jachwi-admin-token', A.token); A.mode = 'boot'; render(); boot();
+    } else if (f === 'test') {
+      var q = e.target.q.value.trim(); if (!q) return;
+      var view = J.publicView(A.st.published), pool = view.cards.concat(J.noticeCards(view.programs));
+      A.test = { q: q, hits: J.retrieve(q, pool, 6), ai: A.ai ? { mode: 'pending' } : null }; render(true);
+      if (A.ai) fetch('/api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: q, facts: { today: new Date().toISOString().slice(0, 10) } }) }).then(function (r) { return r.json(); }).then(function (j) { if (A.test && A.test.q === q) { A.test.ai = j; render(true); } }).catch(function () { if (A.test) { A.test.ai = { mode: 'error', error: '서버에 연결하지 못했어요.' }; render(true); } });
+    }
+  });
+  // 원문에서 문장을 드래그해 고르면 근거로 지정할 수 있게
+  document.addEventListener('mouseup', function (e) {
+    if (!e.target.closest || !e.target.closest('[data-src]')) return;
+    var s = String(window.getSelection ? window.getSelection() : '').replace(/\s+/g, ' ').trim();
+    if (s.length >= 4 && s.length <= 300 && s !== A.sel) { A.sel = s; render(true); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && A.sel) { A.sel = ''; render(true); } });
+  window.addEventListener('beforeunload', function (e) { if (dirty && curDraft()) { e.preventDefault(); e.returnValue = ''; } });
+
+  render(); boot();
+});
+</script>
+</body>
+</html>
