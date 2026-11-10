@@ -14,6 +14,7 @@
 <script src="places-core.js" defer></script>
 <script src="rules-core.js" defer></script>
 <script src="rules/seed.js" defer></script>
+<script src="coach-core.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5B4CDB">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -375,6 +376,10 @@ details.why summary { cursor: pointer; font-size: 13px; font-weight: 650; color:
 details.why summary::-webkit-details-marker { display: none }
 .ev-row { display: flex; flex-direction: column; gap: 2px; font-size: 13px }
 .ev-row q { quotes: "“" "”"; color: var(--ink-2); padding-left: 10px; border-left: 2px solid var(--line) }
+.think { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-3) }
+.think li { display: flex; align-items: center; gap: 6px } .think svg { color: var(--brand-text) }
+.caret { display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--ink-3); animation: tp 1s infinite }
+details.how summary { cursor: pointer; list-style: none } details.how summary::-webkit-details-marker { display: none } details.how ol { margin: 6px 0 0; padding-left: 18px }
 .typing { display: inline-flex; gap: 4px } .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); animation: tp 1s infinite ease-in-out } .typing i:nth-child(2) { animation-delay: .15s } .typing i:nth-child(3) { animation-delay: .3s }
 @keyframes tp { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
 #toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px; background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 600 }
@@ -651,6 +656,7 @@ document.addEventListener('DOMContentLoaded', function () {
     copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     send: '<path d="M4 12 20 4l-6 16-2.5-6.5Z"/><path d="m11.5 13.5 3-3"/>',
     compass: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/>',
+    check: '<path d="m5 12.5 4.5 4.5L19 7"/>',
     pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.4"/>'
   };
   function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICON[n] + '</svg>'; }
@@ -1534,50 +1540,90 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- AI 자취 코치 ----------
   function md2html(t) { return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
-  var REFUSE = '<div class="bubble-a"><span>승인된 안내에서 답을 찾지 못했어요. 틀린 답을 드리지 않으려고 여기서 멈출게요. 이 질문은 운영자에게 전달해 안내를 보강할게요.</span><div class="row" style="gap:4px 12px"><a class="s12" href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener">서울시 전월세 안심계약 도움서비스</a><a class="s12" href="https://120dasan.seoul.go.kr" target="_blank" rel="noopener">120 다산콜센터</a></div></div>';
-  function chatItem(c, R) {
-    if (typeof c === 'string') c = { q: c, mode: 'local' };
-    var q = '<span class="bubble-q">' + esc(c.q) + '</span>';
-    if (c.mode === 'pending') return q + '<div class="bubble-a" aria-busy="true"><span class="typing"><i></i><i></i><i></i></span><span class="s12 muted">승인된 안내에서 찾는 중…</span></div>';
-    if (c.mode === 'ai') return q + '<div class="bubble-a"><span>' + md2html(c.a) + '</span><div class="row" style="gap:4px 12px">' + (c.cites || []).map(function (ct) { return (ct.src || []).slice(0, 2).map(function (x) { return '<a class="s12" href="' + esc(x[1] || '#coach') + '"' + ext(x[1] || '') + '>근거 · ' + esc(x[0]) + '</a>'; }).join(''); }).join('') + '</div><span class="s12 muted">AI가 승인된 안내 ' + (c.cites || []).length + '개 안에서만 답했어요.</span></div>';
-    if (c.mode === 'refuse') return q + REFUSE;
-    var a = qaAnswer(c.q, R);
-    return q + (a ? '<div class="bubble-a"><span>' + a.a + '</span><div class="row" style="gap:4px 12px">' + a.src.map(function (x) { return '<a class="s12" href="' + x[1] + '"' + ext(x[1]) + '>근거 · ' + x[0] + '</a>'; }).join('') + '</div></div>' : REFUSE);
-  }
-  // AI 코치에 보내는 값: 앱이 계산한 날짜·금액만 (이름·주소·집 위치는 보내지 않음)
+  var REFUSE_LINKS = '<div class="row" style="gap:4px 12px"><a class="s12" href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener">서울시 전월세 안심계약 도움서비스</a><a class="s12" href="https://120dasan.seoul.go.kr" target="_blank" rel="noopener">120 다산콜센터</a></div>';
+  // AI 코치가 읽는 승인 안내: 운영자 승인 지식 카드 + 승인 공고
+  function coachCards() { return RS.cards.concat(JachwiRules.noticeCards(RS.programs)); }
+  // 내 계약으로 계산한 값 (이름·주소·집 위치는 넣지 않음)
   function coachFacts(R) {
     var end = contractEnd(), bf = brokerFee();
-    return { today: ymd(today), contract: ymd(R.C), move: ymd(R.M), end: ymd(end), noticeBy: ymd(add(end, -60)), reportRequired: R.report.required, reportReason: R.report.reason, reportDue: R.report.required ? ymd(R.report.due) : '', reportDone: !!S.done.rp, reportEarly: R.report.required && R.report.due < R.M, moveinDue: ymd(R.movein.due), moveinDone: !!S.done.mv, deposit: S.deposit, rent: S.rent, fee: S.fee, brokerBase: bf.base, brokerCap: bf.cap,
-      programs: R.programs.map(function (x) { return x.p.name + ': ' + judge(x)[1] + ' (' + x.p.status + ')'; }) };
+    return { today: ymd(today), contract: ymd(R.C), move: ymd(R.M), end: ymd(end), noticeBy: ymd(add(end, -60)), reportRequired: R.report.required, reportReason: R.report.reason, reportDue: ymd(R.report.due), reportDone: !!S.done.rp, reportEarly: R.report.required && R.report.due < R.M, moveinDue: ymd(R.movein.due), moveinDone: !!S.done.mv, deposit: +S.deposit || 0, rent: +S.rent || 0, fee: +S.fee || 0, brokerBase: bf.base, brokerCap: bf.cap,
+      programs: R.programs.map(function (x) { return x.p.name + ': ' + judge(x)[1] + ' (' + x.p.status + ')'; }),
+      programList: R.programs.map(function (x) { return { id: x.p.id, name: x.p.name, verdict: judge(x)[1], status: x.p.status, period: x.p.period, amountText: x.p.amountText, docs: x.p.docs, channel: x.p.channel, select: x.p.select, firstCome: x.p.firstCome, exclusions: x.p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }) }; }) };
   }
-  var PLACE_Q = /약국|병원|의원|치과|마트|다이소|편의점|세탁|빨래|카페|지하철|정류장|버스|공원|산책|헬스|체육|도서관|스터디|주민센터|행정복지센터|청년센터|우체국|식당|맛집|밥집|경찰|지구대|파출소/;
+  function localAnswer(q, hist, R) { return JachwiCoach.answer({ q: q, history: hist || [], cards: coachCards(), facts: coachFacts(R) }); }
+  function chatItem(c, i, R, last) {
+    if (typeof c === 'string') { var la = localAnswer(c, [], R); c = { q: c, mode: 'local', a: la.text, kind: la.kind, cites: la.cites, steps: la.steps }; }
+    var q = '<span class="bubble-q">' + esc(c.q) + '</span>';
+    if (c.mode === 'pending') return q + '<div class="bubble-a" id="cb-' + i + '" aria-busy="true"><span class="typing"><i></i><i></i><i></i></span><ul class="think">' + (c.steps || []).slice(0, c.stepN || 0).map(function (st) { return '<li>' + ic('check', 'sm') + esc(st) + '</li>'; }).join('') + '</ul></div>';
+    if (c.mode === 'place') { var pa = qaAnswer(c.q, R); return q + (pa ? '<div class="bubble-a"><span>' + pa.a + '</span><div class="row" style="gap:4px 12px">' + pa.src.map(function (x) { return '<a class="s12" href="' + x[1] + '"' + ext(x[1]) + '>근거 · ' + x[0] + '</a>'; }).join('') + '</div><span class="s12 muted">내 동네 지도 데이터로 찾았어요.</span></div>' : '<div class="bubble-a"><span>' + esc(JachwiCoach.REFUSE) + '</span></div>'); }
+    var streaming = c.shown !== undefined && c.shown < (c.a || '').length;
+    var body = md2html(streaming ? c.a.slice(0, c.shown) : c.a) + (streaming ? '<span class="caret"></span>' : '');
+    var cites = (c.cites || []).map(function (ct) { return (ct.src || []).slice(0, 2).map(function (x) { return '<a class="s12" href="' + esc(x[1] || '#coach') + '"' + ext(x[1] || '') + '>근거 · ' + esc(x[0]) + '</a>'; }).join(''); }).join('');
+    var who = c.mode === 'ai' ? 'Claude' : '내장 AI';
+    var foot = c.kind === 'answer' || c.mode === 'ai' ? who + ' · 승인된 안내 ' + (c.cites || []).length + '개 안에서 답했어요' : c.kind === 'refuse' ? who + ' · 질문은 운영자에게 전달했어요' : who;
+    var chips = last && !streaming && c.chips && c.chips.length ? '<div class="chips" style="margin-top:2px">' + c.chips.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '';
+    var how = !streaming && c.steps && c.steps.length ? '<details class="how"><summary class="s12 muted">' + foot + '</summary><ol class="s12 muted">' + c.steps.map(function (st) { return '<li>' + esc(st) + '</li>'; }).join('') + '</ol></details>' : '<span class="s12 muted">' + foot + '</span>';
+    return q + '<div class="bubble-a" id="cb-' + i + '"><span class="ans">' + body + '</span>' + (streaming ? '' : (cites ? '<div class="row" style="gap:4px 12px">' + cites + '</div>' : '') + (c.kind === 'refuse' ? REFUSE_LINKS : '') + how) + '</div>' + chips;
+  }
+  var PLACE_Q = /약국|병원|의원|치과|마트|다이소|편의점|세탁|빨래|카페|지하철|정류장|버스|공원|산책|헬스|체육|도서관|스터디|주민센터|청년센터|우체국|식당|맛집|밥집|경찰|지구대|파출소/;
   function logMissLocal(q) {
     try { var k = 'jachwi-coach-miss', m = JSON.parse(localStorage.getItem(k) || '[]'); if (!m.some(function (x) { return x.q === q; })) m.unshift({ id: 'q-l' + Date.now().toString(36), at: new Date().toISOString(), q: q.slice(0, 200), top: [], reason: 'local', count: 1 }); localStorage.setItem(k, JSON.stringify(m.slice(0, 100))); } catch (e) {}
   }
+  // 생각하는 단계를 하나씩 보여 준 뒤 답을 글자 단위로 흘려 보여 준다 (AI 대화처럼)
+  var STREAM = null;
+  function streamAnswer(c) {
+    var idx = S.chat.indexOf(c), stepT = 0;
+    clearInterval(STREAM);
+    var tick = function () {
+      var el = document.getElementById('cb-' + S.chat.indexOf(c));
+      if (c.mode === 'pending') {
+        c.stepN = (c.stepN || 0) + 1;
+        if (c.stepN > (c.steps || []).length) { c.mode = c.final; c.shown = 0; }
+        if (el) { var tmp = document.createElement('div'); tmp.innerHTML = chatItem(c, S.chat.indexOf(c), evaluate(), false); var nb = tmp.querySelector('#cb-' + S.chat.indexOf(c)); if (nb) el.innerHTML = nb.innerHTML; }
+        return;
+      }
+      c.shown = Math.min((c.a || '').length, (c.shown || 0) + Math.max(3, Math.ceil(c.a.length / 45)));
+      if (el) { var span = el.querySelector('.ans'); if (span) span.innerHTML = md2html(c.a.slice(0, c.shown)) + '<span class="caret"></span>'; else el.innerHTML = md2html(c.a.slice(0, c.shown)); }
+      if (c.shown >= c.a.length || !el) { clearInterval(STREAM); delete c.shown; delete c.stepN; save(); if (location.hash === '#coach' || location.hash === '') render(true); var box = app.querySelector('.chat'); if (box) box.scrollTop = box.scrollHeight; }
+    };
+    STREAM = setInterval(function () { stepT++; if (c.mode === 'pending' && stepT % 7 !== 0) return; tick(); }, 40);
+  }
   function askCoach(q) {
     q = q.replace(/\s+/g, ' ').trim().slice(0, 120); if (!q) return;
-    var R = evaluate(), c = { q: q, mode: 'pending' };
-    S.chat.push(c); while (S.chat.length > 20) S.chat.shift();
-    var local = function () { c.mode = qaAnswer(q, R) ? 'local' : 'refuse'; if (c.mode === 'refuse') logMissLocal(q); save(); render(true); };
-    // 동네 장소 질문은 이 기기에 있는 지도 데이터로, AI를 끈 경우와 AI를 쓸 수 없는 경우는 규칙 답으로
-    if (PLACE_Q.test(q) || S.aiCoach === false || !RS.ai || RS.src === 'local') { local(); return; }
+    var R = evaluate(), hist = S.chat.filter(function (x) { return x && typeof x === 'object' && x.topic; }).slice(-3).map(function (x) { return { q: x.q, topic: x.topic }; });
+    // 진행 중인 답이 있으면 바로 끝까지 보여 주고 다음 질문으로
+    S.chat.forEach(function (x) { if (x && x.mode === 'pending') { x.mode = x.final || 'local'; } delete x.shown; delete x.stepN; });
+    var c = { q: q, mode: 'pending', steps: ['질문 읽는 중'] };
+    S.chat.push(c); while (S.chat.length > 30) S.chat.shift();
+    var useLocal = function () {
+      var r = localAnswer(q, hist, R);
+      c.final = 'local'; c.a = r.text; c.kind = r.kind; c.cites = r.cites; c.chips = r.chips; c.topic = r.topic; c.steps = r.steps;
+      if (r.kind === 'refuse' || r.kind === 'scope') logMissLocal(q);
+      streamAnswer(c);
+    };
+    if (PLACE_Q.test(q) && !/신고|계약|보증금|지원|월세/.test(q)) { c.mode = 'place'; save(); render(true); return; }
     save(); render(true);
-    fetch('api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: q, facts: coachFacts(R) }) }).then(function (r) { return r.json(); }).then(function (j) {
-      if (j && j.mode === 'ai') { c.mode = 'ai'; c.a = j.answer; c.cites = j.cites; save(); render(true); }
-      else if (j && j.mode === 'refuse') { if (qaAnswer(q, R)) c.mode = 'local'; else c.mode = 'refuse'; save(); render(true); }
-      else local();
-    }).catch(local);
+    if (RS.ai && RS.src !== 'local' && S.aiCoach !== false) {
+      c.steps = ['질문 읽는 중', '승인된 안내 찾는 중', 'Claude가 답 만드는 중'];
+      fetch('api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: q, facts: coachFacts(R) }) }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.mode === 'ai') { c.final = 'ai'; c.a = j.answer; c.kind = 'answer'; c.cites = j.cites; c.topic = j.cites.map(function (x) { return x.id; }); c.steps = ['승인된 안내 ' + j.cites.length + '개를 근거로 Claude가 답함', '답에 나온 숫자를 근거와 대조함']; streamAnswer(c); }
+        else if (j && j.mode === 'refuse') { c.final = 'local'; c.a = JachwiCoach.REFUSE; c.kind = 'refuse'; c.cites = []; c.chips = JachwiCoach.POPULAR; c.steps = ['승인된 안내에서 근거를 찾지 못해 답하지 않음']; streamAnswer(c); }
+        else useLocal();
+      }).catch(useLocal);
+      return;
+    }
+    useLocal();
   }
   function viewCoach() {
     var R = evaluate();
-    var thread = S.chat.map(function (c) { return chatItem(c, R); }).join('');
+    var thread = S.chat.map(function (c, i) { return chatItem(c, i, R, i === S.chat.length - 1); }).join('');
     var aiOn = RS.ai && RS.src !== 'local' && S.aiCoach !== false;
     return '<div class="page-head"><div><p class="eyebrow">지원 & 상담</p><h1>AI 자취 코치</h1></div>' + (S.chat.length ? '<button type="button" class="btn line sm" data-act="chatclear">대화 지우기</button>' : '') + '</div>' +
-      '<div class="grid"><section class="card c8 stack"><div class="chat" aria-live="polite">' + (thread || '<div class="bubble-a"><span>안녕하세요. 계약·신고·지원·퇴거·동네에 대해 물어보세요. <b>운영자가 승인한 안내 안에서만</b> 답하고, 모르는 건 모른다고 할게요.</span></div>') + '</div>' +
+      '<div class="grid"><section class="card c8 stack"><div class="chat" aria-live="polite">' + (thread || '<div class="bubble-a"><span>안녕하세요' + (S.nick ? ', ' + esc(S.nick) + '님' : '') + '. 계약·신고·지원·퇴거·동네에 대해 물어보세요. <b>운영자가 승인한 안내 안에서만</b> 답하고, 모르는 건 모른다고 할게요.</span></div>') + '</div>' +
       '<form class="ask" data-form="coach"><input class="inp" aria-label="질문" placeholder="궁금한 걸 물어보세요" maxlength="120"><button class="btn" type="submit" aria-label="보내기">' + ic('send') + '</button></form></section>' +
       '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">이런 걸 물어볼 수 있어요</h2><div class="chips">' + QA.concat(['중개수수료 얼마야?', '월세 밀리면 어떻게 돼?', '집주인이 월세 올려 달래', '곰팡이 생기면 누가 고쳐?', '확정일자 꼭 받아야 해?', '계약 끝나고 나가려면?', '가까운 병원 어디야?']).map(function (q) { return '<button type="button" class="chip" data-act="ask" data-v="' + q + '">' + q + '</button>'; }).join('') + '</div></section>' +
-      (RS.ai && RS.src !== 'local' ? '<label class="card split s13" style="gap:12px"><span><b>AI 답변</b><br><span class="muted">질문과 앱이 계산한 날짜·금액만 보내요. 이름·주소·집 위치는 보내지 않아요.</span></span><input class="sw" type="checkbox" role="switch" data-act="aicoach"' + (aiOn ? ' checked' : '') + '></label>' : '') +
-      '<div class="privacy">' + ic('info', 'sm') + '<span>' + (aiOn ? 'AI(Claude)가 운영자가 승인한 안내 ' + (RS.cards.length + RS.programs.length) + '개 중 질문과 맞는 것만 읽고 답해요. 답에 쓴 근거를 꼭 붙이고, 근거에 없는 숫자가 나오면 답을 버려요. ' : '지금은 정해 둔 규칙으로 답해요. ') + '답하지 못한 질문은 질문 글만 운영자에게 전달돼요. 질문에 이름·연락처는 적지 마세요. 법률 자문을 대신하지 않아요.</span></div></aside></div>';
+      (RS.ai && RS.src !== 'local' ? '<label class="card split s13" style="gap:12px"><span><b>Claude로 답하기</b><br><span class="muted">끄면 이 기기 안의 내장 AI가 답해요. 켜면 질문과 앱이 계산한 날짜·금액만 서버로 보내요(이름·주소·집 위치 제외).</span></span><input class="sw" type="checkbox" role="switch" data-act="aicoach"' + (aiOn ? ' checked' : '') + '></label>' : '') +
+      '<div class="privacy">' + ic('info', 'sm') + '<span>' + (aiOn ? 'Claude가 운영자가 승인한 안내 ' + (RS.cards.length + RS.programs.length) + '개 중 질문과 맞는 것만 읽고 답해요. 근거를 꼭 붙이고, 근거에 없는 숫자가 나오면 답을 버려요. ' : '<b>내장 AI</b>가 이 기기 안에서 답해요. 질문이 서버로 가지 않아요. 운영자가 승인한 안내 ' + (RS.cards.length + RS.programs.length) + '개 안에서만 답을 만들고, 내 계약 날짜·금액을 넣어 드려요. 앞 질문에 이어서 물어봐도 돼요. ') + '답하지 못한 질문은 질문 글만 운영자에게 전달돼요. 질문에 이름·연락처는 적지 마세요. 법률 자문을 대신하지 않아요.</span></div></aside></div>';
   }
 
   // ---------- 내 계약 ----------
@@ -1800,7 +1846,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
       decodePayload(dd).then(function (o) { if (o && typeof o === 'object' && confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); S.onboarded = true; S.demo = false; save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
     }
-    S.chat = (S.chat || []).map(function (c) { return c && c.mode === 'pending' ? { q: c.q, mode: 'local' } : c; });
+    S.chat = (S.chat || []).map(function (c) { if (c && typeof c === 'object') { delete c.shown; delete c.stepN; if (c.mode === 'pending' || (!c.a && c.mode !== 'place')) return c.q; } return c; });
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () {});
     render(false);
     loadFiles().then(function () { if (FILES.length) render(true); });
