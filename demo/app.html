@@ -594,6 +594,50 @@ body.ob .shell { display: block }
 .thumb .fdoc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 100%; padding: 4px; font-size: 10px; color: var(--ink-2); text-align: center; overflow-wrap: anywhere; text-decoration: none }
 .thumb .x { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 }
 .thumb .x svg { width: 12px; height: 12px }
+
+/* ===== 생활 관리(구민정): 캘린더 일정 이름 · 카테고리 · 납부 상태 ===== */
+:root { --move: #7C5CE0; --ok: #1F8A52; --ok-tint: #E4F5EA; --late: #D93036; --late-tint: #FDEBEC; --sat: #2F6FD8 }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ok: #4CC38A; --ok-tint: #16301F; --late: #FF7A7E; --late-tint: #3A1C1E; --sat: #7AA7FF } }
+:root[data-theme="dark"] { --ok: #4CC38A; --ok-tint: #16301F; --late: #FF7A7E; --late-tint: #3A1C1E; --sat: #7AA7FF }
+.wd .sat, .day.sat .n { color: var(--sat) }
+.wd .sun { color: var(--due-text) }
+.day .evs { display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 0 }
+.ev { display: block; max-width: 100%; padding: 1px 5px; border-radius: 5px; border-left: 3px solid var(--ink-3); background: var(--fill-2); color: var(--ink-2); font-size: 11px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.ev.contract { border-left-color: var(--ink) }
+.ev.move { border-left-color: var(--move) }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --move: #B39DFF } } :root[data-theme="dark"] { --move: #B39DFF }
+.ev.out { border-left-color: var(--no) }
+.ev.pay { border-left-color: var(--due); color: var(--due-text) }
+.ev.pay.ok { border-left-color: var(--ok); color: var(--ok); text-decoration: line-through }
+.ev.pay.late { border-left-color: var(--late); color: var(--late) }
+.ev.my { border-left-color: var(--brand-text) }
+.ev.more { background: transparent; border-left: 0; padding: 0 5px; color: var(--ink-3) }
+.cal-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px }
+.cal-filter .chip { min-height: 32px; padding: 0 12px }
+.lg { display: inline-block; width: 10px; height: 10px; border-radius: 3px }
+.st { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; font-weight: 700; white-space: nowrap }
+.st.ok { background: var(--ok-tint); color: var(--ok) }
+.st.wait { background: var(--due-tint); color: var(--due-text) }
+.st.late { background: var(--late-tint); color: var(--late) }
+.st.na { background: var(--no-tint); color: var(--ink-3) }
+.ag.hi { outline: 2px solid var(--due); outline-offset: 3px; border-radius: 10px }
+.pay-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 0; border-top: 1px solid var(--hair) }
+.pay-list .pay-row:first-child { border-top: 0 }
+.pay-row .what { flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; gap: 2px }
+.pay-row .amt { font-weight: 700; white-space: nowrap }
+.stat .progress-line { margin: 6px 0 4px }
+.stat.click { cursor: pointer; text-align: left; font: inherit; color: inherit; border: inherit }
+details.fold > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px }
+details.fold > summary::-webkit-details-marker { display: none }
+details.fold[open] > summary { margin-bottom: 10px }
+/* 휴대폰: 칸이 좁아 글자 대신 색 막대로 보여주고, 날짜를 누르면 아래에 일정 이름이 나온다 */
+@media (max-width: 599px) {
+  .day { min-height: 70px }
+  .ev { height: 5px; padding: 0; border: 0; border-radius: 3px; font-size: 0; background: var(--ink-3) }
+  .ev.contract { background: var(--ink) } .ev.move { background: var(--move) } .ev.out { background: var(--no) } .ev.my { background: var(--brand-text) }
+  .ev.pay { background: var(--due) } .ev.pay.ok { background: var(--ok) } .ev.pay.late { background: var(--late) }
+  .ev.more { height: auto; font-size: 9px; padding: 0 1px; background: transparent }
+}
 </style>
 </head>
 <body>
@@ -684,6 +728,7 @@ document.addEventListener('DOMContentLoaded', function () {
     { id: 'elec', name: '전기요금', kind: 'out', amount: 25000, day: 18, every: 1, on: true, est: true, off: 1 },
     { id: 'gas', name: '도시가스', kind: 'out', amount: 30000, day: 25, every: 1, on: true, est: true, off: 1 },
     { id: 'net', name: '인터넷', kind: 'out', amount: 22000, day: 10, every: 1, on: true, off: 1 },
+    { id: 'heat', name: '난방·온수비', kind: 'out', amount: 0, day: 25, every: 1, on: false, est: true, off: 1, note: '중앙난방이라 따로 내면 켜 두세요. 금액은 고지서가 오면 넣어요' },
     { id: 'water', name: '수도요금', kind: 'out', amount: 16000, day: 20, every: 2, on: false, est: true, off: 1, note: '관리비에 들어 있지 않다면 켜 두세요' },
     { id: 'sup-rent', name: '청년월세 지원 입금', kind: 'in', amount: 200000, day: 25, every: 1, count: 12, on: false, off: 1, note: '선정되면 켜 두세요. 입금일과 남은 횟수를 챙겨드려요' }
   ];
@@ -836,24 +881,38 @@ document.addEventListener('DOMContentLoaded', function () {
   function billDay(b) { if (+b.day) return +b.day; var d = pd(S.move).getDate(); return d > 28 ? 31 : d; }
   function dayLabel(d) { return d === 31 ? '말일' : d + '일'; }
   function billStart(b) { if (b.start) { var p = String(b.start).split('-'); return +p[0] * 12 + (+p[1] - 1); } return ym(pd(S.move)) + (+b.off || 0); }
+  // 관리비와의 관계: sep 별도 납부 · incl 기본 관리비에 포함 · bundle 관리비 고지서에 합산 · check 확인 필요
+  var INCL = [['sep', '별도 납부'], ['incl', '기본 관리비에 포함'], ['bundle', '관리비 고지서에 합산 청구'], ['check', '확인 필요']];
+  function billIncl(b) { return b.link || b.kind === 'in' ? 'sep' : (b.incl || 'sep'); }
   function billsInMonth(y, m) {
-    var idx = y * 12 + m, endIdx = ym(contractEnd()), out = [];
+    var idx = y * 12 + m, endIdx = ym(contractEnd()), out = [], bundled = [];
     S.bills.forEach(function (b) {
-      var amt = billAmt(b), s = billStart(b), every = +b.every || 1;
-      if (!b.on || !amt || idx < s || idx > endIdx || (idx - s) % every) return;
+      var amt = billAmt(b), s = billStart(b), every = +b.every || 1, inc = billIncl(b);
+      if (!b.on || (!amt && (b.link || b.kind === 'in')) || idx < s || idx > endIdx || (idx - s) % every) return;
       var k = (idx - s) / every; if (+b.count && k >= +b.count) return;
+      if (inc === 'incl') return; // 기본 관리비에 이미 들어 있으니 따로 더하지 않는다
       var key = b.id + '@' + y + '-' + (m + 1);
-      out.push({ date: new Date(y, m, Math.min(billDay(b), new Date(y, m + 1, 0).getDate())), kind: b.kind, title: b.name, amount: amt, key: key, paid: !!S.paid[key], est: !!b.est, nth: +b.count ? (k + 1) + '/' + b.count : '' });
+      var e = { date: new Date(y, m, Math.min(billDay(b), new Date(y, m + 1, 0).getDate())), kind: b.kind, title: b.name, amount: amt, key: key, paid: !!S.paid[key], est: !!b.est, unk: !amt, chk: inc === 'check', bid: b.id, nth: +b.count ? (k + 1) + '/' + b.count : '' };
+      if (inc === 'bundle') bundled.push(e); else out.push(e);
     });
+    // 관리비 고지서에 합산되는 항목은 관리비 한 건으로 묶어 중복 납부·중복 합계를 막는다
+    var fee = out.filter(function (e) { return e.bid === 'fee'; })[0];
+    if (fee && bundled.length) { bundled.forEach(function (e) { fee.amount += e.amount; if (e.est) fee.est = true; }); fee.with = bundled.map(function (e) { return e.title; }).join('·'); }
+    else out = out.concat(bundled);
     return out;
   }
+  function payState(e) { if (e.paid) return ['ok', e.kind === 'in' ? '받음' : '납부 완료']; if (e.date < today) return ['late', '완료 미확인']; return ['wait', e.kind === 'in' ? '입금 예정' : '납부 예정']; }
+  function payAmt(e) { return e.unk ? '금액 미확정' : won(e.amount) + '원'; }
+  var STAGE_CAT = { pre: 'contract', cday: 'contract', prep: 'move', mday: 'move', report: 'move', out: 'out' };
+  function catOf(e) { if (e.kind === 'out' || e.kind === 'in') return 'pay'; if (e.kind === 'mark') return e.title === '계약일' ? 'contract' : e.title === '입주일' ? 'move' : 'out'; return e.cat || 'etc'; }
+  var CAL_F = [['all', '전체'], ['contract', '계약'], ['pay', '납부'], ['move', '입주'], ['out', '퇴거']];
   var RANK = { mark: 0, task: 1, my: 1, out: 2, in: 3 };
   function monthEvents(y, m, R, T) {
     var out = billsInMonth(y, m);
     function inM(d) { return d && d.getFullYear() === y && d.getMonth() === m; }
     T.forEach(function (s) { s.tasks.forEach(function (t) {
-      if (inM(t.due)) out.push({ date: t.due, kind: 'task', title: t.title, taskId: t.id, done: !!S.done[t.id], sub: s.name });
-      if (t.legal && inM(t.legal)) out.push({ date: t.legal, kind: 'task', title: t.title.replace(/ \+.*$/, '') + ' 법정 기한', taskId: t.id, done: !!S.done[t.id], sub: '이날까지는 꼭 해야 해요' });
+      if (inM(t.due)) out.push({ date: t.due, kind: 'task', title: t.title, taskId: t.id, done: !!S.done[t.id], sub: s.name, cat: STAGE_CAT[s.key] || 'etc' });
+      if (t.legal && inM(t.legal)) out.push({ date: t.legal, kind: 'task', title: t.title.replace(/ \+.*$/, '') + ' 법정 기한', taskId: t.id, done: !!S.done[t.id], sub: '이날까지는 꼭 해야 해요', cat: STAGE_CAT[s.key] || 'etc' });
     }); });
     [[R.C, '계약일'], [R.M, '입주일'], [contractEnd(), '계약 만료']].forEach(function (x) { if (inM(x[0])) out.push({ date: x[0], kind: 'mark', title: x[1] }); });
     (S.events || []).forEach(function (x) { var d = pd(x.date); if (inM(d)) out.push({ date: d, kind: 'my', title: x.title, time: x.time, evId: x.id, sub: (x.time ? x.time + ' · ' : '') + '내 일정' }); });
@@ -960,11 +1019,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var L = !!b.link, a = ' data-bill="' + b.id + '" data-k=', f = function (lab, inner, full) { return '<label class="field' + (full ? ' full' : '') + '"><span>' + lab + '</span>' + inner + '</label>'; };
     return '<div class="bill-form">' +
       f('이름', '<input class="inp"' + a + '"name" maxlength="20" value="' + esc(b.name) + '">') +
-      f('금액', L ? '<input class="inp" disabled value="' + won(billAmt(b)) + '원">' : '<div class="unit"><input class="inp" inputmode="numeric"' + a + '"amount" value="' + (b.amount || '') + '"><em>원</em></div>') +
+      f('금액', L ? '<input class="inp" disabled value="' + won(billAmt(b)) + '원">' : '<div class="unit"><input class="inp" inputmode="numeric"' + a + '"amount" value="' + (b.amount || '') + '" placeholder="모르면 비워 두기"><em>원</em></div>') +
       f('날짜', '<select class="inp"' + a + '"day">' + dayOptions(b.day, L) + '</select>') +
       f('주기', '<select class="inp"' + a + '"every">' + [[1, '매월'], [2, '2개월마다'], [3, '3개월마다']].map(function (o) { return '<option value="' + o[0] + '"' + ((+b.every || 1) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') +
       (L ? '<p class="s12 muted full">금액은 계약 정보의 ' + (b.link === 'rent' ? '월세' : '관리비') + '를 따라가요. <a href="#contract">계약 정보</a></p>' : f('구분', '<select class="inp"' + a + '"kind"><option value="out"' + (b.kind === 'out' ? ' selected' : '') + '>나가는 돈</option><option value="in"' + (b.kind === 'in' ? ' selected' : '') + '>들어오는 돈</option></select>')) +
       f('시작 달', '<input type="month" class="inp"' + a + '"start" value="' + ymStr(billStart(b)) + '">') +
+      (!L && b.kind !== 'in' ? f('관리비와의 관계', '<select class="inp"' + a + '"incl">' + INCL.map(function (o) { return '<option value="' + o[0] + '"' + (billIncl(b) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>', true) + '<p class="s12 muted full">' + esc(b.name) + '이(가) 관리비에 들어 있는지 계약서나 집주인에게 확인해 보세요. 포함이면 따로 더하지 않고, 합산 청구면 관리비 한 건으로 묶어 보여줘요.</p>' : '') +
       f('횟수 (비우면 계약 끝까지)', '<input class="inp" inputmode="numeric"' + a + '"count" value="' + (+b.count || '') + '">', true) +
       '<label class="split full s13"><span>예상 금액 (매달 달라요)</span><input class="sw" type="checkbox" role="switch"' + a + '"est"' + (b.est ? ' checked' : '') + '></label>' +
       (L ? '' : '<button type="button" class="btn line sm full" data-act="billdel" data-v="' + b.id + '">이 항목 지우기</button>') + '</div>';
@@ -1427,26 +1487,31 @@ document.addEventListener('DOMContentLoaded', function () {
     var ev = monthEvents(y, m, R, T), sum = function (a) { return a.reduce(function (s, e) { return s + e.amount; }, 0); };
     var outs = ev.filter(function (e) { return e.kind === 'out'; }), ins = ev.filter(function (e) { return e.kind === 'in'; }), tasks = ev.filter(function (e) { return (e.kind === 'task' || e.kind === 'my') && !e.done; });
     var outSum = sum(outs), paid = sum(outs.filter(function (e) { return e.paid; })), inSum = sum(ins);
+    var F = S.calF || 'all', evF = ev.filter(function (e) { return F === 'all' || catOf(e) === F; });
+    var CELL_RANK = { mark: 0, out: 1, in: 1, task: 2, my: 3 };
+    function evLabel(e) { return e.kind === 'out' ? e.title + ' ' + (e.unk ? '미확정' : '−' + man(e.amount)) : e.kind === 'in' ? e.title.replace(/ 입금$/, '') + ' +' + man(e.amount) : e.title; }
+    function evCls(e) { var c = catOf(e); return 'ev ' + (e.kind === 'my' ? 'my' : c) + (c === 'pay' ? ' ' + payState(e)[0] : ''); }
     var dim = new Date(y, m + 1, 0).getDate(), lead = new Date(y, m, 1).getDay(), cells = '', cnt = lead + dim;
     var selD = S.calSel ? pd(S.calSel) : null; if (!selD || selD.getFullYear() !== y || selD.getMonth() !== m) selD = (today.getFullYear() === y && today.getMonth() === m) ? today : new Date(y, m, 1);
     for (var i = 0; i < lead; i++) cells += '<span class="day out" aria-hidden="true"></span>';
     for (var d = 1; d <= dim; d++) {
-      var dt = new Date(y, m, d), de = ev.filter(function (e) { return e.date.getDate() === d; });
-      var o = de.filter(function (e) { return e.kind === 'out'; }), inn = de.filter(function (e) { return e.kind === 'in'; }), tk = de.filter(function (e) { return e.kind === 'task' && !e.done; }), my = de.filter(function (e) { return e.kind === 'my'; }), mk = de.filter(function (e) { return e.kind === 'mark'; });
-      var dots = tk.slice(0, 3).map(function () { return '<i class="dot"></i>'; }).join('') + my.slice(0, 2).map(function () { return '<i class="dot my"></i>'; }).join('') + mk.map(function () { return '<i class="dot mark"></i>'; }).join('');
-      var money = (o.length ? '<span class="m' + (o.every(function (e) { return e.paid; }) ? ' paid' : '') + '">−' + man(sum(o)) + '</span>' : '') + (inn.length ? '<span class="m in">+' + man(sum(inn)) + '</span>' : '');
-      cells += '<button type="button" class="day' + (+dt === +today ? ' today' : '') + (dt.getDay() === 0 ? ' sun' : '') + '" data-act="calday" data-v="' + iso(dt) + '" aria-pressed="' + (+dt === +selD) + '" aria-label="' + (m + 1) + '월 ' + d + '일, 일정 ' + de.length + '개"><span class="n">' + d + '</span><span class="dots" aria-hidden="true">' + dots + '</span>' + money + '</button>';
+      var dt = new Date(y, m, d), de = evF.filter(function (e) { return e.date.getDate() === d; });
+      var show = de.filter(function (e) { return !e.done; }).sort(function (p, q) { return CELL_RANK[p.kind] - CELL_RANK[q.kind]; });
+      var chips = show.slice(0, 2).map(function (e) { return '<span class="' + evCls(e) + '">' + esc(evLabel(e)) + '</span>'; }).join('') + (show.length > 2 ? '<span class="ev more">+' + (show.length - 2) + '개</span>' : '');
+      cells += '<button type="button" class="day' + (+dt === +today ? ' today' : '') + (dt.getDay() === 0 ? ' sun' : dt.getDay() === 6 ? ' sat' : '') + '" data-act="calday" data-v="' + iso(dt) + '" aria-pressed="' + (+dt === +selD) + '" aria-label="' + (m + 1) + '월 ' + d + '일, 일정 ' + de.length + '개"><span class="n">' + d + '</span><span class="evs">' + chips + '</span></button>';
     }
     while (cnt % 7) { cells += '<span class="day out" aria-hidden="true"></span>'; cnt++; }
-    var list = ev.filter(function (e) { return +e.date === +selD; });
+    var list = evF.filter(function (e) { return +e.date === +selD; });
     var KI = { out: ['', '₩'], in: ['in', '+'], task: ['task', '!'], mark: ['mark', '★'], my: ['my', '●'] };
     var agenda = list.map(function (e) {
       var tick = e.kind === 'out' || e.kind === 'in' ? '<label class="tick"><input class="chk" type="checkbox" data-act="paid" data-v="' + e.key + '"' + (e.paid ? ' checked' : '') + '>' + (e.kind === 'in' ? '받음' : '냄') + '</label>'
         : e.kind === 'task' ? '<label class="tick"><input class="chk" type="checkbox" data-act="task" data-id="' + e.taskId + '"' + (e.done ? ' checked' : '') + '>완료</label>'
         : e.kind === 'my' ? '<button type="button" class="icon-btn" style="width:34px;height:34px" data-act="evdel" data-v="' + e.evId + '" aria-label="' + esc(e.title) + ' 지우기">' + ic('x', 'sm') + '</button>' : '';
       var g = e.kind === 'task' || e.kind === 'my' || e.kind === 'mark' ? '<a class="icon-btn" style="width:34px;height:34px" href="' + gcalLink(e) + '" target="_blank" rel="noopener" aria-label="구글 캘린더에 추가" title="구글 캘린더에 추가">' + ic('cal', 'sm') + '</a>' : '';
-      return '<div class="ag' + (e.paid || e.done ? ' done' : '') + '"><span class="k-ic ' + KI[e.kind][0] + '" aria-hidden="true">' + KI[e.kind][1] + '</span><span class="what"><b>' + esc(e.title) + '</b><span class="s12 muted">' + (e.amount ? won(e.amount) + '원' + (e.est ? ' · 예상' : '') + (e.nth ? ' · ' + e.nth + '회차' : '') : e.sub || '계약') + '</span></span>' + g + tick + '</div>';
-    }).join('') || '<p class="muted s13" style="padding:8px 0">이날은 일정이 없어요.</p>';
+      var money = e.kind === 'out' || e.kind === 'in', ps = money ? payState(e) : null;
+      var sub = money ? payAmt(e) + (e.est && !e.unk ? ' · 예상' : '') + (e.with ? ' · ' + esc(e.with) + ' 합산' : '') + (e.chk ? ' · 관리비 포함 여부 확인 필요' : '') + (e.nth ? ' · ' + e.nth + '회차' : '') : (e.sub || '계약');
+      return '<div class="ag' + (e.paid || e.done ? ' done' : '') + (e.key && e.key === S.calHi ? ' hi' : '') + '"><span class="k-ic ' + KI[e.kind][0] + '" aria-hidden="true">' + KI[e.kind][1] + '</span><span class="what"><b>' + esc(e.title) + '</b><span class="s12 muted">' + sub + '</span>' + (ps ? '<span><span class="st ' + ps[0] + '">' + ps[1] + '</span></span>' : '') + '</span>' + g + tick + '</div>';
+    }).join('') || '<p class="muted s13" style="padding:8px 0">' + (F === 'all' ? '이날은 일정이 없어요.' : '이날은 고른 종류의 일정이 없어요.') + '</p>';
     var addEv = '<form data-form="evadd" class="bill-form" style="margin-top:12px"><b class="full">' + ic('plus', 'sm') + ' 내 일정 추가</b><label class="field"><span>날짜</span><input class="inp" type="date" name="date" value="' + iso(selD) + '" required></label><label class="field"><span>시간 (선택)</span><input class="inp" type="time" name="time"></label>' +
       '<label class="field full"><span>내용</span><input class="inp" name="title" maxlength="30" placeholder="예: 이삿짐 도착, 가스 개통 기사 방문" required></label><button class="btn sm full" type="submit">추가</button></form>';
     var sup = findBill('sup-rent'), rentP = R.programs.filter(function (x) { return x.p.id === 'rent'; })[0] || { eligible: false, unknown: [], p: {} };
@@ -1463,9 +1528,9 @@ document.addEventListener('DOMContentLoaded', function () {
         : tab === 'money' ? '<div role="tabpanel"><p class="s13 muted" style="margin-bottom:6px">계약 기간(' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + ') 동안 반복해서 보여줘요.</p>' + (rentP.eligible && sup && !sup.on ? '<div class="banner" style="margin:8px 0">' + ic('gift') + '<span>청년월세 지원 <b>' + judge(rentP)[1] + '</b> · 선정되면 ‘청년월세 지원 입금’을 켜 두세요.</span></div>' : '') + bills + addF + '</div>'
         : '<div role="tabpanel">' + phonePanel() + '</div>') + '</section>';
     return '<div class="page-head"><div><p class="eyebrow">생활 관리 · ' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + '</p><h1>자취 캘린더</h1></div><div class="month-nav"><button type="button" class="icon-btn" data-act="calnav" data-v="-1" aria-label="이전 달">' + ic('back') + '</button><h2 aria-live="polite">' + y + '. ' + (m + 1) + '</h2><button type="button" class="icon-btn" data-act="calnav" data-v="1" aria-label="다음 달">' + ic('chev') + '</button><button type="button" class="btn ghost sm" data-act="calnav" data-v="0">오늘</button></div></div>' +
-      '<div class="stats"><div class="stat"><div class="k">' + (m + 1) + '월 나갈 돈</div><div class="v">' + won(outSum) + '원</div><div class="h">낸 돈 ' + won(paid) + ' · 남은 돈 ' + won(outSum - paid) + '</div></div><div class="stat"><div class="k">' + (m + 1) + '월 들어올 돈</div><div class="v' + (inSum ? ' in' : '') + '">' + won(inSum) + '원</div><div class="h">' + (ins.length ? '지원금 입금' : '선정된 지원금을 켜 보세요') + '</div></div><div class="stat"><div class="k">챙길 일정</div><div class="v' + (tasks.length ? ' due' : '') + '">' + tasks.length + '개</div><div class="h">기한·내 일정</div></div></div>' +
-      '<div class="cal-wrap"><section class="card"><div class="wd" aria-hidden="true">' + WD.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div><div class="days">' + cells + '</div>' +
-      '<div class="legend"><span><i class="dot"></i>기한</span><span><i class="dot my"></i>내 일정</span><span><i class="dot mark"></i>계약일·입주일</span><span><b style="color:var(--ink)">−</b>나가는 돈</span><span><b style="color:var(--brand-text)">+</b>들어오는 돈</span></div></section><div>' + panel + '</div></div>';
+      '<div class="stats"><div class="stat"><div class="k">' + (m + 1) + '월 주거비</div><div class="v">' + won(outSum) + '원</div><div class="h">납부 완료 ' + won(paid) + ' · 납부 대기 ' + won(outSum - paid) + '</div></div><div class="stat"><div class="k">' + (m + 1) + '월 들어올 돈</div><div class="v' + (inSum ? ' in' : '') + '">' + won(inSum) + '원</div><div class="h">' + (ins.length ? '지원금 입금' : '선정된 지원금을 켜 보세요') + '</div></div><div class="stat"><div class="k">챙길 일정</div><div class="v' + (tasks.length ? ' due' : '') + '">' + tasks.length + '개</div><div class="h">기한·내 일정</div></div></div>' +
+      '<div class="cal-wrap"><section class="card"><div class="cal-filter" role="group" aria-label="일정 종류 고르기">' + CAL_F.map(function (f) { return '<button type="button" class="chip" data-act="calf" data-v="' + f[0] + '" aria-pressed="' + (F === f[0]) + '">' + f[1] + '</button>'; }).join('') + '</div><div class="wd" aria-hidden="true">' + WD.map(function (w, i) { return '<span' + (i === 0 ? ' class="sun"' : i === 6 ? ' class="sat"' : '') + '>' + w + '</span>'; }).join('') + '</div><div class="days">' + cells + '</div>' +
+      '<div class="legend">' + [['var(--ink)', '계약'], ['var(--move)', '입주'], ['var(--no)', '퇴거'], ['var(--due)', '납부 예정'], ['var(--ok)', '납부 완료'], ['var(--late)', '완료 미확인'], ['var(--brand-text)', '내 일정']].map(function (x) { return '<span><i class="lg" style="background:' + x[0] + '"></i>' + x[1] + '</span>'; }).join('') + '</div></section><div>' + panel + '</div></div>';
   }
 
   // 내 계약: 폰으로 이어서 보기 · 앱처럼 설치
@@ -1482,19 +1547,46 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 생활 관리 ----------
-  var SPEND_GROUP = { rent: '월세', fee: '관리비', elec: '공과금·통신', gas: '공과금·통신', water: '공과금·통신', net: '공과금·통신' };
+  // 주거비 관리: 자취 캘린더와 같은 납부 데이터(S.bills · S.paid)를 쓴다
   function viewSpend() {
-    var b0 = calBase(), y = b0.getFullYear(), m = b0.getMonth(), R = evaluate();
-    var ev = billsInMonth(y, m), outs = ev.filter(function (e) { return e.kind === 'out'; }), ins = ev.filter(function (e) { return e.kind === 'in'; });
-    var sum = function (a) { return a.reduce(function (s, e) { return s + e.amount; }, 0); }, total = sum(outs), paid = sum(outs.filter(function (e) { return e.paid; }));
-    var groups = {}; outs.forEach(function (e) { var gk = SPEND_GROUP[e.key.split('@')[0]] || '기타'; groups[gk] = (groups[gk] || 0) + e.amount; });
-    var bars = ['월세', '관리비', '공과금·통신', '기타'].filter(function (k) { return groups[k]; }).map(function (k) { return '<div class="bar-row"><span class="sub">' + k + '</span><span class="bar-track"><span style="width:' + Math.round(groups[k] / Math.max(total, 1) * 100) + '%"></span></span><b>' + won(groups[k]) + '원</b></div>'; }).join('') || '<p class="muted s13">이 달에는 나갈 돈이 없어요.</p>';
-    var months = ''; for (var k = 0; k < 6; k++) { var d = new Date(y, m + k, 1), e2 = billsInMonth(d.getFullYear(), d.getMonth()); months += '<div class="kv"><span>' + d.getFullYear() + '.' + (d.getMonth() + 1) + '</span><span><b>' + won(sum(e2.filter(function (e) { return e.kind === 'out'; }))) + '원</b>' + (sum(e2.filter(function (e) { return e.kind === 'in'; })) ? ' <span class="s12" style="color:var(--brand-text)">+' + won(sum(e2.filter(function (e) { return e.kind === 'in'; }))) + '</span>' : '') + '</span></div>'; }
+    var b0 = calBase(), y = b0.getFullYear(), m = b0.getMonth();
+    var sum = function (a) { return a.reduce(function (s, e) { return s + e.amount; }, 0); };
+    var ev = billsInMonth(y, m).sort(function (p, q) { return p.date - q.date; }), outs = ev.filter(function (e) { return e.kind === 'out'; }), ins = ev.filter(function (e) { return e.kind === 'in'; });
+    var total = sum(outs), fixed = sum(outs.filter(function (e) { return !e.est; })), estS = sum(outs.filter(function (e) { return e.est; })), unk = outs.filter(function (e) { return e.unk; }).length;
+    var done = sum(outs.filter(function (e) { return e.paid; })), wait = total - done, pct = total ? Math.round(done / total * 100) : 0;
+    var nx = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    var nb = billsInMonth(today.getFullYear(), today.getMonth()).concat(billsInMonth(nx.getFullYear(), nx.getMonth()))
+      .filter(function (e) { return e.kind === 'out' && !e.paid && e.date >= today; }).sort(function (p, q) { return p.date - q.date; })[0];
+    var firstOpen = outs.filter(function (e) { return !e.paid; })[0] || outs[0];
     var nav = '<div class="month-nav"><button type="button" class="icon-btn" data-act="calnav" data-v="-1" aria-label="이전 달">' + ic('back') + '</button><h2 aria-live="polite">' + y + '. ' + (m + 1) + '</h2><button type="button" class="icon-btn" data-act="calnav" data-v="1" aria-label="다음 달">' + ic('chev') + '</button></div>';
-    return '<div class="page-head"><div><p class="eyebrow">생활 관리</p><h1>지출 관리</h1></div>' + nav + '</div>' +
-      '<div class="stats"><div class="stat"><div class="k">' + (m + 1) + '월 나갈 돈</div><div class="v">' + won(total) + '원</div><div class="h">고정비 기준</div></div><div class="stat"><div class="k">낸 돈 / 남은 돈</div><div class="v">' + won(paid) + '원</div><div class="h">남은 돈 ' + won(total - paid) + '원</div></div><div class="stat"><div class="k">들어올 돈</div><div class="v' + (sum(ins) ? ' in' : '') + '">' + won(sum(ins)) + '원</div><div class="h">지원금은 따로 표시해요</div></div></div>' +
-      '<div class="grid"><section class="card c7"><div class="card-h"><h2>어디에 나가나요</h2><a class="more" href="#calendar">납부 체크' + ic('chev', 'sm') + '</a></div>' + bars + '<div class="banner" style="margin-top:14px">' + ic('info') + '<span>직장인이고 무주택 세대주라면 낸 월세 일부를 <b>연말정산 때 돌려받을 수 있어요</b>(월세 세액공제). 월세 이체 내역을 서류함에 모아 두세요.</span></div></section>' +
-      '<section class="card c5"><div class="card-h"><h2>앞으로 6개월</h2><span class="s12 muted">계약 기간 안에서</span></div>' + months + '<p class="s12 muted" style="margin-top:8px">공과금은 예상 금액이에요. 금액과 날짜는 <a href="#calendar">공과금 & 납부</a>에서 바꿔요.</p></section></div>';
+    var stats = '<div class="stats">' +
+      '<div class="stat"><div class="k">' + (m + 1) + '월 주거비</div><div class="v">' + won(total) + '원</div><div class="h">확정 ' + won(fixed) + ' · 예상 ' + won(estS) + (unk ? ' · <b style="color:var(--due-text)">금액 미확정 ' + unk + '개</b>' : '') + '</div></div>' +
+      '<div class="stat"><div class="k">납부 현황</div><div class="v" style="color:var(--ok)">' + won(done) + '원 <span class="s13 muted" style="font-weight:600">완료</span></div><div class="progress-line" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="납부 진행률"><span style="width:' + pct + '%;background:var(--ok)"></span></div><div class="h">납부 대기 <b style="color:var(--due-text)">' + won(wait) + '원</b> · ' + pct + '%</div></div>' +
+      (nb ? '<button type="button" class="stat click" data-act="payview" data-v="' + iso(nb.date) + '" data-k="' + nb.key + '"><div class="k">다음 납부 · <b style="color:var(--due-text)">' + dday(nb.date) + '</b></div><div class="v">' + esc(nb.title) + '</div><div class="h">' + md(nb.date) + ' · ' + payAmt(nb) + (nb.est && !nb.unk ? ' (예상)' : '') + '</div></button>'
+        : '<div class="stat"><div class="k">다음 납부</div><div class="v">없음</div><div class="h">이번 달·다음 달 납부를 모두 마쳤어요</div></div>') + '</div>';
+    var rows = outs.map(function (e) {
+      var ps = payState(e), bl = findBill(e.bid), ed = S.calEdit === e.bid;
+      var sub = '매월 ' + dayLabel(bl ? billDay(bl) : e.date.getDate()) + ' · 이번 납부일 ' + md(e.date) + (e.est && !e.unk ? ' · 예상 금액' : '') + (e.with ? ' · ' + esc(e.with) + ' 합산 청구' : '') + (e.chk ? ' · <span style="color:var(--due-text)">관리비 포함 여부 확인 필요</span>' : '');
+      return '<div class="pay-row"><span class="what"><b>' + esc(e.title) + '</b><span class="s12 muted">' + sub + '</span></span><span class="amt"' + (e.unk ? ' style="color:var(--due-text)"' : '') + '>' + payAmt(e) + '</span><span class="st ' + ps[0] + '">' + ps[1] + '</span>' +
+        '<label class="tick"><input class="chk" type="checkbox" data-act="paid" data-v="' + e.key + '"' + (e.paid ? ' checked' : '') + '>냄</label>' +
+        (bl ? '<button type="button" class="btn ghost sm" data-act="billedit" data-v="' + bl.id + '" aria-expanded="' + ed + '">' + (ed ? '닫기' : '수정') + '</button>' : '') + '</div>' + (ed && bl ? billForm(bl) : '');
+    }).join('') || '<p class="muted s13">이 달에는 낼 주거비가 없어요.</p>';
+    var inclOf = function (k) { return S.bills.filter(function (b) { return b.on && billIncl(b) === k; }).map(function (b) { return b.name; }); };
+    var inc = inclOf('incl'), chk = inclOf('check');
+    var note = (inc.length ? '<p class="s12 muted" style="margin-top:10px">기본 관리비에 포함: <b>' + esc(inc.join(', ')) + '</b> · 따로 더하지 않아요.</p>' : '') +
+      (chk.length ? '<p class="s12" style="margin-top:6px;color:var(--due-text)">관리비 포함 여부 확인 필요: ' + esc(chk.join(', ')) + ' · 계약서나 집주인에게 확인한 뒤 ‘수정’에서 바꿔 주세요.</p>' : '') +
+      (ins.length ? '<p class="s12" style="margin-top:6px;color:var(--brand-text)">이달 들어올 지원금 +' + won(sum(ins)) + '원 (주거비 합계에는 넣지 않아요)</p>' : '');
+    var setup = S.bills.filter(function (b) { return !b.link && b.kind === 'out'; }).map(function (b) {
+      return '<div class="pay-row"><input class="sw" type="checkbox" role="switch" aria-label="' + esc(b.name) + ' 켜기" data-act="billon" data-v="' + b.id + '"' + (b.on ? ' checked' : '') + '><span class="what"><b>' + esc(b.name) + '</b>' + (b.note && !b.on ? '<span class="s12 muted">' + esc(b.note) + '</span>' : '') + '</span>' +
+        '<select class="inp" style="width:auto;min-width:150px" aria-label="' + esc(b.name) + ' 관리비와의 관계" data-bill="' + b.id + '" data-k="incl"' + (b.on ? '' : ' disabled') + '>' + INCL.map(function (o) { return '<option value="' + o[0] + '"' + (billIncl(b) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
+    }).join('');
+    var months = ''; for (var k = 0; k < 6; k++) { var d = new Date(y, m + k, 1), e2 = billsInMonth(d.getFullYear(), d.getMonth()).filter(function (e) { return e.kind === 'out'; }); months += '<div class="kv"><span>' + d.getFullYear() + '.' + (d.getMonth() + 1) + '</span><span><b>' + won(sum(e2)) + '원</b>' + (e2.some(function (e) { return e.est; }) ? ' <span class="s12 muted">예상 포함</span>' : '') + '</span></div>'; }
+    return '<div class="page-head"><div><p class="eyebrow">생활 관리</p><h1>주거비 관리</h1></div>' + nav + '</div>' + stats +
+      '<div class="grid"><section class="card c7"><div class="card-h"><h2>주거비 상세 내역</h2>' + (firstOpen ? '<button type="button" class="btn ghost sm" data-act="payview" data-v="' + iso(firstOpen.date) + '" data-k="' + firstOpen.key + '">' + ic('cal', 'sm') + ' 납부 일정 보기</button>' : '') + '</div><div class="pay-list">' + rows + '</div>' + note +
+      '<div class="banner" style="margin-top:14px">' + ic('info') + '<span>직장인이고 무주택 세대주라면 낸 월세 일부를 <b>연말정산 때 돌려받을 수 있어요</b>(월세 세액공제). 월세 이체 내역을 서류함에 모아 두세요.</span></div></section>' +
+      '<section class="card c5"><div class="card-h"><h2>관리비 포함 항목 설정</h2></div><p class="s13 muted" style="margin-bottom:4px">원룸·오피스텔은 건물마다 수도·전기·가스·인터넷이 관리비에 들어 있기도 해요. 계약서나 집주인에게 확인하고 골라 주세요. 포함된 항목은 두 번 더하지 않아요.</p>' + setup +
+      '<p class="s12 muted" style="margin-top:8px">휴대폰 요금 같은 다른 항목은 <a href="#calendar">자취 캘린더</a>의 ‘매달 돈’에서 추가해요.</p></section>' +
+      '<details class="card fold c12"><summary><h2 style="font-size:16px">앞으로 6개월 주거비</h2><span class="s12 muted">펼치기 · 계약 기간 안에서</span></summary>' + months + '<p class="s12 muted" style="margin-top:8px">공과금은 예상 금액이에요. 고지서가 오면 ‘수정’에서 실제 금액으로 바꿔 주세요.</p></details></div>';
   }
   var ROOMS = [['door', '현관·도어락'], ['wall', '벽지'], ['floor', '바닥'], ['window', '창문·방충망'], ['bath', '화장실·배수'], ['kitchen', '싱크대·가스레인지'], ['aircon', '에어컨'], ['fridge', '냉장고'], ['washer', '세탁기'], ['boiler', '보일러·온수']];
   var ST = [['ok', '깨끗해요'], ['bad', '흠 있어요'], ['broken', '고장']];
@@ -1696,7 +1788,7 @@ document.addEventListener('DOMContentLoaded', function () {
     { k: 'home', label: '', def: 'home', tab: ['홈', 'home'], items: [['home', '홈', 'home']] },
     { k: 'house', label: '내 주거 관리', def: 'timeline', tab: ['내 주거', 'doc'], items: [['contract', '내 계약', 'doc'], ['timeline', '타임라인', 'route'], ['docs', '서류함', 'folder'], ['moveout', '퇴거 준비', 'box']] },
     { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'compass'], ['infra', '생활 인프라', 'grid']] },
-    { k: 'life', label: '생활 관리', def: 'calendar', tab: ['생활', 'chart'], items: [['spend', '지출 관리', 'chart'], ['calendar', '자취 캘린더', 'cal'], ['condition', '집 상태 기록', 'camera']] },
+    { k: 'life', label: '생활 관리', def: 'calendar', tab: ['생활', 'chart'], items: [['spend', '주거비 관리', 'chart'], ['calendar', '자취 캘린더', 'cal'], ['condition', '집 상태 기록', 'camera']] },
     { k: 'help', label: '지원 & 상담', def: 'support', tab: ['지원', 'gift'], items: [['support', '지원사업', 'gift'], ['coach', 'AI 자취 코치', 'chat']] }
   ];
   var ROUTES = { start: viewStart, home: viewHome, contract: viewContract, timeline: viewTimeline, docs: viewDocs, moveout: viewMoveout, map: viewMap, recommend: viewRecommend, infra: viewInfra, spend: viewSpend, calendar: viewCalendar, condition: viewCondition, support: viewSupport, coach: viewCoach };
@@ -1760,7 +1852,9 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'ask') { askCoach(v); }
     else if (a === 'chatclear') { S.chat = []; save(); render(true); }
     else if (a === 'calnav') { if (v === '0') { S.calM = ''; S.calSel = iso(today); } else { var c = calBase(); c.setMonth(c.getMonth() + (+v)); S.calM = c.getFullYear() + '-' + (c.getMonth() + 1); S.calSel = ''; } save(); render(true); }
-    else if (a === 'calday') { S.calSel = v; S.calTab = 'day'; save(); render(true); }
+    else if (a === 'calday') { S.calSel = v; S.calTab = 'day'; S.calHi = ''; save(); render(true); }
+    else if (a === 'calf') { S.calF = v; S.calHi = ''; save(); render(true); }
+    else if (a === 'payview') { var pv = pd(v); S.calM = pv.getFullYear() + '-' + (pv.getMonth() + 1); S.calSel = v; S.calF = 'pay'; S.calTab = 'day'; S.calHi = b.dataset.k || ''; save(); if (location.hash === '#calendar') render(true); else location.hash = 'calendar'; }
     else if (a === 'caltab') { S.calTab = v; save(); render(true); }
     else if (a === 'billedit') { S.calEdit = S.calEdit === v ? '' : v; save(); render(true); }
     else if (a === 'billdel') { S.bills = S.bills.filter(function (x) { return x.id !== v; }); S.calEdit = ''; save(); render(true); toast('지웠어요.'); }
