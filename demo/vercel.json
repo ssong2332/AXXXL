@@ -45,6 +45,9 @@
     },
     "api/route.js": {
       "maxDuration": 15
+    },
+    "api/bus-stops.js": {
+      "maxDuration": 20
     }
   }
 }

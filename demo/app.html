@@ -644,7 +644,10 @@ document.addEventListener('DOMContentLoaded', function () {
     tree: '<path d="M12 21v-6"/><path d="M12 3.5 6.5 11h3L6 15.5h12L14.5 11h3Z"/>',
     cart: '<path d="M3.5 4.5h2l2 10.5h10l2-7.5H7"/><circle cx="9" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
     cross: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/>',
-    bus: '<rect x="5" y="3.5" width="14" height="14" rx="3"/><path d="M5 11h14"/><path d="M8 20.5v-3M16 20.5v-3"/><path d="M8.5 14.5h.01M15.5 14.5h.01"/>',
+    // 교통: 버스(앞모습·사이드미러) · 지하철(앞모습·비스듬한 선로) · 기차(옆모습 고속열차·선로)
+    bus: '<rect x="5" y="3.5" width="14" height="14" rx="2.5"/><path d="M5 11h14"/><path d="M9 6.5h6"/><path d="M3.5 7v3M20.5 7v3"/><path d="M8 20.5v-3M16 20.5v-3"/><path d="M8.5 14.3h.01M15.5 14.3h.01"/>',
+    subway: '<path d="M8 3.5h8a3.5 3.5 0 0 1 3.5 3.5v7a3.5 3.5 0 0 1-3.5 3.5H8A3.5 3.5 0 0 1 4.5 14V7A3.5 3.5 0 0 1 8 3.5Z"/><path d="M4.5 10h15"/><path d="M12 3.5V10"/><path d="M8.5 13.8h.01M15.5 13.8h.01"/><path d="m8.5 17.5-2.5 3M15.5 17.5l2.5 3"/>',
+    train: '<path d="M3 7.5h10.2a5 5 0 0 1 4.1 2.1l3 4.2a1.7 1.7 0 0 1-1.4 2.7H3"/><path d="M5.5 11h2.5M10.5 11h2.5"/><path d="M15.2 10.2l1.6 2.3"/><path d="M3 20h18"/>',
     building: '<path d="M4.5 20.5V6l7.5-2.5V20.5"/><path d="M12 9h7.5v11.5"/><path d="M3 20.5h18"/><path d="M8 9h.01M8 12.5h.01M8 16h.01M15.5 12.5h.01M15.5 16h.01"/>',
     shield: '<path d="M12 3.5 19 6v5.5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6Z"/><path d="m9 12 2 2 4-4"/>',
     bookmark: '<path d="M6.5 4h11v16.5L12 16.5l-5.5 4Z"/>',
@@ -966,6 +969,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function home() { return S.home && S.home.lat ? S.home : DEMO_HOME; }
   var HOUSE = DEMO_HOME;
   var CATS = { food: ['맛집', 'food'], cafe: ['카페', 'cup'], study: ['공부·작업', 'book'], gym: ['운동', 'dumbbell'], park: ['공원·산책', 'tree'], life: ['생활 편의', 'cart'], medical: ['병원·약국', 'cross'], transit: ['교통', 'bus'], public: ['공공시설', 'building'], safety: ['안전', 'shield'] };
+  // 장소 아이콘: 교통은 종류별로(기차역·지하철역·버스정류장), 나머지는 분류 아이콘. OSM의 '역'은 대부분 지하철역이라 지하철로 본다
+  function placeIc(p) {
+    if (p.cat !== 'transit') return CATS[p.cat][1];
+    var s = p.sub || '';
+    return /기차|철도/.test(s) ? 'train' : /지하철|^역$/.test(s) ? 'subway' : /버스/.test(s) ? 'bus' : CATS.transit[1];
+  }
   function place(id, cat, name, dx, dy, tags, desc, pub, sub) { var p = { id: id, cat: cat, name: name, sub: sub || name.replace(/ \(.*\)$/, ''), lat: HOUSE.lat + dy / 111000, lng: HOUSE.lng + dx / 88200, tags: tags, desc: desc, pub: !!pub, ex: true }; return p; }
   var EXAMPLE = [
     place('conv', 'life', '편의점', -44, 28, ['24시간', '택배'], '밤늦게도 열고 택배를 맡기고 찾을 수 있어요.'),
@@ -1004,22 +1013,25 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function findPlace(id) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
   // 종류 맞추기: 카카오 장소는 분류가 정확해서 분류(sub)로만, 다른 데이터는 이름도 함께 본다 (예: '○○시장점' 빨래방이 시장으로 잡히지 않게)
-  function kindOk(p, re) { return !re || re.test(p.sub) || (p.src !== 'kakao' && re.test(p.name)); }
+  // (카카오·TAGO·서울시 데이터는 분류가 정확해서 분류로만 — 예: 이름이 '대전역'인 버스정류장이 지하철·기차역으로 잡히지 않게)
+  function kindOk(p, re) { return !re || re.test(p.sub) || (!/^(kakao|tago|seoul)$/.test(p.src) && re.test(p.name)); }
   function nearest(cat, re) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].cat === cat && kindOk(l[i], re)) return l[i]; return null; }
   // 주변 장소 캐시: v2부터 장소 이름을 한글(지도에 등록된 원래 이름)로 받는다. 영어 이름이 섞였던 옛 캐시는 지운다.
   var PLACES_LS = 'jachwi-places-v2';
   try { localStorage.removeItem('jachwi-places'); } catch (e) {}
   // 카카오 장소 검색: 분류 코드 검색 + 키워드 검색으로 주변 1km를 모은다 (가까운 순, 15개씩)
-  // [분류 코드 또는 검색어, 화면 분류, 쪽 수, 이름표(문자열 | 숫자 = 카카오 분류의 몇 번째 단계, -1 = 마지막), 카카오 분류 이름 거르기]
-  // 카카오 장소 검색에는 버스정류장이 없다.
+  // [분류 코드 또는 검색어, 화면 분류, 쪽 수, 이름표(문자열 | 숫자 = 카카오 분류의 몇 번째 단계, -1 = 마지막), 카카오 분류 이름 거르기, 장소 이름 거르기]
+  // 카카오 장소 검색에는 버스정류장이 없어서 busStops()(TAGO·서울시)로 따로 받는다.
   var KQ = [
     ['FD6', 'food', 2, 1], ['CE7', 'cafe', 2, '카페'], ['CS2', 'life', 1, '편의점'], ['MT1', 'life', 1, '마트'],
     ['HP8', 'medical', 1, -1], ['PM9', 'medical', 1, '약국'], ['SW8', 'transit', 1, '지하철역'], ['PO3', 'public', 1, -1],
-    ['역', 'transit', 1, '기차역', /기차역/], ['스터디카페', 'study', 1, '스터디카페', /스터디|독서실/], ['도서관', 'study', 1, '도서관', /도서관/],
+    ['기차역', 'transit', 1, '기차역', /기차역/, /역$/], ['스터디카페', 'study', 1, '스터디카페', /스터디|독서실/], ['도서관', 'study', 1, '도서관', /도서관/],
     ['헬스장', 'gym', 1, '헬스장', /헬스|피트니스|체육관|수영/], ['공원', 'park', 1, '공원', /공원/], ['빨래방', 'life', 1, '빨래방·세탁소', /빨래|세탁/], ['시장', 'life', 1, '시장', /전통시장|> 시장/]
   ];
   var KAKAO_SRC = { name: '카카오맵 장소 검색', url: 'https://map.kakao.com', license: '카카오 지도 API' };
-  var KPLACES_LS = 'jachwi-places-kakao-v1';
+  // v7: 기차역을 검색어 '역' 대신 '기차역'으로 찾음 — '역'으로는 가까운 15곳이 '○○역점' 가게·출구로 차서 수원역(KTX) 같은 기차역이 빠졌다
+  var KPLACES_LS = 'jachwi-places-kakao-v7';   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리
+  try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
   function kakaoItem(d, q) {
     var seg = String(d.category_name || '').split(' > '), cat = q[1], sub = typeof q[3] === 'number' ? (q[3] < 0 ? seg[seg.length - 1] : seg[q[3]] || seg[seg.length - 1]) : q[3];
     if (cat === 'public' && /경찰/.test(d.category_name)) cat = 'safety';   // 공공기관 중 지구대·치안센터는 '안전'
@@ -1030,7 +1042,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var sv = window.kakao.maps.services, ps = new sv.Places(), loc = new window.kakao.maps.LatLng(c.lat, c.lng), out = [], seen = {}, left = KQ.length, failed = 0;
     KQ.forEach(function (q) {
       var cb = function (res, st, pg) {
-        if (st === sv.Status.OK) res.forEach(function (d) { if (seen[d.id] || (q[4] && !q[4].test(d.category_name || ''))) return; seen[d.id] = 1; out.push(kakaoItem(d, q)); });
+        // q[5]: 이름 거르기 (기차역은 '…역'으로 끝나는 것만 — 카카오가 '대전역 유실물센터' 같은 역 안 시설도 기차역으로 분류해서)
+        if (st === sv.Status.OK) res.forEach(function (d) { if (seen[d.id] || (q[4] && !q[4].test(d.category_name || '')) || (q[5] && !q[5].test(d.place_name || ''))) return; seen[d.id] = 1; out.push(kakaoItem(d, q)); });
         else if (st !== sv.Status.ZERO_RESULT) failed++;
         if (st === sv.Status.OK && pg && pg.hasNextPage && pg.current < q[2]) return pg.nextPage();
         if (--left === 0) done(out, failed);
@@ -1048,15 +1061,30 @@ document.addEventListener('DOMContentLoaded', function () {
     kakaoBoot(function () { if (DATA.key === key) (kakaoSearchOk() ? loadKakaoPlaces : loadOsmPlaces)(key, c, force, sync); });
     sync = false;
   }
+  // 버스정류장: 카카오 장소 검색에 없어서 서버(/api/bus-stops → TAGO, 서울은 서울시 API)에서 반경 약 500m를 받아 '교통'에 넣는다
+  var BUS_SRC = { tago: { name: '공공데이터포털 TAGO 버스정류소정보', url: 'https://www.data.go.kr/data/15098534/openapi.do', license: '공공데이터' }, seoul: { name: '공공데이터포털 서울시 정류소정보조회', url: 'https://www.data.go.kr/data/15000303/openapi.do', license: '공공데이터' } };
+  function busStops(c) {
+    // v=5: 미정차·번호 0 처리 이후 결과 (배포 서버 캐시 구분용)
+    return fetch(API + '/api/bus-stops?lat=' + c.lat + '&lng=' + c.lng + '&v=5').then(function (r) { return r.json(); }).then(function (j) {
+      return { ok: !!(j && j.ok), sources: (j && j.sources) || [], items: ((j && j.items) || []).map(function (x) {
+        return { id: 'bus-' + x.id, src: x.src, cat: 'transit', sub: '버스정류장', name: String(x.name).slice(0, 40), lat: +x.lat, lng: +x.lng, addr: x.no ? '정류장 번호 ' + x.no : '', hours: '' };
+      }) };
+    }).catch(function () { return { ok: false, sources: [], items: [] }; });
+  }
   function loadKakaoPlaces(key, c, force, sync) {
     if (!force) { try { var cc = JSON.parse(localStorage.getItem(KPLACES_LS) || 'null'); if (cc && cc.key === key && Date.now() - cc.at < (cc.partial ? 6e5 : 864e5)) { applyData(cc.data); if (!sync) render(true); return; } } catch (e) {} }
+    var busP = busStops(c);   // 카카오 검색과 동시에 묻는다
     kakaoPlaces(c, function (items, failed) {
-      if (DATA.key !== key) return;
-      if (!items.length) { DATA.status = 'error'; DATA.error = '주변 장소를 불러오지 못했어요.'; render(true); return; }
-      var PL = window.JachwiPlaces, data = { items: PL ? PL.finish(items, c, 1000) : items, sources: [KAKAO_SRC], fetchedAt: new Date().toISOString(), notes: [] };
-      applyData(data);
-      try { localStorage.setItem(KPLACES_LS, JSON.stringify({ key: key, at: Date.now(), partial: failed > 0, data: data })); } catch (e) {}
-      render(true);
+      busP.then(function (bus) {
+        if (DATA.key !== key) return;
+        var all = items.concat(bus.items);
+        if (!all.length) { DATA.status = 'error'; DATA.error = '주변 장소를 불러오지 못했어요.'; render(true); return; }
+        var srcs = [KAKAO_SRC].concat(bus.sources.map(function (s) { return BUS_SRC[s]; }).filter(Boolean));
+        var PL = window.JachwiPlaces, data = { items: PL ? PL.finish(all, c, 1000) : all, sources: srcs, fetchedAt: new Date().toISOString(), notes: [] };
+        applyData(data);
+        try { localStorage.setItem(KPLACES_LS, JSON.stringify({ key: key, at: Date.now(), partial: failed > 0 || !bus.ok, data: data })); } catch (e) {}
+        render(true);
+      });
     });
   }
   function loadOsmPlaces(key, c, force, sync) {
@@ -1093,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function applyData(j) { DATA.status = 'ok'; DATA.items = j.items || []; DATA.sources = j.sources || []; DATA.fetchedAt = j.fetchedAt || ''; DATA.notes = j.notes || []; PC.k = ''; }
   function dataBadge() {
-    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="s12 muted" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : /카카오/.test(s.name) ? '카카오맵' : 'OpenStreetMap'; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>'; }
+    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="s12 muted" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : /카카오/.test(s.name) ? '카카오맵' : 'OpenStreetMap'; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>'; }
     if (DATA.status === 'loading') return '<span class="badge">주변 데이터 불러오는 중…</span>';
     if (DATA.status === 'error') return '<span class="badge due">실제 데이터를 못 불러왔어요' + (S.home ? '' : ' · 예시로 보여줘요') + '</span> <button type="button" class="btn ghost sm" data-act="reload">다시 시도</button>';
     return '<span class="badge due">시연용 예시 데이터</span>';
@@ -1174,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var h = home();
     var res = GEO.status === 'loading' ? '<p class="s13 muted">찾는 중…</p>' : GEO.status === 'ok' ? '<div>' + GEO.items.map(function (g, i) { return '<button type="button" class="place" data-act="sethome" data-i="' + i + '"><span class="ptile" style="width:36px;height:36px;border-radius:10px">' + ic('pin', 'sm') + '</span><span class="what"><b style="font-weight:600">' + esc(g.label) + '</b></span>' + ic('chev', 'sm') + '</button>'; }).join('') + '</div>'
       : GEO.status === 'empty' ? '<p class="s13 muted">‘' + esc(GEO.q) + '’로 찾은 곳이 없어요. 동 이름이나 큰 건물 이름으로 찾거나 지도에서 직접 골라 주세요.</p>' : GEO.status === 'error' ? '<p class="s13" style="color:var(--due-text)">' + esc(GEO.err || '주소 검색에 실패했어요.') + '</p>' : '';
-    return '<section class="card stack"><div class="card-h" style="margin:0"><h2>우리 집 위치</h2><a class="btn ghost sm" data-rv href="' + kakao('rv', h) + '" target="_blank" rel="noopener" aria-label="우리 집 위치 로드뷰 보기 (카카오맵, 새 창)">로드뷰' + ic('out', 'sm') + '</a></div>' +
+    return '<section class="card stack"><div class="card-h" style="margin:0"><h2>우리 집 위치</h2><a class="btn ghost sm"' + (kakaoId(h) ? '' : ' data-rv-place="home"') + ' href="' + kakao('rv', h) + '" target="_blank" rel="noopener" aria-label="우리 집 위치 로드뷰 보기 (카카오맵, 새 창)">로드뷰' + ic('out', 'sm') + '</a></div>' +
       '<div class="row" style="flex-wrap:nowrap"><span class="ptile" style="width:40px;height:40px;border-radius:12px;background:var(--ink);color:var(--surface)">' + ic('home', 'sm') + '</span><div style="min-width:0"><b>' + esc(h.label) + '</b><p class="s12 muted">' + (h.src === 'demo' ? '아직 내 집 위치를 정하지 않았어요' : h.src === 'gps' ? '현재 위치로 정했어요' : '직접 정한 위치예요') + '</p></div></div>' +
       '<form class="ask" data-form="geo"><input class="inp" aria-label="주소 또는 건물 이름" placeholder="예: 관악구 신림동, 서원동 주민센터" maxlength="80" value="' + esc(GEO.q || '') + '"><button class="btn" type="submit">찾기</button></form>' + res +
       '<div class="row"><button type="button" class="btn ghost sm" data-act="gps">' + ic('pin', 'sm') + '현재 위치로</button><button type="button" class="btn ghost sm" data-act="pickhome" aria-pressed="' + !!S.pickHome + '">' + (S.pickHome ? '지도를 눌러 주세요…' : '지도에서 직접 고르기') + '</button></div>' +
@@ -1183,36 +1211,118 @@ document.addEventListener('DOMContentLoaded', function () {
   function short(n) { return n.replace(/ \(.*\)$/, ''); }
   function josa(w, a, b) { var c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 ? a : b; }
   // 카카오맵 링크. 카카오 장소 번호가 있으면 번호로 연다(로드뷰는 카카오가 그 장소에 맞는 사진을 골라 줌).
-  // 좌표로 여는 로드뷰는 그 좌표 가까이에 로드뷰 사진이 없으면(건물 한가운데 등) 열리지 않아서, 집은 p.rv(근처 길 위 지점)를 먼저 쓴다.
+  // 카카오 장소 번호가 없는 곳(정류장·주소로 정한 집)의 로드뷰는 placeRoadview 가 고른 최근 사진을 쓴다. 고르기 전·실패하면 좌표로 연다.
+  function kakaoId(p) { var kid = p.kid || (/^kakao-(\d+)$/.exec(p.id || '') || [])[1]; return kid && /^\d+$/.test(kid) ? kid : ''; }
+  function rvKey(p) { return p.id || 'home@' + p.lat + ',' + p.lng; }
   function kakao(kind, p) {
-    var kid = p.kid || (/^kakao-(\d+)$/.exec(p.id || '') || [])[1];
-    if (kid && /^\d+$/.test(kid)) return 'https://map.kakao.com/link/' + (kind === 'rv' ? 'roadview' : kind === 'to' ? 'to' : 'map') + '/' + kid;
+    var kid = kakaoId(p);
+    if (kid) return 'https://map.kakao.com/link/' + (kind === 'rv' ? 'roadview' : kind === 'to' ? 'to' : 'map') + '/' + kid;
+    if (kind === 'rv') { var rs = RVS[rvKey(p)]; if (rs && rs.url) return rs.url; if (p.rvUrl) return p.rvUrl; }
     var ll = (+p.lat).toFixed(5) + ',' + (+p.lng).toFixed(5);
-    if (kind === 'rv' && p.rv) ll = p.rv[0] + ',' + p.rv[1];
+    if (kind === 'rv' && p.rv) ll = p.rv[0] + ',' + p.rv[1];   // 예전 방식으로 찾아 둔 집 근처 길 위 지점
     return kind === 'rv' ? 'https://map.kakao.com/link/roadview/' + ll : kind === 'to' ? 'https://map.kakao.com/link/to/' + encodeURIComponent(p.name || p.label || '우리 집') + ',' + ll : 'https://map.kakao.com/link/map/' + encodeURIComponent(p.name || p.label || '우리 집') + ',' + ll;
   }
-  // 집 로드뷰 지점 찾기: 집 좌표에서 25m씩 넓혀 가며(8방향) 20m 안에 로드뷰 사진이 있는 지점을 찾는다. 300m 안에 없으면 좌표 그대로.
-  var RVF = { key: '' };
-  function fixRoadview() {
-    var h = home(), key = h.lat + ',' + h.lng;
-    if (KM.st !== 'ok' || h.kid || h.rv || RVF.key === key) return;
-    RVF.key = key;
-    var k = window.kakao.maps, rc = new k.RoadviewClient(), cosLat = Math.cos(h.lat * Math.PI / 180);
-    var at = function (dN, dE) { return new k.LatLng(h.lat + dN / 110540, h.lng + dE / (111320 * cosLat)); };
-    var has = function (p, r) { return new Promise(function (ok) { rc.getNearestPanoId(p, r, function (id) { ok(id ? p : null); }); }); };
-    var found = function (p) {
-      if (RVF.key !== key) return;
-      h.rv = [+p.getLat().toFixed(6), +p.getLng().toFixed(6)];
-      if (S.home === h) save();
-      app.querySelectorAll('a[data-rv]').forEach(function (a) { a.href = kakao('rv', h); });
+  // 정류장처럼 카카오 장소 번호가 없는 곳의 로드뷰.
+  // 좌표로 열면 카카오가 가장 가까운 사진을 여는데, 큰길 위 옛 사진이 걸릴 수 있다.
+  // 예) 가천대역.가천대학교(5143): 13m 옆 큰길의 2017년 2월 사진이 열리고 정류장은 울타리 너머로 보임.
+  //     정류장이 있는 옆길의 2026년 8월 사진은 18m 떨어져 있다.
+  // 그래서 30m 안의 로드뷰 사진 중 가장 가까운 사진과 거리가 10m 안쪽인 것들에서 가장 최근 사진을 골라, 그 사진에서 장소 쪽을 바라보게 연다.
+  // 사진 번호가 클수록 최근이다(1071489417 = 2017.02, 1179295247 = 2024.03, 1213800511 = 2026.08 확인).
+  // 주소 형식은 카카오맵 좌표 링크(/link/roadview/위도,경도)가 넘겨 주는 주소와 같다(panoid·pan·urlX·urlY, urlX·urlY = 사진 위치 WCONGNAMUL).
+  // 집(far)은 길에서 멀 수 있어서(단지 안·건물 가운데), 30m 안에 사진이 없으면 25m씩 넓혀 가며(8방향, 300m까지) 사진이 있는 길을 먼저 찾고 그 둘레 30m에서 고른다.
+  var RVS = {};   // rvKey → { url, wait: [콜백] }
+  function placeRoadview(p, cb, far) {
+    var key = rvKey(p), c = RVS[key];
+    if (c && c.url) { if (cb) cb(c.url); return; }
+    if (c) { if (cb) c.wait.push(cb); return; }
+    c = RVS[key] = { url: '', wait: cb ? [cb] : [] };
+    var coord = 'https://map.kakao.com/link/roadview/' + (p.rv ? p.rv[0] + ',' + p.rv[1] : (+p.lat).toFixed(5) + ',' + (+p.lng).toFixed(5));
+    var done = function (u) {
+      if (c.url) return;
+      clearTimeout(timer);
+      c.url = u || coord;
+      c.wait.splice(0).forEach(function (f) { f(c.url); });
+      app.querySelectorAll('a[data-rv-place]').forEach(function (a) { var t = rvTarget(a.getAttribute('data-rv-place')); if (t && rvKey(t) === key) a.href = c.url; });
     };
-    has(at(0, 0), 300).then(function (any) {
-      if (!any) return;
-      (function ring(d) {
-        if (d > 300 || RVF.key !== key) return;
-        var pts = d === 0 ? [at(0, 0)] : [0, 1, 2, 3, 4, 5, 6, 7].map(function (a) { return at(d * Math.cos(a * Math.PI / 4), d * Math.sin(a * Math.PI / 4)); });
-        Promise.all(pts.map(function (p) { return has(p, 20); })).then(function (hits) { var p = hits.filter(Boolean)[0]; if (p) found(p); else ring(d + 25); });
-      })(0);
+    var timer = setTimeout(function () { done(''); }, far ? 10000 : 5000);
+    var k = window.kakao.maps, rc = new k.RoadviewClient(), cosLat = Math.cos(p.lat * Math.PI / 180);
+    var off = function (o, dN, dE) { return [o[0] + dN / 110540, o[1] + dE / (111320 * cosLat)]; };
+    var ask = function (q, r) { return new Promise(function (ok) { rc.getNearestPanoId(new k.LatLng(q[0], q[1]), r, ok); }); };
+    // o 에서 0·8·16·24m 고리 위 37곳에서 6m 안의 사진을 묻는다 → 약 30m 안의 사진을 다 모은다 (사진 위치는 물어본 곳의 평균)
+    var scan = function (o) {
+      var pts = [o], hits = {};
+      [[8, 8], [16, 12], [24, 16]].forEach(function (r) {
+        for (var i = 0; i < r[1]; i++) { var a = 2 * Math.PI * i / r[1]; pts.push(off(o, r[0] * Math.cos(a), r[0] * Math.sin(a))); }
+      });
+      return Promise.all(pts.map(function (q) { return ask(q, 6).then(function (id) { if (id) (hits[id] = hits[id] || []).push(q); }); })).then(function () { return hits; });
+    };
+    // 집에서 25m씩 넓혀 가며 20m 안에 사진이 있는 지점 찾기 (300m 안에 하나도 없으면 null)
+    var road = function () {
+      var o = [+p.lat, +p.lng];
+      return ask(o, 300).then(function (any) {
+        if (!any) return null;
+        return (function ring(d) {
+          if (d > 300 || c.url) return null;
+          var pts = [0, 1, 2, 3, 4, 5, 6, 7].map(function (a) { return off(o, d * Math.cos(a * Math.PI / 4), d * Math.sin(a * Math.PI / 4)); });
+          return Promise.all(pts.map(function (q) { return ask(q, 20).then(function (id) { return id ? q : null; }); })).then(function (l) { return l.filter(Boolean)[0] || ring(d + 25); });
+        })(25);
+      });
+    };
+    scan([+p.lat, +p.lng]).then(function (hits) {
+      if (Object.keys(hits).length || !far) return hits;
+      return road().then(function (q) { return q ? scan(q) : {}; });
+    }).then(function (hits) {
+      var all = Object.keys(hits).map(function (id) {
+        var l = hits[id], lat = 0, lng = 0;
+        l.forEach(function (q) { lat += q[0] / l.length; lng += q[1] / l.length; });
+        var dN = (p.lat - lat) * 110540, dE = (p.lng - lng) * 111320 * cosLat;
+        return { id: id, lat: lat, lng: lng, dN: dN, dE: dE, d: Math.sqrt(dN * dN + dE * dE) };
+      });
+      if (!all.length) return done('');
+      // 가장 가까운 사진보다 10m 넘게 먼 사진은 다른 길(울타리·건물 너머)일 수 있어서 뺀다
+      // 예) 가천대(5077): 큰길 2024년 사진 8m · 옆길 2026년 사진 30m → 2024년. 가천대역.가천대학교(5143): 큰길 2017년 13m · 옆길 2026년 18m → 2026년
+      var d0 = Math.min.apply(null, all.map(function (x) { return x.d; }));
+      var near = all.filter(function (x) { return x.d <= d0 + 10; });
+      var top = near.reduce(function (a, b) { return +b.id > +a.id ? b : a; });
+      // 같은 날 찍은 사진은 번호가 이어진다(1213800505~517). 가장 최근 사진과 번호가 2만 안쪽인 것 중 장소에서 가장 가까운 것을 쓴다
+      var best = near.filter(function (x) { return +top.id - +x.id < 20000; }).reduce(function (a, b) { return b.d < a.d ? b : a; });
+      var id = best.id, lat = best.lat, lng = best.lng, dN = best.dN, dE = best.dE;
+      // 카카오 로드뷰 pan: 북쪽 0도에서 시계 방향. 사진이 장소 바로 위(4m 안)면 방향을 넣지 않는다
+      var pan = best.d < 4 ? '' : '&pan=' + ((Math.atan2(dE, dN) * 180 / Math.PI + 360) % 360).toFixed(1);
+      var sv = k.services;
+      if (!sv) return done('https://map.kakao.com/link/roadview/' + lat.toFixed(6) + ',' + lng.toFixed(6));
+      new sv.Geocoder().transCoord(lng, lat, function (r, st) {
+        if (st !== sv.Status.OK || !r || !r[0]) return done('https://map.kakao.com/link/roadview/' + lat.toFixed(6) + ',' + lng.toFixed(6));
+        done('https://map.kakao.com/?panoid=' + id + pan + '&zoom=0&map_type=TYPE_MAP&map_attribute=ROADVIEW&urlX=' + Math.round(r[0].x) + '&urlY=' + Math.round(r[0].y));
+      }, { input_coord: sv.Coords.WGS84, output_coord: sv.Coords.WCONGNAMUL });
+    });
+  }
+  function rvTarget(id) { return id === 'home' ? home() : places().filter(function (x) { return x.id === id; })[0]; }
+  // 집에 고른 사진은 이 기기에 저장해 두고 30일이 지나면 다시 고른다(그사이 새로 찍은 사진이 생길 수 있음)
+  var RV_KEEP = 30 * 864e5;
+  function homeRvFresh(h) { return !!h.rvUrl && Date.now() - (h.rvAt || 0) < RV_KEEP; }
+  // 화면의 로드뷰 버튼(data-rv-place)마다 사진을 미리 골라 둔다. 고르기 전에 누르면 새 창을 먼저 열고 다 고르면 그 창을 옮긴다(팝업 차단 방지)
+  function fixPlaceRoadview() {
+    if (KM.st !== 'ok') return;
+    app.querySelectorAll('a[data-rv-place]').forEach(function (a) {
+      var id = a.getAttribute('data-rv-place'), p = rvTarget(id), isHome = id === 'home';
+      if (!p || kakaoId(p) || (isHome && homeRvFresh(p))) return;
+      var key = rvKey(p);
+      var keep = isHome ? function (u) {
+        var h = home();
+        if (S.home !== h || rvKey(h) !== key || !/panoid=/.test(u) || h.rvUrl === u) return;
+        h.rvUrl = u; h.rvAt = Date.now(); save();
+      } : null;
+      if (!a.dataset.rvBound) {
+        a.dataset.rvBound = '1';
+        a.addEventListener('click', function (e) {
+          if (RVS[key] && RVS[key].url) return;
+          e.preventDefault();
+          var w = window.open('about:blank', '_blank');
+          placeRoadview(p, function (u) { if (w && !w.closed) { try { w.opener = null; } catch (x) {} w.location.href = u; } else window.open(u, '_blank', 'noopener'); }, isHome);
+        });
+      }
+      placeRoadview(p, keep, isHome);
     });
   }
   function icoSvg(name, x, y, s) { return '<svg class="ico" x="' + x + '" y="' + y + '" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + ICON[name] + '</svg>'; }
@@ -1225,10 +1335,10 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function popCard(sel) {
     var saved = !!S.saved[sel.id];
-    return '<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="ptile">' + ic(CATS[sel.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(sel.name) + '</b><p class="s12 muted">' + esc(sel.sub) + ' · ' + (function () { var w = WALK[walkKey(home(), sel)]; return w && w.st === 'ok' ? '집에서 걸어서 ' + walkMin(w.time) + '분 · ' + meters(w.dist) : '걸어서 약 ' + sel.min + '분 · ' + sel.m + 'm'; })() + '</p></div><button type="button" class="icon-btn" style="width:32px;height:32px;background:transparent" data-act="place" data-v="" aria-label="닫기">' + ic('x', 'sm') + '</button></div>' +
+    return '<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="ptile">' + ic(placeIc(sel)) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(sel.name) + '</b><p class="s12 muted">' + esc(sel.sub) + ' · ' + (function () { var w = WALK[walkKey(home(), sel)]; return w && w.st === 'ok' ? '집에서 걸어서 ' + walkMin(w.time) + '분 · ' + meters(w.dist) : '걸어서 약 ' + sel.min + '분 · ' + sel.m + 'm'; })() + '</p></div><button type="button" class="icon-btn" style="width:32px;height:32px;background:transparent" data-act="place" data-v="" aria-label="닫기">' + ic('x', 'sm') + '</button></div>' +
       (sel.desc ? '<p class="s13 sub" style="margin-top:8px">' + esc(sel.desc) + '</p>' : '') + (sel.hours ? '<p class="s12 muted">영업시간(OSM): ' + esc(sel.hours) + '</p>' : '') +
       (sel.url ? '<p class="s12"><a href="' + esc(sel.url) + '" target="_blank" rel="noopener">카카오맵에서 영업시간·리뷰 보기</a></p>' : '') +
-      '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + walkLink(home(), sel) + '" target="_blank" rel="noopener" aria-label="우리 집에서 ' + esc(sel.name) + '까지 걸어가는 길 (카카오맵, 새 창)">길찾기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '" target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>';
+      '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + walkLink(home(), sel) + '" target="_blank" rel="noopener" aria-label="우리 집에서 ' + esc(sel.name) + '까지 걸어가는 길 (카카오맵, 새 창)">길찾기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '"' + (kakaoId(sel) ? '' : ' data-rv-place="' + esc(sel.id) + '"') + ' target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>';
   }
   // 지도 색: auto(앱 테마를 따름) | light | dark — 지도에만 적용, 이 브라우저에 저장
   function mapTheme() { return S.mapTheme === 'light' || S.mapTheme === 'dark' ? S.mapTheme : 'auto'; }
@@ -1390,7 +1500,7 @@ document.addEventListener('DOMContentLoaded', function () {
       all: real ? [H, P].concat(w.pts) : [H, P],
       mid: real ? w.pts[Math.floor(w.pts.length / 2)] : [(h.lat + sel.lat) / 2, (h.lng + sel.lng) / 2],
       fit: sel.id + '|' + w.st,
-      pin: '<span class="lmk on" role="img" aria-label="' + esc(sel.name) + '">' + ic(CATS[sel.cat][1], 'sm') + '</span>',
+      pin: '<span class="lmk on" role="img" aria-label="' + esc(sel.name) + '">' + ic(placeIc(sel), 'sm') + '</span>',
     };
   }
   // 지도 여백 [위, 오른쪽, 아래, 왼쪽]: 넓은 지도에서는 왼쪽 아래에 장소 카드(300px)가 떠 있어서 왼쪽을 더 비운다
@@ -1450,7 +1560,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var rings = '<circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r10 + '"/><circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r5 + '"/>';
     var marks = list.map(function (p) {
       var xy = at(p), on = sel && sel.id === p.id, r = on ? 18 : 15, s = on ? 18 : 16;
-      return '<g class="mk' + (on ? ' on' : '') + '" data-act="place" data-v="' + p.id + '" role="button" tabindex="0" aria-label="' + esc(p.name) + ', 걸어서 ' + p.min + '분"><circle class="b" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '"/>' + icoSvg(CATS[p.cat][1], xy[0] - s / 2, xy[1] - s / 2, s) +
+      return '<g class="mk' + (on ? ' on' : '') + '" data-act="place" data-v="' + p.id + '" role="button" tabindex="0" aria-label="' + esc(p.name) + ', 걸어서 ' + p.min + '분"><circle class="b" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '"/>' + icoSvg(placeIc(p), xy[0] - s / 2, xy[1] - s / 2, s) +
         (labels || on ? '<text x="' + xy[0] + '" y="' + (xy[1] + r + 13) + '">' + esc(short(p.name)) + '</text>' : '') + '</g>';
     }).join('');
     var hm = '<g class="home-mk" aria-hidden="true"><circle class="b2" cx="' + cx + '" cy="' + cy + '" r="20"/><path d="M' + (cx - 8) + ' ' + (cy + 1) + 'l8-7 8 7M' + (cx - 5) + ' ' + cy + 'v8h10v-8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>';
@@ -1460,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<div class="cats" role="group" aria-label="분류">' + ['all'].concat(cats || Object.keys(CATS)).map(function (k) { return '<button type="button" class="cat" data-act="' + act + '" data-v="' + k + '" aria-pressed="' + (cur === k) + '">' + (k === 'all' ? '전체' : ic(CATS[k][1], 'sm') + CATS[k][0]) + '</button>'; }).join('') + '</div>';
   }
   function placeRow(p, go) {
-    return '<button type="button" class="place" data-act="place" data-v="' + p.id + '"' + (go ? ' data-go="map"' : '') + ' aria-pressed="' + (S.mapSel === p.id) + '" title="' + esc(p.name + (p.addr ? ' · ' + p.addr : '')) + '"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[p.cat][1]) + '</span><span class="what"><b>' + esc(p.name) + '</b><span class="s12 muted">' + esc(p.sub) + (p.addr ? ' · ' + esc(p.addr) : '') + '</span></span><span class="s13" style="text-align:right;white-space:nowrap"><b>' + p.min + '분</b><br><span class="muted s12">' + p.m + 'm</span></span></button>';
+    return '<button type="button" class="place" data-act="place" data-v="' + p.id + '"' + (go ? ' data-go="map"' : '') + ' aria-pressed="' + (S.mapSel === p.id) + '" title="' + esc(p.name + (p.addr ? ' · ' + p.addr : '')) + '"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(placeIc(p)) + '</span><span class="what"><b>' + esc(p.name) + '</b><span class="s12 muted">' + esc(p.sub) + (p.addr ? ' · ' + esc(p.addr) : '') + '</span></span><span class="s13" style="text-align:right;white-space:nowrap"><b>' + p.min + '분</b><br><span class="muted s12">' + p.m + 'm</span></span></button>';
   }
   var ART = '<svg class="art" viewBox="0 0 280 120" aria-hidden="true"><g fill="var(--brand)"><rect x="12" y="46" width="40" height="74" rx="4" opacity=".18"/><rect x="58" y="22" width="48" height="98" rx="4" opacity=".28"/><rect x="112" y="54" width="36" height="66" rx="4" opacity=".18"/><rect x="196" y="34" width="52" height="86" rx="4" opacity=".24"/><rect x="252" y="62" width="24" height="58" rx="4" opacity=".16"/></g>' +
     '<g fill="var(--surface)" opacity=".9"><rect x="66" y="32" width="8" height="8" rx="1.5"/><rect x="80" y="32" width="8" height="8" rx="1.5"/><rect x="66" y="48" width="8" height="8" rx="1.5"/><rect x="94" y="48" width="8" height="8" rx="1.5"/><rect x="204" y="44" width="8" height="8" rx="1.5"/><rect x="218" y="44" width="8" height="8" rx="1.5"/><rect x="232" y="60" width="8" height="8" rx="1.5"/></g>' +
@@ -1534,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var list = rc === 'saved' ? saved : places().filter(function (p) { return p.cat === rc; }).slice(0, 12);
     var cards = list.map(function (p) {
       var on = !!S.saved[p.id];
-      return '<section class="card c6 pcard"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="ptile">' + ic(CATS[p.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(p.name) + '</b><p class="s13 muted">' + esc(p.sub) + ' · 걸어서 약 ' + p.min + '분 · ' + p.m + 'm' + (p.pub ? ' · 공공' : '') + '</p></div><button type="button" class="icon-btn save-btn" data-act="save" data-v="' + p.id + '" aria-pressed="' + on + '" aria-label="' + (on ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>' +
+      return '<section class="card c6 pcard"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="ptile">' + ic(placeIc(p)) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(p.name) + '</b><p class="s13 muted">' + esc(p.sub) + ' · 걸어서 약 ' + p.min + '분 · ' + p.m + 'm' + (p.pub ? ' · 공공' : '') + '</p></div><button type="button" class="icon-btn save-btn" data-act="save" data-v="' + p.id + '" aria-pressed="' + on + '" aria-label="' + (on ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>' +
         (p.desc ? '<p class="s13 sub">' + esc(p.desc) + '</p>' : '') + (p.hours ? '<p class="s12 muted">영업시간(OSM): ' + esc(p.hours) + '</p>' : '') + '<div class="row"><button type="button" class="btn ghost sm" data-act="place" data-v="' + p.id + '" data-go="map">지도에서 보기</button><a class="btn ghost sm" href="' + kakao('to', p) + '" target="_blank" rel="noopener">길찾기' + ic('out', 'sm') + '</a></div></section>';
     }).join('') || '<section class="card c12"><p class="muted">' + (rc === 'saved' ? '아직 저장한 곳이 없어요. 마음에 드는 곳의 책갈피를 눌러 보세요.' : DATA.status === 'loading' ? '불러오는 중…' : '1km 안에서 이 분류의 장소를 찾지 못했어요.') + '</p></section>';
     return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · ' + esc(home().label) + '</p><h1>주변 추천</h1></div><div class="row">' + dataBadge() + '</div></div>' +
@@ -1564,7 +1674,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function viewInfra() {
     var rows = ESS.map(function (e) { var ps = places().filter(function (p) { return p.cat === e[0] && kindOk(p, e[1]); }), k = infraPick(e), near = ps.filter(function (p) { return p.m <= NEAR_M; }).length;
       var how = k ? (k.real ? ' · 걸어서 ' + meters(k.dist) : k.loading ? ' · 길 찾는 중…' : ' · 직선 ' + meters(k.dist)) : '';
-      return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[2] + '</b><p class="s13 muted">' + (k ? '가장 가까운 곳 · ' + esc(k.p.name) + how : e[2] === '버스정류장' && DATA.sources.some(function (s) { return /카카오/.test(s.name); }) ? '카카오 장소 검색에는 버스정류장 정보가 없어요' : '1km 안에서 못 찾았어요') + '</p></div><div style="text-align:right">' + (k ? '<b style="font-size:18px">' + (k.real ? '' : '약 ') + k.min + '분</b><p class="s12 muted">' + NEAR_M + 'm 안 ' + near + '곳</p>' : '<span class="muted">—</span>') + '</div></div>'; }).join('');
+      return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(e[0] === 'transit' ? (k ? placeIc(k.p) : /버스/.test(e[2]) ? 'bus' : 'subway') : CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[2] + '</b><p class="s13 muted">' + (k ? '가장 가까운 곳 · ' + esc(k.p.name) + how : e[2] === '버스정류장' && DATA.sources.some(function (s) { return /카카오/.test(s.name); }) ? (DATA.sources.some(function (s) { return /정류소/.test(s.name); }) ? '반경 500m 안에서 못 찾았어요' : '버스정류장 정보를 불러오지 못했어요') : '1km 안에서 못 찾았어요') + '</p></div><div style="text-align:right">' + (k ? '<b style="font-size:18px">' + (k.real ? '' : '약 ') + k.min + '분</b><p class="s12 muted">' + NEAR_M + 'm 안 ' + near + '곳</p>' : '<span class="muted">—</span>') + '</div></div>'; }).join('');
     var chk = S.areaChk || {}, cdone = AREA_CHECK.filter(function (c) { return chk[c[0]]; }).length;
     return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · ' + esc(home().label) + '</p><h1>생활 인프라</h1></div><div class="row">' + dataBadge() + '</div></div>' +
       '<div class="grid"><section class="card c7"><div class="card-h"><h2>꼭 필요한 곳까지</h2><span class="s12 muted">걸어서 = 카카오 도보 경로 · “약”은 직선 ÷ 분당 67m</span></div>' + rows + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
@@ -1824,7 +1934,7 @@ document.addEventListener('DOMContentLoaded', function () {
     fitLists();
     listScroll(listPos);
     mountMap();   // 목록 높이를 맞춘 뒤에 붙여야 지도가 최종 크기로 자리를 잡는다(먼저 붙이면 가운데가 어긋남)
-    if (app.querySelector('a[data-rv]')) kakaoBoot(fixRoadview);
+    if (app.querySelector('a[data-rv-place]')) kakaoBoot(fixPlaceRoadview);
     // 이 기능 전에 지도에서 골라 둔 집은 이름이 '지도에서 고른 위치'로 남아 있어서 한 번 주소로 바꾼다
     if (!homeAddress.tried && S.home && S.home.src === 'pick' && !S.home.named && S.home.label === '지도에서 고른 위치') { homeAddress.tried = true; homeAddress(); }
     if (keep) { window.scrollTo(0, y); if (act) { var el = app.querySelector('[data-field="' + act + '"],[data-cond="' + act + '"]'); if (el) el.focus({ preventScroll: true }); } }
@@ -1835,7 +1945,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var box = document.getElementById('q-res'); if (!box) return;
     q = q.trim(); if (!q) { box.hidden = true; return; }
     var hits = places().filter(function (p) { return (p.name + ' ' + CATS[p.cat][0] + ' ' + p.sub + ' ' + (p.tags || []).join(' ')).indexOf(q) >= 0; }).slice(0, 6);
-    box.innerHTML = hits.map(function (p) { return '<button type="button" class="q-item" data-act="place" data-v="' + p.id + '" data-go="map"><span class="ptile">' + ic(CATS[p.cat][1], 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + esc(p.name) + '</b><span class="s12 muted" style="display:block">' + esc(p.sub) + ' · ' + p.m + 'm</span></span><span class="s13"><b>' + p.min + '분</b></span></button>'; }).join('') || '<p class="s13 muted" style="padding:10px">‘' + esc(q) + '’에 맞는 곳이 없어요. 예: 카페, 약국, 전입신고</p>';
+    box.innerHTML = hits.map(function (p) { return '<button type="button" class="q-item" data-act="place" data-v="' + p.id + '" data-go="map"><span class="ptile">' + ic(placeIc(p), 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + esc(p.name) + '</b><span class="s12 muted" style="display:block">' + esc(p.sub) + ' · ' + p.m + 'm</span></span><span class="s13"><b>' + p.min + '분</b></span></button>'; }).join('') || '<p class="s13 muted" style="padding:10px">‘' + esc(q) + '’에 맞는 곳이 없어요. 예: 카페, 약국, 전입신고</p>';
     box.hidden = false;
   }
   window.addEventListener('hashchange', function () { render(false); });
