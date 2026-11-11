@@ -1,6 +1,7 @@
 /* 자취 계약 내비 — 계약·신고 계산 엔진 (브라우저·Node 공용, 순수 함수)
- * 브라우저: <script src="engine.js"> → window.JachwiEngine
- * Node:    require('./engine.js')
+ * 맡는 일: 전월세 신고 의무·기한, 전입신고 기한, 계약 만료일, 갱신 통지 마감, 만 나이, 입력 검사
+ * 지원 자격 판정은 rules-core.js(운영자 승인 공고 → evalProgram)가 맡는다. 여기서는 toUser()로 입력만 넘긴다.
+ * 브라우저: <script src="engine.js"> → window.JachwiEngine / Node: require('./engine.js')
  */
 (function (root, factory) {
   var api = factory();
@@ -8,6 +9,19 @@
   else root.JachwiEngine = api;
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
+
+  // ---------- 법령 기준 (공고가 아니라 법이라 운영자 승인 대상이 아님) ----------
+  var LAW_URL = 'https://www.law.go.kr/법령/';
+  var LAW = {
+    basis: '2026.10.28',
+    seoulGu: ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'],
+    // 주택임대차(전월세) 신고: 보증금 6천만 원 초과 또는 월세 30만 원 초과, 계약일부터 30일 이내
+    report: { depositOver: 6000, rentOver: 30, days: 30, src: '부동산 거래신고 등에 관한 법률 제6조의2', url: LAW_URL + '부동산거래신고등에관한법률' },
+    // 전입신고: 새 거주지로 옮긴 날부터 14일 이내
+    movein: { days: 14, src: '주민등록법 제16조', url: LAW_URL + '주민등록법' },
+    // 갱신 거절·조건 변경 통지: 임차인은 만료 2개월 전까지
+    renew: { monthsBefore: 2, src: '주택임대차보호법 제6조', url: LAW_URL + '주택임대차보호법' }
+  };
 
   // ---------- 날짜 ----------
   function parseDate(s) {
@@ -56,47 +70,26 @@
     return err;
   }
 
-  // ---------- 판정 ----------
-  var INCOME_LABEL = { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' };
-  var YN = { yes: '예', no: '아니오', unknown: '모름' };
-  var STATUS = { open: '모집 중', closed: '마감', waiting: '다음 공고 대기' };
-  function won(n) { return Math.round(+n).toLocaleString('ko-KR'); }
-
-  function checkCond(c, S, on) {
-    switch (c.type) {
-      case 'age': { var a = age(S.birth, on); return { ok: a === null ? null : a >= c.min && a <= c.max, mine: a === null ? (S.birth ? '생일 달이라 확인 필요' : '모름') : '만 ' + a + '세' }; }
-      case 'income': { var i = S.income; return { ok: i === 'unknown' || !i ? null : i === 'over' ? false : +i <= c.max, mine: INCOME_LABEL[i] || '모름' }; }
-      case 'deposit': return { ok: +S.deposit <= c.max, mine: won(S.deposit) + '만 원' };
-      case 'rent': return { ok: +S.rent <= c.max, mine: S.rent + '만 원' };
-      case 'homeless': return { ok: S.homeless === 'yes' ? true : S.homeless === 'no' ? false : null, mine: YN[S.homeless] || '모름' };
-      case 'dup': return { ok: S.dup === 'no' ? true : S.dup === 'yes' ? false : null, mine: S.dup === 'yes' ? '받고 있음' : S.dup === 'no' ? '받고 있지 않음' : '모름' };
-      default: return { ok: null, mine: '규칙 형식 확인 필요' };
-    }
-  }
-
-  function evaluate(S, rules) {
-    var C = parseDate(S.contract), M = parseDate(S.move);
-    var end = contractEnd(M, S.term);
-    var rp = rules.report, inSeoul = rules.seoulGu.indexOf(S.gu) >= 0;
-    var over = +S.deposit > rp.depositOver || +S.rent > rp.rentOver;
-    var required = inSeoul ? over : null;
+  // ---------- 신고 의무·기한 (필수 ① 신고, 필수 ② 기한) ----------
+  function deadlines(S) {
+    var C = parseDate(S.contract), M = parseDate(S.move), end = contractEnd(M, S.term);
+    var rp = LAW.report, inSeoul = LAW.seoulGu.indexOf(S.gu) >= 0;
+    var required = inSeoul ? (+S.deposit > rp.depositOver || +S.rent > rp.rentOver) : null;
     var reason = !inSeoul ? '서울 밖 지역은 따로 확인이 필요해요' : +S.rent > rp.rentOver ? '월세 30만 원 초과' : +S.deposit > rp.depositOver ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하';
     var due = addDays(C, rp.days);
-    var report = { required: required, reason: reason, due: due, early: required === true && due < M, merge: required === true && !(due < M), src: rp.src, url: rp.url, basis: rp.basis };
-    var programs = rules.programs.map(function (p) {
-      var res = p.conds.map(function (c) { var r = checkCond(c, S, C); return { label: c.label, mine: r.mine, ok: r.ok }; });
-      var verdict = res.some(function (r) { return r.ok === false; }) ? 'ineligible' : res.some(function (r) { return r.ok === null; }) ? 'check' : 'eligible';
-      return { p: p, res: res, verdict: verdict, statusLabel: STATUS[p.status] || '확인 필요' };
-    });
     return {
-      C: C, M: M, end: end, report: report,
-      movein: { due: addDays(M, rules.movein.days), src: rules.movein.src, url: rules.movein.url, basis: rules.movein.basis },
-      renewDue: addMonths(end, -rules.renew.monthsBefore),
-      programs: programs,
-      eligible: programs.filter(function (x) { return x.verdict === 'eligible'; }),
-      maybe: programs.filter(function (x) { return x.verdict !== 'ineligible'; })
+      C: C, M: M, end: end,
+      report: { required: required, reason: reason, due: due, early: required === true && due < M, merge: required === true && !(due < M), src: rp.src, url: rp.url, basis: LAW.basis },
+      movein: { due: addDays(M, LAW.movein.days), src: LAW.movein.src, url: LAW.movein.url, basis: LAW.basis },
+      renewDue: addMonths(end, -LAW.renew.monthsBefore)
     };
   }
 
-  return { parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, evaluate: evaluate, STATUS: STATUS, INCOME_LABEL: INCOME_LABEL };
+  // ---------- 지원 자격 판정(rules-core.evalProgram)에 넘길 이용자 값 ----------
+  // 나이는 계약일 기준 만 나이, 모르면 null
+  function toUser(S) {
+    return { age: age(S.birth, parseDate(S.contract)), income: S.income, deposit: +S.deposit || 0, rent: +S.rent || 0, gu: S.gu, homeless: S.homeless || 'unknown', dup: S.dup || 'unknown' };
+  }
+
+  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, toUser: toUser };
 });
