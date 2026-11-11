@@ -108,7 +108,7 @@ function coachSetup() {
   const progs = Object.values(SEED.notices).map((n) => R.toProgram(n, new Date('2026-11-10')));
   const u = { age: 25, income: '150', deposit: 1000, rent: 45, gu: '관악구' };
   const programList = progs.map((p) => { const x = R.evalProgram(p, u); return { id: p.id, name: p.name, verdict: R.verdict(x), status: p.status, period: p.period, amountText: p.amountText, docs: p.docs, channel: p.channel, select: p.select, firstCome: p.firstCome, exclusions: p.exclusions, unknown: x.unknown.map((r) => r.label) }; });
-  const facts = { today: '2026.11.10', move: '2026.11.11', end: '2028.11.10', noticeBy: '2028.09.11', reportRequired: true, reportReason: '월세 30만 원 초과', reportDue: '2026.11.26', moveinDue: '2026.11.25', deposit: 1000, rent: 45, fee: 7, brokerBase: 55000000, brokerCap: 220000, programList };
+  const facts = { today: '2026.11.10', move: '2026.11.11', end: '2028.11.10', noticeBy: '2028.09.10', reportRequired: true, reportReason: '월세 30만 원 초과', reportDue: '2026.11.26', moveinDue: '2026.11.25', deposit: 1000, rent: 45, fee: 7, brokerBase: 55000000, brokerCap: 220000, programList };
   return { cards: SEED.cards.concat(R.noticeCards(progs)), facts };
 }
 

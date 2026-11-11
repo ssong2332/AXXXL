@@ -10,7 +10,7 @@
   var PERSON = { age: 25, income: '150', deposit: 1000, rent: 45, gu: '관악구' };
   function demoFacts(programs) {
     return {
-      today: '2026.11.10', contract: '2026.10.27', move: '2026.11.11', end: '2028.11.10', noticeBy: '2028.09.11',
+      today: '2026.11.10', contract: '2026.10.27', move: '2026.11.11', end: '2028.11.10', noticeBy: '2028.09.10',
       reportRequired: true, reportReason: '월세 30만 원 초과', reportDue: '2026.11.26', reportDone: false, reportEarly: false,
       moveinDue: '2026.11.25', moveinDone: false, deposit: 1000, rent: 45, fee: 7, brokerBase: 55000000, brokerCap: 220000,
       tasks: [
@@ -87,6 +87,8 @@
   // 페르소나 계약 조건 → 앱과 같은 방식으로 계산한 값 (app.html coachFacts 와 같은 규칙)
   function pd(sx) { var a = sx.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
   function addD(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  // n개월 앞뒤 같은 날, 없으면 말일 (민법 제160조 제3항 · engine.js addMonths와 같은 계산)
+  function addM(d, n) { var m = d.getMonth() + n, y = d.getFullYear() + Math.floor(m / 12), mm = ((m % 12) + 12) % 12; return new Date(y, mm, Math.min(d.getDate(), new Date(y, mm + 1, 0).getDate())); }
   function ymd(d) { return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); }
   function personaFacts(P, programs) {
     var C0 = pd(P.contract), M = pd(P.move), T = pd(P.today), end = addD(new Date(M.getFullYear() + (+P.term || 2), M.getMonth(), M.getDate()), -1);
@@ -94,7 +96,7 @@
     var dep = P.deposit * 10000, rent = P.rent * 10000, base = dep + rent * 100; if (base < 5e7) base = dep + rent * 70;
     var band = base < 5e7 ? [0.005, 200000] : base < 1e8 ? [0.004, 300000] : base < 6e8 ? [0.003, 0] : [0.004, 0], cap = Math.floor(base * band[0]); if (band[1]) cap = Math.min(cap, band[1]);
     var u = { age: P.age, income: P.income, deposit: P.deposit, rent: P.rent, gu: '관악구' };
-    return { today: ymd(T), contract: ymd(C0), move: ymd(M), end: ymd(end), noticeBy: ymd(addD(end, -60)), reportRequired: required, reportReason: reason, reportDue: ymd(addD(C0, 30)), reportDone: false, reportEarly: required && addD(C0, 30) < M,
+    return { today: ymd(T), contract: ymd(C0), move: ymd(M), end: ymd(end), noticeBy: ymd(addM(end, -2)), reportRequired: required, reportReason: reason, reportDue: ymd(addD(C0, 30)), reportDone: false, reportEarly: required && addD(C0, 30) < M,
       moveinDue: ymd(addD(M, 14)), moveinDone: false, deposit: P.deposit, rent: P.rent, fee: P.fee, brokerBase: base, brokerCap: cap,
       money: { month: (T.getMonth() + 1) + '월', items: [{ name: '월세', amount: rent, kind: 'out' }, { name: '관리비', amount: P.fee * 10000, kind: 'out' }] },
       places: { hasHome: false, list: [] },
