@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>/* 화면 테마(자동·밝게·어둡게)를 그리기 전에 먼저 적용해서 처음 열 때 깜빡이지 않게 한다 */ try { var t0 = localStorage.getItem('jachwi-theme'); if (t0 === 'light' || t0 === 'dark') document.documentElement.setAttribute('data-theme', t0); } catch (e) {}</script>
 <title>자취 계약 내비</title>
 <meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 (시연판)">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -421,7 +422,7 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 /* 알림만 있는 위쪽 줄(주변 추천·생활 인프라): 줄 높이 0 → 아래 내용이 위로 올라오고, 알림은 원래 자리(46px 줄 가운데 = 위에서 3px)에 떠 있는다 */
 .hbar.hbar-float { height: 0; margin-bottom: 0; align-items: flex-start }
 .hbar.hbar-float .hbar-r { position: relative; z-index: 2; margin-top: 3px }
-.hbar-float + .subnav { margin-right: 52px }   /* 좁은 화면: 하위 탭 줄이 알림 아래로 들어가지 않게 */
+.hbar-float + .subnav { margin-right: 100px }   /* 좁은 화면: 하위 탭 줄이 테마·알림 버튼 아래로 들어가지 않게 */
 .hbar-r select { min-height: 40px; width: auto; font-size: 13px; padding: 0 10px; border-radius: 12px }
 .bell { position: relative }
 .bell .cnt { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--due); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center }
@@ -625,6 +626,9 @@ document.addEventListener('DOMContentLoaded', function () {
     lock: '<rect x="5" y="11" width="14" height="9.5" rx="2.2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>',
     chev: '<path d="m9.5 6 6 6-6 6"/>', back: '<path d="m14.5 6-6 6 6 6"/>',
     bell: '<path d="M6.5 16v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14Z"/><path d="M10 21h4"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+    moon: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/>',
+    contrast: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" style="fill:currentColor"/>',
     doc: '<path d="M7 3.5h7l4.5 4.5v12.5H7Z"/><path d="M14 3.5V8h4.5"/><path d="M10 13h5.5"/><path d="M10 16.5h3.5"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8v.01"/>',
     chat: '<path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4 3.5V16h0A2 2 0 0 1 5 14Z"/>',
@@ -659,6 +663,20 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICON[n] + '</svg>'; }
   document.querySelectorAll('[data-icon]').forEach(function (el) { el.innerHTML = ic(el.dataset.icon); });
+
+  // ---------- 화면 테마 (자동 · 밝게 · 어둡게) ----------
+  // 자동 = 기기 설정(prefers-color-scheme)을 따른다. 밝게·어둡게는 <html data-theme>로 강제하고 CSS 색 변수가 그 값을 따른다.
+  // 이 브라우저에만 저장하고, '예시 값으로 되돌리기'와는 상관없다. <head> 맨 위 스크립트가 같은 값을 먼저 적용한다.
+  var THEME_LS = 'jachwi-theme', THEMES = { auto: ['자동', 'contrast'], light: ['밝게', 'sun'], dark: ['어둡게', 'moon'] }, THEME_NEXT = { auto: 'light', light: 'dark', dark: 'auto' };
+  function getTheme() { try { var t = localStorage.getItem(THEME_LS); return THEMES[t] ? t : 'auto'; } catch (e) { return 'auto'; } }
+  function setTheme(t) {
+    try { if (t === 'auto') localStorage.removeItem(THEME_LS); else localStorage.setItem(THEME_LS, t); } catch (e) {}
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+  }
+  function themeBtn() {
+    var t = getTheme(), lab = '화면 테마: ' + THEMES[t][0];
+    return '<button type="button" class="icon-btn" data-act="theme" aria-label="' + lab + ' (누르면 ' + THEMES[THEME_NEXT[t]][0] + ')" title="' + lab + '">' + ic(THEMES[t][1]) + '</button>';
+  }
 
   // ---------- dates ----------
   var WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -996,6 +1014,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function distM(a, b) { var R = 6371000, t = Math.PI / 180, dLat = (b.lat - a.lat) * t, dLng = (b.lng - a.lng) * t, h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * t) * Math.cos(b.lat * t) * Math.sin(dLng / 2) * Math.sin(dLng / 2); return Math.round(2 * R * Math.asin(Math.sqrt(h))); }
   var PUB_SUB = /행정복지센터|관공서|주민 시설|우체국|도서관|경찰|지구대|치안센터|파출소|공원|체육시설|수영장/;
   var DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }, PC = { k: '', list: [] };
+  // 장소 설명에 쓰는 자료 출처 이름 (주소·정류장 번호가 없을 때만 보인다). 버스정류장은 TAGO·서울시 공공데이터
+  var SRC_NAME = { sbiz: '공공데이터포털 상가정보', kakao: '카카오맵', tago: '국토교통부 TAGO 버스정보', seoul: '서울시 버스정보' };
   function placeKey(h) { return h.lat.toFixed(3) + ',' + h.lng.toFixed(3); }
   function isReal() { return DATA.status === 'ok' && DATA.items.length > 0; }
   function places() {
@@ -1005,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var list = src.map(function (it) {
       var m = distM(h, it), p = Object.assign({}, it);
       p.m = m; p.min = Math.max(1, Math.ceil(m / 67)); p.dx = (it.lng - h.lng) * 111320 * Math.cos(h.lat * Math.PI / 180); p.dy = (it.lat - h.lat) * 110540;
-      if (!p.ex) { p.tags = [it.sub].concat(it.hours ? ['영업시간 정보 있음'] : []); p.desc = it.addr ? it.addr : it.sub + ' · ' + (it.src === 'sbiz' ? '공공데이터포털 상가정보' : it.src === 'kakao' ? '카카오맵' : 'OpenStreetMap') + ' 기준'; p.pub = PUB_SUB.test(it.sub); }
+      if (!p.ex) { p.tags = [it.sub].concat(it.hours ? ['영업시간 정보 있음'] : []); p.desc = it.addr ? it.addr : it.sub + ' · ' + (SRC_NAME[it.src] || 'OpenStreetMap') + ' 기준'; p.pub = PUB_SUB.test(it.sub); }
       return p;
     }).sort(function (a, b) { return a.m - b.m; });
     PC = { k: k, list: list };
@@ -1911,11 +1931,11 @@ document.addEventListener('DOMContentLoaded', function () {
   var BELL_ONLY = ['recommend', 'infra'], BELL_N = 0;
   function bellBtn() { var n = BELL_N; return '<a class="icon-btn bell" href="#timeline" aria-label="할 일 알림' + (n ? ' ' + n + '개' : '') + '">' + ic('bell') + (n ? '<span class="cnt">' + n + '</span>' : '') + '</a>'; }
   function headerBar(n, bellOnly) {
-    if (bellOnly) return '<div class="hbar desk hbar-float"><div class="hbar-r">' + bellBtn() + '</div></div>';
+    if (bellOnly) return '<div class="hbar desk hbar-float"><div class="hbar-r">' + themeBtn() + bellBtn() + '</div></div>';
     var simV = S.sim === null || S.sim === undefined ? '' : String(S.sim);
     return '<div class="hbar desk"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div>' +
       '<div class="hbar-r"><select class="inp" data-sim aria-label="시연용 날짜">' + [['', '시연: 실제 오늘'], ['-1', '시연: 입주 전날'], ['0', '시연: 입주 당일'], ['10', '시연: 입주 10일 후'], ['40', '시연: 입주 40일 후']].map(function (o) { return '<option value="' + o[0] + '"' + (simV === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
-      bellBtn() + '</div></div>';
+      themeBtn() + bellBtn() + '</div></div>';
   }
   function render(keep) {
     today = S.sim === null || S.sim === undefined || S.sim === '' ? realToday() : add(pd(S.move), +S.sim);
@@ -1979,6 +1999,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var a = b.dataset.act, v = b.dataset.v;
     if (a === 'place') { e.preventDefault(); S.mapSel = v; if (v && b.dataset.go) { var pl = findPlace(v); if (S.mapCat && S.mapCat !== 'all' && pl && pl.cat !== S.mapCat) S.mapCat = 'all'; save(); if (location.hash !== '#map') { location.hash = 'map'; return; } } save(); render(true); if (v && b.classList.contains('place')) { var mb = app.querySelector('.map-box'); if (mb && mb.getBoundingClientRect().top < 0) mb.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }
     else if (a === 'save') { S.saved[v] = !S.saved[v]; S.savedP = S.savedP || {}; var spl = findPlace(v) || S.savedP[v]; if (S.saved[v] && spl) S.savedP[v] = { id: spl.id, cat: spl.cat, name: spl.name, sub: spl.sub, lat: spl.lat, lng: spl.lng, addr: spl.addr || '' }; else delete S.savedP[v]; save(); render(true); toast(S.saved[v] ? '저장했어요. 주변 추천 › 저장한 곳에서 볼 수 있어요.' : '저장을 취소했어요.'); }
+    else if (a === 'theme') { var nt = THEME_NEXT[getTheme()]; setTheme(nt); render(true); toast('화면 테마: ' + THEMES[nt][0] + (nt === 'auto' ? ' (기기 설정을 따라가요)' : '')); }
     else if (a === 'maptheme') { S.mapTheme = v === 'light' || v === 'dark' ? v : 'auto'; save(); render(true); }
     else if (a === 'homecat') { S.homeCat = v; S.mapSel = ''; save(); render(true); }
     else if (a === 'mapcat') { S.mapCat = v; S.mapSel = ''; save(); render(true); }
