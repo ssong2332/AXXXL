@@ -1548,6 +1548,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var end = contractEnd(), bf = brokerFee();
     return { today: ymd(today), contract: ymd(R.C), move: ymd(R.M), end: ymd(end), noticeBy: ymd(add(end, -60)), reportRequired: R.report.required, reportReason: R.report.reason, reportDue: ymd(R.report.due), reportDone: !!S.done.rp, reportEarly: R.report.required && R.report.due < R.M, moveinDue: ymd(R.movein.due), moveinDone: !!S.done.mv, deposit: +S.deposit || 0, rent: +S.rent || 0, fee: +S.fee || 0, brokerBase: bf.base, brokerCap: bf.cap,
       programs: R.programs.map(function (x) { return x.p.name + ': ' + judge(x)[1] + ' (' + x.p.status + ')'; }),
+      // 지금 챙길 일: 기한이 지났거나 오늘인 일 + 일주일 안에 다가오는 일 (내 타임라인)
+      tasks: (function () { var O = openTasks(R, buildTimeline(R)), wk = add(today, 7); return O.dueNow.concat(O.upcoming.filter(function (x) { return x.t.due <= wk; })).slice(0, 5).map(function (x) { return { title: x.t.title, due: ymd(x.t.due), stage: x.s.name, urgent: !!x.t.urgent || x.t.due < today }; }); })(),
       programList: R.programs.map(function (x) { return { id: x.p.id, name: x.p.name, verdict: judge(x)[1], status: x.p.status, period: x.p.period, amountText: x.p.amountText, docs: x.p.docs, channel: x.p.channel, select: x.p.select, firstCome: x.p.firstCome, exclusions: x.p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }) }; }) };
   }
   function localAnswer(q, hist, R) { return JachwiCoach.answer({ q: q, history: hist || [], cards: coachCards(), facts: coachFacts(R) }); }
