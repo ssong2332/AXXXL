@@ -1,6 +1,6 @@
 // 자취 계약 내비 · 오프라인에서도 앱 화면이 열리도록 최소한만 캐시한다.
 // 주변 데이터(/api)와 지도 타일은 캐시하지 않는다.
-const CACHE = 'jachwi-v10';
+const CACHE = 'jachwi-v11';
 const SHELL = ['/app.html', '/ics.js', '/places-core.js', '/rules-core.js', '/coach-core.js', '/assistant-core.js', '/rules/seed.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

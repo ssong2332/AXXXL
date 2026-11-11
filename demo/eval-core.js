@@ -21,7 +21,7 @@
       ],
       programList: programs.map(function (p) {
         var x = J.evalProgram(p, PERSON);
-        return { id: p.id, name: p.name, verdict: J.verdict(x), status: p.status, period: p.period, amountText: p.amountText, docs: p.docs, channel: p.channel, select: p.select, firstCome: p.firstCome, exclusions: p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }) };
+        return { id: p.id, name: p.name, verdict: J.verdict(x), status: p.status, period: p.period, amountText: p.amountText, docs: p.docs, channel: p.channel, select: p.select, firstCome: p.firstCome, exclusions: p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }), fails: x.res.filter(function (r) { return r.ok === false; }).map(function (r) { return r.label + '(내 값: ' + r.mine + ')'; }) };
       })
     };
   }
@@ -84,5 +84,39 @@
     var pass = rows.filter(function (r) { return r.pass; }).length;
     return { total: rows.length, pass: pass, rate: rows.length ? pass / rows.length : 0, wrong: rows.filter(function (r) { return r.wrong; }).length, safe: 0, rows: rows };
   }
-  return { runAssistant: runAssistant, runCoach: runCoach, runExtract: runExtract, demoFacts: demoFacts, PERSON: PERSON };
+  // 페르소나 계약 조건 → 앱과 같은 방식으로 계산한 값 (app.html coachFacts 와 같은 규칙)
+  function pd(sx) { var a = sx.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
+  function addD(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function ymd(d) { return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); }
+  function personaFacts(P, programs) {
+    var C0 = pd(P.contract), M = pd(P.move), T = pd(P.today), end = addD(new Date(M.getFullYear() + (+P.term || 2), M.getMonth(), M.getDate()), -1);
+    var required = P.deposit > 6000 || P.rent > 30, reason = P.rent > 30 ? '월세 30만 원 초과' : P.deposit > 6000 ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하';
+    var dep = P.deposit * 10000, rent = P.rent * 10000, base = dep + rent * 100; if (base < 5e7) base = dep + rent * 70;
+    var band = base < 5e7 ? [0.005, 200000] : base < 1e8 ? [0.004, 300000] : base < 6e8 ? [0.003, 0] : [0.004, 0], cap = Math.floor(base * band[0]); if (band[1]) cap = Math.min(cap, band[1]);
+    var u = { age: P.age, income: P.income, deposit: P.deposit, rent: P.rent, gu: '관악구' };
+    return { today: ymd(T), contract: ymd(C0), move: ymd(M), end: ymd(end), noticeBy: ymd(addD(end, -60)), reportRequired: required, reportReason: reason, reportDue: ymd(addD(C0, 30)), reportDone: false, reportEarly: required && addD(C0, 30) < M,
+      moveinDue: ymd(addD(M, 14)), moveinDone: false, deposit: P.deposit, rent: P.rent, fee: P.fee, brokerBase: base, brokerCap: cap,
+      money: { month: (T.getMonth() + 1) + '월', items: [{ name: '월세', amount: rent, kind: 'out' }, { name: '관리비', amount: P.fee * 10000, kind: 'out' }] },
+      places: { hasHome: false, list: [] },
+      programList: programs.map(function (p) { var x = J.evalProgram(p, u); return { id: p.id, name: p.name, verdict: J.verdict(x), status: p.status, period: p.period, amountText: p.amountText, docs: p.docs, channel: p.channel, select: p.select, firstCome: p.firstCome, exclusions: p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }), fails: x.res.filter(function (r) { return r.ok === false; }).map(function (r) { return r.label + '(내 값: ' + r.mine + ')'; }) }; }) };
+  }
+  function runPersonas(published, personas, A, repairs) {
+    var rows = [], byP = [];
+    personas.forEach(function (ps) {
+      var view = J.publicView(published, pd(ps.p.today)), cards = view.cards.concat(J.noticeCards(view.programs)), f = personaFacts(ps.p, view.programs), pass = 0;
+      ps.qs.forEach(function (e) {
+        var a = A.answer({ q: e.q, bot: e.bot || 'rights', cards: cards, facts: f, repairs: repairs || published.repairs || [] }), why = [];
+        var all = a.text + ' ' + (a.blocks || []).map(function (b) { return (b.text || '') + ' ' + (b.label || '') + ' ' + (b.items || []).map(function (x) { return typeof x === 'string' ? x : (x.name || x.label || ''); }).join(' '); }).join(' ');
+        (e.has || []).forEach(function (w) { if (all.indexOf(w) < 0) why.push('“' + w + '” 빠짐'); });
+        (e.not || []).forEach(function (w) { if (all.indexOf(w) >= 0) why.push('“' + w + '”가 들어감 (내 조건과 다름)'); });
+        if (a.kind !== 'answer') why.push('답 종류 ' + a.kind);
+        if (!why.length) pass++;
+        rows.push({ persona: ps.name, q: e.q, pass: !why.length, why: why, bot: a.bot, kind: a.kind, text: a.text, wrong: (e.not || []).some(function (w) { return all.indexOf(w) >= 0; }) });
+      });
+      byP.push({ id: ps.id, name: ps.name, who: ps.who, total: ps.qs.length, pass: pass });
+    });
+    var pass = rows.filter(function (r) { return r.pass; }).length;
+    return { total: rows.length, pass: pass, rate: rows.length ? pass / rows.length : 0, wrong: rows.filter(function (r) { return r.wrong; }).length, safe: 0, rows: rows, personas: byP };
+  }
+  return { runPersonas: runPersonas, personaFacts: personaFacts, runAssistant: runAssistant, runCoach: runCoach, runExtract: runExtract, demoFacts: demoFacts, PERSON: PERSON };
 });

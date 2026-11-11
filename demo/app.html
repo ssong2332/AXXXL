@@ -1624,7 +1624,7 @@ document.addEventListener('DOMContentLoaded', function () {
       programs: R.programs.map(function (x) { return x.p.name + ': ' + judge(x)[1] + ' (' + x.p.status + ')'; }),
       // 지금 챙길 일: 기한이 지났거나 오늘인 일 + 일주일 안에 다가오는 일 (내 타임라인)
       tasks: (function () { var O = openTasks(R, buildTimeline(R)), wk = add(today, 7); return O.dueNow.concat(O.upcoming.filter(function (x) { return x.t.due <= wk; })).slice(0, 5).map(function (x) { return { title: x.t.title, due: ymd(x.t.due), stage: x.s.name, urgent: !!x.t.urgent || x.t.due < today }; }); })(),
-      programList: R.programs.map(function (x) { return { id: x.p.id, name: x.p.name, verdict: judge(x)[1], status: x.p.status, period: x.p.period, amountText: x.p.amountText, docs: x.p.docs, channel: x.p.channel, select: x.p.select, firstCome: x.p.firstCome, exclusions: x.p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }) }; }) };
+      programList: R.programs.map(function (x) { return { id: x.p.id, name: x.p.name, verdict: judge(x)[1], status: x.p.status, period: x.p.period, amountText: x.p.amountText, docs: x.p.docs, channel: x.p.channel, select: x.p.select, firstCome: x.p.firstCome, exclusions: x.p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }), fails: x.res.filter(function (r) { return r.ok === false; }).map(function (r) { return r.label + '(내 값: ' + r.mine + ')'; }) }; }) };
   }
   // AI 비서가 쓰는 값: 계약 계산값 + 집 별칭·부를 이름(문자 초안에만) + 이번 달 고정비 + 집 주변 장소
   function assistantFacts(R) {

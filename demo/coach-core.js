@@ -24,7 +24,7 @@
   var P_PII = /\d{6}\s*-\s*[1-4]\d{6}|01[016789][\s-]?\d{3,4}[\s-]?\d{4}|\d{3,6}-\d{2,6}-\d{3,8}/;
   var P_LEGAL = /고소|소송|이길 수|승소|처벌|법적으로 (가능|문제)|불법이야|위법/;
   var P_CRISIS = /사기|안\s*돌려|못\s*돌려|안\s*줘|안\s*준대|경매|쫓겨|나가래|연락(이|도)?\s*안|잠수|압류/;
-  var P_HOUSING = /해지|중도|계약서|체크리스트|준비물|방|월세|전세|보증금|계약|임대|임차|집주인|세입자|이사|입주|퇴거|신고|전입|확정일자|등기|관리비|공과금|가스|전기|수도|인터넷|지원|청년|주거|중개|부동산|복비|수리|곰팡이|누수|보일러|대출|이자|세액공제|연말정산|자취|원룸|오피스텔|고시원|셰어/;
+  var P_HOUSING = /룸메|같이\s*살|동거|기숙사|하숙|해지|중도|계약서|체크리스트|준비물|방|월세|전세|보증금|계약|임대|임차|집주인|세입자|이사|입주|퇴거|신고|전입|확정일자|등기|관리비|공과금|가스|전기|수도|인터넷|지원|청년|주거|중개|부동산|복비|수리|곰팡이|누수|보일러|대출|이자|세액공제|연말정산|자취|원룸|오피스텔|고시원|셰어/;
   var P_VAGUE = /^(어떻게|뭐|무엇|도와|알려|궁금|질문|이거|저기|음+|안녕)[\s?!.]*(해|해요|줘|줘요|돼|있어|하지)?[\s?!.]*$/;
   var P_FOLLOW = /^(그럼|그러면|그건|그거|그때|거기|그|근데|아 그럼|그리고|또)\b|^(언제|어디|얼마|왜|어떻게|뭐|무슨)|(그건|그거|그럼)\s/;
 
@@ -77,8 +77,8 @@
     'k-movein': function (f) {
       if (!f.moveinDue) return '';
       if (f.moveinDone) return '내 할 일 목록에는 전입신고를 이미 했다고 표시돼 있어요.';
-      if (f.today > f.moveinDue) return '내 계약 기준 법정 기한(' + f.moveinDue + ')이 지났어요. **오늘 바로** 신고하세요.';
-      return '내 입주일이 ' + f.move + '이라 법정 기한은 **' + f.moveinDue + '**까지예요. 가장 안전한 날은 입주 당일(' + f.move + ')이에요.';
+      if (f.today > f.moveinDue) return '내 계약 기준 법정 기한(' + f.moveinDue + ')이 지났어요. **오늘 바로** 신고하세요.' + (f.reportRequired && !f.reportDone ? ' 전월세 신고도 아직이면 전입신고할 때 계약서를 같이 내서 한 번에 하세요.' : '');
+      return '내 입주일이 ' + f.move + '이라 법정 기한은 **' + f.moveinDue + '**까지예요. 가장 안전한 날은 입주 당일(' + f.move + ')이에요.' + (f.reportRequired && !f.reportDone && !f.reportEarly ? ' 전월세 신고 대상이라, 전입신고할 때 계약서를 같이 내면 두 신고가 한 번에 끝나요.' : '');
     },
     'k-report': function (f) {
       if (f.reportRequired === undefined) return '';
@@ -91,7 +91,10 @@
     'k-fixed': function (f) { return f.reportRequired === undefined ? '' : f.reportRequired ? '내 계약은 전월세 신고 대상이라, 신고가 접수되면 확정일자도 같이 받아요.' : '내 계약은 전월세 신고 대상이 아니라서 확정일자를 따로 받아야 해요.'; },
     'k-broker': function (f) { return f.brokerCap ? '지금 조건(보증금 ' + won(f.deposit) + '만·월세 ' + won(f.rent) + '만)이면 거래 금액은 약 ' + won(f.brokerBase / 10000) + '만 원, 중개보수 **상한은 약 ' + won(f.brokerCap) + '원**(부가세 별도)이에요.' : ''; },
     'k-moveout': function (f) { return f.end ? '내 계약은 ' + f.end + '에 끝나요. 나갈 거라면 **' + f.noticeBy + '**까지 집주인에게 알리세요.' : ''; },
-    'k-raise': function (f) { return f.rent ? '지금 월세가 ' + won(f.rent) + '만 원이라 한 번에 올릴 수 있는 건 최대 약 ' + won(f.rent * 500) + '원이에요.' : ''; },
+    'k-raise': function (f, q) {
+      if (/보증금/.test(q || '') && f.deposit) return '지금 보증금이 ' + won(f.deposit) + '만 원이라 한 번에 올릴 수 있는 건 최대 약 **' + won(f.deposit * 500) + '원**(' + won(f.deposit * 0.05) + '만 원)이에요.';
+      return f.rent ? '지금 월세가 ' + won(f.rent) + '만 원이라 한 번에 올릴 수 있는 건 최대 약 **' + won(f.rent * 500) + '원**이에요.' : '';
+    },
     'k-late': function (f) { return f.rent ? '지금 월세 기준으로 두 달 치는 약 ' + won(f.rent * 2) + '만 원이에요.' : ''; },
     'k-fee': function (f) { return f.fee ? '내 계약에는 관리비가 ' + won(f.fee) + '만 원으로 적혀 있어요.' : ''; },
     'k-support': function (f) { return progLine(f); }
@@ -100,13 +103,17 @@
     var ps = f.programList || [];
     if (!ps.length) return '';
     var ok = ps.filter(function (p) { return p.verdict === '해당 가능' || p.verdict === '확인 필요'; });
-    if (!ok.length) return '지금 입력한 조건으로는 해당되는 지원이 없어요(' + ps.map(function (p) { return p.name + ' ' + p.verdict; }).join(', ') + ').';
-    return '지금 조건으로는 ' + ok.map(function (p) { return '**' + p.name + '**(' + p.verdict + (p.status ? ' · ' + p.status : '') + ')'; }).join(', ') + josa(ok[ok.length - 1].name, '을를').slice(-1) + ' 신청해 볼 수 있어요. 금액은 공고마다 따로 보고, 합쳐서 받는다고 생각하지 마세요.';
+    var why = function (p) { return p.fails && p.fails.length ? ' — ' + p.fails[0] + ' 조건에 맞지 않아요' : ''; };
+    if (!ok.length) return '지금 입력한 조건으로는 해당되는 지원이 없어요.\n' + ps.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n');
+    var no = ps.filter(function (p) { return ok.indexOf(p) < 0; });
+    return '지금 조건으로는 ' + ok.map(function (p) { return '**' + p.name + '**(' + p.verdict + (p.amountText ? ' · ' + p.amountText : '') + (p.status ? ' · ' + p.status : '') + ')'; }).join(', ') + josa(ok[ok.length - 1].name, '을를').slice(-1) + ' 신청해 볼 수 있어요. 금액은 공고마다 따로 보고, 합쳐서 받는다고 생각하지 마세요.' + (no.length ? '\n' + no.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') : '');
   }
   function noticePersonal(card, f) {
     var p = (f.programList || []).filter(function (x) { return 'notice-' + x.id === card.id; })[0];
     if (!p) return '';
-    return '내 조건으로는 **' + p.verdict + '**' + josa(p.verdict, '이에요').slice(p.verdict.length) + (p.status ? '(' + p.status + (p.period ? ' · ' + p.period : '') + ')' : '') + '.' + (p.unknown && p.unknown.length ? ' ' + josa(p.unknown.join(', '), '은는') + ' 서류로 확인해야 해요.' : '');
+    var bad = p.verdict === '해당 안 됨' || p.verdict === '마감';
+    return '내 조건으로는 **' + p.verdict + '**' + josa(p.verdict, '이에요').slice(p.verdict.length) + (p.status ? '(' + p.status + (p.period ? ' · ' + p.period : '') + ')' : '') + '.' +
+      (bad && p.fails && p.fails.length ? ' ' + p.fails.join(', ') + ' 조건에 맞지 않아요.' : '') + (!bad && p.unknown && p.unknown.length ? ' ' + josa(p.unknown.join(', '), '은는') + ' 서류로 확인해야 해요.' : '');
   }
   // 공고 카드는 질문에 맞춰 필요한 부분만
   function noticeAnswer(card, q, f) {
@@ -119,8 +126,10 @@
     else if (/어디|어떻게|신청/.test(q) && p.channel) parts.push(T + ' ' + josa(p.channel, '으로') + ' 신청해요.');
     else parts.push(T + ' ' + josa((p.amountText || '') + (p.select ? ', ' + p.select : ''), '이에요') + '.');
     if (p.exclusions && p.exclusions.length && /같이|함께|중복|둘 다/.test(q)) parts.push('함께 받을 수 없는 지원: ' + p.exclusions.join(', ') + '.');
-    var me = noticePersonal(card, f); if (me) parts.push(me);
-    parts.push('최종 선정은 기관 심사로 정해져요.');
+    var me = noticePersonal(card, f), bad = p.verdict === '해당 안 됨' || p.verdict === '마감';
+    // "받을 수 있어?"처럼 내 자격을 물으면 판정을 맨 앞에
+    if (me && /받을\s*수|돼\?|되나|되냐|가능|해당/.test(q)) { parts[0] = parts[0].replace(T, '지원 내용은'); parts.unshift(me.replace('내 조건으로는', josa(card.title, '은는') + ' 내 조건으로')); } else if (me) parts.push(me);
+    if (!bad) parts.push('최종 선정은 기관 심사로 정해져요.');
     return parts;
   }
 
@@ -136,7 +145,9 @@
       .filter(function (w) { return w.length >= 2 && !FUNC.test(w) && !/^\d+$/.test(w) && !VERBY.test(w); });
   }
   function unknownTopic(q, card, corpus) {
-    var flat = corpus.replace(/\s+/g, ''), words = contentWords(q), unknown = words.filter(function (w) { return corpus.indexOf(w) < 0 && flat.indexOf(w) < 0; });
+    var kws = []; (card.keywords || []).forEach(function (k) { kws.push(k.replace(/\s+/g, '')); });
+    var inflected = function (w) { return kws.some(function (k) { return k.length >= 2 && w.indexOf(k) === 0 && w.length - k.length <= 2 && /^[대래데요야어다냐니네지까서고면]+$/.test(w.slice(k.length)); }); };
+    var flat = corpus.replace(/\s+/g, ''), words = contentWords(q), unknown = words.filter(function (w) { return corpus.indexOf(w) < 0 && flat.indexOf(w) < 0 && !inflected(w); });
     if (!unknown.length) return null;
     var ql = q.toLowerCase().replace(/\s+/g, ''), matched = (card.keywords || []).filter(function (w) { return w && ql.indexOf(w.toLowerCase().replace(/\s+/g, '')) >= 0; });
     var weak = matched.every(function (w) { return GENERIC.indexOf(w) >= 0 || unknown.some(function (u) { return u.indexOf(w) >= 0 && u !== w; }); });
@@ -147,6 +158,15 @@
   var P_TODO = /(오늘|이번\s*주|지금|당장|요즘|내일|이번\s*달).{0,8}(뭐|할\s*일|해야|챙겨)|할\s*일\s*(알려|뭐|있)|뭐부터/;
   function todoAnswer(f) {
     var ts = (f.tasks || []).slice(0, 4);
+    if (!ts.length && f.move) {
+      // 할 일 목록이 비었으면 내 날짜로 큰 순서를 알려 줌 (처음 자취하는 사람)
+      var L = [];
+      if (f.today <= f.move) L.push('입주 전: 잔금 보내기 직전에 등기부등본을 다시 떼어 새 근저당·압류가 없는지 봐요');
+      L.push('입주 당일(' + f.move + '): 전입신고와 확정일자 — 법정 기한은 ' + f.moveinDue + '까지예요');
+      if (f.reportRequired) L.push(f.reportEarly ? '전월세 신고: 기한 **' + f.reportDue + '**가 입주보다 먼저라 따로 신고해요' : '전월세 신고: ' + f.reportDue + '까지 (전입신고 때 계약서를 같이 내면 한 번에 끝나요)');
+      L.push('입주 후: 짐 넣기 전에 집 상태 사진을 찍어 집주인에게 보내고, 공과금·관리비 항목을 정리해요');
+      return { kind: 'answer', text: '처음이라면 이 순서로 챙기면 돼요.\n' + L.map(function (x, i) { return (i + 1) + '. ' + x; }).join('\n'), topic: ['todo'], cites: [{ id: 'todo', title: '내 타임라인', src: [['타임라인', '#timeline']] }], chips: ['전입신고는 어디서 해?', '보증금 지키려면 뭘 해야 해?'], steps: ['할 일 목록이 비어 내 날짜로 큰 순서를 정리'] };
+    }
     if (!ts.length) return { kind: 'answer', text: '지금 기한이 다가온 할 일은 없어요. 타임라인에서 다음 단계를 확인해 보세요.', topic: ['todo'], cites: [{ id: 'todo', title: '내 타임라인', src: [['타임라인', '#timeline']] }], chips: ['전입신고는 언제 해?', '받을 수 있는 지원금 있어?'], steps: ['내 타임라인에서 기한이 다가온 할 일 확인'] };
     var first = ts[0];
     var lines = ts.map(function (t) { return '· ' + (t.urgent ? '**' + t.title + '**' : t.title) + ' — ' + (t.due === f.today ? '오늘' : t.due + '까지') + (t.stage ? ' (' + t.stage + ')' : ''); });
@@ -172,7 +192,7 @@
     var steps = [], pre = [];
     if (!q) return { kind: 'clarify', text: '궁금한 걸 적어 주세요.', chips: POPULAR, cites: [], topic: [], steps: steps };
     var sa = stageAnswer(q, f); if (sa) return sa;
-    if (P_TODO.test(q) && f.tasks) return todoAnswer(f);
+    if (P_TODO.test(q) || /처음인데|처음이라|뭐부터/.test(q)) return todoAnswer(f);
     if (P_INJECT.test(q)) return { kind: 'guard', text: GUARD, chips: POPULAR, cites: [], topic: [], steps: ['요청 확인: 규칙을 바꾸려는 요청이라 따르지 않음'] };
     if (P_PII.test(q)) pre.push('주민등록번호·전화번호·계좌번호 같은 개인 정보는 적지 않아도 돼요. 아래는 그 부분을 빼고 답할게요.');
 
@@ -224,15 +244,20 @@
       if (c.id === 'k-support' && (f.programList || []).length) { paras.push(sentences(c.body)[0]); mine.push(progLine(f)); return; }
       var ss = pickSentences(c, ctxQ, crisis ? 3 : i === 0 ? 2 : 1, q);
       paras.push(ss.join(' '));
-      var pf = PERSONAL[c.id]; var me = pf ? pf(f) : '';
+      var pf = PERSONAL[c.id]; var me = pf ? pf(f, q) : '';
       if (me) mine.push(me);
     });
     if (mine.length) steps.push('내 계약 날짜·금액 반영');
     var said = paras.join(' ') + ' ' + mine.join(' '), gap = [];
-    if (/비용|얼마|요금|수수료|돈\s*들/.test(q) && !/\d\s*(원|%|만)/.test(said)) gap.push('비용');
+    var askedFee = /(과태료|벌금|비용|수수료|요금)/.exec(q);
+    if (askedFee && !new RegExp(askedFee[1] + '[^.]{0,20}\\d').test(said)) gap.push(askedFee[1] === '과태료' || askedFee[1] === '벌금' ? askedFee[1] + ' 금액' : '비용');
+    else if (!askedFee && /얼마|돈\s*들/.test(q) && !/\d\s*(원|%|만)/.test(said)) gap.push('비용');
     if (/언제|기한|며칠|몇\s*일/.test(q) && !/\d|당일|전에|뒤에|바로/.test(said)) gap.push('날짜');
     if (gap.length) { mine.push('물어보신 ' + josa(gap.join('·'), '은는') + ' 승인된 안내에 없어서, 해당 기관에 확인해 주세요.'); steps.push(gap.join('·') + ' 정보는 안내에 없음을 밝힘'); }
-    var text = (pre.length ? pre.join(' ') + '\n\n' : '') + paras.join('\n\n') + (mine.length ? '\n\n' + mine.join(' ') : '');
+    // 내 상황을 묻는 질문(해야 돼? 언제까지야? 받을 수 있어?)이면 내 경우가 곧 결론이라 앞에 둔다
+    var personalQ = /(해야\s*(돼|되|하나|함|할까)|언제(까지)?|돼\?|되나|되냐|받을\s*수|대상이야|대상인가|제가|나\s|내\s|마감)/.test(q);
+    var body = personalQ && mine.length ? mine.join(' ') + '\n\n' + paras.join('\n\n') : paras.join('\n\n') + (mine.length ? '\n\n' + mine.join(' ') : '');
+    var text = (pre.length ? pre.join(' ') + '\n\n' : '') + body;
     // 숫자 점검: 답에 나온 숫자는 카드 문장이나 내 계약 값에 있어야 한다
     var pool = use.map(function (c) { return c.body + ' ' + c.title; }).join(' ') + ' ' + JSON.stringify(f);
     var bad = J.digits(text).filter(function (n) { return pool.replace(/,/g, '').indexOf(n) < 0 && String(pool).indexOf(n) < 0; });
