@@ -75,6 +75,21 @@
     "api/rules.js": {
       "maxDuration": 10
     },
+    "api/support.js": {
+      "maxDuration": 30
+    },
+    "api/welfare.js": {
+      "maxDuration": 30
+    },
+    "api/lh.js": {
+      "maxDuration": 30
+    },
+    "api/holidays.js": {
+      "maxDuration": 15
+    },
+    "api/period.js": {
+      "maxDuration": 30
+    },
     "api/route.js": {
       "maxDuration": 15
     },
