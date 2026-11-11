@@ -27,6 +27,50 @@ test('대상 지역 범위: 코드 수로 전국·시도·시군구를 가른다
   assert.equal(S.scopeOf(['41111', '11620'], size), 'multi');
 });
 
+test('운영 지역: 다른 지자체가 전국 대상으로 등록한 사업은 보여 주지 않는다', () => {
+  const size = {}; REGIONS.forEach((r) => r[1].forEach((x) => { size[x[0].slice(0, 2)] = (size[x[0].slice(0, 2)] || 0) + 1; }));
+  const everywhere = [].concat(...REGIONS.map((r) => r[1].map((x) => x[0]))).join(',');
+  const gb = REGIONS.filter((r) => r[0] === '경상북도')[0][1].map((x) => x[0]).join(',');
+  const mk = (o) => S.normalize(raw(Object.assign({ zipCd: everywhere }, o)), size, REGIONS);
+  const show = (it, sido, sgg) => S.forRegion(it, sido, sgg);
+  // 2026-11-11 실제 사례: 경북 의성군 '청년 지역정착 활성화 사업'이 전국 254개 코드로 등록돼 광주 북구에 나왔다
+  const us = mk({ rgtrHghrkInstCdNm: '경상북도', rgtrUpInstCdNm: '경상북도 의성군', sprvsnInstCdNm: '경상북도 의성군 관광복지국' });
+  assert.deepEqual([us.scope, us.osido, us.osgg], ['all', '경상북도', '의성군']);
+  assert.equal(show(us, '전남광주통합특별시', '북구'), false);
+  assert.equal(show(us, '경상북도', '포항시 남구'), false); // 같은 도 안의 다른 시·군
+  assert.equal(show(us, '경상북도', '의성군'), true);
+  // 도 전체 코드로 등록한 군 사업도 그 군에만
+  const usDo = mk({ zipCd: gb, rgtrHghrkInstCdNm: '경상북도', rgtrUpInstCdNm: '경상북도 의성군' });
+  assert.equal(usDo.scope, 'sido'); assert.equal(show(usDo, '경상북도', '포항시 남구'), false); assert.equal(show(usDo, '경상북도', '의성군'), true);
+  // 도가 운영하는 사업은 도민 모두에게, 다른 시·도에는 안 보인다
+  const prov = mk({ rgtrHghrkInstCdNm: '경상북도', rgtrUpInstCdNm: '경상북도 지방시대정책국', sprvsnInstCdNm: '경상북도 지방시대정책국 청년정책과' });
+  assert.equal(prov.osgg, ''); assert.equal(show(prov, '경상북도', '포항시 남구'), true); assert.equal(show(prov, '서울특별시', '관악구'), false);
+  // 시 이름이 '포항시 남구'처럼 두 낱말이어도 시 사업은 그 시에 보인다
+  const ph = mk({ zipCd: gb, rgtrHghrkInstCdNm: '경상북도', rgtrUpInstCdNm: '경상북도 포항시' });
+  assert.equal(show(ph, '경상북도', '포항시 남구'), true); assert.equal(show(ph, '경상북도', '의성군'), false);
+  // 중앙부처 사업은 그대로
+  assert.equal(show(mk({ pvsnInstGroupCd: '0054001', rgtrHghrkInstCdNm: '국토교통부' }), '전남광주통합특별시', '북구'), true);
+  // 누가 운영하는지 모르는 전국 등록은 보여 주지 않는다 (정부 산하기관은 예외)
+  assert.equal(show(mk({ rgtrHghrkInstCdNm: '', sprvsnInstCdNm: '미래교육돌봄국' }), '서울특별시', '관악구'), false);
+  assert.equal(show(mk({ rgtrHghrkInstCdNm: '정부산하기관및위원회', sprvsnInstCdNm: '문화체육관광부' }), '서울특별시', '관악구'), true);
+  // 대상 코드가 내 시·군·구로 좁게 등록된 사업은 코드를 믿는다
+  assert.equal(show(S.normalize(raw({ zipCd: '11620', rgtrHghrkInstCdNm: '', sprvsnInstCdNm: '서울특별시 주택실' }), size, REGIONS), '서울특별시', '관악구'), true);
+  // 통합 전 이름으로 등록된 사업: 옛 전남 사업은 광주 자치구에, 옛 광주 사업은 전남 시·군에 보이지 않는다
+  const jn = mk({ rgtrHghrkInstCdNm: '전라남도', rgtrUpInstCdNm: '전라남도', sprvsnInstCdNm: '전남광주통합특별시' });
+  assert.equal(jn.osido, '전남광주통합특별시'); assert.equal(show(jn, '전남광주통합특별시', '북구'), false); assert.equal(show(jn, '전남광주통합특별시', '목포시'), true);
+  const gj = mk({ rgtrHghrkInstCdNm: '광주시청', rgtrUpInstCdNm: '광주시청', sprvsnInstCdNm: '전남광주통합특별시' });
+  assert.equal(show(gj, '전남광주통합특별시', '북구'), true); assert.equal(show(gj, '전남광주통합특별시', '목포시'), false);
+  // 시가 대신 등록한 구 사업은 정책 이름에서 구를 읽는다
+  const seogu = mk({ plcyNm: '[광주 서구] 마음회복×진로설계 특강', rgtrHghrkInstCdNm: '전남광주통합특별시', sprvsnInstCdNm: '전남광주통합특별시' });
+  assert.deepEqual([seogu.osgg, seogu.opart], ['서구', '광주']);
+  assert.equal(show(seogu, '전남광주통합특별시', '북구'), false); assert.equal(show(seogu, '전남광주통합특별시', '서구'), true);
+  const namgu = S.normalize(raw({ zipCd: '12300,12270', plcyNm: '2026년 남구 「청년활동 포인트제」 참여자 모집', rgtrHghrkInstCdNm: '광주시청' }), size, REGIONS);
+  assert.equal(show(namgu, '전남광주통합특별시', '북구'), false); // 대상 코드에 북구가 들어 있어도 남구 사업이다
+  assert.equal(show(mk({ plcyNm: '전남형 청년창업 사관학교', rgtrHghrkInstCdNm: '전남광주통합특별시' }), '전남광주통합특별시', '북구'), false);
+  // 글에 섞인 HTML 표기는 글자로
+  assert.equal(S.normalize(raw({ plcyNm: '&quot;노벨 문학도시&quot; 청년 &amp; 축제' })).name, '"노벨 문학도시" 청년 & 축제');
+});
+
 test('접수 상태는 보는 날짜 기준으로 바뀐다', () => {
   const it = S.normalize(raw());
   assert.equal(S.statusAt(it, day('20261025')).k, 'soon');

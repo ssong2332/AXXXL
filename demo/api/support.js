@@ -8,8 +8,8 @@ const O = require('./_open.js');
 const S = require('../support-core.js');
 const REGIONS = require('../data/regions.js');
 
-const ZIP = {}, SIDO_SIZE = {};
-REGIONS.forEach(([sido, list]) => list.forEach(([code, name]) => { ZIP[code] = sido + ' ' + name; SIDO_SIZE[code.slice(0, 2)] = (SIDO_SIZE[code.slice(0, 2)] || 0) + 1; }));
+const ZIP = {}, SIDO_SIZE = {}, WHERE = {};
+REGIONS.forEach(([sido, list]) => list.forEach(([code, name]) => { ZIP[code] = sido + ' ' + name; WHERE[code] = [sido, name]; SIDO_SIZE[code.slice(0, 2)] = (SIDO_SIZE[code.slice(0, 2)] || 0) + 1; }));
 const CATS = S.CATS.map((c) => c[0]);
 
 async function loadZip(zip, key) {
@@ -28,12 +28,13 @@ async function loadZip(zip, key) {
   if (last > 5) pages = pages.concat(await Promise.all(range(6, last).map(pageOf)));
   const all = [].concat(...pages.map((p) => p.list));
   // 승인된 정책만, 접수가 '마감'으로 등록된 것은 뺀다
-  const live = all.filter((p) => p.plcyAprvSttsCd === '0044002' && p.aplyPrdSeCd !== '0057003').map((p) => S.normalize(p, SIDO_SIZE));
+  const live = all.filter((p) => p.plcyAprvSttsCd === '0044002' && p.aplyPrdSeCd !== '0057003').map((p) => S.normalize(p, SIDO_SIZE, REGIONS));
   // 같은 기관(최상위 기관 기준)이 같은 이름으로 여러 번 등록한 정책은 가장 최근에 고친 것 하나만 남긴다
   const seen = new Map();
   live.forEach((it) => { const k = it.name + '|' + (it.top || it.org), old = seen.get(k); if (!old || it.upd > old.upd) seen.set(k, it); });
-  const items = Array.from(seen.values());
-  return { items, total, closed: all.length - live.length, merged: live.length - items.length };
+  // 다른 지자체가 '전국 대상'으로 등록해 둔 사업은 뺀다. 내 시·도, 내 시·군·구가 운영하는 사업과 중앙부처 사업만 남긴다
+  const merged = Array.from(seen.values()), items = merged.filter((it) => S.forRegion(it, WHERE[zip][0], WHERE[zip][1]));
+  return { items, total, closed: all.length - live.length, merged: live.length - merged.length, hidden: merged.length - items.length };
 }
 
 module.exports = async (req, res) => {
@@ -48,7 +49,7 @@ module.exports = async (req, res) => {
     const c = await O.cached('youth:' + zip, 6 * 3600e3, () => loadZip(zip, key));
     const counts = {}; CATS.forEach((k) => { counts[k] = 0; });
     c.value.items.forEach((it) => { if (it.cat in counts) counts[it.cat]++; });
-    return O.send(res, 200, { ok: true, zip, region: ZIP[zip], cat, counts, closed: c.value.closed, items: c.value.items.filter((it) => it.cat === cat), fetchedAt: O.iso(c.at), stale: c.stale, source: '온통청년 청년정책 (한국고용정보원)' }, 'public, s-maxage=1800');
+    return O.send(res, 200, { ok: true, zip, region: ZIP[zip], cat, counts, closed: c.value.closed, hidden: c.value.hidden, items: c.value.items.filter((it) => it.cat === cat), fetchedAt: O.iso(c.at), stale: c.stale, source: '온통청년 청년정책 (한국고용정보원)' }, 'public, s-maxage=1800');
   } catch (e) {
     console.warn('[support] 온통청년 호출 실패:', e && e.name === 'AbortError' ? '시간 초과' : String((e && e.message) || e).slice(0, 80)); // 주소·키는 남기지 않는다
     return O.send(res, 502, { ok: false, reason: 'upstream', error: '정책 목록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.' });

@@ -24,7 +24,8 @@
   // 2026년 기준 중위소득 100% (월, 원). 보건복지부 고시 인용 자료 기준 — 고시 원문 대조 필요
   var MEDIAN_2026 = { 1: 2564238, 2: 4199292, 3: 5359036, 4: 6494738, 5: 7556719, 6: 8555952 };
 
-  function clip(s, n) { s = String(s || '').replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+  // 등록 글에 섞여 오는 HTML 표기(&quot; 등)는 글자로 되돌린다. 화면에 낼 때는 esc()로 다시 감싼다
+  function clip(s, n) { s = String(s || '').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
   function codes(s) { return String(s || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); }
   function labels(s, table) { var c = codes(s).filter(function (x) { return !FREE[x]; }); return c.length ? c.map(function (x) { return table[x] || x; }) : null; }
   function ymd8(s) { s = String(s || '').replace(/[^0-9]/g, ''); return s.length === 8 ? s : ''; }
@@ -39,10 +40,48 @@
     return size > 1 && n >= size * 0.8 ? 'sido' : 'sgg';
   }
 
-  function normalize(p, sidoSize) {
+  // ---------- 운영 지역 ----------
+  // 다른 지자체가 자기 사업을 '전국 대상'으로 등록해 둔 경우가 많다(2026-11-11 확인: 경북 의성군 사업이 전국 254개 시·군·구 코드로 등록).
+  // 대상 지역 코드만 믿지 않고, 등록·주관 기관 이름에서 어느 시·도, 어느 시·군·구의 사업인지 읽는다.
+  var SIDO_OLD = { '광주광역시': '전남광주통합특별시', '광주시청': '전남광주통합특별시', '전라남도': '전남광주통합특별시', '강원도': '강원특별자치도', '전라북도': '전북특별자치도', '제주도': '제주특별자치도' };
+  // regions: data/regions.js 의 [[시도, [[코드, 시군구], ...]], ...]. 반환: { sido, sgg } (못 읽으면 빈 글자)
+  function ownerOf(p, regions) {
+    var fields = [p.rgtrHghrkInstCdNm, p.rgtrUpInstCdNm, p.sprvsnInstCdNm, p.rgtrInstCdNm, p.operInstCdNm].map(function (s) { return String(s || ''); });
+    var names = (regions || []).map(function (r) { return r[0]; }), sido = '', sgg = '', part = '';
+    for (var i = 0; i < fields.length && !sido; i++) {
+      var f = fields[i];
+      names.forEach(function (n) { if (!sido && f.indexOf(n) >= 0) sido = n; });
+      Object.keys(SIDO_OLD).forEach(function (o) { if (!sido && f.indexOf(o) >= 0 && names.indexOf(SIDO_OLD[o]) >= 0) { sido = SIDO_OLD[o]; part = /^광주/.test(o) ? '광주' : /^전라남도/.test(o) ? '전남' : ''; } });
+    }
+    if (!sido) return { sido: '', sgg: '', part: '' };
+    // 그 시·도의 시·군·구 이름(첫 낱말: '포항시 남구' → '포항시')이 낱말로 들어 있으면 그 시·군·구의 사업이다.
+    // 기관 이름을 먼저 보고, 없으면 정책 이름을 본다 ('[광주 서구] …', '(광양시) …', '남구 백운광장 청년축제'처럼 시가 대신 등록한 구 사업)
+    var firsts = {}; ((regions.filter(function (r) { return r[0] === sido; })[0] || ['', []])[1]).forEach(function (x) { var w = String(x[1]).split(' ')[0]; if (w && w !== sido) firsts[w] = 1; });
+    function words(s) { return String(s || '').split(/[^0-9A-Za-z가-힣]+/); }
+    words(fields.join(' ')).concat(words(p.plcyNm)).forEach(function (w) { if (!sgg && firsts[w]) sgg = w; else if (!sgg && firsts[w.replace(/청$/, '')] && /(시|군|구)청$/.test(w)) sgg = w.replace(/청$/, ''); });
+    // part: 광주·전남이 합쳐진 시·도에서, 이 사업이 옛 광주 것인지 옛 전남 것인지 (기관·정책 이름에 한쪽만 적혀 있을 때)
+    if (sido === '전남광주통합특별시') {
+      var rest = (fields.join(' ') + ' ' + String(p.plcyNm || '')).split('전남광주통합특별시').join(' '), gj = /광주/.test(rest), jn = /전남|전라남도/.test(rest);
+      part = gj && !jn ? '광주' : jn && !gj ? '전남' : gj && jn ? '' : part;
+    }
+    return { sido: sido, sgg: sgg, part: part };
+  }
+  // 이 정책을 mySido·mySgg에 사는 사람에게 보여 줘도 되는가. 확인할 수 없으면 보여 주지 않는다.
+  function forRegion(it, mySido, mySgg) {
+    if (it.central) return true;
+    var wide = it.scope === 'all' || it.scope === 'multi', mine = String(mySgg || '').split(' ')[0];
+    if (!it.osido) return !wide || it.top === '정부산하기관및위원회'; // 어느 지자체 사업인지 모르는 '전국' 등록은 뺀다
+    if (wide && it.osido !== mySido) return false;                   // 다른 시·도가 전국으로 등록한 사업
+    if (it.osgg && it.osgg !== mine) return false;                   // 다른 시·군·구의 사업
+    if (it.opart && it.osido === mySido && it.opart !== (/구$/.test(mine) ? '광주' : '전남')) return false; // 합쳐지기 전 광주·전남 중 다른 쪽 사업
+    return true;
+  }
+
+  function normalize(p, sidoSize, regions) {
     var zips = codes(p.zipCd), ap = String(p.aplyYmd || '').split('~').map(ymd8);
-    var cat = String(p.lclsfNm || '').split(',')[0].trim();
+    var cat = String(p.lclsfNm || '').split(',')[0].trim(), own = regions ? ownerOf(p, regions) : { sido: '', sgg: '', part: '' };
     return {
+      osido: own.sido, osgg: own.sgg, opart: own.part,
       id: String(p.plcyNo || ''), name: clip(p.plcyNm, 80), sum: clip(p.plcyExplnCn, 220), cat: cat, sub: String(p.mclsfNm || '').split(',')[0].trim(),
       org: clip(p.sprvsnInstCdNm || p.rgtrInstCdNm || p.operInstCdNm, 60), top: clip(p.rgtrHghrkInstCdNm || p.rgtrUpInstCdNm, 30), central: p.pvsnInstGroupCd === '0054001',
       scope: scopeOf(zips, sidoSize), nzip: zips.length, method: CODE.method[p.plcyPvsnMthdCd] || '',
@@ -347,6 +386,6 @@
   var VR = { ok: 0, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
-  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, statusAt: statusAt, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
+  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
     docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, amountList: amountList, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });
