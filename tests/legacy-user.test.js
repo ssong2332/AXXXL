@@ -42,7 +42,7 @@ test('지원사업 화면 판정: 답 안 한 질문만 남으면 ask, 모름이
 
 // app.html의 migrate()를 그대로 꺼내 시험한다 (화면 파일이라 require할 수 없음)
 const html = fs.readFileSync(path.join(__dirname, '../demo/app.html'), 'utf8');
-const src = /\n  function migrate\(s\) \{[\s\S]*?\n  \}\n/.exec(html);
+const src = /\r?\n  function migrate\(s\) \{[\s\S]*?\r?\n  \}\r?\n/.exec(html); // Windows에서 받으면 줄바꿈이 CRLF일 수 있다
 const DEMO = { homeless: 'yes', dup: 'no' };
 const migrate = src && new Function('DEMO', src[0] + '; return migrate;')(DEMO);
 
