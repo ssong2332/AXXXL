@@ -6,8 +6,8 @@
 
 const SEOUL_NEAR = { s: 37.40, n: 37.73, w: 126.70, e: 127.30 };   // 서울 + 경계 근처
 
-async function getJson(url) {
-  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
+async function getJson(url, ms) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 8000);
   try {
     const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: ctl.signal });
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -23,7 +23,10 @@ const NOT_A_STOP = /미정차|가상정류|가상 정류/;
 
 async function tagoStops(lat, lng, key) {
   const qs = new URLSearchParams({ serviceKey: key, gpsLati: lat.toFixed(6), gpsLong: lng.toFixed(6), numOfRows: '100', pageNo: '1', _type: 'json' });
-  const d = await getJson('https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList?' + qs);
+  const url = 'https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList?' + qs;
+  // TAGO는 보통 1~2초에 답하지만 가끔 8초 넘게 멈춘다(2026-11-11 확인). 5초 안에 안 오면 한 번 더 묻는다.
+  let d;
+  try { d = await getJson(url, 5000); } catch (e) { d = await getJson(url, 8000); }
   const head = (d.response && d.response.header) || {};
   if (String(head.resultCode) !== '00') throw new Error(head.resultMsg || 'TAGO 오류');
   let items = (d.response.body && d.response.body.items) || {};
@@ -112,10 +115,12 @@ module.exports = async (req, res) => {
   const key = String(process.env.TAGO_API_KEY || process.env.DATA_GO_KR_KEY || '').trim();
   if (!key) return res.status(200).json({ ok: false, status: 'NO_KEY', items: [] });
   const items = [], sources = [], errors = [];
-  try { items.push(...await tagoStops(lat, lng, key)); sources.push('tago'); } catch (e) { errors.push('tago'); }
-  if (lat > SEOUL_NEAR.s && lat < SEOUL_NEAR.n && lng > SEOUL_NEAR.w && lng < SEOUL_NEAR.e) {
-    try { items.push(...await seoulStops(lat, lng, key)); sources.push('seoul'); } catch (e) { errors.push('seoul'); }
-  }
+  // TAGO와 서울시 API는 동시에 묻는다 (TAGO가 늦어 한 번 더 물어도 함수 시간 안에 끝나게)
+  const near = lat > SEOUL_NEAR.s && lat < SEOUL_NEAR.n && lng > SEOUL_NEAR.w && lng < SEOUL_NEAR.e;
+  const settle = (p) => p.then((v) => ({ v }), () => null);
+  const [tg, se] = await Promise.all([settle(tagoStops(lat, lng, key)), near ? settle(seoulStops(lat, lng, key)) : Promise.resolve(null)]);
+  if (tg) { items.push(...tg.v); sources.push('tago'); } else errors.push('tago');
+  if (near) { if (se) { items.push(...se.v); sources.push('seoul'); } else errors.push('seoul'); }
   const live = await dropDead(items.filter((x) => !NOT_A_STOP.test(x.name)), key);   // 미정차·가상 정류장 빼고, 번호 없고 지나는 버스 없는 옛 자료 빼기
   const local = live.length ? await localCityCodes(lat, lng, key) : new Set();
   const out = { ok: sources.length > 0, items: dedupe(live, local), sources, errors };

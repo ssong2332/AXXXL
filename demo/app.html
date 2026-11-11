@@ -1249,8 +1249,8 @@ document.addEventListener('DOMContentLoaded', function () {
   ];
   var KAKAO_SRC = { name: '카카오맵 장소 검색', url: 'https://map.kakao.com', license: '카카오 지도 API' };
   // v7: 기차역을 검색어 '역' 대신 '기차역'으로 찾음 — '역'으로는 가까운 15곳이 '○○역점' 가게·출구로 차서 수원역(KTX) 같은 기차역이 빠졌다
-  var KPLACES_LS = 'jachwi-places-kakao-v7';   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리
-  try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
+  var KPLACES_LS = 'jachwi-places-kakao-v8';   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리, v8: 버스정류장을 못 받은 결과는 저장하지 않음(v7에 남은 것 버림)
+  try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
   function kakaoItem(d, q) {
     var seg = String(d.category_name || '').split(' > '), cat = q[1], sub = typeof q[3] === 'number' ? (q[3] < 0 ? seg[seg.length - 1] : seg[q[3]] || seg[seg.length - 1]) : q[3];
     if (cat === 'public' && /경찰/.test(d.category_name)) cat = 'safety';   // 공공기관 중 지구대·치안센터는 '안전'
@@ -1297,15 +1297,22 @@ document.addEventListener('DOMContentLoaded', function () {
     kakaoPlaces(c, function (items, failed) {
       busP.then(function (bus) {
         if (DATA.key !== key) return;
-        var all = items.concat(bus.items);
-        if (!all.length) { DATA.status = 'error'; DATA.error = '주변 장소를 불러오지 못했어요.'; render(true); return; }
-        var srcs = [KAKAO_SRC].concat(bus.sources.map(function (s) { return BUS_SRC[s]; }).filter(Boolean));
-        var PL = window.JachwiPlaces, data = { items: PL ? PL.finish(all, c, 1000) : all, sources: srcs, fetchedAt: new Date().toISOString(), notes: [] };
-        applyData(data);
-        try { localStorage.setItem(KPLACES_LS, JSON.stringify({ key: key, at: Date.now(), partial: failed > 0 || !bus.ok, data: data })); } catch (e) {}
-        render(true);
+        if (!items.length && !bus.items.length) { DATA.status = 'error'; DATA.error = '주변 장소를 불러오지 못했어요.'; render(true); return; }
+        keepKakaoData(key, c, items, failed, bus);
+        // 버스정류장(공공데이터 TAGO)은 가끔 응답이 늦어 실패한다 → 잠시 뒤 한 번 더 묻고, 오면 목록에 더한다
+        if (!bus.ok) setTimeout(function () {
+          if (DATA.key === key) busStops(c).then(function (b2) { if (DATA.key === key && b2.ok) keepKakaoData(key, c, items, failed, b2); });
+        }, 1500);
       });
     });
+  }
+  function keepKakaoData(key, c, items, failed, bus) {
+    var all = items.concat(bus.items), srcs = [KAKAO_SRC].concat(bus.sources.map(function (s) { return BUS_SRC[s]; }).filter(Boolean));
+    var PL = window.JachwiPlaces, data = { items: PL ? PL.finish(all, c, 1000) : all, sources: srcs, fetchedAt: new Date().toISOString(), notes: [], busFail: !bus.ok };
+    applyData(data);
+    // 버스정류장을 못 받은 결과는 저장하지 않는다(다음에 열 때 다시 묻게). 카카오 검색 일부만 실패했으면 10분만 쓴다
+    if (bus.ok) try { localStorage.setItem(KPLACES_LS, JSON.stringify({ key: key, at: Date.now(), partial: failed > 0, data: data })); } catch (e) {}
+    render(true);
   }
   function loadOsmPlaces(key, c, force, sync) {
     if (!force) { try { var cc = JSON.parse(localStorage.getItem(PLACES_LS) || 'null'); if (cc && cc.key === key && Date.now() - cc.at < (cc.partial ? 6e5 : 3 * 864e5)) { applyData(cc.data); if (!sync) render(true); return; } } catch (e) {} }
@@ -1339,9 +1346,10 @@ document.addEventListener('DOMContentLoaded', function () {
       return direct(miss).then(function (extra) { finishLoad(j, extra); });
     });
   }
-  function applyData(j) { DATA.status = 'ok'; DATA.items = j.items || []; DATA.sources = j.sources || []; DATA.fetchedAt = j.fetchedAt || ''; DATA.notes = j.notes || []; PC.k = ''; }
+  function applyData(j) { DATA.status = 'ok'; DATA.items = j.items || []; DATA.sources = j.sources || []; DATA.fetchedAt = j.fetchedAt || ''; DATA.notes = j.notes || []; DATA.busFail = !!j.busFail; PC.k = ''; }
   function dataBadge() {
-    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="s12 muted" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : /카카오/.test(s.name) ? '카카오맵' : 'OpenStreetMap'; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>'; }
+    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="s12 muted" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : /카카오/.test(s.name) ? '카카오맵' : 'OpenStreetMap'; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>' +
+      (DATA.busFail ? ' <span class="badge due">버스정류장 못 불러옴</span> <button type="button" class="btn ghost sm" data-act="reload">다시 시도</button>' : ''); }
     if (DATA.status === 'nohome') return '<span class="s12 muted">집 위치를 정하면 주변 장소가 보여요</span>';
     if (DATA.status === 'loading') return '<span class="badge">주변 데이터 불러오는 중…</span>';
     if (DATA.status === 'error') return '<span class="badge due">실제 데이터를 못 불러왔어요' + (S.home ? '' : ' · 예시로 보여줘요') + '</span> <button type="button" class="btn ghost sm" data-act="reload">다시 시도</button>';
