@@ -197,7 +197,7 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
 
 </head>
 <body>
-<div class="demo-bar"><div class="wrap"><span>시연 버전이에요. 서울 청년 주거지원 공고(2026.10.28 기준) 예시 데이터로 동작해요.</span><span><a href="app.html">계약 후 화면 보기</a> · <a href="#admin">관리자 화면 보기</a></span></div></div>
+<div class="demo-bar"><div class="wrap"><span>시연 버전이에요. 서울 청년 주거지원 공고(2026.10.28 기준) 예시 데이터로 동작해요.</span><span><a href="app.html">계약 후 화면 보기</a> · <a href="admin.html">운영자 콘솔(공고 검수·AI 코치)</a></span></div></div>
 
 <header class="top"><div class="wrap">
   <a class="logo" href="#home"><span class="logo-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10.5 19v-4.5h3V19"/></svg></span>자취 계약 내비</a>
@@ -250,7 +250,7 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
   function incomeOk(limit) { if (S.income === 'unknown') return null; if (S.income === 'over') return false; return +S.income <= limit; }
   var PROGRAMS = [
     { id: 'rent', hash: 'detail-rent', name: '서울시 청년월세 지원', org: '서울특별시', amount: 240, amountText: '월 20만 원씩 최대 12개월',
-      period: '다음 모집 공고 때 안내', status: '모집 예정', statusCls: '', channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr', select: '소득 낮은 순 선정',
+      period: '다음 모집 공고 때 안내', status: '다음 공고 대기', statusCls: '', channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr', select: '소득 낮은 순 선정',
       summary: '실제 낸 월세를 매달 최대 20만 원, 12개월 동안 돌려받아요.',
       docs: [['contract-fixed', '임대차계약서 (확정일자 포함)'], ['rentHistory', '최근 3개월 월세 이체 내역'], ['bank', '본인 명의 통장 사본'], ['resident', '주민등록등본'], ['insurance', '건강보험료 납부확인서']],
       conds: [
@@ -260,7 +260,7 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
         { label: '무주택자', test: function () { return null; }, mine: function () { return '직접 확인'; } }
       ] },
     { id: 'move', hash: 'detail-move', name: '청년 부동산 중개보수·이사비 지원', org: '서울특별시', amount: 40, amountText: '중개보수·이사비 실비, 최대 40만 원',
-      period: '예산 소진 시까지 (선착순)', status: '접수 중', statusCls: 'ok', firstCome: true, channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr', select: '선착순',
+      period: '예산 소진 시까지 (선착순)', status: '모집 중', statusCls: 'ok', firstCome: true, channel: '서울주거포털 온라인', url: 'https://housing.seoul.go.kr', select: '선착순',
       summary: '이사하면서 낸 중개보수와 이사비를 최대 40만 원까지 돌려받아요.',
       docs: [['contract', '임대차계약서'], ['brokerFee', '중개보수 영수증'], ['movingFee', '이사비 영수증'], ['resident', '주민등록등본']],
       conds: [

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="절약봇">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E2F6E7"/><stop offset="1" stop-color="#93D9A8"/></linearGradient></defs>
+<rect width="96" height="96" rx="28" fill="url(#g)"/>
+<ellipse cx="48" cy="86" rx="24" ry="4" fill="#000" opacity=".08"/>
+
+<path d="M24 36 l0 -18 l16 10 Z" fill="#fff"/><path d="M72 36 l0 -18 l-16 10 Z" fill="#fff"/>
+<ellipse cx="48" cy="54" rx="30" ry="27" fill="#fff"/>
+<circle cx="39.0" cy="50" r="3.6" fill="#1B1B2F"/><circle cx="57.0" cy="50" r="3.6" fill="#1B1B2F"/>
+<circle cx="40.0" cy="48.7" r="1.2" fill="#fff"/><circle cx="58.0" cy="48.7" r="1.2" fill="#fff"/>
+<ellipse cx="33.0" cy="57.0" rx="4.0" ry="2.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="63.0" cy="57.0" rx="4.0" ry="2.6" fill="#FF8FA3" opacity=".55"/>
+<path d="M43.0 57.0 q5.0 5.0 10.0 0" stroke="#1B1B2F" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<ellipse cx="48" cy="64" rx="8" ry="5.5" fill="#FFC9D3"/><circle cx="45.5" cy="64" r="1.5" fill="#B4536A"/><circle cx="50.5" cy="64" r="1.5" fill="#B4536A"/>
+<rect x="41" y="26" width="14" height="4" rx="2" fill="#1E7A3D"/>
+<g transform="translate(70 16)"><circle r="10" fill="#F5C23A" stroke="#C99511" stroke-width="2.2"/><text x="0" y="4.4" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="12" fill="#8A5D00">₩</text></g>
+</svg>

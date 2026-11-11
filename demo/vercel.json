@@ -4,6 +4,11 @@
       "source": "/",
       "destination": "/app.html",
       "permanent": false
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html",
+      "permanent": false
     }
   ],
   "rewrites": [
@@ -34,6 +39,19 @@
           "value": "application/manifest+json"
         }
       ]
+    },
+    {
+      "source": "/admin.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
+      ]
     }
   ],
   "functions": {
@@ -42,6 +60,20 @@
     },
     "api/geocode.js": {
       "maxDuration": 15
+    },
+    "api/extract.js": {
+      "maxDuration": 120,
+      "includeFiles": "prompts/**"
+    },
+    "api/coach.js": {
+      "maxDuration": 30,
+      "includeFiles": "prompts/**"
+    },
+    "api/admin.js": {
+      "maxDuration": 20
+    },
+    "api/rules.js": {
+      "maxDuration": 10
     },
     "api/route.js": {
       "maxDuration": 15

@@ -1,0 +1,10 @@
+{
+  "name": "jachwi-navi",
+  "private": true,
+  "description": "자취 계약 내비 시연판 — 정적 화면 + Vercel 서버 함수",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0",
+    "@vercel/blob": "^2.9.0"
+  }
+}
