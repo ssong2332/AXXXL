@@ -197,7 +197,7 @@
     if (v.deposit_max !== null || v.rent_max !== null) conds.push({ type: 'house', deposit: v.deposit_max, rent: v.rent_max, label: [v.deposit_max !== null ? '보증금 ' + wonText(v.deposit_max) : '', v.rent_max !== null ? '월세 ' + wonText(v.rent_max) : ''].filter(Boolean).join('·') + ' 이하', evidence: [ev('deposit_max'), ev('rent_max')].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(' / ') });
     if (v.residency) conds.push({ type: 'residency', text: v.residency, label: v.residency, evidence: ev('residency') });
     if (v.homeless !== false) conds.push({ type: 'homeless', label: '무주택', evidence: ev('homeless') });
-    if (v.exclusions && v.exclusions.length) conds.push({ type: 'dup', list: v.exclusions, label: '함께 받을 수 없는 지원(' + v.exclusions.join(', ') + ')을 받고 있지 않음', evidence: ev('exclusions') });
+    if (v.exclusions && v.exclusions.length) conds.push({ type: 'dup', list: v.exclusions, label: v.exclusions.join('·') + ' 중복 수혜 없음', evidence: ev('exclusions') });
     var amount = v.amount_text || [v.amount_monthly_max ? '월 최대 ' + wonText(v.amount_monthly_max) : '', v.amount_months ? '최대 ' + v.amount_months + '개월' : '', v.amount_lump_max ? '최대 ' + wonText(v.amount_lump_max) : ''].filter(Boolean).join(' · ');
     return {
       id: rec.id, name: v.name || '이름 없는 공고', org: v.org || '', amountText: amount,
