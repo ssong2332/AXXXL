@@ -108,7 +108,7 @@ function coachSetup() {
   const progs = Object.values(SEED.notices).map((n) => R.toProgram(n, new Date('2026-11-10')));
   const u = { age: 25, income: '150', deposit: 1000, rent: 45, gu: '관악구' };
   const programList = progs.map((p) => { const x = R.evalProgram(p, u); return { id: p.id, name: p.name, verdict: R.verdict(x), status: p.status, period: p.period, amountText: p.amountText, docs: p.docs, channel: p.channel, select: p.select, firstCome: p.firstCome, exclusions: p.exclusions, unknown: x.unknown.map((r) => r.label) }; });
-  const facts = { today: '2026.11.10', move: '2026.11.11', end: '2028.11.10', noticeBy: '2028.09.11', reportRequired: true, reportReason: '월세 30만 원 초과', reportDue: '2026.11.26', moveinDue: '2026.11.25', deposit: 1000, rent: 45, fee: 7, brokerBase: 55000000, brokerCap: 220000, programList };
+  const facts = { today: '2026.11.10', move: '2026.11.11', end: '2028.11.10', noticeBy: '2028.09.10', reportRequired: true, reportReason: '월세 30만 원 초과', reportDue: '2026.11.26', moveinDue: '2026.11.25', deposit: 1000, rent: 45, fee: 7, brokerBase: 55000000, brokerCap: 220000, programList };
   return { cards: SEED.cards.concat(R.noticeCards(progs)), facts };
 }
 
@@ -173,4 +173,62 @@ test('시스템 프롬프트: 코치 독립판에 승인 카드가 들어간다'
   assert.ok(chat.includes('<card id="k-movein"') && chat.includes('입주일: 2026.11.11'));
   assert.ok(chat.includes(C.REFUSE));
   assert.ok(!R.renderPrompt(raw, 'api').includes('{{'));
+});
+
+// ---------- 품질 평가 (운영자 콘솔 '품질 평가'와 같은 세트) ----------
+const E = require('../demo/eval-core.js');
+const EV = require('../demo/rules/evals.js');
+test('품질: 코치 기본 질문 95% 이상, 틀린 답 0개', () => {
+  const r = E.runCoach(SEED, EV.coach);
+  assert.equal(r.wrong, 0, r.rows.filter((x) => x.wrong).map((x) => x.q).join(', '));
+  assert.ok(r.rate >= 0.95, r.pass + '/' + r.total);
+});
+test('품질: 처음 보는 질문에서도 틀린 답 0개', () => {
+  const r = E.runCoach(SEED, EV.coachHoldout);
+  assert.equal(r.wrong, 0, r.rows.filter((x) => x.wrong).map((x) => x.q).join(', '));
+});
+test('품질: 시연 공고 추출 항목 모두 맞음', () => {
+  const r = E.runExtract(SAMPLES, EV.extract);
+  assert.equal(r.pass, r.total, JSON.stringify(r.rows.map((x) => x.miss)));
+});
+test('내장 AI 코치: 오늘 할 일은 내 타임라인에서', () => {
+  const S2 = SEED, v = R.publicView(S2, new Date('2026-11-10'));
+  const f = E.demoFacts(v.programs);
+  const a = C.answer({ q: '오늘 뭐 해야 돼?', cards: v.cards, facts: f });
+  assert.ok(a.text.includes('잔금 계좌와 이체 한도 확인'));
+  assert.deepEqual(a.topic, ['todo']);
+});
+
+// ---------- 자취 AI 비서 (봇 6개) ----------
+const AS = require('../demo/assistant-core.js');
+test('AI 비서: 질문마다 알맞은 봇이 답한다 (평가 세트 전부 통과)', () => {
+  const r = E.runAssistant(SEED, EV.assistant, AS, SEED.repairs);
+  assert.equal(r.pass, r.total, r.rows.filter((x) => !x.pass).map((x) => x.q + ' → ' + x.why.join(', ')).join(' / '));
+});
+test('AI 비서: 집주인톡 문자는 정중한 판과 짧은 판, 모르는 값은 [ ]', () => {
+  const v = R.publicView(SEED, new Date('2026-11-10')), f = E.demoFacts(v.programs);
+  const a = AS.answer({ q: '보증금 돌려달라고 연락하고 싶어', bot: 'landlord', cards: v.cards, facts: f, repairs: SEED.repairs });
+  const m = a.blocks.find((b) => b.type === 'message');
+  assert.ok(m.text.length > m.short.length && m.text.includes('[은행·계좌번호]'));
+});
+test('AI 비서: 가스 냄새는 판정보다 안전 순서가 먼저', () => {
+  const v = R.publicView(SEED, new Date('2026-11-10')), f = E.demoFacts(v.programs);
+  const a = AS.answer({ q: '집에서 가스 냄새가 나요', cards: v.cards, facts: f, repairs: SEED.repairs });
+  assert.equal(a.bot, 'repair');
+  assert.ok(a.blocks[0].type === 'steps' && a.blocks[0].items[0].includes('밸브'));
+});
+test('AI 비서: 인사·감사·소개에는 지금 방의 봇이 직접 답한다', () => {
+  const a = AS.answer({ q: '안녕', bot: 'money', cards: SEED.cards, facts: {}, repairs: [] });
+  assert.equal(a.kind, 'smalltalk'); assert.equal(a.bot, 'money'); assert.ok(a.text.includes('절약봇'));
+  assert.equal(AS.answer({ q: '고마워!', bot: 'landlord', cards: SEED.cards, facts: {}, repairs: [] }).kind, 'smalltalk');
+  assert.notEqual(AS.answer({ q: '안녕 전입신고 언제 해?', bot: 'auto', cards: SEED.cards, facts: {}, repairs: [] }).kind, 'smalltalk');
+});
+test('페르소나: 계약 조건이 다른 7명이 같은 질문을 해도 내 조건에 맞게 답한다', () => {
+  const r = E.runPersonas(SEED, EV.personas, AS, SEED.repairs);
+  assert.equal(r.wrong, 0, r.rows.filter((x) => x.wrong).map((x) => x.persona + ': ' + x.q).join(' / '));
+  assert.equal(r.pass, r.total, r.rows.filter((x) => !x.pass).map((x) => x.persona + ': ' + x.q + ' → ' + x.why.join(', ')).join(' / '));
+});
+test('말투 페르소나: 줄임말·오타·걱정 장문·부모·영어 섞임·격식체도 같은 뜻으로 알아듣는다', () => {
+  const r = E.runStyles(SEED, EV.styles, AS, SEED.repairs);
+  assert.equal(r.pass, r.total, r.rows.filter((x) => !x.pass).map((x) => x.persona + ': ' + x.q + ' → ' + x.why.join(', ')).join(' / '));
 });

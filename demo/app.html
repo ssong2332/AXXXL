@@ -17,6 +17,7 @@
 <script src="data/regions.js" defer></script>
 <script src="support-core.js" defer></script>
 <script src="coach-core.js" defer></script>
+<script src="assistant-core.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5B4CDB">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -378,6 +379,81 @@ details.why summary { cursor: pointer; font-size: 13px; font-weight: 650; color:
 details.why summary::-webkit-details-marker { display: none }
 .ev-row { display: flex; flex-direction: column; gap: 2px; font-size: 13px }
 .ev-row q { quotes: "“" "”"; color: var(--ink-2); padding-left: 10px; border-left: 2px solid var(--line) }
+.asst2 { display: grid; grid-template-columns: 300px minmax(0, 1fr); padding: 0; overflow: hidden; min-height: 640px }
+.rooms { border-right: 1px solid var(--hair); display: flex; flex-direction: column; gap: 12px; padding: 18px 12px 14px; background: var(--surface) }
+.rooms-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 2px 8px 12px; border-bottom: 1px solid var(--hair) }
+.rooms-h h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.035em; margin: 0 } .rooms-h p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-3) }
+.room-p.is-empty { color: var(--ink-3); opacity: .8 } .room-new { font-style: normal; font-size: 11px; font-weight: 700; color: var(--brand-text) }
+.rooms .asst-h { padding: 0 6px 6px } .rooms .asst-h h2 { font-size: 17px } .rooms .asst-av { width: 46px; height: 46px; border-radius: 14px }
+.room-list { display: flex; flex-direction: column; gap: 2px }
+.room-r { display: flex; align-items: center; gap: 10px; padding: 10px; border: 0; border-radius: 12px; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; min-width: 0 }
+.room-r:hover { background: var(--fill) } .room-r[aria-current="true"] { background: var(--fill-2) }
+.room-r .bot-av { width: 42px; height: 42px; border-radius: 13px }
+.room-m { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px }
+.room-t { display: flex; justify-content: space-between; gap: 8px } .room-t b { font-size: 14.5px } .room-t small { font-size: 11.5px; color: var(--ink-3); flex: 0 0 auto }
+.room-p { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.rooms .asst-foot { margin: auto 6px 0; line-height: 1.5 }
+.chatroom { display: flex; flex-direction: column; min-width: 0; background: var(--bg) }
+.room-h { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--hair); background: var(--surface) }
+.room-hn { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column } .room-hn b { font-size: 15.5px } .room-hn small { font-size: 12px; color: var(--ink-3) }
+.room-back { display: none } .room-back svg { transform: rotate(180deg) }
+.asst2 .chat { flex: 1 1 auto; padding: 18px 16px; gap: 14px; display: flex; flex-direction: column }
+.asst2 .ask2 { margin: 0 16px 16px; background: var(--surface) }
+.room-empty { margin: auto; max-width: 420px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 8px }
+.room-empty .bot-av { width: 56px; height: 56px; border-radius: 17px } .room-empty b { font-size: 18px } .room-empty p { margin: 0; color: var(--ink-2); font-size: 14px } .room-empty .chips { justify-content: center; margin-top: 6px }
+@media (max-width: 899px) {
+  .asst2 { grid-template-columns: minmax(0, 1fr); min-height: 0; margin: 0 -4px }
+  .asst2.open .rooms { display: none } .asst2:not(.open) .chatroom { display: none }
+  .rooms { border-right: 0; padding: 14px 8px } .room-back { display: inline-flex }
+  .room-h { top: 56px; padding: 10px 12px } .asst2 .chat { padding: 14px 12px } .asst2 .ask2 { position: sticky; bottom: calc(68px + env(safe-area-inset-bottom, 0px)); margin: 0 10px 12px; z-index: 2; box-shadow: 0 -4px 16px rgba(0,0,0,.06) }
+}
+.asst { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; padding: 22px }
+.asst-h { display: flex; align-items: center; gap: 14px }
+.asst-h h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.035em }
+.asst-h > div { flex: 1 1 auto; min-width: 0 }
+.asst-av { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--brand-tint); color: var(--brand-text) }
+.badge.brand-b { background: var(--brand-tint); color: var(--brand-text) }
+.bots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
+.bot-c { display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px; border: 1px solid var(--hair); border-radius: var(--r-in); background: var(--surface); cursor: pointer; color: inherit; font: inherit; min-height: 64px }
+.bot-c:hover { background: var(--fill) }
+.bot-c[aria-selected="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink) }
+.bot-c b { display: block; font-size: 15px; letter-spacing: -0.02em } .bot-c small { display: block; color: var(--ink-3); font-size: 12px }
+.bots.compact { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px } .bots.compact::-webkit-scrollbar { display: none }
+.bots.compact .bot-c { flex: 0 0 auto; min-height: 0; padding: 6px 12px 6px 6px; border-radius: 999px; gap: 6px } .bots.compact .bot-c small { display: none } .bots.compact .bot-c b { font-size: 13px }
+.bot-av { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--fill); color: var(--ink-2) }
+.bot-av.sm { width: 24px; height: 24px; border-radius: 8px }
+.bot-av.has-img { background: none; overflow: hidden; box-shadow: 0 1px 2px rgba(20, 20, 40, .08) } .bot-av img { width: 100%; height: 100%; display: block }
+.b-landlord { background: #E8F0FB; color: #1F5FAF } .b-repair { background: #FCEFE6; color: #A6380B } .b-money { background: #EAF5EC; color: #1E7A3D } .b-rights { background: var(--brand-tint); color: var(--brand-text) } .b-local { background: #F3ECFA; color: #6B3FA0 } .b-auto { background: var(--ink); color: var(--surface) }
+:root[data-theme="dark"] .b-landlord { background: #1A2A40; color: #8CB8F0 } :root[data-theme="dark"] .b-repair { background: #36231A; color: #F5A673 } :root[data-theme="dark"] .b-money { background: #17301F; color: #7CD39A } :root[data-theme="dark"] .b-local { background: #2A1F38; color: #C7A5EE }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .b-landlord { background: #1A2A40; color: #8CB8F0 } :root:not([data-theme="light"]) .b-repair { background: #36231A; color: #F5A673 } :root:not([data-theme="light"]) .b-money { background: #17301F; color: #7CD39A } :root:not([data-theme="light"]) .b-local { background: #2A1F38; color: #C7A5EE } }
+.asst .chat { gap: 14px }
+.turn { display: flex; gap: 10px; align-items: flex-start; max-width: 100% }
+.turn-b { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px }
+.turn-b .bubble-a { max-width: 100% }
+.who { font-size: 12.5px; font-weight: 700; color: var(--ink-2) } .who em { font-style: normal; font-weight: 500; color: var(--ink-3); margin-left: 4px }
+.blk { border-top: 1px solid var(--hair); padding-top: 10px; display: flex; flex-direction: column; gap: 8px }
+.blk-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700 } .blk-h > span:first-child { display: inline-flex; align-items: center; gap: 6px }
+.msg { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; border-top-width: 1px }
+.msg-t { margin: 0; white-space: pre-wrap; line-height: 1.65; font-size: 14.5px } .msg-t mark { background: var(--due-tint); color: var(--due-text); border-radius: 4px; padding: 0 2px }
+.seg { display: inline-flex; background: var(--fill); border-radius: 8px; padding: 2px } .seg button { border: 0; background: none; font: inherit; font-size: 12px; font-weight: 650; padding: 4px 8px; border-radius: 6px; color: var(--ink-3); cursor: pointer } .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08) }
+.verdict { flex-direction: row; align-items: flex-start; gap: 10px } .verdict p { margin: 0; font-size: 13.5px; color: var(--ink-2) }
+.verdict .pill { flex: 0 0 auto; font-size: 12.5px; font-weight: 750; padding: 4px 9px; border-radius: 7px }
+.v-ok .pill { background: var(--brand-tint); color: var(--brand-text) } .v-ink .pill { background: var(--ink); color: var(--surface) } .v-due .pill { background: var(--due-tint); color: var(--due-text) } .v-bad .pill { background: #FBEAEA; color: #A12A2A }
+.stp { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px } .stp li::marker { color: var(--ink-3); font-weight: 700 }
+.bars { display: flex; flex-direction: column; gap: 6px } .bar-r { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px } .bar-r em { font-style: normal; font-size: 11px; color: var(--ink-3) }
+.bar { height: 8px; border-radius: 4px; background: var(--fill-2); overflow: hidden } .bar i { display: block; height: 100%; background: var(--brand-text); border-radius: 4px }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12.5px; color: var(--ink-2) }
+.places { gap: 4px } .pl-r { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--hair); border-radius: 10px; background: var(--surface); text-align: left; font: inherit; color: inherit; cursor: pointer } .pl-r:hover { background: var(--fill) }
+.pl-r > span:nth-child(2) { flex: 1 1 auto; min-width: 0 } .pl-r b { display: block; font-size: 14px } .pl-r small { display: block; font-size: 12px; color: var(--ink-3) } .pl-r .num { text-align: right } .pl-r .num small { text-align: right }
+.blk-note { margin: 0; font-size: 12px; color: var(--ink-3) } .blk-note.due { padding: 10px 12px; border-radius: 10px; background: var(--due-tint); color: var(--due-text); font-size: 13px }
+.acts { display: flex; flex-wrap: wrap; gap: 6px } .act { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px 0 6px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font: inherit; font-size: 13px; font-weight: 650; color: var(--ink); cursor: pointer; text-decoration: none } a.act { padding-left: 12px }
+.ask2 { display: flex; flex-direction: column; gap: 6px; padding: 12px 12px 10px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--fill) }
+.ask2 label { font-size: 13px; font-weight: 650; color: var(--ink-2) }
+.ask2-row { display: flex; align-items: flex-end; gap: 8px } .ask2 textarea { flex: 1 1 auto; min-width: 0; border: 0; background: none; resize: none; font: inherit; font-size: 15.5px; line-height: 1.5; padding: 4px 0; color: var(--ink); max-height: 140px; field-sizing: content } .ask2 textarea:focus { outline: none }
+.ask2:focus-within { border-color: var(--ink) }
+.send { flex: 0 0 auto; width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--ink); color: var(--surface); display: grid; place-items: center; cursor: pointer }
+.asst-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: -6px 0 0 } .ai-tg { display: inline-flex; gap: 4px; align-items: center; margin-left: 6px; color: var(--ink-2); font-weight: 650 }
+@media (max-width: 640px) { .asst { padding: 14px; gap: 14px } .bots { grid-template-columns: repeat(2, minmax(0, 1fr)) } .bot-c { padding: 10px; min-height: 56px } .bar-r { grid-template-columns: 64px minmax(0, 1fr) auto } .asst-av { width: 46px; height: 46px; border-radius: 13px } .turn > .bot-av { display: none } }
 .think { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-3) }
 .think li { display: flex; align-items: center; gap: 6px } .think svg { color: var(--brand-text) }
 .caret { display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--ink-3); animation: tp 1s infinite }
@@ -772,6 +848,8 @@ document.addEventListener('DOMContentLoaded', function () {
     shield: '<path d="M12 3.5 19 6v5.5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6Z"/><path d="m9 12 2 2 4-4"/>',
     bookmark: '<path d="M6.5 4h11v16.5L12 16.5l-5.5 4Z"/>',
     x: '<path d="M6 6l12 12M18 6 6 18"/>',
+    wrench: '<path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-2 2-1.3-1.3-6.6 6.6a2.1 2.1 0 0 1-3-3l6.6-6.6L13.4 9.4l2-2Z" transform="translate(-2 -1)"/>',
+    wallet: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M16 13.5h1.5"/>',
     copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     send: '<path d="M4 12 20 4l-6 16-2.5-6.5Z"/><path d="m11.5 13.5 3-3"/>',
     compass: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/>',
@@ -786,6 +864,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function realToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
   function pd(s) { var p = String(s || '').split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]); return isNaN(d) ? realToday() : d; }
   function add(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  // n개월 앞뒤 같은 날, 그 달에 같은 날이 없으면 말일 (민법 제160조 제3항 · engine.js addMonths와 같은 계산)
+  function addMonths(d, n) { var m = d.getMonth() + n, y = d.getFullYear() + Math.floor(m / 12), mm = ((m % 12) + 12) % 12; return new Date(y, mm, Math.min(d.getDate(), new Date(y, mm + 1, 0).getDate())); }
   function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function md(d) { return (d.getMonth() + 1) + '.' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
   function ymd(d) { return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); }
@@ -844,7 +924,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return fetch('api/rules', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j || !j.ok) return;
       RS.ai = !!j.ai;
-      if (!practiceRules()) setRules({ notices: j.notices, cards: j.cards, meta: { updatedAt: j.updatedAt } }, 'server');
+      if (!practiceRules()) setRules({ notices: j.notices, cards: j.cards, repairs: j.repairs, meta: { updatedAt: j.updatedAt } }, 'server');
       RS.loaded = true; render(true);
     }).catch(function () {});
   }
@@ -1024,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return { a: rep.reason + '라 신고 대상이에요. 기한은 계약일로부터 30일, <b>' + ymd(rep.due) + '</b>까지예요. ' + (early ? '입주보다 기한이 먼저 와서 부동산거래관리시스템에서 따로 신고해야 해요.' : '가장 쉬운 방법은 <b>전입신고할 때 임대차계약서를 함께 내는 것</b>이에요. 그러면 전월세 신고를 한 것으로 보고 확정일자도 함께 받아요.'), src: [['부동산거래신고법 제6조의2·제6조의5', LAW], ['부동산거래관리시스템', 'https://rtms.molit.go.kr']] };
       }],
       [/전입/, function () { return { a: '입주한 날부터 14일 안, <b>' + ymd(R.movein.due) + '</b>까지 해야 해요. <b>정부24</b>에서 온라인으로 하거나 새 주소의 <b>행정복지센터</b>에 신분증을 들고 가면 돼요. 보증금을 지키는 힘(대항력)은 전입신고 다음 날 0시부터 생겨서, 입주 당일(' + md(R.M) + ')에 하는 게 가장 안전해요.', src: [['주민등록법 제16조', LAW], ['정부24', 'https://www.gov.kr']] }; }],
-      [/퇴거|갱신|나가|이사\s?가|만료|이사\s?나/, function () { var end = contractEnd(); return { a: '계약 만료는 <b>' + ymd(end) + '</b>이에요. 나갈 거라면 만료 2개월 전(<b>' + ymd(add(end, -60)) + '</b>)까지 집주인에게 알리세요. 둘 다 말이 없으면 같은 조건으로 이어지고(묵시적 갱신), 그때는 언제든 알리면 3개월 뒤에 나갈 수 있어요. 보증금은 꼭 받은 뒤에 전출하세요.', src: [['주택임대차보호법 제6조·제6조의2', LAW], ['퇴거 준비', '#moveout']] }; }],
+      [/퇴거|갱신|나가|이사\s?가|만료|이사\s?나/, function () { var end = contractEnd(); return { a: '계약 만료는 <b>' + ymd(end) + '</b>이에요. 나갈 거라면 만료 2개월 전(<b>' + ymd(addMonths(end, -2)) + '</b>)까지 집주인에게 알리세요. 둘 다 말이 없으면 같은 조건으로 이어지고(묵시적 갱신), 그때는 언제든 알리면 3개월 뒤에 나갈 수 있어요. 보증금은 꼭 받은 뒤에 전출하세요.', src: [['주택임대차보호법 제6조·제6조의2', LAW], ['퇴거 준비', '#moveout']] }; }],
       [/세액공제|연말정산/, function () { return { a: '직장인이고 무주택 세대주라면 연말정산 때 낸 월세의 일부를 세액공제로 돌려받을 수 있어요. 전입신고가 되어 있어야 하고, 임대차계약서 사본과 월세 이체 내역이 필요해요. 소득 기준과 공제율은 그해 국세청 안내를 확인하세요.', src: [['조세특례제한법 제95조의2', LAW], ['서류함', '#docs']] }; }],
       [/보증금|대항력|안전|사기|경매/, function () { return { a: '① 잔금 보내기 직전에 등기부등본을 다시 떼어 새 근저당이 없는지 보고, ② 입주 당일 전입신고와 확정일자를 받고, ③ 나갈 때는 보증금을 돌려받은 뒤에 주소를 옮기세요. 집 자체의 위험 진단은 안심전세 앱에서 무료로 할 수 있어요.', src: [['주택임대차보호법 제3조·제3조의2', LAW], ['안심전세 앱', 'https://www.khug.or.kr']] }; }],
       [/지원|청년월세|이사비/, function () { var list = R.eligible.map(function (x) { return x.p.name + '(' + judge(x)[1] + ')'; }); return { a: list.length ? '지금 조건으로 ' + list.join(', ') + '을 신청해 볼 수 있어요. 금액은 공고마다 따로 보여드리고 합치지 않아요. 최종 선정은 기관 심사로 정해져요.' : '지금 조건으로 해당되는 지원이 없어요.', src: R.programs.map(function (x) { return [x.p.name + ' 공고 ' + progBasis(x.p), '#support']; }).slice(0, 3) }; }]
@@ -2051,84 +2131,141 @@ document.addEventListener('DOMContentLoaded', function () {
   // 내 계약으로 계산한 값 (이름·주소·집 위치는 넣지 않음)
   function coachFacts(R) {
     var end = contractEnd(), bf = brokerFee();
-    return { today: ymd(today), contract: ymd(R.C), move: ymd(R.M), end: ymd(end), noticeBy: ymd(add(end, -60)), reportRequired: R.report.required, reportReason: R.report.reason, reportDue: ymd(R.report.due), reportDone: !!S.done.rp, reportEarly: R.report.required && R.report.due < R.M, moveinDue: ymd(R.movein.due), moveinDone: !!S.done.mv, deposit: +S.deposit || 0, rent: +S.rent || 0, fee: +S.fee || 0, brokerBase: bf.base, brokerCap: bf.cap,
+    return { today: ymd(today), contract: ymd(R.C), move: ymd(R.M), end: ymd(end), noticeBy: ymd(addMonths(end, -2)), reportRequired: R.report.required, reportReason: R.report.reason, reportDue: ymd(R.report.due), reportDone: !!S.done.rp, reportEarly: R.report.required && R.report.due < R.M, moveinDue: ymd(R.movein.due), moveinDone: !!S.done.mv, deposit: +S.deposit || 0, rent: +S.rent || 0, fee: +S.fee || 0, brokerBase: bf.base, brokerCap: bf.cap,
       programs: R.programs.map(function (x) { return x.p.name + ': ' + judge(x)[1] + ' (' + x.p.status + ')'; }),
-      programList: R.programs.map(function (x) { return { id: x.p.id, name: x.p.name, verdict: judge(x)[1], status: x.p.status, period: x.p.period, amountText: x.p.amountText, docs: x.p.docs, channel: x.p.channel, select: x.p.select, firstCome: x.p.firstCome, exclusions: x.p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }) }; }) };
+      // 지금 챙길 일: 기한이 지났거나 오늘인 일 + 일주일 안에 다가오는 일 (내 타임라인)
+      tasks: (function () { var O = openTasks(R, buildTimeline(R)), wk = add(today, 7); return O.dueNow.concat(O.upcoming.filter(function (x) { return x.t.due <= wk; })).slice(0, 5).map(function (x) { return { title: x.t.title, due: ymd(x.t.due), stage: x.s.name, urgent: !!x.t.urgent || x.t.due < today }; }); })(),
+      programList: R.programs.map(function (x) { return { id: x.p.id, name: x.p.name, verdict: judge(x)[1], status: x.p.status, period: x.p.period, amountText: x.p.amountText, docs: x.p.docs, channel: x.p.channel, select: x.p.select, firstCome: x.p.firstCome, exclusions: x.p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }), fails: x.res.filter(function (r) { return r.ok === false; }).map(function (r) { return r.label + '(내 값: ' + r.mine + ')'; }) }; }) };
   }
-  function localAnswer(q, hist, R) { return JachwiCoach.answer({ q: q, history: hist || [], cards: coachCards(), facts: coachFacts(R) }); }
+  // AI 비서가 쓰는 값: 계약 계산값 + 집 별칭·부를 이름(문자 초안에만) + 이번 달 고정비 + 집 주변 장소
+  function assistantFacts(R) {
+    var f = coachFacts(R), y = today.getFullYear(), mo = today.getMonth();
+    f.house = S.addr || ''; f.nick = S.nick || '';
+    // 단계별 체크리스트 (계약 전 · 계약 당일 · 입주 준비 · 입주 당일 · 신고·정리 · 퇴거)
+    f.stages = buildTimeline(R).map(function (st) { return { key: st.key, name: st.name, when: st.when, tasks: st.tasks.map(function (t) { return { title: t.title, done: !!S.done[t.id], urgent: !!t.urgent }; }) }; });
+    f.money = { month: (mo + 1) + '월', items: billsInMonth(y, mo).map(function (b) { return { name: b.title, amount: b.amount, kind: b.kind, est: b.est }; }) };
+    var hasHome = !!(S.home || S.demo), list = hasHome ? places().slice(0, 60).map(function (p) { return { id: p.id, name: p.name, cat: p.cat, sub: p.sub, min: p.min, m: Math.round(p.m) }; }) : [];
+    f.places = { hasHome: hasHome && DATA.status !== 'nohome', list: list, source: isReal() ? 'OpenStreetMap 기준 · 걸리는 시간은 직선거리로 계산' : '시연용 예시 데이터' };
+    return f;
+  }
+  function repairsData() { return (RS.published && RS.published.repairs) || (window.JACHWI_SEED && window.JACHWI_SEED.repairs) || []; }
+  function botAnswer(q, bot, hist, R) { return JachwiAssistant.answer({ q: q, bot: bot, history: hist || [], cards: coachCards(), facts: assistantFacts(R), repairs: repairsData() }); }
+  var BOTS = JachwiAssistant.BOTS;
+  // 봇 프로필 사진: icons/bots/<봇>.<BOT_IMG> — 같은 이름의 PNG로 바꾸려면 BOT_IMG를 'png'로 (프롬프트: icons/bots/PROMPTS.md)
+  var BOT_IMG = 'png';
+  function botAv(id, sm) { if (!BOTS[id]) id = 'auto'; return '<span class="bot-av has-img' + (sm ? ' sm' : '') + ' b-' + id + '" aria-hidden="true"><img src="/icons/bots/' + id + '.' + BOT_IMG + '" alt="" width="36" height="36" decoding="async"></span>'; }
+  // 답 블록: 문자 초안 · 판정 · 할 일 · 지출 막대 · 장소 · 안내
+  function blockHtml(b, i, bi, c) {
+    if (b.type === 'message') {
+      var short = c.short === undefined ? !!c.preferShort : c.short, t = short ? b.short : b.text;
+      return '<div class="blk msg"><div class="blk-h"><span>' + ic('chat', 'sm') + esc(b.title) + '</span><span class="seg" role="group" aria-label="문자 길이"><button type="button" data-act="msgtone" data-v="' + i + '" data-k="0" aria-pressed="' + !short + '">정중하게</button><button type="button" data-act="msgtone" data-v="' + i + '" data-k="1" aria-pressed="' + short + '">짧게</button></span></div>' +
+        '<p class="msg-t">' + esc(t).replace(/\[([^\]]+)\]/g, '<mark>[$1]</mark>') + '</p><div class="row"><button type="button" class="btn sm" data-act="msgcopy" data-v="' + i + '" data-k="' + bi + '">' + ic('copy', 'sm') + '복사하기</button><a class="btn sm ghost" href="sms:?&body=' + encodeURIComponent(t) + '">' + ic('send', 'sm') + '문자 앱에서 열기</a></div></div>';
+    }
+    if (b.type === 'verdict') return '<div class="blk verdict v-' + b.tone + '"><span class="pill">' + esc(b.label) + '</span><p>' + md2html(b.text) + '</p></div>';
+    if (b.type === 'steps') return '<div class="blk"><b class="blk-h">' + esc(b.title) + '</b><ol class="stp">' + b.items.map(function (x) { return '<li>' + md2html(x) + '</li>'; }).join('') + '</ol></div>';
+    if (b.type === 'bars') return '<div class="blk"><div class="blk-h"><b>' + esc(b.title) + '</b><b class="num">' + won(b.total) + '원</b></div><div class="bars">' + b.items.map(function (x) { return '<div class="bar-r"><span>' + esc(x.label) + (x.est ? ' <em>예상</em>' : '') + '</span><span class="bar"><i style="width:' + Math.max(3, x.pct) + '%"></i></span><span class="num">' + won(x.amount) + '원 · ' + x.pct + '%</span></div>'; }).join('') + '</div></div>';
+    if (b.type === 'places') return '<div class="blk places">' + b.items.map(function (p) { return '<button type="button" class="pl-r" data-act="place" data-v="' + esc(p.id) + '" data-go="1">' + ic((CATS[p.cat] || ['', 'pin'])[1], 'sm') + '<span><b>' + esc(p.name) + '</b><small>' + esc((CATS[p.cat] || [''])[0]) + (p.sub && p.sub !== p.name ? ' · ' + esc(p.sub) : '') + '</small></span><span class="num">도보 ' + p.min + '분<small>' + p.m + 'm</small></span></button>'; }).join('') + '</div>';
+    if (b.type === 'note') return b.text ? '<p class="blk-note' + (b.tone === 'due' ? ' due' : '') + '">' + md2html(b.text) + '</p>' : '';
+    return '';
+  }
   function chatItem(c, i, R, last) {
-    if (typeof c === 'string') { var la = localAnswer(c, [], R); c = { q: c, mode: 'local', a: la.text, kind: la.kind, cites: la.cites, steps: la.steps }; }
-    var q = '<span class="bubble-q">' + esc(c.q) + '</span>';
-    if (c.mode === 'pending') return q + '<div class="bubble-a" id="cb-' + i + '" aria-busy="true"><span class="typing"><i></i><i></i><i></i></span><ul class="think">' + (c.steps || []).slice(0, c.stepN || 0).map(function (st) { return '<li>' + ic('check', 'sm') + esc(st) + '</li>'; }).join('') + '</ul></div>';
-    if (c.mode === 'place') { var pa = qaAnswer(c.q, R); return q + (pa ? '<div class="bubble-a"><span>' + pa.a + '</span><div class="row" style="gap:4px 12px">' + pa.src.map(function (x) { return '<a class="s12" href="' + x[1] + '"' + ext(x[1]) + '>근거 · ' + x[0] + '</a>'; }).join('') + '</div><span class="s12 muted">내 동네 지도 데이터로 찾았어요.</span></div>' : '<div class="bubble-a"><span>' + esc(JachwiCoach.REFUSE) + '</span></div>'); }
+    if (typeof c === 'string') { var la = botAnswer(c, 'auto', [], R); c = { q: c, mode: 'local', bot: la.bot, a: la.text, kind: la.kind, cites: la.cites, steps: la.steps, blocks: la.blocks, actions: la.actions }; }
+    if (c.mode === 'hello') { var hb = BOTS[c.bot] || BOTS.auto; return '<div class="turn">' + botAv(c.bot) + '<div class="turn-b"><span class="who">' + hb.name + '</span><div class="bubble-a"><span>' + esc(hb.hello) + '</span></div>' + (last ? '<div class="chips">' + hb.ex.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '') + '</div></div>'; }
+    var q = '<span class="bubble-q">' + esc(c.q) + '</span>', bot = c.bot || 'rights', B = BOTS[bot] || BOTS.rights;
+    if (c.mode === 'pending') return q + '<div class="turn">' + botAv(c.want || 'auto') + '<div class="turn-b"><span class="who">' + (BOTS[c.want] || BOTS.auto).name + '</span><div class="bubble-a" id="cb-' + i + '" aria-busy="true"><span class="typing"><i></i><i></i><i></i></span><ul class="think">' + (c.steps || []).slice(0, c.stepN || 0).map(function (st) { return '<li>' + ic('check', 'sm') + esc(st) + '</li>'; }).join('') + '</ul></div></div></div>';
     var streaming = c.shown !== undefined && c.shown < (c.a || '').length;
     var body = md2html(streaming ? c.a.slice(0, c.shown) : c.a) + (streaming ? '<span class="caret"></span>' : '');
     var cites = (c.cites || []).map(function (ct) { return (ct.src || []).slice(0, 2).map(function (x) { return '<a class="s12" href="' + esc(x[1] || '#coach') + '"' + ext(x[1] || '') + '>근거 · ' + esc(x[0]) + '</a>'; }).join(''); }).join('');
-    var who = c.mode === 'ai' ? 'Claude' : '내장 AI';
-    var foot = c.kind === 'answer' || c.mode === 'ai' ? who + ' · 승인된 안내 ' + (c.cites || []).length + '개 안에서 답했어요' : c.kind === 'refuse' ? who + ' · 질문은 운영자에게 전달했어요' : who;
-    var chips = last && !streaming && c.chips && c.chips.length ? '<div class="chips" style="margin-top:2px">' + c.chips.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '';
+    var engine = c.mode === 'ai' ? 'Claude' : '내장 AI';
+    var foot = c.kind === 'refuse' ? engine + ' · 질문은 운영자에게 전달했어요' : (c.cites || []).length ? engine + ' · 승인된 안내 ' + c.cites.length + '개 근거' : engine;
+    var blocks = streaming ? '' : (c.blocks || []).map(function (b, bi) { return blockHtml(b, i, bi, c); }).join('');
+    if (!streaming && c.routed && c.want && c.want !== 'auto' && c.bot !== c.want && c.bot !== 'auto' && !(c.actions || []).some(function (a) { return a.room; })) c.actions = (c.actions || []).concat([{ label: BOTS[c.bot].name + ' 방에서 이어 묻기', room: c.bot }]);
+    var acts = !streaming && (c.actions || []).length ? '<div class="acts">' + c.actions.map(function (a) { return a.room ? '<button type="button" class="act" data-act="pickbot" data-v="' + a.room + '">' + botAv(a.room, true) + esc(a.label) + '</button>' : a.href ? '<a class="act" href="' + esc(a.href) + '">' + esc(a.label) + ic('chev', 'sm') + '</a>' : '<button type="button" class="act" data-act="askbot" data-k="' + a.bot + '" data-v="' + esc(a.q) + '">' + botAv(a.bot, true) + esc(a.label) + '</button>'; }).join('') + '</div>' : '';
+    var chips = last && !streaming && c.chips && c.chips.length ? '<div class="chips">' + c.chips.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '';
     var how = !streaming && c.steps && c.steps.length ? '<details class="how"><summary class="s12 muted">' + foot + '</summary><ol class="s12 muted">' + c.steps.map(function (st) { return '<li>' + esc(st) + '</li>'; }).join('') + '</ol></details>' : '<span class="s12 muted">' + foot + '</span>';
-    return q + '<div class="bubble-a" id="cb-' + i + '"><span class="ans">' + body + '</span>' + (streaming ? '' : (cites ? '<div class="row" style="gap:4px 12px">' + cites + '</div>' : '') + (c.kind === 'refuse' ? REFUSE_LINKS : '') + how) + '</div>' + chips;
+    return q + '<div class="turn">' + botAv(bot) + '<div class="turn-b"><span class="who">' + B.name + (c.routed && c.want !== bot ? ' <em>' + (c.want && c.want !== 'auto' ? BOTS[c.want].name + ' 대신 답했어요' : '자동 연결') + '</em>' : '') + '</span><div class="bubble-a" id="cb-' + i + '"><span class="ans">' + body + '</span>' + blocks +
+      (streaming ? '' : (cites ? '<div class="row" style="gap:4px 12px">' + cites + '</div>' : '') + (c.kind === 'refuse' ? REFUSE_LINKS : '') + how) + '</div>' + acts + chips + '</div></div>';
   }
-  var PLACE_Q = /약국|병원|의원|치과|마트|다이소|편의점|세탁|빨래|카페|지하철|정류장|버스|공원|산책|헬스|체육|도서관|스터디|주민센터|청년센터|우체국|식당|맛집|밥집|경찰|지구대|파출소/;
   function logMissLocal(q) {
     try { var k = 'jachwi-coach-miss', m = JSON.parse(localStorage.getItem(k) || '[]'); if (!m.some(function (x) { return x.q === q; })) m.unshift({ id: 'q-l' + Date.now().toString(36), at: new Date().toISOString(), q: q.slice(0, 200), top: [], reason: 'local', count: 1 }); localStorage.setItem(k, JSON.stringify(m.slice(0, 100))); } catch (e) {}
   }
-  // 생각하는 단계를 하나씩 보여 준 뒤 답을 글자 단위로 흘려 보여 준다 (AI 대화처럼)
+  // 생각하는 단계를 하나씩 보여 준 뒤 답을 글자 단위로 흘려 보여 준다
+  // 봇마다 채팅방을 따로: S.rooms[봇] = 대화, S.bot = 지금 방, S.roomOpen = 휴대폰에서 방 안에 들어가 있는지
+  function room(id) { S.rooms = S.rooms || {}; id = id || S.bot || 'auto'; if (!S.rooms[id]) S.rooms[id] = []; return S.rooms[id]; }
   var STREAM = null;
   function streamAnswer(c) {
-    var idx = S.chat.indexOf(c), stepT = 0;
+    var stepT = 0, arr = room();
     clearInterval(STREAM);
     var tick = function () {
-      var el = document.getElementById('cb-' + S.chat.indexOf(c));
+      var el = arr === room() && location.hash === '#coach' ? document.getElementById('cb-' + arr.indexOf(c)) : null;
       if (c.mode === 'pending') {
         c.stepN = (c.stepN || 0) + 1;
-        if (c.stepN > (c.steps || []).length) { c.mode = c.final; c.shown = 0; }
-        if (el) { var tmp = document.createElement('div'); tmp.innerHTML = chatItem(c, S.chat.indexOf(c), evaluate(), false); var nb = tmp.querySelector('#cb-' + S.chat.indexOf(c)); if (nb) el.innerHTML = nb.innerHTML; }
+        if (c.stepN > (c.steps || []).length) { c.mode = c.final; c.shown = 0; render(true); return; }
+        if (el) { var tmp = document.createElement('div'); tmp.innerHTML = chatItem(c, arr.indexOf(c), evaluate(), false); var nb = tmp.querySelector('#cb-' + arr.indexOf(c)); if (nb) el.innerHTML = nb.innerHTML; }
         return;
       }
-      c.shown = Math.min((c.a || '').length, (c.shown || 0) + Math.max(3, Math.ceil(c.a.length / 45)));
-      if (el) { var span = el.querySelector('.ans'); if (span) span.innerHTML = md2html(c.a.slice(0, c.shown)) + '<span class="caret"></span>'; else el.innerHTML = md2html(c.a.slice(0, c.shown)); }
-      if (c.shown >= c.a.length || !el) { clearInterval(STREAM); delete c.shown; delete c.stepN; save(); if (location.hash === '#coach' || location.hash === '') render(true); var box = app.querySelector('.chat'); if (box) box.scrollTop = box.scrollHeight; }
+      c.shown = Math.min((c.a || '').length, (c.shown || 0) + Math.max(3, Math.ceil(c.a.length / 40)));
+      if (el) { var span = el.querySelector('.ans'); if (span) span.innerHTML = md2html(c.a.slice(0, c.shown)) + '<span class="caret"></span>'; }
+      if (c.shown >= c.a.length || !el) { clearInterval(STREAM); delete c.shown; delete c.stepN; save(); if (location.hash === '#coach') { render(true); scrollChat(); } }
+      if (c.mode === 'pending' && !el) { c.mode = c.final || 'local'; }
     };
-    STREAM = setInterval(function () { stepT++; if (c.mode === 'pending' && stepT % 7 !== 0) return; tick(); }, 40);
+    STREAM = setInterval(function () { stepT++; if (c.mode === 'pending' && stepT % 6 !== 0) return; tick(); }, 40);
   }
-  function askCoach(q) {
-    q = q.replace(/\s+/g, ' ').trim().slice(0, 120); if (!q) return;
-    var R = evaluate(), hist = S.chat.filter(function (x) { return x && typeof x === 'object' && x.topic; }).slice(-3).map(function (x) { return { q: x.q, topic: x.topic }; });
-    // 진행 중인 답이 있으면 바로 끝까지 보여 주고 다음 질문으로
-    S.chat.forEach(function (x) { if (x && x.mode === 'pending') { x.mode = x.final || 'local'; } delete x.shown; delete x.stepN; });
-    var c = { q: q, mode: 'pending', steps: ['질문 읽는 중'] };
-    S.chat.push(c); while (S.chat.length > 30) S.chat.shift();
-    var useLocal = function () {
-      var r = localAnswer(q, hist, R);
-      c.final = 'local'; c.a = r.text; c.kind = r.kind; c.cites = r.cites; c.chips = r.chips; c.topic = r.topic; c.steps = r.steps;
-      if (r.kind === 'refuse' || r.kind === 'scope') logMissLocal(q);
+  function scrollChat() { var box = app.querySelector('.chat'); if (box) { var lastQ = box.querySelectorAll('.bubble-q'); var el = lastQ[lastQ.length - 1]; if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }
+  function chatHist() { return room().filter(function (x) { return x && typeof x === 'object' && x.q; }).slice(-3).map(function (x) { return { q: x.q, bot: x.bot, topic: x.topic || [] }; }); }
+  function askCoach(q, forceBot) {
+    q = String(q).replace(/\s+/g, ' ').trim().slice(0, 150); if (!q) return;
+    var R = evaluate(), want = forceBot || S.bot || 'auto', hist = room(want).filter(function (x) { return x && typeof x === 'object' && x.q; }).slice(-3).map(function (x) { return { q: x.q, bot: x.bot, topic: x.topic || [] }; });
+    if (forceBot) { S.bot = forceBot; S.roomOpen = true; }
+    var arr = room();
+    Object.keys(S.rooms).forEach(function (k) { S.rooms[k].forEach(function (x) { if (x && x.mode === 'pending') x.mode = x.final || 'local'; if (x && typeof x === 'object') { delete x.shown; delete x.stepN; } }); });
+    var r = botAnswer(q, want, hist, R);
+    var c = { q: q, want: want, at: Date.now(), mode: 'pending', steps: ['질문 읽는 중'].concat(r.steps || []) };
+    arr.push(c); while (arr.length > 40) arr.shift();
+    var fill = function (x, mode) {
+      c.final = mode; c.bot = x.bot; c.routed = x.routed; c.a = x.text; c.kind = x.kind; c.cites = x.cites; c.chips = x.chips; c.topic = x.topic; c.blocks = x.blocks; c.actions = x.actions; c.preferShort = x.preferShort;
+      if (x.kind === 'refuse' || x.kind === 'scope') logMissLocal(q);
       streamAnswer(c);
     };
-    if (PLACE_Q.test(q) && !/신고|계약|보증금|지원|월세/.test(q)) { c.mode = 'place'; save(); render(true); return; }
-    save(); render(true);
-    if (RS.ai && RS.src !== 'local' && S.aiCoach !== false) {
+    save(); render(true); scrollChat();
+    // 권리 질문은 Claude가 연결돼 있고 켜 두었으면 Claude가, 아니면 내장 AI가
+    if (r.bot === 'rights' && RS.ai && RS.src !== 'local' && S.aiCoach !== false) {
       c.steps = ['질문 읽는 중', '승인된 안내 찾는 중', 'Claude가 답 만드는 중'];
-      fetch('api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: q, facts: coachFacts(R) }) }).then(function (r) { return r.json(); }).then(function (j) {
-        if (j && j.mode === 'ai') { c.final = 'ai'; c.a = j.answer; c.kind = 'answer'; c.cites = j.cites; c.topic = j.cites.map(function (x) { return x.id; }); c.steps = ['승인된 안내 ' + j.cites.length + '개를 근거로 Claude가 답함', '답에 나온 숫자를 근거와 대조함']; streamAnswer(c); }
-        else if (j && j.mode === 'refuse') { c.final = 'local'; c.a = JachwiCoach.REFUSE; c.kind = 'refuse'; c.cites = []; c.chips = JachwiCoach.POPULAR; c.steps = ['승인된 안내에서 근거를 찾지 못해 답하지 않음']; streamAnswer(c); }
-        else useLocal();
-      }).catch(useLocal);
+      fetch('api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: q, facts: coachFacts(R) }) }).then(function (res) { return res.json(); }).then(function (j) {
+        if (j && j.mode === 'ai') fill({ bot: 'rights', routed: want !== 'rights', text: j.answer, kind: 'answer', cites: j.cites, topic: j.cites.map(function (x) { return x.id; }), chips: [], blocks: [], actions: [] }, 'ai');
+        else if (j && j.mode === 'refuse') fill({ bot: 'rights', routed: want !== 'rights', text: JachwiCoach.REFUSE, kind: 'refuse', cites: [], chips: JachwiCoach.POPULAR, blocks: [], actions: [] }, 'local');
+        else fill(r, 'local');
+      }).catch(function () { fill(r, 'local'); });
       return;
     }
-    useLocal();
+    fill(r, 'local');
+  }
+  function pickBot(id) {
+    S.bot = id; S.roomOpen = true; save(); render(true);
+    var inp = app.querySelector('#ask-in'); if (inp && window.innerWidth >= 900) inp.focus({ preventScroll: true });
+    scrollChat();
+  }
+  function roomTime(t) { if (!t) return ''; var d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : (d.getMonth() + 1) + '.' + d.getDate(); }
+  function roomPreview(id) {
+    var list = room(id).map(function (x) { return typeof x === 'string' ? { q: x } : x; }).filter(function (x) { return x && x.q; }), last = list[list.length - 1];
+    if (!last) return { text: BOTS[id].desc, time: '', n: 0, empty: true };
+    var a = String(last.a || last.q).replace(/\*\*/g, '').replace(/\s+/g, ' ');
+    return { text: a, time: roomTime(last.at), n: list.length };
   }
   function viewCoach() {
-    var R = evaluate();
-    var thread = S.chat.map(function (c, i) { return chatItem(c, i, R, i === S.chat.length - 1); }).join('');
+    var R = evaluate(), cur = S.bot || 'auto', B = BOTS[cur], arr = room(cur);
+    var thread = arr.filter(function (c) { return !(c && c.mode === 'hello'); }).map(function (c, i, all) { return chatItem(c, arr.indexOf(c), R, i === all.length - 1); }).join('');
     var aiOn = RS.ai && RS.src !== 'local' && S.aiCoach !== false;
-    return '<div class="page-head"><div><p class="eyebrow">지원 & 상담</p><h1>AI 자취 코치</h1></div>' + (S.chat.length ? '<button type="button" class="btn line sm" data-act="chatclear">대화 지우기</button>' : '') + '</div>' +
-      '<div class="grid"><section class="card c8 stack"><div class="chat" aria-live="polite">' + (thread || '<div class="bubble-a"><span>안녕하세요' + (S.nick ? ', ' + esc(S.nick) + '님' : '') + '. 계약·신고·지원·퇴거·동네에 대해 물어보세요. <b>운영자가 승인한 안내 안에서만</b> 답하고, 모르는 건 모른다고 할게요.</span></div>') + '</div>' +
-      '<form class="ask" data-form="coach"><input class="inp" aria-label="질문" placeholder="궁금한 걸 물어보세요" maxlength="120"><button class="btn" type="submit" aria-label="보내기">' + ic('send') + '</button></form></section>' +
-      '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">이런 걸 물어볼 수 있어요</h2><div class="chips">' + QA.concat(['중개수수료 얼마야?', '월세 밀리면 어떻게 돼?', '집주인이 월세 올려 달래', '곰팡이 생기면 누가 고쳐?', '확정일자 꼭 받아야 해?', '계약 끝나고 나가려면?', '가까운 병원 어디야?']).map(function (q) { return '<button type="button" class="chip" data-act="ask" data-v="' + q + '">' + q + '</button>'; }).join('') + '</div></section>' +
-      (RS.ai && RS.src !== 'local' ? '<label class="card split s13" style="gap:12px"><span><b>Claude로 답하기</b><br><span class="muted">끄면 이 기기 안의 내장 AI가 답해요. 켜면 질문과 앱이 계산한 날짜·금액만 서버로 보내요(이름·주소·집 위치 제외).</span></span><input class="sw" type="checkbox" role="switch" data-act="aicoach"' + (aiOn ? ' checked' : '') + '></label>' : '') +
-      '<div class="privacy">' + ic('info', 'sm') + '<span>' + (aiOn ? 'Claude가 운영자가 승인한 안내 ' + (RS.cards.length + RS.programs.length) + '개 중 질문과 맞는 것만 읽고 답해요. 근거를 꼭 붙이고, 근거에 없는 숫자가 나오면 답을 버려요. ' : '<b>내장 AI</b>가 이 기기 안에서 답해요. 질문이 서버로 가지 않아요. 운영자가 승인한 안내 ' + (RS.cards.length + RS.programs.length) + '개 안에서만 답을 만들고, 내 계약 날짜·금액을 넣어 드려요. 앞 질문에 이어서 물어봐도 돼요. ') + '답하지 못한 질문은 질문 글만 운영자에게 전달돼요. 질문에 이름·연락처는 적지 마세요. 법률 자문을 대신하지 않아요.</span></div></aside></div>';
+    var rooms = JachwiAssistant.ORDER.map(function (id) { var b = BOTS[id], pv = roomPreview(id); return '<button type="button" class="room-r" data-act="pickbot" data-v="' + id + '" aria-current="' + (cur === id) + '">' + botAv(id) + '<span class="room-m"><span class="room-t"><b>' + b.name + '</b><small>' + (pv.empty ? '<em class="room-new">대화 시작</em>' : pv.time) + '</small></span><span class="room-p' + (pv.empty ? ' is-empty' : '') + '">' + esc(pv.text) + (pv.empty ? '' : '') + '</span></span></button>'; }).join('');
+    var empty = '<div class="room-empty">' + botAv(cur) + '<b>' + B.name + '</b><p>' + (S.nick ? esc(S.nick) + '님, ' : '') + esc(B.hello) + '</p><div class="chips">' + B.ex.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div></div>';
+    return '<div class="page-head"><div><p class="eyebrow">지원 & 상담</p><h1>AI 자취 코치</h1></div></div>' +
+      '<section class="card asst2' + (S.roomOpen ? ' open' : '') + '">' +
+      '<aside class="rooms"><div class="rooms-h"><div><h2>자취 AI 비서</h2><p>봇을 골라 대화를 시작하세요</p></div><span class="badge ' + (aiOn ? 'solid' : 'brand-b') + '">' + (aiOn ? 'Claude' : '내장 AI') + '</span></div>' +
+      '<nav class="room-list" aria-label="채팅방">' + rooms + '</nav>' +
+      '<p class="s12 muted asst-foot">' + ic('lock', 'sm') + (aiOn ? '권리 질문은 Claude가 승인된 안내 안에서 답해요.' : '이 기기 안에서 답해요. 질문이 서버로 가지 않아요.') + ' 승인된 안내에 없으면 답하지 않아요.' + (RS.ai && RS.src !== 'local' ? ' <label class="ai-tg"><input type="checkbox" data-act="aicoach"' + (aiOn ? ' checked' : '') + '> Claude로 답하기</label>' : '') + '</p></aside>' +
+      '<div class="chatroom"><div class="room-h"><button type="button" class="icon-btn room-back" data-act="roomback" aria-label="채팅방 목록">' + ic('chev', 'sm') + '</button>' + botAv(cur) + '<div class="room-hn"><b>' + B.name + '</b><small>' + B.desc + (cur === 'auto' ? ' · 알맞은 봇이 답해요' : '') + '</small></div>' + (arr.length ? '<button type="button" class="btn line sm" data-act="chatclear">대화 지우기</button>' : '') + '</div>' +
+      '<div class="chat" aria-live="polite">' + (thread || empty) + '</div>' +
+      '<form class="ask2" data-form="coach"><label for="ask-in">' + B.name + '에게 물어보기</label><div class="ask2-row"><textarea id="ask-in" rows="1" maxlength="150" placeholder="' + esc(B.ph) + '"></textarea><button class="send" type="submit" aria-label="보내기">' + ic('send') + '</button></div></form></div></section>';
   }
 
   // ---------- 내 계약 ----------
@@ -2182,7 +2319,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 정보는 서버에 저장하지 않고 이 기기 브라우저에만 남아요.</span></div></div>';
   }
   function backupJson() {
-    var o = clone(S); delete o.sim; delete o.chat;
+    var o = clone(S); delete o.sim; delete o.chat; delete o.rooms;
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'jachwi-navi', v: 3, savedAt: new Date().toISOString(), state: o }, null, 1)], { type: 'application/json' }));
     a.download = 'jachwi-backup-' + ymd8(realToday()) + '.json'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     toast('기록을 파일로 저장했어요. 서류·사진 파일은 들어 있지 않아요.');
@@ -2263,7 +2400,12 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'condtab') { S.condTab = v; save(); render(true); }
     else if (a === 'copymsg') { var txt = condMsg(S.condTab === 'out' ? 'out' : 'in'); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast('복사했어요. 문자 앱에 붙여 넣어 보내세요.'); }, function () { var ta = app.querySelector('textarea'); ta.select(); toast('글자를 길게 눌러 복사해 주세요.'); }); }
     else if (a === 'ask') { askCoach(v); }
-    else if (a === 'chatclear') { S.chat = []; save(); render(true); }
+    else if (a === 'askbot') { askCoach(v, b.dataset.k); }
+    else if (a === 'pickbot') { pickBot(v); }
+    else if (a === 'roomback') { S.roomOpen = false; save(); render(true); window.scrollTo(0, 0); }
+    else if (a === 'msgtone') { var ce = room()[+v]; if (ce) { ce.short = b.dataset.k === '1'; save(); render(true); } }
+    else if (a === 'msgcopy') { var cm = room()[+v], bk = cm && cm.blocks && cm.blocks[+b.dataset.k]; if (bk) { var mt = (cm.short === undefined ? cm.preferShort : cm.short) ? bk.short : bk.text; (navigator.clipboard ? navigator.clipboard.writeText(mt) : Promise.reject()).then(function () { toast('복사했어요. [ ] 칸은 직접 채워 보내세요.'); }, function () { toast('복사하지 못했어요. 글을 길게 눌러 복사해 주세요.'); }); } }
+    else if (a === 'chatclear') { S.rooms[S.bot || 'auto'] = []; save(); render(true); }
     else if (a === 'calnav') { if (v === '0') { S.calM = ''; S.calSel = iso(today); } else { var c = calBase(); c.setMonth(c.getMonth() + (+v)); S.calM = c.getFullYear() + '-' + (c.getMonth() + 1); S.calSel = ''; } save(); render(true); }
     else if (a === 'calday') { S.calSel = v; S.calTab = 'day'; save(); render(true); }
     else if (a === 'caltab') { S.calTab = v; save(); render(true); }
@@ -2302,6 +2444,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }).catch(function (err) { if (!err || err.name !== 'AbortError') toast('보내지 못했어요. 문자 내용 복사로 보내 주세요.'); });
     }
   });
+  // 질문 창: Enter로 보내고 Shift+Enter로 줄바꿈
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.target.id === 'ask-in') { e.preventDefault(); var fm = e.target.form; if (fm) fm.requestSubmit ? fm.requestSubmit() : fm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); } });
   document.addEventListener('keydown', function (e) { var g = e.target.closest && e.target.closest('g[data-act]'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); } if (e.key === 'Escape') { var qr = document.getElementById('q-res'); if (qr) qr.hidden = true; } });
   document.addEventListener('change', function (e) {
     var t = e.target, d = t.dataset;
@@ -2335,7 +2479,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var f = e.target.dataset.form; if (!f) return; e.preventDefault();
     if (f === 'geo') { var gq = e.target.querySelector('input').value.trim(); if (gq.length >= 2) geoSearch(gq); else toast('두 글자 이상 입력해 주세요.'); return; }
     if (f === 'evadd') { var fe = new FormData(e.target), et = String(fe.get('title') || '').trim().slice(0, 30), edt = String(fe.get('date') || ''); if (!et || !/^\d{4}-\d{2}-\d{2}$/.test(edt)) { toast('날짜와 내용을 넣어 주세요.'); return; } S.events = S.events || []; S.events.push({ id: 'ev' + Date.now(), date: edt, time: /^\d{2}:\d{2}$/.test(String(fe.get('time'))) ? String(fe.get('time')) : '', title: et }); S.calSel = edt; save(); render(true); toast('일정을 추가했어요. 폰 연동 탭에서 휴대폰 캘린더에도 넣을 수 있어요.'); return; }
-    if (f === 'coach') { var q = e.target.querySelector('input').value.trim(); if (q) { askCoach(q); var inp = app.querySelector('form[data-form=coach] input'); if (inp) inp.focus({ preventScroll: true }); } }
+    if (f === 'coach') { var q = e.target.querySelector('textarea').value.trim(); if (q) { askCoach(q); var inp = app.querySelector('form[data-form=coach] textarea'); if (inp) inp.focus({ preventScroll: true }); } }
     else if (f === 'billadd') {
       var fd = new FormData(e.target), name = String(fd.get('name') || '').trim().slice(0, 20), amt = parseInt(String(fd.get('amount') || '').replace(/[^0-9]/g, ''), 10);
       if (!name || !amt) { toast('이름과 금액을 넣어 주세요.'); return; }
@@ -2351,7 +2495,9 @@ document.addEventListener('DOMContentLoaded', function () {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
       decodePayload(dd).then(function (o) { if (o && typeof o === 'object' && confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); S.onboarded = true; S.demo = false; save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
     }
-    S.chat = (S.chat || []).map(function (c) { if (c && typeof c === 'object') { delete c.shown; delete c.stepN; if (c.mode === 'pending' || (!c.a && c.mode !== 'place')) return c.q; } return c; });
+    var tidy = function (list) { return (list || []).map(function (c) { if (c && typeof c === 'object') { delete c.shown; delete c.stepN; if (c.mode === 'hello') return null; if (c.mode === 'pending' || !c.a) return c.q || null; } return c; }).filter(Boolean); };
+    S.rooms = S.rooms || {}; if ((S.chat || []).length) { S.rooms.auto = (S.rooms.auto || []).concat(S.chat); S.chat = []; }
+    Object.keys(S.rooms).forEach(function (k) { S.rooms[k] = tidy(S.rooms[k]); });
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () {});
     render(false);
     loadFiles().then(function () { if (FILES.length) render(true); });

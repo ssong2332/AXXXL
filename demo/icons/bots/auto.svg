@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="자유 질문">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A3F6B"/><stop offset="1" stop-color="#1B1E3A"/></linearGradient></defs>
+<rect width="96" height="96" rx="28" fill="url(#g)"/>
+<ellipse cx="48" cy="86" rx="24" ry="4" fill="#000" opacity=".08"/>
+
+<path d="M48 14 L57 36 L80 38 L62 53 L68 76 L48 64 L28 76 L34 53 L16 38 L39 36 Z" fill="#FFD866" stroke="#FFD866" stroke-width="5" stroke-linejoin="round"/>
+<circle cx="40.62" cy="46" r="2.952" fill="#3B2A00"/><circle cx="55.38" cy="46" r="2.952" fill="#3B2A00"/>
+<circle cx="41.44" cy="44.934" r="0.9839999999999999" fill="#fff"/><circle cx="56.2" cy="44.934" r="0.9839999999999999" fill="#fff"/>
+<ellipse cx="35.7" cy="51.74" rx="3.28" ry="2.132" fill="#FF8FA3" opacity=".55"/><ellipse cx="60.3" cy="51.74" rx="3.28" ry="2.132" fill="#FF8FA3" opacity=".55"/>
+<path d="M43.9 51.74 q4.1 4.1 8.2 0" stroke="#3B2A00" stroke-width="2.132" fill="none" stroke-linecap="round"/>
+<path d="M78 14 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2 Z" fill="#fff"/><circle cx="18" cy="76" r="2.5" fill="#fff" opacity=".7"/>
+</svg>
