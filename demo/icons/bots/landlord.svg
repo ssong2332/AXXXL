@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="집주인톡">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDEBFF"/><stop offset="1" stop-color="#9EC3F5"/></linearGradient></defs>
+<rect width="96" height="96" rx="28" fill="url(#g)"/>
+<ellipse cx="48" cy="86" rx="24" ry="4" fill="#000" opacity=".08"/>
+
+<path d="M22 46 L48 24 L74 46 V78 a6 6 0 0 1 -6 6 H28 a6 6 0 0 1 -6 -6 Z" fill="#fff"/>
+<path d="M16 48 L48 20 L80 48" stroke="#2F6FD0" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="39.0" cy="58" r="3.6" fill="#1B1B2F"/><circle cx="57.0" cy="58" r="3.6" fill="#1B1B2F"/>
+<circle cx="40.0" cy="56.7" r="1.2" fill="#fff"/><circle cx="58.0" cy="56.7" r="1.2" fill="#fff"/>
+<ellipse cx="33.0" cy="65.0" rx="4.0" ry="2.6" fill="#FF8FA3" opacity=".55"/><ellipse cx="63.0" cy="65.0" rx="4.0" ry="2.6" fill="#FF8FA3" opacity=".55"/>
+<path d="M43.0 65.0 q5.0 5.0 10.0 0" stroke="#1B1B2F" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<g transform="translate(62 10)"><path d="M0 8 a8 8 0 0 1 8 -8 h14 a8 8 0 0 1 8 8 v6 a8 8 0 0 1 -8 8 h-9 l-6 5 v-5 a8 8 0 0 1 -7 -8 Z" fill="#2F6FD0"/>
+<circle cx="9" cy="11" r="1.8" fill="#fff"/><circle cx="15" cy="11" r="1.8" fill="#fff"/><circle cx="21" cy="11" r="1.8" fill="#fff"/></g>
+</svg>

@@ -379,6 +379,9 @@ details.why summary::-webkit-details-marker { display: none }
 .ev-row q { quotes: "“" "”"; color: var(--ink-2); padding-left: 10px; border-left: 2px solid var(--line) }
 .asst2 { display: grid; grid-template-columns: 300px minmax(0, 1fr); padding: 0; overflow: hidden; min-height: 640px }
 .rooms { border-right: 1px solid var(--hair); display: flex; flex-direction: column; gap: 12px; padding: 18px 12px 14px; background: var(--surface) }
+.rooms-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 2px 8px 12px; border-bottom: 1px solid var(--hair) }
+.rooms-h h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.035em; margin: 0 } .rooms-h p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-3) }
+.room-p.is-empty { color: var(--ink-3); opacity: .8 } .room-new { font-style: normal; font-size: 11px; font-weight: 700; color: var(--brand-text) }
 .rooms .asst-h { padding: 0 6px 6px } .rooms .asst-h h2 { font-size: 17px } .rooms .asst-av { width: 46px; height: 46px; border-radius: 14px }
 .room-list { display: flex; flex-direction: column; gap: 2px }
 .room-r { display: flex; align-items: center; gap: 10px; padding: 10px; border: 0; border-radius: 12px; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; min-width: 0 }
@@ -417,6 +420,7 @@ details.why summary::-webkit-details-marker { display: none }
 .bots.compact .bot-c { flex: 0 0 auto; min-height: 0; padding: 6px 12px 6px 6px; border-radius: 999px; gap: 6px } .bots.compact .bot-c small { display: none } .bots.compact .bot-c b { font-size: 13px }
 .bot-av { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--fill); color: var(--ink-2) }
 .bot-av.sm { width: 24px; height: 24px; border-radius: 8px }
+.bot-av.has-img { background: none; overflow: hidden; box-shadow: 0 1px 2px rgba(20, 20, 40, .08) } .bot-av img { width: 100%; height: 100%; display: block }
 .b-landlord { background: #E8F0FB; color: #1F5FAF } .b-repair { background: #FCEFE6; color: #A6380B } .b-money { background: #EAF5EC; color: #1E7A3D } .b-rights { background: var(--brand-tint); color: var(--brand-text) } .b-local { background: #F3ECFA; color: #6B3FA0 } .b-auto { background: var(--ink); color: var(--surface) }
 :root[data-theme="dark"] .b-landlord { background: #1A2A40; color: #8CB8F0 } :root[data-theme="dark"] .b-repair { background: #36231A; color: #F5A673 } :root[data-theme="dark"] .b-money { background: #17301F; color: #7CD39A } :root[data-theme="dark"] .b-local { background: #2A1F38; color: #C7A5EE }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .b-landlord { background: #1A2A40; color: #8CB8F0 } :root:not([data-theme="light"]) .b-repair { background: #36231A; color: #F5A673 } :root:not([data-theme="light"]) .b-money { background: #17301F; color: #7CD39A } :root:not([data-theme="light"]) .b-local { background: #2A1F38; color: #C7A5EE } }
@@ -1640,7 +1644,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function repairsData() { return (RS.published && RS.published.repairs) || (window.JACHWI_SEED && window.JACHWI_SEED.repairs) || []; }
   function botAnswer(q, bot, hist, R) { return JachwiAssistant.answer({ q: q, bot: bot, history: hist || [], cards: coachCards(), facts: assistantFacts(R), repairs: repairsData() }); }
   var BOTS = JachwiAssistant.BOTS;
-  function botAv(id, sm) { var b = BOTS[id] || BOTS.auto; return '<span class="bot-av' + (sm ? ' sm' : '') + ' b-' + id + '" aria-hidden="true">' + ic(b.icon, sm ? 'sm' : '') + '</span>'; }
+  // 봇 프로필 사진: icons/bots/<봇>.<BOT_IMG> — 같은 이름의 PNG로 바꾸려면 BOT_IMG를 'png'로 (프롬프트: icons/bots/PROMPTS.md)
+  var BOT_IMG = 'svg';
+  function botAv(id, sm) { if (!BOTS[id]) id = 'auto'; return '<span class="bot-av has-img' + (sm ? ' sm' : '') + ' b-' + id + '" aria-hidden="true"><img src="/icons/bots/' + id + '.' + BOT_IMG + '" alt="" width="36" height="36" decoding="async"></span>'; }
   // 답 블록: 문자 초안 · 판정 · 할 일 · 지출 막대 · 장소 · 안내
   function blockHtml(b, i, bi, c) {
     if (b.type === 'message') {
@@ -1735,7 +1741,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function roomTime(t) { if (!t) return ''; var d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString() ? String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : (d.getMonth() + 1) + '.' + d.getDate(); }
   function roomPreview(id) {
     var list = room(id).map(function (x) { return typeof x === 'string' ? { q: x } : x; }).filter(function (x) { return x && x.q; }), last = list[list.length - 1];
-    if (!last) return { text: BOTS[id].desc + ' · ' + BOTS[id].ex[0], time: '', n: 0 };
+    if (!last) return { text: BOTS[id].desc, time: '', n: 0, empty: true };
     var a = String(last.a || last.q).replace(/\*\*/g, '').replace(/\s+/g, ' ');
     return { text: a, time: roomTime(last.at), n: list.length };
   }
@@ -1743,11 +1749,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var R = evaluate(), cur = S.bot || 'auto', B = BOTS[cur], arr = room(cur);
     var thread = arr.filter(function (c) { return !(c && c.mode === 'hello'); }).map(function (c, i, all) { return chatItem(c, arr.indexOf(c), R, i === all.length - 1); }).join('');
     var aiOn = RS.ai && RS.src !== 'local' && S.aiCoach !== false;
-    var rooms = JachwiAssistant.ORDER.map(function (id) { var b = BOTS[id], pv = roomPreview(id); return '<button type="button" class="room-r" data-act="pickbot" data-v="' + id + '" aria-current="' + (cur === id) + '">' + botAv(id) + '<span class="room-m"><span class="room-t"><b>' + b.name + '</b><small>' + pv.time + '</small></span><span class="room-p">' + esc(pv.text) + '</span></span></button>'; }).join('');
+    var rooms = JachwiAssistant.ORDER.map(function (id) { var b = BOTS[id], pv = roomPreview(id); return '<button type="button" class="room-r" data-act="pickbot" data-v="' + id + '" aria-current="' + (cur === id) + '">' + botAv(id) + '<span class="room-m"><span class="room-t"><b>' + b.name + '</b><small>' + (pv.empty ? '<em class="room-new">대화 시작</em>' : pv.time) + '</small></span><span class="room-p' + (pv.empty ? ' is-empty' : '') + '">' + esc(pv.text) + (pv.empty ? '' : '') + '</span></span></button>'; }).join('');
     var empty = '<div class="room-empty">' + botAv(cur) + '<b>' + B.name + '</b><p>' + (S.nick ? esc(S.nick) + '님, ' : '') + esc(B.hello) + '</p><div class="chips">' + B.ex.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div></div>';
     return '<div class="page-head"><div><p class="eyebrow">지원 & 상담</p><h1>AI 자취 코치</h1></div></div>' +
       '<section class="card asst2' + (S.roomOpen ? ' open' : '') + '">' +
-      '<aside class="rooms"><div class="asst-h"><span class="asst-av" aria-hidden="true"><svg viewBox="0 0 48 48" width="30" height="30"><path d="M8 22 24 9l16 13v17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><rect x="15" y="24" width="18" height="11" rx="5.5" fill="currentColor"/><circle cx="20.5" cy="29.5" r="1.8" fill="var(--surface)"/><circle cx="27.5" cy="29.5" r="1.8" fill="var(--surface)"/></svg></span><div><h2>자취 AI 비서</h2><p class="s12 muted">봇마다 대화방이 따로 있어요</p></div><span class="badge ' + (aiOn ? 'solid' : 'brand-b') + '">' + (aiOn ? 'Claude' : '내장 AI') + '</span></div>' +
+      '<aside class="rooms"><div class="rooms-h"><div><h2>자취 AI 비서</h2><p>봇을 골라 대화를 시작하세요</p></div><span class="badge ' + (aiOn ? 'solid' : 'brand-b') + '">' + (aiOn ? 'Claude' : '내장 AI') + '</span></div>' +
       '<nav class="room-list" aria-label="채팅방">' + rooms + '</nav>' +
       '<p class="s12 muted asst-foot">' + ic('lock', 'sm') + (aiOn ? '권리 질문은 Claude가 승인된 안내 안에서 답해요.' : '이 기기 안에서 답해요. 질문이 서버로 가지 않아요.') + ' 승인된 안내에 없으면 답하지 않아요.' + (RS.ai && RS.src !== 'local' ? ' <label class="ai-tg"><input type="checkbox" data-act="aicoach"' + (aiOn ? ' checked' : '') + '> Claude로 답하기</label>' : '') + '</p></aside>' +
       '<div class="chatroom"><div class="room-h"><button type="button" class="icon-btn room-back" data-act="roomback" aria-label="채팅방 목록">' + ic('chev', 'sm') + '</button>' + botAv(cur) + '<div class="room-hn"><b>' + B.name + '</b><small>' + B.desc + (cur === 'auto' ? ' · 알맞은 봇이 답해요' : '') + '</small></div>' + (arr.length ? '<button type="button" class="btn line sm" data-act="chatclear">대화 지우기</button>' : '') + '</div>' +

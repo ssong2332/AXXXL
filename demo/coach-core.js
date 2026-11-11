@@ -34,7 +34,8 @@
     [/어디|어떻게|방법|온라인|신청/, /정부24|행정복지센터|온라인|센터|시스템|앱|포털|등기소|신청|방문/],
     [/얼마|금액|비용|돈|요율|퍼센트|%/, /원|%|만\s?원|요율|한도/],
     [/서류|준비물|뭐 가져|필요해|챙겨/, /서류|신분증|계약서|등본|내역|영수증/],
-    [/왜|이유|꼭|안 하면|안하면/, /힘|순서|효력|과태료|안전|근거|해지/]
+    [/왜|이유|꼭/, /힘|순서|효력|과태료|안전|근거|해지/],
+    [/안\s*하면|안하면|안\s*해도|어기면|늦으면|넘기면|놓치면|못\s*하면/, /과태료|불이익|해지|효력|사라|늦게|넘기면/, 6]
   ];
 
   // ---------- 2·3. 이해하기·찾기 ----------
@@ -46,7 +47,7 @@
     var ss = sentences(card.body), qg = J.grams(q), want = INTENT.filter(function (it) { return it[0].test(intentQ || q); });
     var scored = ss.map(function (s, i) {
       var v = score(s, qg) + (i === 0 ? 2.5 : 0);
-      want.forEach(function (it) { if (it[1].test(s)) v += 4; });
+      want.forEach(function (it) { if (it[1].test(s)) v += it[2] || 4; });
       return { s: s, i: i, v: v };
     });
     if (want.length > 1) max = Math.min(3, (max || 2) + want.length - 1);
