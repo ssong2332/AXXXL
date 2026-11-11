@@ -1645,7 +1645,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function botAnswer(q, bot, hist, R) { return JachwiAssistant.answer({ q: q, bot: bot, history: hist || [], cards: coachCards(), facts: assistantFacts(R), repairs: repairsData() }); }
   var BOTS = JachwiAssistant.BOTS;
   // 봇 프로필 사진: icons/bots/<봇>.<BOT_IMG> — 같은 이름의 PNG로 바꾸려면 BOT_IMG를 'png'로 (프롬프트: icons/bots/PROMPTS.md)
-  var BOT_IMG = 'svg';
+  var BOT_IMG = 'png';
   function botAv(id, sm) { if (!BOTS[id]) id = 'auto'; return '<span class="bot-av has-img' + (sm ? ' sm' : '') + ' b-' + id + '" aria-hidden="true"><img src="/icons/bots/' + id + '.' + BOT_IMG + '" alt="" width="36" height="36" decoding="async"></span>'; }
   // 답 블록: 문자 초안 · 판정 · 할 일 · 지출 막대 · 장소 · 안내
   function blockHtml(b, i, bi, c) {
