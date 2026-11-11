@@ -218,6 +218,26 @@
         { q: '전입신고 할 때 계약서 같이 내면 돼?', has: ['따로'] }
       ] }
   ],
+  // 말투 페르소나: 같은 내용을 다른 말투로 (줄임말·오타 · 걱정 많은 장문 · 부모 · 영어 섞임 · 격식체)
+  styles: { p: { age: 22, income: '100', deposit: 500, rent: 45, fee: 5, contract: '2026-11-01', move: '2026-11-08', term: 1, today: '2026-11-10' },
+    qs: [
+      { style: '줄임말·오타', q: '전입신고 언제까지임', has: ['2026.11.22'] },
+      { style: '줄임말·오타', q: 'ㅈㅇㅅㄱ 언제', has: ['2026.11.22'] },
+      { style: '줄임말·오타', q: '보일러 고장남 ㅠㅠ', bot: 'repair', has: ['집주인'] },
+      { style: '줄임말·오타', q: '집주인한테 머라고 보내 보일러', bot: 'landlord', has: ['보일러가 작동하지 않는'] },
+      { style: '줄임말·오타', q: '월세 넘 비싼데 지원 업나', has: ['해당 가능'] },
+      { style: '걱정 많은 장문', q: '어제 이사했는데 아직 전입신고를 못 했어요 혹시 문제가 생길까요? 너무 걱정돼요', has: ['걱정되셨겠어요', '2026.11.22'] },
+      { style: '걱정 많은 장문', q: '이사한 지 며칠 됐는데 보증금이 너무 걱정돼서 잠이 안 와요 뭘 해야 할까요', has: ['걱정되셨겠어요', '등기부등본'] },
+      { style: '부모', q: '아이가 처음 자취하는데 보증금 지키려면 뭘 해야 하나요', has: ['등기부등본'] },
+      { style: '부모', q: '딸이 월세 사는데 지원금 받을 수 있나요', has: ['서울시 청년월세 지원'] },
+      { style: '부모', q: '아들 자취방 전입신고는 부모가 대신 해도 되나요', has: ['안내에 없어서'] },
+      { style: '영어 섞임', q: '전입신고 deadline 언제야', has: ['2026.11.22'] },
+      { style: '영어 섞임', q: 'rent 지원 있어?', has: ['청년월세'] },
+      { style: '영어 섞임', q: '보일러 broken 누가 고쳐', bot: 'repair', has: ['집주인'] },
+      { style: '격식체', q: '임대차 신고 기한이 어떻게 됩니까', has: ['30일', '2026.12.01'] },
+      { style: '격식체', q: '계약 만료 시 퇴거 통지는 언제까지 해야 합니까', has: ['2027.09.08'] },
+      { style: '격식체', q: '임대인이 계약 기간 중에 나가라고 합니다', has: ['일방적으로 나가라고 할 수 없어요'] }
+    ] },
   extract: {
     'rent-2026-2': { name: '서울시 청년월세 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: 150, deposit_max: 8000, rent_max: 70, amount_monthly_max: 20, amount_months: 12, period_start: '2026-11-17', period_end: '2026-11-27', homeless: true, docs: 6, exclusions: 2, url: 'https://housing.seoul.go.kr' },
     'deposit-2026': { name: '서울시 청년 임차보증금 이자 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: null, deposit_max: 30000, period_start: '2026-11-24', period_end: '2026-12-11', homeless: true, docs: 3, exclusions: 1 },

@@ -228,3 +228,7 @@ test('페르소나: 계약 조건이 다른 7명이 같은 질문을 해도 내 
   assert.equal(r.wrong, 0, r.rows.filter((x) => x.wrong).map((x) => x.persona + ': ' + x.q).join(' / '));
   assert.equal(r.pass, r.total, r.rows.filter((x) => !x.pass).map((x) => x.persona + ': ' + x.q + ' → ' + x.why.join(', ')).join(' / '));
 });
+test('말투 페르소나: 줄임말·오타·걱정 장문·부모·영어 섞임·격식체도 같은 뜻으로 알아듣는다', () => {
+  const r = E.runStyles(SEED, EV.styles, AS, SEED.repairs);
+  assert.equal(r.pass, r.total, r.rows.filter((x) => !x.pass).map((x) => x.persona + ': ' + x.q + ' → ' + x.why.join(', ')).join(' / '));
+});
