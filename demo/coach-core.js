@@ -24,7 +24,7 @@
   var P_PII = /\d{6}\s*-\s*[1-4]\d{6}|01[016789][\s-]?\d{3,4}[\s-]?\d{4}|\d{3,6}-\d{2,6}-\d{3,8}/;
   var P_LEGAL = /고소|소송|이길 수|승소|처벌|법적으로 (가능|문제)|불법이야|위법/;
   var P_CRISIS = /사기|안\s*돌려|못\s*돌려|안\s*줘|안\s*준대|경매|쫓겨|나가래|연락(이|도)?\s*안|잠수|압류/;
-  var P_HOUSING = /집|방|월세|전세|보증금|계약|임대|임차|집주인|세입자|이사|입주|퇴거|신고|전입|확정일자|등기|관리비|공과금|가스|전기|수도|인터넷|지원|청년|주거|중개|부동산|복비|수리|곰팡이|누수|보일러|대출|이자|세액공제|연말정산|자취|원룸|오피스텔|고시원|셰어/;
+  var P_HOUSING = /해지|중도|계약서|체크리스트|준비물|방|월세|전세|보증금|계약|임대|임차|집주인|세입자|이사|입주|퇴거|신고|전입|확정일자|등기|관리비|공과금|가스|전기|수도|인터넷|지원|청년|주거|중개|부동산|복비|수리|곰팡이|누수|보일러|대출|이자|세액공제|연말정산|자취|원룸|오피스텔|고시원|셰어/;
   var P_VAGUE = /^(어떻게|뭐|무엇|도와|알려|궁금|질문|이거|저기|음+|안녕)[\s?!.]*(해|해요|줘|줘요|돼|있어|하지)?[\s?!.]*$/;
   var P_FOLLOW = /^(그럼|그러면|그건|그거|그때|거기|그|근데|아 그럼|그리고|또)\b|^(언제|어디|얼마|왜|어떻게|뭐|무슨)|(그건|그거|그럼)\s/;
 
@@ -42,6 +42,7 @@
   function sentences(body) { return String(body).split(/(?<=[.!?。])\s+/).map(function (s) { return s.trim(); }).filter(Boolean); }
   function score(text, qg) { var g = J.grams(text), s = 0; Object.keys(qg).forEach(function (k) { if (g[k]) s += k.charAt(0) === 'w' ? 1.5 : 0.5; }); return s; }
   function pickSentences(card, q, max, intentQ) {
+    if (card.whole) return sentences(card.body); // 문장이 서로 이어지는 안내는 통째로
     var ss = sentences(card.body), qg = J.grams(q), want = INTENT.filter(function (it) { return it[0].test(intentQ || q); });
     var scored = ss.map(function (s, i) {
       var v = score(s, qg) + (i === 0 ? 2.5 : 0);
@@ -139,7 +140,8 @@
     if (!unknown.length) return null;
     var ql = q.toLowerCase().replace(/\s+/g, ''), matched = (card.keywords || []).filter(function (w) { return w && ql.indexOf(w.toLowerCase().replace(/\s+/g, '')) >= 0; });
     var weak = matched.every(function (w) { return GENERIC.indexOf(w) >= 0 || unknown.some(function (u) { return u.indexOf(w) >= 0 && u !== w; }); });
-    return weak ? unknown : null;
+    var mostly = unknown.length >= 2 && unknown.length / words.length >= 0.5;
+    return weak || mostly ? unknown : null;
   }
   // ---------- 오늘·이번 주 할 일 (내 타임라인) ----------
   var P_TODO = /(오늘|이번\s*주|지금|당장|요즘|내일|이번\s*달).{0,8}(뭐|할\s*일|해야|챙겨)|할\s*일\s*(알려|뭐|있)|뭐부터/;
@@ -151,12 +153,25 @@
     return { kind: 'answer', text: '지금 챙길 일은 ' + ts.length + '가지예요. 가장 먼저 할 일은 ‘' + first.title + '’' + josa(first.title, '이에요').slice(first.title.length) + '.\n' + lines.join('\n') + '\n\n다 하면 타임라인에서 체크해 두세요. 다음 할 일을 알려드릴게요.', topic: ['todo'], cites: [{ id: 'todo', title: '내 타임라인', src: [['타임라인', '#timeline']] }], chips: ['전입신고는 어디서 해?', '잔금 보내기 전에 뭘 확인해?'], steps: ['질문 이해: 지금 할 일', '내 타임라인에서 기한이 가까운 할 일 ' + ts.length + '개 찾음', '급한 일 먼저 정리'] };
   }
 
+  // ---------- 단계별 체크리스트 (내 타임라인) ----------
+  var STAGE_Q = [[/계약\s*전|집\s*보러|계약하기\s*전/, 'pre'], [/계약\s*(당일|날)|계약할\s*때/, 'cday'], [/전날|입주\s*전|이사\s*전|준비물|입주\s*준비|이사\s*준비/, 'prep'], [/입주\s*(당일|날)|이사\s*(당일|날)|이삿날/, 'mday'], [/신고|정리/, 'report'], [/퇴거|나가기\s*전|이사\s*나가|만료/, 'out']];
+  var P_LIST = /체크\s*리스트|할\s*일|해야\s*할\s*(것|거|일)|챙길\s*(것|거)|준비물|뭐\s*챙겨|목록/;
+  function stageAnswer(q, f) {
+    if (!f.stages || !P_LIST.test(q)) return null;
+    var hit = STAGE_Q.filter(function (x) { return x[0].test(q); })[0]; if (!hit) return null;
+    var st = f.stages.filter(function (x) { return x.key === hit[1]; })[0]; if (!st || !st.tasks.length) return null;
+    var left = st.tasks.filter(function (t) { return !t.done; });
+    return { kind: 'answer', text: '**' + st.name + '**(' + st.when + ')에 할 일은 ' + st.tasks.length + '가지예요' + (left.length < st.tasks.length ? '. 그중 ' + (st.tasks.length - left.length) + '개는 이미 했어요' : '') + '.\n' + st.tasks.map(function (t) { return (t.done ? '✓ ' : '· ') + (t.urgent && !t.done ? '**' + t.title + '**' : t.title); }).join('\n') + '\n\n하나씩 끝내면 타임라인에서 체크해 두세요.',
+      topic: ['todo'], cites: [{ id: 'todo', title: '내 타임라인', src: [['타임라인', '#timeline']] }], chips: ['오늘 뭐 해야 돼?', '전입신고 언제 해야 해?'], steps: ['질문 이해: ' + st.name + ' 체크리스트', '내 타임라인에서 ' + st.name + ' 단계 할 일 ' + st.tasks.length + '개 가져옴'] };
+  }
+
   // ---------- 5. 답하기 ----------
   /* opts: { q, history: [{ q, topic: [cardId] }], cards, facts, programs } → 답 */
   function answer(opts) {
     var q = String(opts.q || '').replace(/\s+/g, ' ').trim(), f = opts.facts || {}, cards = opts.cards || [], hist = opts.history || [];
     var steps = [], pre = [];
     if (!q) return { kind: 'clarify', text: '궁금한 걸 적어 주세요.', chips: POPULAR, cites: [], topic: [], steps: steps };
+    var sa = stageAnswer(q, f); if (sa) return sa;
     if (P_TODO.test(q) && f.tasks) return todoAnswer(f);
     if (P_INJECT.test(q)) return { kind: 'guard', text: GUARD, chips: POPULAR, cites: [], topic: [], steps: ['요청 확인: 규칙을 바꾸려는 요청이라 따르지 않음'] };
     if (P_PII.test(q)) pre.push('주민등록번호·전화번호·계좌번호 같은 개인 정보는 적지 않아도 돼요. 아래는 그 부분을 빼고 답할게요.');
@@ -213,6 +228,10 @@
       if (me) mine.push(me);
     });
     if (mine.length) steps.push('내 계약 날짜·금액 반영');
+    var said = paras.join(' ') + ' ' + mine.join(' '), gap = [];
+    if (/비용|얼마|요금|수수료|돈\s*들/.test(q) && !/\d\s*(원|%|만)/.test(said)) gap.push('비용');
+    if (/언제|기한|며칠|몇\s*일/.test(q) && !/\d|당일|전에|뒤에|바로/.test(said)) gap.push('날짜');
+    if (gap.length) { mine.push('물어보신 ' + josa(gap.join('·'), '은는') + ' 승인된 안내에 없어서, 해당 기관에 확인해 주세요.'); steps.push(gap.join('·') + ' 정보는 안내에 없음을 밝힘'); }
     var text = (pre.length ? pre.join(' ') + '\n\n' : '') + paras.join('\n\n') + (mine.length ? '\n\n' + mine.join(' ') : '');
     // 숫자 점검: 답에 나온 숫자는 카드 문장이나 내 계약 값에 있어야 한다
     var pool = use.map(function (c) { return c.body + ' ' + c.title; }).join(' ') + ' ' + JSON.stringify(f);

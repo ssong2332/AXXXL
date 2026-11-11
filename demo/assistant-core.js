@@ -38,12 +38,13 @@
   function citeOf(cards, ids) { return ids.map(function (id) { var c = cardById(cards, id); return c ? { id: c.id, title: c.title, src: c.cite || [] } : null; }).filter(Boolean); }
 
   // ---------- 자유 질문: 알맞은 봇 고르기 ----------
-  var P_WRITE = /문자|메시지|카톡|톡\s|톡$|연락\s*(하고|드리|해야|해서)|말하고\s*싶|말해야|전하고|보내고|보낼|써\s*줘|써줄|작성|요청하고\s*싶|부탁하고\s*싶|알리고\s*싶|통보|답장/;
-  var P_REPAIR = /고장|수리|고쳐|고치|새요|새는|샌다|샙니다|누수|막혔|막힘|안\s*나와|안\s*켜|안\s*돼요|안\s*돼$|깨졌|부서|곰팡이|결로|보일러|변기|배수|수압|전구|전등|형광등|콘센트|차단기|누전|도어락|에어컨|세탁기|냉장고|방충망|가스\s*냄새|벽지|장판/;
-  var P_MONEY = /생활비|고정비|지출|돈이|돈을|아끼|절약|얼마\s*나가|한\s*달에|가계부|예산|공과금\s*(얼마|합)|줄이|부담|비중|많이\s*나가/;
+  var P_WRITE = /뭐라고\s*(보내|말|써)|어떻게\s*(말|보내|전해)|문자|메시지|카톡|톡\s|톡$|연락\s*(하고|드리|해야|해서)|말하고\s*싶|말해야|전하고|보내고|보낼|써\s*줘|써줄|작성|요청하고\s*싶|부탁하고\s*싶|알리고\s*싶|통보|답장/;
+  var P_REPAIR = /냄새|하수구|습기|배터리|건전지|흘러|물이\s*안\s*빠|찢어|들떴|금\s*갔|고장|수리|고쳐|고치|새요|새는|샌다|샙니다|누수|막혔|막힘|안\s*나와|안\s*켜|안\s*돼요|안\s*돼$|깨졌|부서|곰팡이|결로|보일러|변기|배수|수압|전구|전등|형광등|콘센트|차단기|누전|도어락|에어컨|세탁기|냉장고|방충망|가스\s*냄새|벽지|장판/;
+  var P_MONEY = /예산|수입|월급|소득|남는\s*돈|지원금\s*받으면|얼마나\s*줄|공과금|전기세|가스비|난방비|관리비\s*아끼|생활비|고정비|지출|돈이|돈을|아끼|절약|얼마\s*나가|한\s*달에|가계부|예산|공과금\s*(얼마|합)|줄이|부담|비중|많이\s*나가/;
   var P_LOCAL = /근처|가까운|가까이|주변|동네|어디\s*있|약국|병원|의원|치과|편의점|마트|다이소|빨래방|세탁소|카페|맛집|식당|밥집|공원|산책|헬스|도서관|스터디|공부하기|지하철|정류장|버스|주민센터|행정복지센터|청년센터|우체국|경찰|지구대|파출소/;
   function route(q, last) {
     if (P_WRITE.test(q)) return 'landlord';
+    if (/수리비|고친\s*비용|내가\s*(먼저\s*)?(고쳤|냈)/.test(q) || (/집주인|임대인/.test(q) && /연락|답(이|장)|읽씹|전화/.test(q) && !/보증금.*(안|못)\s*돌려/.test(q))) return 'landlord';
     if (/(전입|전월세|확정일자|보증금|계약|신고|지원금|세액공제)/.test(q) && !P_LOCAL.test(q.replace(/주민센터|행정복지센터/g, ''))) {
       if (P_MONEY.test(q) && !/보증금|계약|신고/.test(q)) return 'money';
       return 'rights';
@@ -56,8 +57,18 @@
   }
 
   // ---------- 고쳐봇 ----------
+  // 질문에 맞는 수리 안내 (세부 사례가 있으면 그 사례로 덮어씀)
   function matchRepair(q, repairs) {
-    for (var i = 0; i < (repairs || []).length; i++) if (new RegExp(repairs[i].re).test(q)) return repairs[i];
+    for (var i = 0; i < (repairs || []).length; i++) {
+      var r = repairs[i], m = new RegExp(r.re).exec(q);
+      if (!m) continue;
+      var out = {}; Object.keys(r).forEach(function (k) { out[k] = r[k]; });
+      (r.cases || []).forEach(function (c) { if (!out.caseHit && new RegExp(c.re).test(q)) { out.caseHit = true; Object.keys(c).forEach(function (k) { if (k !== 're') out[k] = c[k]; }); } });
+      // 질문에 쓴 낱말(결로·에어컨·냉장고…)로 부르기
+      var w = m[0].replace(/\s+/g, ' ').trim();
+      out.word = out.caseHit ? out.label : (/^[가-힣]{2,6}$/.test(w) && !/(냄새|새|흘|안)/.test(w) ? w : out.label);
+      return out;
+    }
     return null;
   }
   var WHO = { landlord: ['집주인 몫', 'ok'], tenant: ['세입자 몫', 'ink'], depends: ['원인에 따라 달라요', 'due'], safety: ['안전이 먼저', 'bad'] };
@@ -66,17 +77,25 @@
     if (!r) return { kind: 'clarify', text: '어디가 고장 났는지 조금만 더 알려 주세요. 고장 난 물건과 증상을 같이 적어 주면 정확해요.', chips: BOTS.repair.ex, steps: ['고장 난 물건을 찾지 못함'] };
     var w = WHO[r.who];
     var head = r.who === 'safety' ? '**' + josa(r.label, '이가') + '** 나면 수리보다 **안전이 먼저**예요. 아래 순서대로 바로 움직이세요.'
-      : '**' + josa(r.label, '은는') + '** ' + (r.who === 'landlord' ? '보통 **집주인이 고쳐야 해요.**' : r.who === 'tenant' ? '보통 **세입자가 해결해요.**' : '**원인에 따라** 누가 고칠지 달라요.');
-    var blocks = [{ type: 'verdict', label: w[0], tone: w[1], text: r.why }, { type: 'steps', title: '지금 할 일', items: r.now }];
-    var cites = (r.cite || [['민법 제623조 (임대인의 수선 의무)', 'https://www.law.go.kr']]).map(function (x, i) { return { id: 'repair-' + r.id + '-' + i, title: x[0], src: [x] }; });
-    var actions = r.who !== 'tenant' && r.who !== 'safety' ? [{ label: '집주인에게 수리 요청 문자 만들기', bot: 'landlord', q: r.label + ' 수리 요청 문자 써줘' }] : [];
+      : '**' + josa(r.word || r.label, '은는') + '** ' + (r.who === 'landlord' ? '보통 **집주인이 고쳐야 해요.**' : r.who === 'tenant' ? '보통 **세입자가 해결해요.**' : '**원인에 따라** 누가 고칠지 달라요.');
+    var now = r.now.slice();
+    if (r.who === 'landlord' || r.who === 'depends') now.push('고칠 일이 생기면 바로 집주인에게 알려야 해요. 늦게 알려 피해가 커지면 세입자 책임이 될 수 있어요 (민법 제634조)');
+    var blocks = [{ type: 'verdict', label: w[0], tone: w[1], text: r.why }, { type: 'steps', title: '지금 할 일', items: now }];
+    if (r.who === 'landlord' || r.who === 'depends') blocks.push({ type: 'note', text: '집주인이 고쳐 주지 않아 내가 먼저 고쳤다면, 영수증으로 집주인에게 수리비를 청구할 수 있어요 (민법 제626조, 필요비).' });
+    var cites = (r.cite || [['민법 제623조 (임대인의 수선 의무)', 'https://www.law.go.kr'], ['민법 제634조·제626조', 'https://www.law.go.kr']]).map(function (x, i) { return { id: 'repair-' + r.id + '-' + i, title: x[0], src: [x] }; });
+    var actions = r.who !== 'tenant' && r.who !== 'safety' ? [{ label: '집주인에게 수리 요청 문자 만들기', bot: 'landlord', q: (r.word || r.label) + ' 수리 요청 문자 써줘' }] : [];
     actions.push({ label: '입주 때 찍은 사진 보기', href: '#condition' });
     if (r.who === 'safety') blocks.shift();
-    return { kind: 'answer', text: head, blocks: blocks, actions: actions, cites: cites, topic: ['repair-' + r.id], chips: ['집주인이 안 고쳐 주면?', '입주할 때 사진 찍어야 해?'], steps: ['고장 난 물건 찾음: ' + r.label, '승인된 수리 안내에서 누가 고치는지 확인', '지금 할 일 정리'] };
+    return { kind: 'answer', text: head, blocks: blocks, actions: actions, cites: cites, topic: ['repair-' + r.id], chips: ['집주인이 안 고쳐 주면?', '입주할 때 사진 찍어야 해?'], steps: ['고장 난 곳 찾음: ' + (r.word || r.label) + (r.caseHit ? ' (세부 상황: ' + r.label + ')' : ''), '승인된 수리 안내에서 누가 고치는지 확인', '지금 할 일 정리'] };
   }
 
   // ---------- 집주인톡 ----------
   var LL = [
+    { id: 'nocontact', re: /연락(을|이)?\s*(안|없)|답(이|장)?\s*(이\s*)?(없|안)|읽씹|안\s*읽|전화(를|도)?\s*안\s*받|감감/, title: '다시 연락 요청' },
+    { id: 'refund', re: /수리비|고친\s*비용|내가\s*(먼저\s*)?(고쳤|냈|고치)|내\s*돈으로|영수증.*(돌려|청구|보내)/, title: '수리비 청구' },
+    { id: 'noise', re: /층간\s*소음|소음|시끄러|쿵쿵/, title: '소음 문제 전달' },
+    { id: 'visit', re: /집\s*(을\s*)?(보러|보여)|방\s*보러|다음\s*세입자|보러\s*온/, title: '집 보여 주기 일정' },
+    { id: 'payday', re: /이체\s*(날|일)|입금\s*(날|일)|월세\s*(날짜|날|일).*(바꾸|변경|옮기)|납부\s*일|보내는\s*날/, title: '월세 날짜 바꾸기' },
     { id: 'repair', re: /수리|고장|고쳐|고치|새요|새는|누수|곰팡이|보일러|막혔|막힘|안\s*나와|안\s*켜|깨졌|에어컨|세탁기|냉장고|도어락|전구|콘센트|변기/, title: '수리 요청' },
     { id: 'deposit', re: /보증금.*(돌려|반환|달라|받)|돌려\s*받|돌려\s*달/, title: '보증금 반환 요청' },
     { id: 'raise', re: /올려|올린|올리|인상/, title: '월세 인상 답장' },
@@ -89,10 +108,45 @@
   function since(q) { var m = /(어제|그제|그저께|오늘\s*아침|오늘|며칠\s*전|일주일\s*전|지난주|주말|이틀\s*전|사흘\s*전)/.exec(q); return m ? m[1].replace(/\s+/g, ' ') : ''; }
   function landlordBot(q, o) {
     var f = o.facts || {}, it = LL.filter(function (x) { return x.re.test(q); })[0];
+    // 정해진 상황이 아니어도, 문자를 써 달라는 말이면 내 말을 넣어 기본 틀로 써 줌
+    var topic = q.replace(/(집주인|임대인|주인)\s*(한테|에게|께|님께|님한테)?/g, '').replace(/(문자|메시지|카톡|톡)\s*(로|를|좀)?/g, '').replace(/(말하고|전하고|보내고|알리고|요청하고|부탁하고|물어보고)\s*싶어(요)?|써\s*줘|써줄래|보내\s*줘|작성해\s*줘|어떻게\s*(말|보내)\S*|뭐라고\s*\S*/g, '').replace(/[?!.]/g, '').replace(/\s+/g, ' ').trim();
+    if (!it && topic.length >= 2 && P_WRITE.test(q)) it = { id: 'free', title: '직접 쓰는 문자' };
     if (!it) return { kind: 'clarify', text: '어떤 내용을 전하고 싶은지 골라 주세요. 상황에 맞는 문자를 바로 써 드릴게요.', chips: ['보일러 수리 요청 문자 써줘', '계약 끝나고 나간다고 알리고 싶어', '보증금 돌려달라고 연락하고 싶어', '월세가 늦어질 것 같다고 말하고 싶어', '관리비 항목 물어보고 싶어'], steps: ['전할 내용을 찾지 못함'] };
     var house = f.house ? f.house : '', me = '안녕하세요, ' + (house ? house + ' ' : '') + '세입자' + (f.nick ? ' ' + f.nick : '') + '입니다.';
     var polite = '', short = '', tips = [], cites = [], extra = '';
-    if (it.id === 'repair') {
+    if (it.id === 'nocontact') {
+      var about = /보증금/.test(q) ? '보증금 반환' : /수리|고장|보일러|누수/.test(q) ? '수리 요청' : /계약|만료|이사/.test(q) ? '계약 만료와 이사' : '[보낸 내용]';
+      polite = me + ' 지난 [날짜]에 ' + about + ' 건으로 연락드렸는데 답을 못 받아 다시 연락드려요. 확인하시면 [언제까지] 답 주시면 감사하겠습니다.';
+      short = (house ? house + ' ' : '') + '세입자입니다. ' + about + ' 건 답 기다리고 있어요. [언제까지] 확인 부탁드려요.';
+      tips = ['처음 보낸 날짜와 내용을 함께 적으면 기록이 분명해져요', '언제까지 답을 달라고 날짜를 정해 두세요', '계속 연락이 안 되고 보증금이나 수리처럼 중요한 일이면 주택임대차분쟁조정위원회 조정이나 대한법률구조공단(132) 상담을 받을 수 있어요'];
+      cites = citeOf(o.cards, ['k-dispute']);
+    } else if (it.id === 'refund') {
+      var rr = matchRepair(q, o.repairs);
+      polite = me + ' [날짜]에 ' + (rr ? josa(rr.word || rr.label, '이가') + ' 고장 나서' : '[고장 내용]이 생겨') + ' 급하게 먼저 수리를 맡겼고, 비용이 [금액]원 들었어요. 집을 쓰는 데 꼭 필요한 수리라 영수증과 사진 보내드리니 확인 후 [은행·계좌번호]로 보내 주실 수 있을까요?';
+      short = '[날짜]에 ' + (rr ? (rr.word || rr.label) : '[고장 내용]') + ' 수리비 [금액]원을 먼저 냈어요. 영수증 보내드리니 [은행·계좌번호]로 보내 주세요.';
+      tips = ['영수증, 고장 사진, 수리 전후 사진을 같이 보내요', '집을 쓰는 데 필요한 수리비(필요비)는 집주인에게 돌려 달라고 할 수 있어요 (민법 제626조)', '다음에는 고치기 전에 먼저 집주인에게 알리고 답을 문자로 받아 두세요'];
+      cites = citeOf(o.cards, ['k-repair']).concat([{ id: 'law-626', title: '민법 제626조 (필요비 상환청구)', src: [['민법 제626조', 'https://www.law.go.kr']] }]);
+    } else if (it.id === 'noise') {
+      polite = me + ' 요즘 [시간대]마다 [윗집·옆집]에서 나는 소음이 계속돼서 연락드려요. 직접 찾아가기보다 관리하시는 쪽에서 한번 전달해 주시면 좋겠습니다. 날짜와 시간은 기록해 두었어요.';
+      short = '요즘 [시간대]에 [윗집·옆집] 소음이 계속돼요. 한번 전달해 주실 수 있을까요?';
+      tips = ['소음이 난 날짜·시간·어떤 소리였는지 적어 두세요', '직접 찾아가 따지기보다 집주인·관리인을 통해 전달하는 게 안전해요', '소음은 승인된 법률 안내가 없어 문자 틀만 드려요'];
+      cites = [];
+    } else if (it.id === 'visit') {
+      polite = me + ' 다음 세입자분이 집을 보러 오시는 건 괜찮습니다. 다만 [요일·시간]이 편하고, 오시기 하루 전에는 미리 연락 주시면 감사하겠습니다.';
+      short = '집 보러 오시는 건 괜찮아요. [요일·시간]이 편하고, 하루 전에 미리 알려 주세요.';
+      tips = ['가능한 요일·시간을 먼저 정해 두면 서로 편해요', '내가 없을 때 들어오는 건 미리 허락한 경우에만 하도록 말해 두세요'];
+      cites = citeOf(o.cards, ['k-moveout']);
+    } else if (it.id === 'payday') {
+      polite = me + ' 월급날이 [날짜]라서, 월세 보내는 날을 매달 [날짜]로 바꿔도 될지 여쭤봐요. 괜찮으시면 이번 달부터 그 날짜에 보내겠습니다.';
+      short = '월세 보내는 날을 매달 [날짜]로 바꿔도 될까요?';
+      tips = ['계약서에 적힌 날짜와 달라지니, 집주인이 괜찮다고 한 답을 문자로 남겨 두세요', '바꾼 날짜로 자취 캘린더의 월세 날짜도 고쳐 두세요', '바꾸기 전까지는 원래 날짜에 보내야 밀린 것으로 보지 않아요'];
+      cites = citeOf(o.cards, ['k-late']);
+    } else if (it.id === 'free') {
+      polite = me + ' ' + topic + ' 건으로 연락드려요. [상황을 한두 문장으로 적어 주세요]. 편하실 때 확인 부탁드립니다. 감사합니다.';
+      short = (house ? house + ' ' : '') + '세입자입니다. ' + topic + ' 건으로 연락드려요. [상황]. 확인 부탁드려요.';
+      tips = ['언제, 무엇이, 어떻게 됐는지 한두 문장으로 채워 보내요', '사진이나 날짜가 있으면 같이 보내요', '정해진 상황(수리·보증금·계약 끝내기 등)이라면 그 말을 넣어 다시 물어보면 더 알맞게 써 드려요'];
+      cites = [];
+    } else if (it.id === 'repair') {
       var r = matchRepair(q, o.repairs) || { label: '집 안 설비', symptom: '고장 난', who: 'landlord', id: 'etc' }, s = since(q);
       var word = r.re ? (new RegExp(r.re).exec(q) || [r.label])[0] : r.label, phrase = r.say || josa(word, '이가') + ' ' + r.symptom;
       polite = me + ' ' + phrase + ' 상태라 연락드려요.' + (s ? ' ' + s + '부터 이런 상태예요.' : '') + ' 사진 함께 보내드려요. 생활하기가 어려워서, 수리 가능한 날을 알려 주시면 일정 맞추겠습니다. 감사합니다.';
@@ -148,27 +202,74 @@
   }
 
   // ---------- 절약봇 ----------
+  // 질문 의도: 지원금 효과 · 월세 비중 · 공과금 · 관리비 · 예산 · 전체 보기
+  var UTIL = /전기|가스|수도|인터넷|통신|난방|휴대폰|핸드폰/;
+  function incomeOf(q) { var m = /(월급|소득|수입|용돈|알바비?|버는\s*돈)[^\d]{0,6}(\d+(?:\.\d+)?)\s*(만|백만)?/.exec(q) || /(\d+(?:\.\d+)?)\s*(만|백만)\s*원?\s*(벌|받|들어)/.exec(q); if (!m) return 0; var n = +(m[2] && !isNaN(+m[2]) ? m[2] : m[1]), u = m[3] || m[2]; return u === '백만' ? n * 100 : n; }
   function moneyBot(q, o) {
-    var f = o.facts || {}, m = f.money || {}, items = (m.items || []).filter(function (x) { return x.kind === 'out'; });
+    var f = o.facts || {}, m = f.money || {}, all = m.items || [], items = all.filter(function (x) { return x.kind === 'out'; }), ins = all.filter(function (x) { return x.kind === 'in'; });
     if (!items.length && f.rent) items = [{ name: '월세', amount: f.rent * 10000 }].concat(f.fee ? [{ name: '관리비', amount: f.fee * 10000 }] : []);
     if (!items.length) return { kind: 'clarify', text: '내 계약 화면에 월세·관리비를 넣으면 이번 달 나가는 돈을 정리해 드릴게요.', actions: [{ label: '내 계약 입력하기', href: '#contract' }], steps: ['지출 정보가 없음'] };
-    var total = items.reduce(function (a, b) { return a + b.amount; }, 0), rent = items.filter(function (x) { return /월세/.test(x.name); })[0];
-    var share = rent ? Math.round(rent.amount / total * 100) : 0;
+    var total = items.reduce(function (a, b) { return a + b.amount; }, 0), inSum = ins.reduce(function (a, b) { return a + b.amount; }, 0);
+    var rent = items.filter(function (x) { return /월세/.test(x.name); })[0], rentAmt = rent ? rent.amount : 0, share = rentAmt ? Math.round(rentAmt / total * 100) : 0;
     items = items.slice().sort(function (a, b) { return b.amount - a.amount; });
+    var bars = function (list, title, sum) { return { type: 'bars', title: title, total: sum, items: list.slice(0, 6).map(function (x) { return { label: x.name, amount: x.amount, pct: Math.round(x.amount / sum * 100), est: x.est }; }) }; };
     var ok = (f.programList || []).filter(function (p) { return p.verdict === '해당 가능' || p.verdict === '확인 필요'; });
+    var monthly = ok.filter(function (p) { return /월\s*최대/.test(p.amountText || ''); }), month = m.month || '이번 달';
+    var progMonthly = function (p) { var mm = /월\s*최대\s*([\d,.]+)\s*만/.exec(p.amountText || ''), mo = /최대\s*(\d+)\s*개월/.exec(p.amountText || ''); return { per: mm ? +mm[1].replace(/,/g, '') * 10000 : 0, months: mo ? +mo[1] : 0 }; };
+    var base = { topic: ['money'], cites: citeOf(o.cards, ['k-support']), actions: [{ label: '지원사업 자세히 보기', href: '#support' }, { label: '자취 캘린더에서 금액 고치기', href: '#calendar' }] };
+    var done = function (r) { Object.keys(base).forEach(function (k) { if (!r[k]) r[k] = base[k]; }); r.kind = r.kind || 'answer'; return r; };
+    var income = incomeOf(q);
+    // 1) 지원금 받으면 얼마나 줄어?
+    if (/지원.*(받으면|되면|선정)|얼마나\s*줄|줄어/.test(q) && monthly.length) {
+      var p0 = monthly[0], pm = progMonthly(p0), after = Math.max(0, total - pm.per), already = ins.some(function (x) { return /지원/.test(x.name); });
+      if (already) return done({ text: '자취 캘린더에 이미 지원금 입금(' + won(inSum) + '원)이 켜져 있어요. 그래서 ' + month + ' 실제 부담은 고정비 ' + won(total) + '원에서 뺀 **약 ' + won(total - inSum) + '원**이에요.', blocks: [{ type: 'bars', title: month + ' 돈 흐름', total: total, items: [{ label: '고정비', amount: total, pct: 100 }, { label: '실제 부담', amount: total - inSum, pct: Math.round((total - inSum) / total * 100) }] }], chips: ['월세 비중 높은 편이야?', '공과금 줄이는 방법'], steps: ['캘린더에 켜진 지원금 입금 확인', '고정비에서 빼서 계산'] });
+      return done({ text: '**' + p0.name + '**에 선정되면 매달 최대 **' + won(pm.per) + '원**' + (pm.months ? '(최대 ' + pm.months + '개월, 모두 ' + won(pm.per * pm.months) + '원)' : '') + '을 받을 수 있어요. 그러면 ' + month + ' 고정비 ' + won(total) + '원이 실제로는 **약 ' + won(after) + '원** 부담이 돼요.',
+        blocks: [{ type: 'bars', title: '지원금을 받으면', total: total, items: [{ label: '지금', amount: total, pct: 100 }, { label: '선정되면', amount: after, pct: Math.round(after / total * 100) }] }, { type: 'steps', title: '알아 둘 점', items: [p0.name + '은 지금 ' + p0.verdict + (p0.status ? ' · ' + p0.status : '') + '이에요. 최종 선정은 기관 심사로 정해져요', '금액은 공고마다 따로 보고 합치지 않아요', '선정되면 자취 캘린더의 ‘청년월세 지원 입금’을 켜 두면 매달 들어오는 날을 챙겨 드려요'] }],
+        chips: ['청년월세 지원 서류 뭐 필요해?', '월세 세액공제 받을 수 있어?'], steps: ['신청해 볼 수 있는 지원 중 매달 주는 지원 찾음', '이번 달 고정비에서 빼서 계산'] });
+    }
+    // 5) 예산
+    if (/예산|짜\s*줘|계획|남는\s*돈|저축/.test(q)) {
+      if (!income) return done({ kind: 'clarify', text: '고정비는 ' + month + ' **약 ' + won(total) + '원**이에요. 한 달 수입(월급·용돈·알바비)을 알려 주면 고정비를 빼고 쓸 수 있는 돈을 계산해 드릴게요.', blocks: [bars(items, month + ' 고정비', total)], chips: ['한 달 수입 200만 원이야 예산 짜줘', '한 달 수입 120만 원이야 예산 짜줘'], steps: ['고정비 계산', '수입을 몰라서 물어봄'] });
+      var left = income * 10000 + inSum - total;
+      return done({ text: '한 달 수입 ' + won(income) + '만 원' + (inSum ? '과 들어오는 돈 ' + won(inSum) + '원' : '') + '에서 고정비 ' + won(total) + '원을 빼면 **' + won(left) + '원**이 남아요. 이 안에서 식비·교통비·저축을 나눠 보세요.',
+        blocks: [{ type: 'bars', title: '한 달 돈 흐름', total: income * 10000 + inSum, items: [{ label: '고정비', amount: total, pct: Math.round(total / (income * 10000 + inSum) * 100) }, { label: '남는 돈', amount: Math.max(0, left), pct: Math.max(0, Math.round(left / (income * 10000 + inSum) * 100)) }] }, { type: 'steps', title: '이렇게 써 보세요', items: ['남는 돈을 주 단위로 나누면 한 주에 약 ' + won(Math.max(0, left) / 4.3) + '원이에요', '저축할 돈은 월급날 바로 따로 옮겨 두면 덜 쓰게 돼요', '자주 나가는 돈(통신비·구독)은 자취 캘린더에 넣어 고정비로 관리해요'] }],
+        chips: ['지원금 받으면 얼마나 줄어?', '공과금 줄이는 방법'], steps: ['수입 ' + won(income) + '만 원 확인', '고정비를 빼고 남는 돈 계산'] });
+    }
+    // 2) 월세 비중
+    if (/비중|비율|높은\s*편|많은\s*편|적당|과한/.test(q) || income) {
+      var lines = [month + ' 고정비 ' + won(total) + '원 중 월세가 ' + won(rentAmt) + '원(' + share + '%)이에요'];
+      if (income) lines.push('말해 준 소득 ' + won(income) + '만 원 기준으로 월세는 소득의 **' + Math.round(rentAmt / (income * 10000) * 100) + '%**, 고정비 전체는 **' + Math.round(total / (income * 10000) * 100) + '%**예요');
+      else lines.push('월 소득을 같이 적어 주면(예: “월급 200만 원인데 월세 비중 어때?”) 소득 대비 비율도 계산해 드릴게요');
+      if (monthly.length) lines.push(monthly[0].name + '에 선정되면 월세 부담이 매달 최대 ' + won(progMonthly(monthly[0]).per) + '원 줄어요');
+      return done({ text: '고정비 가운데 월세가 **' + share + '%**로 가장 커요.' + (income ? ' 소득 대비로는 **' + Math.round(rentAmt / (income * 10000) * 100) + '%**예요.' : ''), blocks: [bars(items, month + ' 고정비', total), { type: 'steps', title: '정리', items: lines }],
+        chips: income ? ['지원금 받으면 얼마나 줄어?', '생활비 줄이는 방법 알려줘'] : ['월급 200만 원인데 월세 비중 어때?', '지원금 받으면 얼마나 줄어?'], steps: ['고정비에서 월세 비중 계산'].concat(income ? ['말해 준 소득으로 비율 계산'] : []) });
+    }
+    // 3) 공과금
+    if (/공과금|전기|가스|수도|난방|통신|인터넷/.test(q) && !/관리비/.test(q)) {
+      var ut = items.filter(function (x) { return UTIL.test(x.name); }), us = ut.reduce(function (a, b) { return a + b.amount; }, 0);
+      var card = cardById(o.cards, 'k-save-utility'), tips = card ? C.sentences(card.body) : [];
+      return done({ text: ut.length ? month + ' 공과금·통신비는 **약 ' + won(us) + '원**이에요(고정비의 ' + Math.round(us / total * 100) + '%).' + (ut.some(function (x) { return x.est; }) ? ' 예상 금액이 섞여 있어요.' : '') : '자취 캘린더에 공과금이 아직 없어요. 전기·가스·통신비를 켜 두면 매달 얼마인지 정리해 드릴게요.',
+        blocks: (ut.length ? [bars(ut, '공과금·통신비', us)] : []).concat(tips.length ? [{ type: 'steps', title: '줄이는 방법', items: tips }] : []), cites: citeOf(o.cards, ['k-save-utility', 'k-utility']),
+        chips: ['관리비에는 뭐가 들어가?', '이번 달 고정비 얼마야?'], steps: ['자취 캘린더에서 공과금 ' + ut.length + '개 모음', '승인된 공과금 줄이기 안내 사용'] });
+    }
+    // 4) 관리비
+    if (/관리비/.test(q)) {
+      var fee = items.filter(function (x) { return /관리비/.test(x.name); })[0];
+      return done({ text: fee ? '관리비는 매달 **' + won(fee.amount) + '원**이에요(고정비의 ' + Math.round(fee.amount / total * 100) + '%). 관리비는 집주인과 정한 금액이라, 줄이려면 먼저 어떤 항목이 들어가는지 확인해 겹치는 공과금을 정리하는 게 시작이에요.' : '관리비 금액이 없어요. 내 계약 화면에 관리비를 넣어 주세요.',
+        blocks: [{ type: 'steps', title: '해 볼 일', items: ['관리비에 수도·인터넷·청소비·공용 전기 중 무엇이 들어가는지 집주인에게 문자로 물어봐요', '들어 있는 항목은 자취 캘린더에서 꺼서 두 번 계산되지 않게 해요', '인터넷이 관리비에 있는데 따로 또 가입했다면 하나를 정리해요'] }], cites: citeOf(o.cards, ['k-fee']),
+        actions: [{ label: '관리비 항목 묻는 문자 만들기', bot: 'landlord', q: '관리비 항목 물어보고 싶어' }], chips: ['공과금 줄이는 방법', '이번 달 고정비 얼마야?'], steps: ['관리비 금액과 비중 확인', '승인된 관리비 안내 사용'] });
+    }
+    // 6) 전체 보기
     var save = ok.map(function (p) { return p.name + ' (' + p.verdict + ') — ' + (p.amountText || '') + (p.status ? ' · ' + p.status : ''); });
     save.push('월세 세액공제 — 근로소득이 있는 무주택 세대주면 연말정산 때 낸 월세 일부를 돌려받아요');
     save.push('관리비 항목 확인 — 관리비에 수도·인터넷이 들어 있는데 따로 또 내고 있지 않은지 봐요');
-    var text = (m.month ? m.month + ' ' : '이번 달 ') + '나가는 고정비는 **약 ' + won(total) + '원**이에요.' + (rent ? ' 그중 월세가 **' + share + '%**예요.' : '') + (ok.length ? ' 신청해 볼 수 있는 지원이 ' + ok.length + '개 있어서, 선정되면 부담을 줄일 수 있어요.' : '');
-    return { kind: 'answer', text: text,
-      blocks: [{ type: 'bars', title: '이번 달 고정비', total: total, items: items.slice(0, 6).map(function (x) { return { label: x.name, amount: x.amount, pct: Math.round(x.amount / total * 100), est: x.est }; }) }, { type: 'steps', title: '줄일 수 있는 방법', items: save }],
-      actions: [{ label: '지원사업 자세히 보기', href: '#support' }, { label: '자취 캘린더에서 공과금 고치기', href: '#calendar' }],
-      cites: citeOf(o.cards, ['k-support', 'k-tax', 'k-fee']), topic: ['money'], chips: ['청년월세 지원 서류 뭐 필요해?', '월세 세액공제 받을 수 있어?'],
-      steps: ['자취 캘린더에서 이번 달 나가는 돈 ' + items.length + '개 모음', '항목별 비중 계산', '승인된 지원·세액공제 안내에서 줄일 방법 찾기'] };
+    var text = month + ' 나가는 고정비는 **약 ' + won(total) + '원**이에요.' + (rent ? ' 그중 월세가 **' + share + '%**예요.' : '') + (inSum ? ' 들어오는 돈 ' + won(inSum) + '원을 빼면 실제 부담은 **' + won(total - inSum) + '원**이에요.' : '') + (ok.length ? ' 신청해 볼 수 있는 지원이 ' + ok.length + '개 있어요.' : '');
+    return done({ text: text, blocks: [bars(items, month + ' 고정비', total), { type: 'steps', title: '줄일 수 있는 방법', items: save }], cites: citeOf(o.cards, ['k-support', 'k-tax', 'k-fee']),
+      chips: ['지원금 받으면 얼마나 줄어?', '공과금 줄이는 방법', '한 달 수입 200만 원이야 예산 짜줘'], steps: ['자취 캘린더에서 이번 달 나가는 돈 ' + items.length + '개 모음', '항목별 비중 계산', '승인된 지원·세액공제 안내에서 줄일 방법 찾기'] });
   }
 
   // ---------- 동네봇 ----------
-  var LOCAL = [[/약국/, 'medical', /약국/, '약국'], [/병원|의원|치과|내과/, 'medical', /의원|병원|치과|내과/, '병원'], [/빨래|세탁/, 'life', /빨래|세탁/, '빨래방·세탁소'], [/편의점/, 'life', /편의점/, '편의점'], [/마트|장보|다이소|생활/, 'life', /마트|다이소|슈퍼/, '마트'], [/카페|커피/, 'cafe', null, '카페'], [/지하철|역|버스|정류장|교통/, 'transit', null, '교통'], [/공원|산책/, 'park', null, '공원'], [/헬스|운동|체육/, 'gym', null, '운동할 곳'], [/도서관|스터디|공부/, 'study', null, '공부할 곳'], [/주민센터|행정복지센터|청년센터|우체국|관공서/, 'public', null, '공공시설'], [/밥|식당|맛집|먹/, 'food', null, '식당'], [/경찰|지구대|파출소|안전/, 'safety', null, '경찰']];
+  var LOCAL = [[/지하철|전철|역\b|역\s|역$/, 'transit', /역$|지하철|전철/, '지하철역'], [/버스|정류장/, 'transit', /버스|정류/, '버스정류장'], [/위험|무서|밤길|치안|경찰|지구대|파출소|112/, 'safety', null, '경찰서·지구대'], [/약국/, 'medical', /약국/, '약국'], [/병원|의원|치과|내과/, 'medical', /의원|병원|치과|내과/, '병원'], [/빨래|세탁/, 'life', /빨래|세탁/, '빨래방·세탁소'], [/편의점/, 'life', /편의점/, '편의점'], [/마트|장보|다이소|생활/, 'life', /마트|다이소|슈퍼/, '마트'], [/카페|커피/, 'cafe', null, '카페'], [/지하철|역|버스|정류장|교통/, 'transit', null, '교통'], [/공원|산책/, 'park', null, '공원'], [/헬스|운동|체육/, 'gym', null, '운동할 곳'], [/도서관|스터디|공부/, 'study', null, '공부할 곳'], [/주민센터|행정복지센터|청년센터|우체국|관공서/, 'public', null, '공공시설'], [/밥|식당|맛집|먹/, 'food', null, '식당'], [/안전/, 'safety', null, '경찰서·지구대']];
   function localBot(q, o) {
     var P = (o.facts || {}).places || {};
     if (!P.hasHome) return { kind: 'clarify', text: '집 위치를 먼저 정하면 가까운 곳을 걸어서 몇 분인지 알려 드릴게요.', actions: [{ label: '집 위치 정하기', href: '#map' }], steps: ['집 위치가 없음'] };
@@ -177,8 +278,8 @@
     if (hit) {
       list = P.list.filter(function (p) { return p.cat === hit[1] && (!hit[2] || hit[2].test(p.name) || hit[2].test(p.sub || '')); }).slice(0, 3);
       if (!list.length) return { kind: 'answer', text: '집 주변 1km 안에서 ' + josa(hit[3], '을를') + ' 찾지 못했어요.', actions: [{ label: '지도에서 직접 찾기', href: '#map' }], topic: ['local'], steps: ['‘' + hit[3] + '’ 찾기: 없음'] };
-      var p0 = list[0];
-      return { kind: 'answer', text: '가장 가까운 ' + hit[3] + '은 **' + p0.name + '**, 걸어서 약 **' + p0.min + '분**(' + p0.m + 'm)이에요.' + (list[1] ? ' 다음은 ' + list[1].name + '(' + list[1].min + '분)이에요.' : ''),
+      var p0 = list[0], extra = hit[1] === 'safety' ? ' 급할 때는 112에 바로 전화하세요.' : '';
+      return { kind: 'answer', text: '가장 가까운 ' + josa(hit[3], '은는') + ' **' + p0.name + '**, 걸어서 약 **' + p0.min + '분**(' + p0.m + 'm)이에요.' + (list[1] ? ' 다음은 ' + list[1].name + '(' + list[1].min + '분)이에요.' : '') + extra,
         blocks: [{ type: 'places', items: list }, { type: 'note', text: P.source || '' }], actions: [{ label: '지도 탐색 열기', href: '#map' }], topic: ['local'], chips: ['근처 빨래방', '공부하기 좋은 곳', '주민센터 어디야?'].filter(function (x) { return !hit[0].test(x); }).slice(0, 2),
         steps: ['찾는 곳: ' + hit[3], '집에서 가까운 순으로 ' + list.length + '곳 고름'] };
     }
@@ -217,6 +318,12 @@
     // 고쳐봇이 물건을 못 찾았으면 권리봇 지식으로 한 번 더
     if (bot === 'repair' && r.kind === 'clarify' && !want) { var r2 = rightsBot(q, o); if (r2.kind === 'answer') { r = r2; bot = 'rights'; } }
     if ((r.topic || [])[0] === 'todo') bot = 'auto'; // 오늘 할 일은 비서가 직접
+    // 전입신고·확정일자를 하러 갈 곳을 물으면 가장 가까운 행정복지센터를 함께
+    var PL = (o.facts || {}).places;
+    if (bot === 'rights' && r.kind === 'answer' && /어디|하러|받으러|가야|가면/.test(q) && /전입|확정일자|주민센터|행정복지센터/.test(q) && PL && PL.hasHome && PL.list) {
+      var off = PL.list.filter(function (p) { return p.cat === 'public' && /행정복지센터|주민센터|동사무소/.test(p.name + ' ' + (p.sub || '')); }).slice(0, 2);
+      if (off.length) { r.blocks = (r.blocks || []).concat([{ type: 'places', items: off }]); r.steps = (r.steps || []).concat(['집에서 가까운 행정복지센터 찾음']); }
+    }
     r.bot = bot; r.routed = !want || want !== bot;
     r.blocks = r.blocks || []; r.actions = r.actions || []; r.cites = r.cites || []; r.chips = r.chips || []; r.steps = r.steps || []; r.topic = r.topic || [];
     if (r.routed) r.steps.unshift((want ? BOTS[want].name + ' 대신 ' : '') + BOTS[bot].name + '에게 맡김');
