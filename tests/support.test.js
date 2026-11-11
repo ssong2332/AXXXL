@@ -334,3 +334,29 @@ test('나에게 맞는 순서: 월세 세입자에게는 월세 현금 지원이
   // 기혼이라고 답하면 신혼부부 지원을 뒤로 보내지 않는다
   assert.ok(S.relevance(wed, Object.assign({}, ctx, { mrg: '기혼' }), 'cash', false).score > sc(wed));
 });
+
+test("'공고 보기'는 기관 첫 화면으로 가지 않는다", () => {
+  const YC = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/';
+  // 대문 주소: 첫 화면, main·index·portal 파일, 폴더 하나로 끝나는 주소
+  ['https://www.hf.go.kr', 'https://www.molit.go.kr/portal.do', 'https://www.myhome.go.kr/hws/portal/main/getMgtMainPage.do', 'https://www.kosaf.go.kr/ko/main.do', 'https://www.nysc.or.kr/nysc/', 'https://www.moti.or.kr/main']
+    .forEach((u) => assert.equal(S.isLanding(u), true, u));
+  // 공고까지 들어가는 주소: 값이 붙은 주소, 글 번호, 사업 이름이 붙은 주소
+  ['https://youth.seoul.go.kr/content.do?key=2310100037', 'https://x.go.kr/index.do?menuCd=57', 'https://jejuyouthdream.com/policy/detail/57', 'https://youth.seoul.go.kr/youngtech', 'https://forms.gle/abc123']
+    .forEach((u) => assert.equal(S.isLanding(u), false, u));
+  const id = '20260923005400113576', deep = 'https://youth.seoul.go.kr/content.do?key=1', home = 'https://www.hf.go.kr';
+  // 공고 주소가 없으면 온통청년의 그 정책 상세 화면
+  assert.deepEqual(S.noticeLink({ id, notices: [], ref: home, url: home }, { state: 'none', why: 'nolink' }), { url: YC + id, kind: 'youth', checked: false });
+  // 대문 주소만 등록돼 있으면 쓰지 않는다
+  assert.equal(S.noticeLink({ id, notices: ['https://www.molit.go.kr/portal.do'] }, { state: 'pending' }).kind, 'youth');
+  // 공고에서 기간을 읽었으면 그 주소
+  assert.deepEqual(S.noticeLink({ id, notices: [deep] }, { state: 'found', url: deep }), { url: deep, kind: 'notice', checked: true });
+  // 열어 보니 이 사업 글이 아니면 쓰지 않는다
+  assert.equal(S.noticeLink({ id, notices: [deep] }, { state: 'none', why: 'unrelated', url: deep }).kind, 'youth');
+  // 서버에서 안 열렸어도(자동 접속 차단) 등록된 공고 주소는 그대로 쓴다
+  assert.deepEqual(S.noticeLink({ id, notices: [deep] }, { state: 'none', why: 'unreachable', url: deep }), { url: deep, kind: 'notice', checked: false });
+  // 기간은 못 읽었지만 이 사업 글이면 그 주소, 대문이면 온통청년
+  assert.equal(S.noticeLink({ id, notices: [deep] }, { state: 'none', why: 'notstated', url: deep }).url, deep);
+  assert.equal(S.noticeLink({ id, notices: ['https://www.arko.or.kr/main.do'] }, { state: 'none', why: 'notstated', url: 'https://www.arko.or.kr/main.do' }).kind, 'youth');
+  // 정책번호가 숫자가 아니면 온통청년 검색 화면
+  assert.equal(S.noticeLink({ id: 'T1', notices: [] }).url, 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch');
+});
