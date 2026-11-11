@@ -189,12 +189,26 @@
   // ---------- 권리봇 (승인된 지식 카드) ----------
   function rightsBot(q, o) { var a = C.answer({ q: q, history: o.history || [], cards: o.cards, facts: o.facts }); return a; }
 
+  var END = '[\\s?!.~ㅎㅋ^♡]*$';
+  var P_HELLO = new RegExp('^(안녕(하세요|하십니까)?|하이|hi|hello|헬로|ㅎㅇ|반가워요?|반갑습니다|처음 왔어요?)' + END, 'i');
+  var P_THANKS = new RegExp('^(고마워요?|고맙습니다|감사(합니다|해요)?|땡큐|thanks?( you)?|ㄱㅅ|덕분에 (해결|도움)\\S*|최고(야|예요)?|좋아요?|알겠어요?|오케이|ㅇㅋ)' + END, 'i');
+  var P_WHO = new RegExp('^(너 |넌 |이 봇 |여기 )?(누구(야|세요)?|뭐 ?할 ?수 ?있어|뭘 ?할 ?수 ?있어|뭐 ?해 ?줄 ?수 ?있어|무슨 ?봇이야|어떤 걸 물어봐(야 ?돼)?|뭐 ?물어볼 ?수 ?있어)' + END, 'i');
+  function smallTalk(q, id) {
+    var B = BOTS[id], name = id === 'auto' ? '자취 AI 비서' : B.name, me = '**' + name + '**' + josa(name, '이에요').slice(name.length);
+    if (P_HELLO.test(q)) return { kind: 'smalltalk', text: '안녕하세요! 저는 ' + me + '. ' + B.hello, chips: B.ex.slice(0, 3), steps: ['인사'] };
+    if (P_THANKS.test(q)) return { kind: 'smalltalk', text: '도움이 됐다니 다행이에요. 더 궁금한 게 생기면 언제든 물어보세요.', chips: B.ex.slice(0, 2), steps: ['감사 인사'] };
+    if (P_WHO.test(q)) return { kind: 'smalltalk', text: '저는 ' + me + (id === 'auto' ? '. 집주인톡·고쳐봇·절약봇·권리봇·동네봇 중 알맞은 봇에게 질문을 넘겨 답해요.' : '(' + B.desc + '). ' + B.hello + ' 다른 일은 자유 질문 방에서 물어보면 알맞은 봇이 답해요.'), chips: B.ex.slice(0, 3), steps: ['봇 소개'] };
+    return null;
+  }
   function answer(o) {
     var q = String(o.q || '').replace(/\s+/g, ' ').trim(), want = o.bot && o.bot !== 'auto' ? o.bot : null;
     var last = (o.history || []).length ? o.history[o.history.length - 1] : null;
     // 짧게/다시 써 달라는 요청은 바로 앞 문자에
     if (last && last.bot === 'landlord' && /짧게|간단히|줄여/.test(q) && last.q) { var re = landlordBot(last.q, o); re.preferShort = true; re.text = '짧게 줄여 봤어요.'; re.bot = 'landlord'; re.routed = !want; return re; }
     // 문자 쓰기는 어느 봇에서 물어도 집주인톡이, 위급·지시 무시는 권리봇 규칙이 먼저
+    // 인사·감사·"뭐 할 수 있어?" 같은 짧은 말에는 지금 방의 봇이 직접 답한다
+    var me = BOTS[want || 'auto'], small = smallTalk(q, want || 'auto');
+    if (small) { small.bot = want || 'auto'; small.routed = false; small.blocks = []; small.actions = []; small.cites = []; small.topic = []; return small; }
     var bot = want || route(q, last && last.bot);
     if (want && want !== 'landlord' && P_WRITE.test(q) && !/알려|뭐|어떻게/.test(q)) bot = 'landlord';
     if (want === 'repair' && !P_REPAIR.test(q)) bot = route(q, 'repair') === 'repair' ? 'repair' : 'rights';

@@ -217,3 +217,9 @@ test('AI 비서: 가스 냄새는 판정보다 안전 순서가 먼저', () => {
   assert.equal(a.bot, 'repair');
   assert.ok(a.blocks[0].type === 'steps' && a.blocks[0].items[0].includes('밸브'));
 });
+test('AI 비서: 인사·감사·소개에는 지금 방의 봇이 직접 답한다', () => {
+  const a = AS.answer({ q: '안녕', bot: 'money', cards: SEED.cards, facts: {}, repairs: [] });
+  assert.equal(a.kind, 'smalltalk'); assert.equal(a.bot, 'money'); assert.ok(a.text.includes('절약봇'));
+  assert.equal(AS.answer({ q: '고마워!', bot: 'landlord', cards: SEED.cards, facts: {}, repairs: [] }).kind, 'smalltalk');
+  assert.notEqual(AS.answer({ q: '안녕 전입신고 언제 해?', bot: 'auto', cards: SEED.cards, facts: {}, repairs: [] }).kind, 'smalltalk');
+});
