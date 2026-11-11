@@ -51,7 +51,7 @@
     }
     if (P_REPAIR.test(q)) return 'repair';
     if (P_MONEY.test(q)) return 'money';
-    if (P_LOCAL.test(q)) return 'local';
+    if (P_LOCAL.test(q) && !/정책|지원(사업|금)?|공고|임대주택|행복주택|LH/.test(q)) return 'local';
     if (last && /^(그럼|그러면|그건|그거|더|좀 더|짧게|길게|다시|하나 더)/.test(q)) return last;
     return 'rights';
   }
