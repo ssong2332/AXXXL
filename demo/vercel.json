@@ -86,6 +86,9 @@
     },
     "api/holidays.js": {
       "maxDuration": 15
+    },
+    "api/period.js": {
+      "maxDuration": 30
     }
   }
 }

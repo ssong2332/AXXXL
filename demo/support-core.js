@@ -80,6 +80,8 @@
   function normalize(p, sidoSize, regions) {
     var zips = codes(p.zipCd), ap = String(p.aplyYmd || '').split('~').map(ymd8);
     var cat = String(p.lclsfNm || '').split(',')[0].trim(), own = regions ? ownerOf(p, regions) : { sido: '', sgg: '', part: '' };
+    var links = linksOf(p), year = +(ymd8(p.bizPrdBgngYmd).slice(0, 4) || String(p.frstRegDt || '').slice(0, 4) || 0) || new Date().getFullYear();
+    var raw = [p.plcyAplyMthdCn, p.plcySprtCn, p.etcMttrCn, p.srngMthdCn, p.addAplyQlfcCndCn, p.plcyExplnCn, p.bizPrdEtcCn].map(function (s) { return String(s || ''); }).join('\n');
     return {
       osido: own.sido, osgg: own.sgg, opart: own.part,
       id: String(p.plcyNo || ''), name: clip(p.plcyNm, 80), sum: clip(p.plcyExplnCn, 220), cat: cat, sub: String(p.mclsfNm || '').split(',')[0].trim(),
@@ -93,8 +95,137 @@
       biz: { from: ymd8(p.bizPrdBgngYmd), to: ymd8(p.bizPrdEndYmd) },
       support: clip(p.plcySprtCn, 700), how: clip(p.plcyAplyMthdCn, 300), select: clip(p.srngMthdCn, 300), docs: clip(p.sbmsnDcmntCn, 600),
       cond: clip(p.addAplyQlfcCndCn, 500), excl: clip(p.ptcpPrpTrgtCn, 400), etc: clip(p.etcMttrCn, 300),
-      url: url(p.aplyUrlAddr), ref: url(p.refUrlAddr1) || url(p.refUrlAddr2), first: p.sprtArvlSeqYn === 'Y', upd: String(p.lastMdfcnDt || '').slice(0, 10)
+      url: url(p.aplyUrlAddr), urlHome: !!url(p.aplyUrlAddr) && !isDeep(url(p.aplyUrlAddr)), ref: links.ref, refHome: links.refHome, notices: links.notices,
+      first: p.sprtArvlSeqYn === 'Y', upd: String(p.lastMdfcnDt || '').slice(0, 10), reg: ymd8(String(p.frstRegDt || '').slice(0, 10)), year: year,
+      // 등록 글(신청 방법·지원 내용·기타)에 적힌 접수 기간. 공고 원문을 못 읽었을 때 '이미 끝났는지'를 가리는 데만 쓴다
+      tper: pickNotice(periodsIn(raw, year), { year: year })
     };
+  }
+
+  // ---------- 주소 ----------
+  // 첫 화면 주소(https://기관.go.kr/, /index.do)인지, 공고까지 들어가는 주소인지
+  function isDeep(s) {
+    var m = /^https?:\/\/[^/?#]+([^?#]*)(\?[^#]*)?/i.exec(String(s || '')); if (!m) return false;
+    var path = (m[1] || '').replace(/\/(index|main|home)\.(do|html?|jsp|php|asp|aspx|es|nm)$/i, '/').replace(/\/+$/, '');
+    return path !== '' || (m[2] || '').length > 1;
+  }
+  // 참고 주소 두 칸 중 공고까지 들어가는 주소를 먼저 쓴다 (11/11 확인: 참고1은 첫 화면, 참고2가 공고인 정책이 많다)
+  function linksOf(p) {
+    var a = url(p.aplyUrlAddr), r1 = url(p.refUrlAddr1), r2 = url(p.refUrlAddr2);
+    var ref = [r1, r2].filter(isDeep)[0] || r1 || r2, seen = {};
+    var notices = [a, r1, r2].filter(function (u) { if (!u || !isDeep(u) || seen[u] || /youthcenter\.go\.kr/i.test(u)) return false; seen[u] = 1; return true; });
+    return { ref: ref, refHome: !!ref && !isDeep(ref), notices: notices };
+  }
+
+  // ---------- 공고 글에서 접수 기간 읽기 ----------
+  // 규칙으로만 읽는다(AI 없음). 못 읽으면 못 읽었다고 돌려준다. 2026-11-11 실제 공고 790곳으로 맞춰 봄.
+  function htmlText(html) {
+    return String(html || '')
+      .replace(/<(script|style|noscript|svg|head|template)[\s\S]*?<\/\1>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<br\s*\/?>|<\/(p|div|li|tr|h\d|dd|dt|table|section|article|ul|ol)>/gi, '\n').replace(/<\/t[dh]>/gi, ' ').replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;|&#160;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&middot;/g, '·').replace(/&amp;/g, '&')
+      .replace(/&#(\d+);/g, function (m, n) { return n < 65536 ? String.fromCharCode(+n) : ' '; })
+      .replace(/[ \t\r\f\v\u00a0\u200b]+/g, ' ').replace(/ *\n[ \n]*/g, '\n').trim();
+  }
+  function normText(t) {
+    return String(t || '').replace(/[∼～〜~]/g, '~').replace(/[–—−]/g, '-').replace(/[’‘´`]/g, "'").replace(/．/g, '.').replace(/：/g, ':').replace(/（/g, '(').replace(/）/g, ')')
+      // '신 청 기 간', '기 간', '신청⏎기간'처럼 띄어 쓰거나 줄을 나눈 라벨을 붙인다
+      .replace(/(접|신|모)[ \t]*(수|청|집)[ \t]*\n?[ \t]*기[ \t]*간/g, '$1$2기간').replace(/기[ \t]+간(?=\s*[:\n])/g, '기간')
+      .replace(/(접수|신청|모집)\s*\n\s*(?=(기간|기한|일정|마감)\s*[:\n])/g, '$1');
+  }
+  var DATE = /(?:(20\d{2}|'\d{2})\s*(?:[.\-/]|년)\s*)?(\d{1,2})\s*(?:[.\-/]|월)\s*(\d{1,2})(?!\d)\s*(?:일|\.)?(?:\s*\([^)]{1,4}\))?(?:\s*\d{1,2}\s*(?::\s*\d{2}|시))?/g;
+  var HIGH = /(접수|신청|모집|원서\s*접수|서류\s*접수|참가\s*신청|응모|지원서\s*접수|신청서\s*접수)\s*(기간|기한|일정|일시|마감일?|시한)|(접수|신청|모집)\s*:/;
+  var MID = /(지원|공모|참여|참가)\s*기간/;
+  var OTHER = /(교육|사업|활동|운영|근무|행사|파견|연수|인턴십|협약|계약|보조|시행|대회|심사|면접|발표|입주|거주|임대|지급|이용|사용|유효|수행)\s*(기간|일정|일시)|(합격자|선정|결과)\s*(발표|통보)/;
+  var ALWAYS = /^[\s:\-·]*(상시|연중|수시|예산\s*소진\s*시\s*까지)/;
+  function yr(s) { return s ? (s[0] === "'" ? 2000 + +s.slice(1) : +s) : 0; }
+  function ymd(y, m, d) { return String(y) + (m < 10 ? '0' : '') + m + (d < 10 ? '0' : '') + d; }
+  function dateTokens(s) {
+    var out = [], m; DATE.lastIndex = 0;
+    while ((m = DATE.exec(s))) {
+      var y = yr(m[1]), mo = +m[2], d = +m[3];
+      if (mo < 1 || mo > 12 || d < 1 || d > 31) continue;
+      if (!y && !/[월일.]/.test(m[0].slice(String(m[2]).length))) continue; // '3.5' 같은 소수
+      out.push({ y: y, m: mo, d: d, i: m.index, j: m.index + m[0].length });
+    }
+    return out;
+  }
+  function rangesIn(win, refYear) {
+    var toks = dateTokens(win), out = [];
+    for (var k = 0; k < toks.length; k++) {
+      var a = toks[k], b = toks[k + 1], gap = b ? win.slice(a.j, b.i) : '';
+      if (b && /^\s*(\([^)]*\))?\s*(\d{1,2}\s*(:\s*\d{2}|시))?\s*(부터)?\s*[~\-]\s*$|^\s*부터\s*$/.test(gap)) {
+        var ya = a.y || (b.y && (b.m > a.m || (b.m === a.m && b.d >= a.d)) ? b.y : 0) || refYear, yb = b.y || ya;
+        if (!b.y && (b.m < a.m || (b.m === a.m && b.d < a.d))) yb = ya + 1;
+        out.push({ from: ymd(ya, a.m, a.d), to: ymd(yb, b.m, b.d) }); k++;
+      } else if (/~\s*$/.test(win.slice(Math.max(0, a.i - 4), a.i)) || /^\s*(까지|마감|한)/.test(win.slice(a.j, a.j + 6))) out.push({ from: '', to: ymd(a.y || refYear, a.m, a.d) });
+    }
+    return out;
+  }
+  // 날짜 없이 달만 적힌 기간: '2026. 4월 ~ 11월' → 그 달 첫날 ~ 마지막 날
+  function monthRanges(win, refYear) {
+    var out = [], re = /(?:(20\d{2}|'\d{2})\s*[.년]\s*)?(\d{1,2})\s*(?:월|\.)(?!\s*\d)\s*~\s*(?:(20\d{2}|'\d{2})\s*[.년]\s*)?(\d{1,2})\s*(?:월|\.)(?!\s*\d)/g, m;
+    while ((m = re.exec(win))) {
+      var y1 = yr(m[1]) || refYear, y2 = yr(m[3]) || y1, a = +m[2], b = +m[4];
+      if (a < 1 || a > 12 || b < 1 || b > 12) continue;
+      if (!m[3] && b < a) y2 = y1 + 1;
+      out.push({ from: ymd(y1, a, 1), to: ymd(y2, b, new Date(y2, b, 0).getDate()), month: true });
+    }
+    return out;
+  }
+  // 글에서 접수 기간 후보를 모은다. lv 2: 접수·신청·모집 기간, lv 1: 지원·공모 기간(뜻이 둘이라 짧은 것만 쓴다)
+  function periodsIn(text, refYear) {
+    var lines = normText(text).split('\n'), out = [], all = new RegExp(HIGH.source + '|' + MID.source, 'g'), stop = new RegExp(OTHER.source + '|' + HIGH.source + '|' + MID.source);
+    refYear = refYear || new Date().getFullYear();
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i], m; all.lastIndex = 0;
+      while ((m = all.exec(line))) {
+        var lv = HIGH.test(m[0]) ? 2 : 1, rest = line.slice(m.index + m[0].length), cut = rest.search(stop);
+        if (cut > 0) rest = rest.slice(0, cut);
+        var win = rest; if (!/\d/.test(win) && !ALWAYS.test(win) && i + 1 < lines.length) win = lines[i + 1].slice(0, 140);
+        win = win.slice(0, 160);
+        var found = rangesIn(win, refYear).concat(monthRanges(win, refYear));
+        if (!found.length && lv === 2 && ALWAYS.test(win.slice(0, 40))) found = [{ from: '', to: '', always: true }];
+        // 라벨 앞 몇 글자('1차', '○')도 함께 남긴다. 화면에 원문 그대로 보여 주고, 차수를 가리는 데 쓴다
+        var label = m[0].replace(/\s+/g, ''), said = (line.slice(Math.max(0, m.index - 8), m.index).replace(/^.*[.:]\s/, '') + m[0] + ' ' + win).replace(/\s+/g, ' ').trim().slice(0, 130);
+        found.forEach(function (r) { r.label = label; r.lv = lv; r.line = said; out.push(r); });
+      }
+    }
+    return out;
+  }
+  // 후보 가운데 믿을 수 있는 접수 기간을 고른다.
+  // 반환: { state: 'found', ranges, line } | { state: 'always', line } | { state: 'stale'|'ambiguous' } | null(기간 표현 없음)
+  function pickNotice(cands, o) {
+    o = o || {};
+    var hi = cands.filter(function (c) { return c.lv === 2; }), mid = cands.filter(function (c) { return c.lv === 1 && c.from && c.to && !c.month && days(d8(c.to), d8(c.from)) <= 120; });
+    var use = hi.length ? hi : mid, seen = {}, ranges = use.filter(function (c) { var k = c.from + c.to; if (c.always || !c.to || seen[k]) return false; seen[k] = 1; return true; });
+    // 사업 연도보다 앞선 해의 기간만 있으면 지난 공고다 (11/11 확인: 2026년 사업에 2022년 공고가 연결된 경우)
+    var fresh = o.year ? ranges.filter(function (r) { return +r.to.slice(0, 4) >= o.year; }) : ranges;
+    if (ranges.length && !fresh.length) return { state: 'stale', line: ranges[0].line };
+    // 한 페이지에 서로 다른 기간이 여럿이면 게시판 목록이거나 다른 공고가 섞인 것이다. '1차·2차'라고 적힌 경우만 받는다
+    if (fresh.length >= 3 || (fresh.length === 2 && !fresh.some(function (r) { return /\d\s*차|회차/.test(r.line); }))) return { state: 'ambiguous' };
+    if (fresh.length) return { state: 'found', ranges: fresh.map(function (r) { return { from: r.from, to: r.to, month: !!r.month }; }), line: fresh[0].line };
+    var al = use.filter(function (c) { return c.always; })[0];
+    return al ? { state: 'always', line: al.line } : null;
+  }
+  // 이 페이지가 이 사업 이야기인지: 사업 이름의 낱말이 페이지에 있어야 한다 (첫 화면·다른 공고를 거른다)
+  var GENERIC = { 청년: 1, 지원: 1, 사업: 1, 운영: 1, 모집: 1, 신청: 1, 안내: 1, 공고: 1, 대상: 1, 육성: 1, 활성화: 1, 추진: 1, 프로그램: 1, 참여자: 1, 지원사업: 1, 하반기: 1, 상반기: 1, 센터: 1, 지원금: 1, 위한: 1 };
+  function nameWords(name) {
+    return String(name || '').replace(/\d{2,4}\s*년?/g, ' ').split(/[^가-힣A-Za-z0-9]+/).map(function (w) { return w.replace(/(사업|지원|운영|모집|육성|과정|프로그램|분야)$/, ''); })
+      .filter(function (w) { return w.length >= 2 && !GENERIC[w]; });
+  }
+  function aboutPolicy(text, name) {
+    // 긴 낱말은 앞 네 글자만 맞아도 같은 말로 본다 ('기상기후분야' ↔ '기상기후전문인력')
+    var w = nameWords(name), t = String(text || ''), hit = w.filter(function (x) { return t.indexOf(x) >= 0 || (x.length >= 5 && t.indexOf(x.slice(0, 4)) >= 0); });
+    return w.length > 0 && (hit.length >= Math.min(2, w.length) || hit.some(function (x) { return x.length >= 4; }));
+  }
+  // 공고 페이지 한 곳을 읽은 결과. 사유(why)는 화면에 그대로 보여 준다
+  function readNotice(text, it) {
+    if (!aboutPolicy(text, it.name)) return { state: 'none', why: 'unrelated' };
+    var r = pickNotice(periodsIn(text, it.year), { year: it.year });
+    if (!r) return { state: 'none', why: 'notstated' };
+    if (r.state === 'stale' || r.state === 'ambiguous') return { state: 'none', why: r.state, line: r.line };
+    return r;
   }
 
   // ---------- 접수 상태 (이용 시점 기준) ----------
@@ -103,24 +234,55 @@
   function days(a, b) { return Math.round((a - b) / 86400000); }
   // 올해가 아닌 날짜에는 연도를 붙인다 ('4월 22일'만 보이면 올해로 읽힌다)
   function dl(d, today) { return (d.getFullYear() !== today.getFullYear() ? d.getFullYear() + '년 ' : '') + md(d); }
-  // 반환: { k: 'open'|'always'|'soon'|'ended', text, left(남은 날), to(Date), far(마감이 1년 넘게 남음) }
+  function endText(d, today, month) { return month ? (d.getFullYear() !== today.getFullYear() ? d.getFullYear() + '년 ' : '') + (d.getMonth() + 1) + '월 말' : dl(d, today); }
+  // 확인된 기간(여러 차수일 수 있음)으로 상태를 낸다
+  function fromRanges(ranges, today, src) {
+    var rs = ranges.map(function (r) { return { from: r.from ? d8(r.from) : null, to: d8(r.to), month: r.month }; }).sort(function (x, y) { return (x.from || x.to) - (y.from || y.to); });
+    var now = rs.filter(function (r) { return (!r.from || r.from <= today) && today <= r.to; })[0];
+    if (now) { var l = days(now.to, today); return { k: 'open', text: '접수 중 · ' + endText(now.to, today, now.month) + (now.month ? '까지' : ' 마감'), left: l, to: now.to, far: l > 365, long: !!now.from && days(now.to, now.from) > 180, sure: true, src: src }; }
+    var next = rs.filter(function (r) { return r.from && r.from > today; })[0];
+    if (next) return { k: 'soon', text: dl(next.from, today) + '부터 접수', left: days(next.from, today), to: next.to, sure: true, src: src };
+    var last = rs[rs.length - 1];
+    return { k: 'ended', text: '접수 끝남 · ' + endText(last.to, today, last.month) + (last.month ? '까지였어요' : ' 마감'), sure: true, src: src };
+  }
+  // 온통청년 등록 값만으로 낸 상태 (공고 원문과 맞춰 보지 않은 것)
+  function regStatus(it, today) {
+    var a = it.apply || {}, from = d8(a.from), to = d8(a.to);
+    if (a.t === 'period' && from && to) return today < from ? 'soon' : today > to ? 'ended' : 'open';
+    return a.t === 'always' ? 'always' : 'none';
+  }
+  // 등록된 접수 기간이 '자리만 채운 값'으로 보이는지 (11/11 점검: 접수 중으로 계산되던 194건 중 177건)
+  function regLoose(it) {
+    var a = it.apply || {}, b = it.biz || {};
+    if (a.t !== 'period' || !a.from || !a.to) return false;
+    return (a.from === b.from && a.to === b.to) || (/0101$/.test(a.from) && /1231$/.test(a.to)) || days(d8(a.to), d8(a.from)) > 180 || (!!it.reg && days(d8(it.reg), d8(a.from)) > 60);
+  }
+  function regText(it) { var a = it.apply || {}; return a.t === 'period' && a.from && a.to ? a.from.slice(0, 4) + '.' + +a.from.slice(4, 6) + '.' + +a.from.slice(6) + ' ~ ' + a.to.slice(0, 4) + '.' + +a.to.slice(4, 6) + '.' + +a.to.slice(6) : a.t === 'always' ? '상시' : ''; }
+  // 접수 상태. 마감일은 공고 원문에서 확인한 것만 말한다(sure: true).
+  // it.notice: 서버가 공고 원문을 읽은 결과 { state: 'found'|'always'|'none'|'pending', ranges, line, url, why }
+  // 반환: { k: 'open'|'soon'|'always'|'check'|'ended', text, left, to, sure, src: 'notice'|'text'|'reg', pending }
   function statusAt(it, today) {
-    var a = it.apply || {}, from = d8(a.from), to = d8(a.to), bizEnd = d8((it.biz || {}).to);
-    if (a.t === 'closed') return { k: 'ended', text: '접수 끝남' };
-    if (a.t === 'period' && from && to) {
-      if (today < from) return { k: 'soon', text: dl(from, today) + '부터 접수', left: days(from, today), to: to };
-      if (today > to) return { k: 'ended', text: '접수 끝남 · ' + dl(to, today) + ' 마감' };
-      var l = days(to, today);
-      return { k: 'open', text: '접수 중 · ' + dl(to, today) + ' 마감', left: l, to: to, far: l > 365 };
-    }
-    if (bizEnd && today > bizEnd) return { k: 'ended', text: '사업 기간 끝남' };
-    return { k: 'always', text: a.t === 'always' ? '상시 접수' : '접수 기간은 공고 확인' };
+    var a = it.apply || {}, n = it.notice || {}, bizEnd = d8((it.biz || {}).to), rk = regStatus(it, today);
+    if (a.t === 'closed') return { k: 'ended', text: '접수 끝남', sure: true, src: 'reg' };
+    if (n.state === 'found') return fromRanges(n.ranges, today, 'notice');
+    if (n.state === 'always') return bizEnd && today > bizEnd ? { k: 'ended', text: '사업 기간 끝남', sure: true, src: 'reg' } : { k: 'always', text: '상시 접수', sure: true, src: 'notice' };
+    // 여기부터는 공고 원문으로 확인하지 못한 경우. '끝났다'는 근거는 받아들이고, '접수 중'이라고는 말하지 않는다
+    if (it.tper && it.tper.state === 'found') { var t = fromRanges(it.tper.ranges, today, 'text'); if (t.k === 'ended') return t; }
+    if (rk === 'ended') return { k: 'ended', text: '접수 끝남 · ' + dl(d8(a.to), today) + ' 마감(등록 기준)', sure: true, src: 'reg' };
+    if (bizEnd && today > bizEnd) return { k: 'ended', text: '사업 기간 끝남', sure: true, src: 'reg' };
+    var pend = n.state === 'pending';
+    if (a.t === 'period') return { k: 'check', text: pend ? '접수 기간 확인 중' : '접수 기간 확인 필요', sure: false, src: 'reg', pending: pend };
+    return { k: 'always', text: pend ? '접수 기간 확인 중' : '상시 접수로 등록(공고 미확인)', sure: false, src: 'reg', pending: pend };
   }
 
-  // 남은 날 표시. 마감이 1년 넘게 남았으면 날짜만 보여 주고 'n일 남음'은 붙이지 않는다.
-  function leftText(st) { return !st || st.k !== 'open' || st.far || !(st.left >= 0) ? '' : st.left ? st.left + '일 남음' : '오늘 마감'; }
-  // '마감 빠른 순' 순서: 접수 중이고 마감일이 있는 것(가까운 순) → 상시 접수 → 접수 전(시작이 가까운 순) → 끝남
-  function dueRank(st) { return st.k === 'open' ? Math.min(Math.max(st.left, 0), 99999) : st.k === 'always' ? 1e6 : st.k === 'soon' ? 2e6 + Math.min(st.left || 0, 99999) : 3e6; }
+  // 남은 날 표시. 공고로 확인한 마감만 센다. 1년 넘게 남았거나 반년 넘는 긴 접수면 날짜만 보여 준다.
+  function leftText(st) { return !st || !st.sure || st.k !== 'open' || st.far || st.long || !(st.left >= 0) ? '' : st.left ? st.left + '일 남음' : '오늘 마감'; }
+  // '마감 빠른 순': 공고로 확인한 접수 중(마감 가까운 순) → 확인한 접수 전 → 상시(확인 → 미확인) → 기간 확인 필요 → 끝남
+  function dueRank(st) {
+    if (st.k === 'open' && st.sure) return Math.min(Math.max(st.left, 0), 99999);
+    if (st.k === 'soon' && st.sure) return 1e6 + Math.min(st.left || 0, 99999);
+    return st.k === 'always' ? (st.sure ? 2e6 : 2.5e6) : st.k === 'check' || st.k === 'open' || st.k === 'soon' ? 3e6 : 4e6;
+  }
 
   // ---------- 조건 대조 ----------
   var ASK = {
@@ -383,9 +545,9 @@
   }
 
   // 목록 순서: 맞는 것 → 확인 필요 → 안 맞는 것, 그 안에서 마감 임박 → 상시 → 접수 전 → 끝남, 범위가 좁은 것 먼저
-  var VR = { ok: 0, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
-  function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
+  var VR = { ok: 0, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, check: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
+  function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' && st.sure ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
-  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
+  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regStatus: regStatus, regText: regText, isDeep: isDeep, htmlText: htmlText, periodsIn: periodsIn, pickNotice: pickNotice, aboutPolicy: aboutPolicy, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
     docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, amountList: amountList, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });

@@ -71,15 +71,38 @@ test('운영 지역: 다른 지자체가 전국 대상으로 등록한 사업은
   assert.equal(S.normalize(raw({ plcyNm: '&quot;노벨 문학도시&quot; 청년 &amp; 축제' })).name, '"노벨 문학도시" 청년 & 축제');
 });
 
-test('접수 상태는 보는 날짜 기준으로 바뀐다', () => {
-  const it = S.normalize(raw());
+// 공고 원문에서 읽은 기간을 붙인다 (서버가 하는 일을 테스트에서 흉내 낸다)
+const withNotice = (it, ranges) => Object.assign(it, { notice: { state: 'found', ranges: ranges.map(([from, to]) => ({ from, to })) } });
+
+test('접수 상태: 공고 원문으로 확인한 기간만 마감으로 말하고, 보는 날짜 기준으로 바뀐다', () => {
+  const it = withNotice(S.normalize(raw()), [['20261101', '20261122']]);
   assert.equal(S.statusAt(it, day('20261025')).k, 'soon');
   const open = S.statusAt(it, day('20261110'));
-  assert.equal(open.k, 'open'); assert.equal(open.left, 12);
+  assert.equal(open.k, 'open'); assert.equal(open.left, 12); assert.equal(open.sure, true); assert.equal(open.src, 'notice');
   assert.equal(S.statusAt(it, day('20261122')).left, 0);
   assert.equal(S.statusAt(it, day('20261123')).k, 'ended');
-  assert.equal(S.statusAt(S.normalize(raw({ aplyPrdSeCd: '0057002', aplyYmd: '' })), day('20261110')).k, 'always');
   assert.equal(S.statusAt(S.normalize(raw({ aplyPrdSeCd: '0057003', aplyYmd: '' })), day('20261110')).k, 'ended');
+});
+
+test('접수 상태: 공고로 확인 못 하면 마감일을 말하지 않는다. 끝났다는 근거는 받아들인다', () => {
+  const on = day('20261111');
+  // 2026-11-11 실제 사례: '기상기후분야 국제기구 청년진출 지원'이 1.1~12.31(사업 기간 복사)로 등록, 실제 공고는 4.20~5.22
+  const kmi = S.normalize(raw({ aplyYmd: '20260101 ~ 20261231', bizPrdBgngYmd: '20260101', bizPrdEndYmd: '20261231' }));
+  assert.equal(S.regLoose(kmi), true);
+  const st = S.statusAt(kmi, on);
+  assert.equal(st.k, 'check'); assert.equal(st.sure, false); assert.equal(S.leftText(st), '');
+  assert.equal(S.statusAt(withNotice(kmi, [['20260420', '20260522']]), on).k, 'ended'); // 공고를 읽으면 끝남
+  // 등록 기간이 이미 지났으면 끝남 (공고를 못 읽어도)
+  assert.equal(S.statusAt(S.normalize(raw({ aplyYmd: '20260301 ~ 20260331' })), on).k, 'ended');
+  // 등록 글에 적힌 마감이 지났으면 끝남
+  const txt = S.normalize(raw({ aplyYmd: '20260101 ~ 20261231', plcyAplyMthdCn: '접수기간 2026. 6. 1. ~ 6. 30. 이메일 접수' }));
+  assert.equal(S.statusAt(txt, on).k, 'ended'); assert.equal(S.statusAt(txt, on).src, 'text');
+  // 상시로 등록된 것도 공고로 확인하기 전에는 '미확인'
+  const al = S.statusAt(S.normalize(raw({ aplyPrdSeCd: '0057002', aplyYmd: '' })), on);
+  assert.equal(al.k, 'always'); assert.equal(al.sure, false);
+  assert.equal(S.statusAt(Object.assign(S.normalize(raw({ aplyPrdSeCd: '0057002', aplyYmd: '' })), { notice: { state: 'always' } }), on).sure, true);
+  // 읽는 중
+  assert.equal(S.statusAt(Object.assign(S.normalize(raw()), { notice: { state: 'pending' } }), on).text, '접수 기간 확인 중');
 });
 
 test('나이 경계: 하한·상한 당일은 맞고 하루 차이는 안 맞는다', () => {
@@ -204,25 +227,63 @@ test('실제 공고 글 읽기 보완: 합쳐 쓴 금액, 청년 금액, 건강�
   assert.deepEqual(S.docLines('- 주민등록등본\n- ☞ 자세한 내용은 붙임파일을 확인해주시기 바랍니다\n- 시군 홈페이지 참고\n- 차상위계층 확인서').map((x) => x.name), ['주민등록등본', '차상위계층 확인서']);
 });
 
-test('마감 표시: 올해가 아니면 연도를 붙이고, 1년 넘게 남으면 남은 날을 세지 않는다', () => {
-  const at = (ymd, on) => S.statusAt(S.normalize(raw({ aplyYmd: ymd })), day(on));
-  const near = at('20261101 ~ 20261122', '20261111');
+test('마감 표시: 올해가 아니면 연도를 붙이고, 1년 넘게 남거나 반년 넘게 받는 접수는 남은 날을 세지 않는다', () => {
+  const at = (from, to, on) => S.statusAt(withNotice(S.normalize(raw()), [[from, to]]), day(on));
+  const near = at('20261101', '20261122', '20261111');
   assert.equal(near.text, '접수 중 · 11월 22일 마감'); assert.equal(S.leftText(near), '11일 남음'); assert.ok(!near.far);
-  assert.equal(S.leftText(at('20261101 ~ 20261111', '20261111')), '오늘 마감');
-  const far = at('20250101 ~ 20300422', '20261111');
+  assert.equal(S.leftText(at('20261101', '20261111', '20261111')), '오늘 마감');
+  const far = at('20250101', '20300422', '20261111');
   assert.equal(far.left, 1258); assert.equal(far.far, true);
   assert.equal(far.text, '접수 중 · 2030년 4월 22일 마감'); assert.equal(S.leftText(far), '');
-  const next = at('20261201 ~ 20270131', '20261211'); // 해를 넘기는 마감
+  const next = at('20261201', '20270131', '20261211'); // 해를 넘기는 마감
   assert.equal(next.text, '접수 중 · 2027년 1월 31일 마감'); assert.equal(S.leftText(next), '51일 남음');
-  assert.equal(at('20270105 ~ 20270131', '20261111').text, '2027년 1월 5일부터 접수');
-  assert.equal(at('20250301 ~ 20250331', '20261111').text, '접수 끝남 · 2025년 3월 31일 마감');
+  assert.equal(at('20270105', '20270131', '20261111').text, '2027년 1월 5일부터 접수');
+  assert.equal(at('20250301', '20250331', '20261111').text, '접수 끝남 · 2025년 3월 31일 마감');
+  assert.equal(S.leftText(at('20260101', '20261231', '20261111')), ''); // 1년 내내 받는 접수
+  // 1차·2차: 지금 열린 차수를 쓴다
+  const two = S.statusAt(withNotice(S.normalize(raw()), [['20260301', '20260315'], ['20261101', '20261120']]), day('20261111'));
+  assert.equal(two.k, 'open'); assert.equal(two.left, 9);
 });
 
-test('마감 빠른 순: 마감일 있는 접수 중 → 상시 → 접수 전 → 끝남', () => {
-  const on = day('20261111'), st = (o) => S.statusAt(S.normalize(raw(o)), on);
-  const list = [['상시', st({ aplyPrdSeCd: '0057002', aplyYmd: '' })], ['먼 마감', st({ aplyYmd: '20250101 ~ 20300422' })], ['접수 전', st({ aplyYmd: '20261201 ~ 20261231' })],
-    ['12일', st({ aplyYmd: '20261101 ~ 20261123' })], ['끝남', st({ aplyYmd: '20261001 ~ 20261031' })], ['3일', st({ aplyYmd: '20261101 ~ 20261114' })]];
-  assert.deepEqual(list.sort((a, b) => S.dueRank(a[1]) - S.dueRank(b[1])).map((x) => x[0]), ['3일', '12일', '먼 마감', '상시', '접수 전', '끝남']);
+test('마감 빠른 순: 공고로 확인한 접수 중 → 접수 전 → 상시 → 기간 확인 필요 → 끝남', () => {
+  const on = day('20261111'), n = (from, to) => S.statusAt(withNotice(S.normalize(raw()), [[from, to]]), on);
+  const list = [['상시(확인)', S.statusAt(Object.assign(S.normalize(raw({ aplyPrdSeCd: '0057002', aplyYmd: '' })), { notice: { state: 'always' } }), on)],
+    ['상시(미확인)', S.statusAt(S.normalize(raw({ aplyPrdSeCd: '0057002', aplyYmd: '' })), on)], ['확인 필요', S.statusAt(S.normalize(raw({ aplyYmd: '20260101 ~ 20261231' })), on)],
+    ['접수 전', n('20261201', '20261231')], ['12일', n('20261101', '20261123')], ['끝남', n('20261001', '20261031')], ['3일', n('20261101', '20261114')]];
+  assert.deepEqual(list.sort((a, b) => S.dueRank(a[1]) - S.dueRank(b[1])).map((x) => x[0]), ['3일', '12일', '접수 전', '상시(확인)', '상시(미확인)', '확인 필요', '끝남']);
+});
+
+test('공고 원문 읽기: 접수 기간을 찾고, 다른 공고·지난 공고·여러 공고가 섞인 페이지는 믿지 않는다', () => {
+  const it = S.normalize(raw({ plcyNm: '기상기후분야 국제기구 청년진출 지원', bizPrdBgngYmd: '20260101' }));
+  const page = (body) => S.readNotice('2026년 국제 기상기후전문인력 양성과정 교육생 모집 안내\n국제기구 인턴십\n' + body, it);
+  // 실제 공고 문장 (한국기상산업기술원, 2026-11-11 확인). '지원기간'이 접수 기간이고 '교육기간'은 따로 있다
+  assert.deepEqual(page('4. 지원기간: 2026. 4. 20.(월) 09:00 ~ 5. 22.(금) 17:00까지\n10. 교육기간: 2026. 7. 6.(월)~7. 24.(금)').ranges, [{ from: '20260420', to: '20260522', month: false }]);
+  assert.equal(page('접수기간 : 상시').state, 'always');
+  assert.deepEqual(page('신 청 기 간 : 2026.12.20.~1.10.').ranges, [{ from: '20261220', to: '20270110', month: false }]);
+  assert.deepEqual(page('신청\n기 간 : 2026. 4월 ~ 11월').ranges, [{ from: '20260401', to: '20261130', month: true }]);
+  assert.equal(page('접수마감 : ~ 2026.4.15.(수)').ranges[0].to, '20260415');
+  // '지원기간'이 길면(사업 지원 기간) 접수 기간으로 보지 않는다
+  assert.equal(page('지원기간: 2026. 1. 1. ~ 2026. 11. 30. (11개월 내외)').why, 'notstated');
+  // 사업 이름이 없는 페이지(첫 화면·다른 공고)는 읽지 않는다
+  assert.equal(S.readNotice('한국문화예술위원회 공지사항\n접수기간 2026.5.1~5.10', it).why, 'unrelated');
+  // 사업 연도보다 앞선 해의 공고만 있으면 지난 공고
+  assert.equal(page('신청기간 2022.1월 ~ 2022.12월').why, 'stale');
+  // 서로 다른 기간이 셋 이상이면 게시판 목록으로 보고 믿지 않는다
+  assert.equal(page('접수기간 2026-11-06 ~ 2026-11-20\n접수기간 2026-11-04 ~ 2026-11-19\n접수기간 2026-11-02 ~ 2026-11-25').why, 'ambiguous');
+  // 1차·2차라고 적힌 두 기간은 받는다
+  assert.equal(page('1차 접수기간 2026.3.1~3.15\n2차 접수기간 2026.11.1~11.20').ranges.length, 2);
+  // HTML에서 글만 뽑는다
+  assert.equal(S.htmlText('<p>신청기간</p><table><tr><th>접수</th><td>2026.5.1</td></tr></table><script>x</script>'), '신청기간\n접수 2026.5.1');
+});
+
+test('주소: 공고까지 들어가는 주소를 먼저 쓰고, 첫 화면 주소는 표시해 둔다', () => {
+  const it = S.normalize(raw({ refUrlAddr1: 'https://www.kmiti.or.kr/', refUrlAddr2: 'https://www.kmiti.or.kr/kr/board/kmi_notice/boardView.do?bbsIdx=45288', aplyUrlAddr: 'www.work.go.kr' }));
+  assert.equal(it.ref, 'https://www.kmiti.or.kr/kr/board/kmi_notice/boardView.do?bbsIdx=45288'); assert.equal(it.refHome, false);
+  assert.equal(it.urlHome, true); // 신청 주소가 첫 화면
+  assert.deepEqual(it.notices, ['https://www.kmiti.or.kr/kr/board/kmi_notice/boardView.do?bbsIdx=45288']);
+  const home = S.normalize(raw({ refUrlAddr1: 'https://jeonnam-gwangju.go.kr/index.do', refUrlAddr2: '' }));
+  assert.equal(home.refHome, true); assert.deepEqual(home.notices, []);
+  assert.equal(S.isDeep('https://youth.gwangju.go.kr/www/50?siteId=www&policyId=1455'), true);
 });
 
 test('조심할 것: 지역·미취업·연소득 조건에서 만든다', () => {

@@ -55,3 +55,4 @@ module.exports = async (req, res) => {
     return O.send(res, 502, { ok: false, reason: 'upstream', error: '정책 목록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.' });
   }
 };
+module.exports.loadZip = loadZip;
