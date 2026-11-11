@@ -103,5 +103,28 @@
     return '해당 가능';
   }
 
-  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, toUser: toUser, verdict: verdict };
+  // ---------- 서류함 (F-06): 공고 서류 이름 → 서류함 칸 ----------
+  // 순서가 중요: 확정일자 계약서는 일반 계약서보다, 계약금·잔금 이체는 월세 이체보다 먼저 본다. 칸이 없으면 null
+  var DOC_RULES = [
+    [/확정일자/, 'fixed'],
+    [/임대차\s*계약서|전월세\s*계약서|월세\s*계약서/, 'contract'],
+    [/계약금/, 'deposit'],
+    [/잔금/, 'balance'],
+    [/주민등록\s*(표\s*)?(등본|초본)|등본|초본/, 'resident'],
+    [/월세.*(이체|납부)|이체\s*(내역|확인|증빙)|송금\s*(내역|확인)/, 'rentpay'],
+    [/통장\s*사본|계좌\s*사본/, 'bank']
+  ];
+  function docSlot(name) {
+    var s = String(name || '');
+    for (var i = 0; i < DOC_RULES.length; i++) if (DOC_RULES[i][0].test(s)) return DOC_RULES[i][1];
+    return null;
+  }
+  // docs: 공고 서류 이름 배열, counts: { 칸: 넣어 둔 파일 수 }
+  function docReadiness(docs, counts) {
+    var c = counts || {};
+    var items = (docs || []).map(function (name) { var slot = docSlot(name); return { name: name, slot: slot, ready: !!(slot && c[slot] > 0) }; });
+    return { total: items.length, ready: items.filter(function (x) { return x.ready; }).length, items: items };
+  }
+
+  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, toUser: toUser, verdict: verdict, docSlot: docSlot, docReadiness: docReadiness };
 });

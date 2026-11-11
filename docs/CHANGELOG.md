@@ -5,6 +5,9 @@
 ## [Unreleased]
 
 ### Added
+- 2026-11-11 서류함 지원별 준비 현황 — 승인된 공고의 제출 서류를 서류함 칸과 이어 "청년월세 3 / 5 준비"처럼 표시 (`engine.js` `docSlot`·`docReadiness`, `tests/docs.test.js`)
+- 2026-11-11 자격 판정 화면 '답하면 판정' — 무주택·중복 수혜를 아직 안 답했으면 '해당 가능' 대신 표시 (`engine.js` `verdict`)
+- 2026-11-11 계약·신고 계산 엔진 `demo/engine.js`(전월세 신고·전입신고·만료·갱신 통지 기한, 만 나이, 입력 검사)와 조건 입력·자격 판정 화면, 무주택·중복 수혜 판정, 테스트 조건 30개 정답표
 - 2026-10-27 Claude 전용 스킬 `.claude/skills/cli-delegate/SKILL.md` — Codex·안티그래비티에 작업을 넘기는 CLI 위임 절차(프롬프트는 파일·stdin으로 전달)
 - 2026-10-27 AGENTS.md "다른 도구 세션과의 핸드오프" 절 — `.artifacts/handoff/{작업ID}/{실행ID}/`의 prompt.md·report.md 규칙, 메인 오케스트레이터는 Claude Code 세션임을 명시
 - 2026-10-27 `.codex/DEVELOPMENT.md`, `.codex/FRONTEND.md`(Codex 개발 보조·UI 지침), `.codex/tests/adapters.test.cjs`(연결 파일·훅 배선 검사)
@@ -24,6 +27,8 @@
 - {{DATE}} 프로젝트 초기화 (start_coding 템플릿)
 
 ### Changed
+- 2026-11-11 서류함을 `app.html#docs` 한 곳으로 통합 — `index.html#docs`는 서류함으로 가는 안내만 남김
+- 2026-11-11 README 주요 기능의 타임라인을 실제 화면대로 7단계로 고침 (DECISIONS #8)
 - 2026-10-27 역할 단일 원본을 `.agents/roles/*.role.md`로 통합 — `.claude/agents/*.md`와 `.codex/agents/*.toml`은 원본을 가리키는 연결 파일로 축소
 - 2026-10-27 `.codex/EXECUTION.md`·`.agents/skills/vibe-mode/SKILL.md`·`docs/ToolPacks.md`·`docs/KitFeedback.md` 갱신, AGENTS.md 문서 소유권 표에 새 경로 반영
 - 2026-10-27 `.claude/hooks/contract-check.js` C5 플레이스홀더 검사가 `.claude/worktrees/`를 제외

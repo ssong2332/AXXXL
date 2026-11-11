@@ -501,20 +501,11 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
     rentHistory: { name: '월세 이체 내역', file: '이체내역_예시.pdf', tag: ['ok', '확인 완료'], kv: function () { return [['기간', '최근 3개월'], ['월 이체액', won(S.rent * 10000) + '원']]; } },
     photos: { name: '입주 전 집 사진', file: '사진 6장', tag: ['', '보관용'], kv: function () { return [['찍은 날', ymd(pd(S.move))], ['내용 확인', '하지 않음 (보관용)']]; } }
   };
+  // 서류함은 app.html 한 곳에만 둔다 (F-06). 여기서는 실제 서류함으로 안내만 한다.
   function viewDocs() {
-    var keys = Object.keys(DOCS), cur = DOCS[S.doc] ? S.doc : 'contract', d = DOCS[cur];
-    var list = keys.map(function (k) { var x = DOCS[k]; return '<button type="button" class="doc-item" data-act="doc" data-v="' + k + '" aria-pressed="' + (k === cur) + '"><span class="thumb" aria-hidden="true"></span><span style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><b>' + x.name + '</b><span class="small muted">' + x.file + '</span></span><span class="tag ' + x.tag[0] + '">' + x.tag[1] + '</span></button>'; }).join('') +
-      S.extraDocs.map(function (n) { return '<div class="doc-item"><span class="thumb" aria-hidden="true"></span><span style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><b style="overflow-wrap:anywhere">' + esc(n) + '</b><span class="small muted">방금 추가 · 이 기기에만 보관</span></span><span class="tag">시연</span></div>'; }).join('');
-    var kv = d.kv().map(function (r) { return '<div><dt>' + r[0] + '</dt><dd' + (r[2] ? ' style="color:var(--warn)"' : '') + '>' + r[1] + '</dd></div>'; }).join('');
-    var paper = cur === 'contract' ? '<div class="paper" role="img" aria-label="주민등록번호가 가려진 계약서 미리보기"><b style="text-align:center;letter-spacing:.2em;color:var(--fg)">주택임대차 표준계약서</b><i style="width:92%"></i><i style="width:80%"></i><span>임대인 주민번호 <s></s></span><i style="width:88%"></i><span>임차인 주민번호 <s></s></span><i style="width:70%"></i><i style="width:84%"></i><span class="tag ok" style="margin-top:auto;align-self:flex-start">주민번호 2곳 가림</span></div>' : '<div class="paper" role="img" aria-label="' + d.name + ' 미리보기"><i style="width:60%"></i><i style="width:90%"></i><i style="width:80%"></i><i style="width:70%"></i></div>';
-    return '<div class="stack" style="gap:22px"><section class="between" style="align-items:flex-end"><div class="stack" style="gap:8px"><h1 class="page-title">서류함</h1><p class="muted" style="display:flex;align-items:center;gap:6px">' + IC.lock + '서류는 이 기기에만 보관돼요. 내용 확인용으로 보낸 파일은 확인이 끝나면 바로 지워요.</p></div>' +
-      '<label class="btn" style="cursor:pointer">+ 서류 추가<input id="f-file" type="file" accept="image/*,.pdf" data-act="file" style="position:absolute;width:1px;height:1px;opacity:0"></label></section>' +
-      '<div class="row"><section class="card" style="flex:1 1 320px;min-width:0;padding:10px" aria-label="내 서류">' + list + '<div style="margin:8px;padding:14px;border:1px dashed var(--line);border-radius:14px" class="small"><b>아직 없는 서류</b><div class="muted">주민등록등본, 건강보험료 납부확인서, 중개보수·이사비 영수증</div></div></section>' +
-      '<section class="card col-main" style="gap:18px" aria-label="서류 확인 결과"><div class="between"><h2 style="font-size:21px">' + d.name + '</h2><span class="small muted">지원 신청 제출 기준으로 확인했어요</span></div>' +
-      (d.issue ? '<div class="notice warn">' + IC.alert + '<span>' + d.issue + '</span></div>' : '<div class="notice ok">제출 요건을 모두 갖췄어요.</div>') +
-      '<div class="row" style="gap:20px">' + paper + '<dl class="kv">' + kv + '</dl></div>' +
-      '<p class="small muted">OCR과 AI가 읽은 값이에요. 원본과 다르면 직접 고쳐 주세요.</p>' +
-      '<div class="row" style="gap:10px;border-top:1px solid var(--line);padding-top:18px"><button type="button" class="btn" data-act="toast" data-v="시연 버전이라 실제 파일은 저장되지 않아요.">제출용 사본 저장</button><button type="button" class="btn btn-soft" data-act="toast" data-v="새 파일을 고르면 다시 확인해요.">새 파일로 바꾸기</button></div></section></div></div>';
+    return '<div class="stack" style="gap:22px"><h1 class="page-title">서류함</h1>' +
+      '<section class="card stack"><p>서류함은 이제 한 곳에서만 관리해요. 올린 서류는 이 기기에만 저장되고, 지원 신청에 낼 서류가 몇 개 준비됐는지도 함께 보여 줘요.</p>' +
+      '<a class="btn" href="app.html#docs">서류함 열기</a></section></div>';
   }
 
   // room

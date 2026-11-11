@@ -1652,10 +1652,20 @@ document.addEventListener('DOMContentLoaded', function () {
   ];
   function viewDocs() {
     var have = DOC_SLOTS.filter(function (d) { return filesIn(d[0]).length; }).length;
+    // 지원별 준비 현황 (F-06): 승인된 공고의 제출 서류 ↔ 이 기기 서류함 칸
+    var counts = {}; DOC_SLOTS.forEach(function (d) { counts[d[0]] = filesIn(d[0]).length; });
+    var slotName = {}; DOC_SLOTS.forEach(function (d) { slotName[d[0]] = d[1]; });
+    var progs = []; try { progs = evaluate().programs.filter(function (x) { return x.p.docs && x.p.docs.length; }); } catch (e) { progs = []; }
+    var prep = progs.map(function (x) {
+      var r = JE.docReadiness(x.p.docs, counts);
+      return '<div class="card stack"><div class="split"><h2 style="font-size:15px">' + esc(x.p.name) + '</h2><span class="badge ' + (r.ready === r.total ? 'brand' : '') + '">' + r.ready + ' / ' + r.total + ' 준비</span></div>' +
+        r.items.map(function (it) { return '<div class="kv"><span class="s13">' + esc(it.name) + '</span><span class="s12">' + (it.ready ? '<span class="badge brand">있음</span>' : it.slot ? '<span class="muted">' + esc(slotName[it.slot]) + ' 칸에 올리기</span>' : '<span class="muted">서류함 칸 없음 · 발급처에서 받기</span>') + '</span></div>'; }).join('') +
+        '<a class="s12" href="#support">지원 상세 보기</a></div>';
+    }).join('');
     var rows = DOC_SLOTS.map(function (d) { var n = filesIn(d[0]).length; return '<div class="slot"><div style="min-width:0" class="stack"><div><div class="row"><b>' + d[1] + '</b>' + (n ? '<span class="badge brand">' + n + '개</span>' : '<span class="s12 muted">아직 없음</span>') + (d[3] ? '<span class="s12 muted">· 지원 신청에 필요</span>' : '') + '</div><p class="s13 muted">' + d[2] + '</p></div>' + thumbs(d[0], d[1]) + '</div><div>' + addBtn(d[0], '올리기') + '</div></div>'; }).join('');
     return '<div class="page-head"><div><p class="eyebrow">지원 신청·연말정산·퇴거 때 쓰는 서류</p><h1>서류함</h1></div><span class="s13 muted">' + have + ' / ' + DOC_SLOTS.length + '종 준비</span></div>' +
       (FILES_OK ? '' : '<div class="banner due" style="margin-bottom:16px">' + ic('info') + '<span>이 브라우저에서는 파일을 저장할 수 없어요(사생활 보호 모드 등). 일반 창에서 열어 주세요.</span></div>') +
-      '<div class="grid"><section class="card c8">' + rows + '</section><aside class="c4 stack"><div class="card stack"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">이 브라우저 안(IndexedDB)에만 저장하고 서버로 보내지 않아요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 원본은 따로 보관하세요.</p><p class="s12 muted">사진은 용량을 줄여(긴 변 1600px) 저장해요. 서류 내용 확인(OCR·AI)은 아직 없어요.</p></div></aside></div>';
+      '<div class="grid"><section class="card c8">' + rows + '</section><aside class="c4 stack">' + (prep ? '<h2 class="s13 muted">지원 신청에 낼 서류</h2>' + prep : '') + '<div class="card stack"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">이 브라우저 안(IndexedDB)에만 저장하고 서버로 보내지 않아요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 원본은 따로 보관하세요.</p><p class="s12 muted">사진은 용량을 줄여(긴 변 1600px) 저장해요. 서류 내용 확인(OCR·AI)은 아직 없어요.</p></div></aside></div>';
   }
 
   // ---------- 우리 동네: 실제 데이터 ----------
