@@ -126,6 +126,26 @@ test('자격: 무주택 아님이면 해당 안 됨', () => {
 test('자격: 유사 지원을 이미 받으면 청년월세는 해당 안 됨', () => {
   assert.equal(judge({ dup: 'yes' }, 'rent'), '해당 안 됨');
 });
+// 자격 판정 화면 표시(engine.verdict): 답하지 않은 무주택·중복 수혜는 '답하면 판정'
+const show = (over, id) => E.verdict(RC.evalProgram(PROGS.find((p) => p.id === id), E.toUser(Object.assign({}, base, over))));
+test('화면 판정: 모두 충족이면 해당 가능', () => {
+  assert.equal(show({}, 'rent'), '해당 가능');
+});
+test('화면 판정: 무주택·중복 수혜를 답하지 않았으면 답하면 판정', () => {
+  assert.equal(show({ homeless: undefined }, 'rent'), '답하면 판정');
+  assert.equal(show({ dup: undefined }, 'rent'), '답하면 판정');
+  assert.equal(show({ homeless: undefined }, 'move'), '답하면 판정');
+});
+test('화면 판정: 중복 수혜 조건이 없는 지원은 dup을 안 답해도 해당 가능', () => {
+  assert.equal(show({ dup: undefined }, 'move'), '해당 가능');
+});
+test('화면 판정: 해당 안 됨이 답하면 판정보다 먼저', () => {
+  assert.equal(show({ homeless: undefined, birth: '1980-01' }, 'rent'), '해당 안 됨');
+});
+test('화면 판정: 다른 조건이 모르면(소득 모름) 확인 필요가 답하면 판정보다 먼저', () => {
+  assert.equal(show({ homeless: undefined, income: 'unknown' }, 'rent'), '확인 필요');
+  assert.equal(show({ homeless: 'unknown' }, 'rent'), '확인 필요');
+});
 test('자격: 무주택·중복 수혜를 답하지 않았으면 판정에서 빼고(해당 가능), 모른다고 답했으면 확인 필요', () => {
   assert.equal(judge({ homeless: undefined, dup: undefined }, 'rent'), '해당 가능');
   assert.equal(judge({ homeless: 'unknown' }, 'rent'), '확인 필요');

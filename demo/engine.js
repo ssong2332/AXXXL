@@ -93,5 +93,15 @@
     return { age: age(S.birth, parseDate(S.contract)), income: S.income, deposit: +S.deposit || 0, rent: +S.rent || 0, gu: S.gu, homeless: S.homeless || undefined, dup: S.dup || undefined };
   }
 
-  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, toUser: toUser };
+  // ---------- 자격 판정 화면 표시 (rules-core.evalProgram 결과 → 4가지) ----------
+  // 우선순위: 해당 안 됨 > 확인 필요(모른다고 답했거나 다른 조건을 모름) > 답하면 판정(무주택·중복 수혜를 아직 안 답함) > 해당 가능
+  function verdict(x) {
+    if (!x.eligible) return '해당 안 됨';
+    var self = function (r) { return r.type === 'homeless' || r.type === 'dup'; };
+    if (x.unknown.some(function (r) { return r.asked || !self(r); })) return '확인 필요';
+    if (x.unknown.some(self)) return '답하면 판정';
+    return '해당 가능';
+  }
+
+  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, toUser: toUser, verdict: verdict };
 });
