@@ -1165,15 +1165,16 @@ document.addEventListener('DOMContentLoaded', function () {
   var NT_WHY = { nolink: '등록 자료에 공고로 바로 가는 주소가 없어요.', unreachable: '공고 페이지가 열리지 않았어요.', unrelated: '연결된 주소가 이 사업의 공고 페이지가 아니었어요.', notstated: '공고 페이지에 접수 기간이 글로 적혀 있지 않아요. 첨부 파일이나 그림에만 있을 수 있어요.', stale: '연결된 공고가 지난 해 것이에요.', ambiguous: '한 페이지에 기간이 여러 개라 어느 것인지 가려내지 못했어요.' };
   function ntDay(s) { return s ? s.slice(0, 4) + '.' + +s.slice(4, 6) + '.' + +s.slice(6, 8) : ''; }
   function spPeriod(row) {
-    var it = row.it, st = row.st, n = it.notice || {}, left = SP.leftText(st), go = n.url || (it.notices && it.notices[0]) || it.ref || it.url, yc = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/' + encodeURIComponent(it.id);
-    var link = function (label) { return '<a class="sp-get" href="' + esc(go || yc) + '" target="_blank" rel="noopener">' + label + ' ↗</a>'; };
+    var it = row.it, st = row.st, n = it.notice || {}, left = SP.leftText(st), nl = SP.noticeLink(it, n), go = nl.kind === 'notice';
+    // 기관 첫 화면으로는 보내지 않는다. 공고 주소가 없으면 온통청년의 이 정책 상세 화면으로 간다 (SP.noticeLink)
+    var link = function (label) { return '<a class="sp-get" href="' + esc(nl.url) + '" target="_blank" rel="noopener">' + (go ? label : '온통청년에서 이 정책 공고 보기') + ' ↗</a>'; };
     var h = '<div class="sp-sec"><h3>접수 기간<small>' + (st.sure ? (st.src === 'notice' ? '공고 원문에서 확인했어요' : st.src === 'text' ? '등록된 안내 글에서 읽었어요' : '온통청년 등록 기준') : st.pending ? '공고를 확인하는 중' : '공고에서 확인하지 못했어요') + '</small></h3>';
     if (st.pending) return h + '<p class="sub">공고 페이지를 열어 접수 기간을 읽고 있어요. 잠시만 기다려 주세요.</p></div>';
     if (st.sure) {
       h += '<p class="sp-per"><b>' + esc(st.text) + '</b>' + (left ? '<span class="sp-hot"> · ' + left + '</span>' : '') + '</p>';
       if (n.state === 'found' && n.ranges) h += '<p class="s13 sub">' + n.ranges.map(function (r, i) { return (n.ranges.length > 1 ? (i + 1) + '차 ' : '') + (r.from ? ntDay(r.from) + ' ~ ' : '') + (r.month ? r.to.slice(0, 4) + '.' + +r.to.slice(4, 6) + '월 말' : ntDay(r.to)) + (r.from ? '' : ' 까지'); }).join(' · ') + '</p>';
       if (n.line && st.src === 'notice') h += '<p class="sp-pre sp-quote" style="margin-top:8px">공고에 적힌 말 · ' + esc(n.line) + '</p>';
-      if (st.src === 'notice' && go) h += '<div style="margin-top:10px">' + link('공고 보기') + '</div>';
+      h +='<div style="margin-top:10px">' + link('공고 보기') + '</div>';
       if (st.long) h += '<p class="sp-note">접수 기간이 반년을 넘어요. 예산이 떨어지면 일찍 끝날 수 있으니 공고를 확인해 주세요.</p>';
       return h + '</div>';
     }
@@ -1182,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (st.k === 'always' && n.why === 'notstated') return h + '<p class="sp-per"><b>상시 접수로 등록돼 있어요</b></p><p class="s13 sub">공고 페이지에 접수 기간이 따로 적혀 있지 않아요. 예산이 떨어지면 일찍 끝날 수 있으니 신청 전에 공고를 확인해 주세요.</p><div style="margin-top:10px">' + link('공고 보기') + '</div></div>';
     return h + '<div class="banner due">' + ic('info') + '<span><b>정확한 접수 기간을 공고에서 읽지 못했어요.</b> ' + esc(NT_WHY[n.why] || NT_WHY.notstated) + ' 신청 전에 공고에서 기간을 꼭 확인해 주세요.</span></div>' +
       (reg ? '<p class="sp-note">온통청년에 등록된 값: ' + esc(reg) + (SP.regLoose(it) ? ' · 사업 기간을 그대로 넣은 값으로 보여서 마감일로 쓰지 않았어요.' : ' · 공고와 맞춰 보지 못해 마감일로 쓰지 않았어요.') + '</p>' : '') +
-      '<div style="margin-top:10px">' + link(go ? '공고에서 기간 확인하기' : '온통청년에서 확인하기') + '</div></div>';
+      '<div style="margin-top:10px">' + link('공고에서 기간 확인하기') + '</div></div>';
   }
   function supFetch(kind, key, url, again) {
     var box = SUP[kind][key]; if (box && !again) return box;
@@ -1302,8 +1303,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return '<div class="sp-doc"><span>' + esc(d.name) + (s && s.how ? '<small class="sp-how">' + esc(s.how) + '</small>' : '') + '</span>' + right + guide + '</div>';
     }).join('') + '</div>';
   }
-  // 온통청년의 그 정책 상세 화면 (2026-11-11 주소 형식 확인). 정책번호가 숫자가 아니면 검색 화면으로 보낸다
-  function youthUrl(it) { var base = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch'; return /^\d{10,30}$/.test(it.id || '') ? base + '/ythPlcyDetail/' + it.id : base; }
+  var youthUrl = function (it) { return SP.youthUrl(it); }; // 온통청년의 그 정책 상세 화면. 정책번호가 숫자가 아니면 검색 화면
   function spLong(text, cls) { text = String(text || ''); if (text.length <= 240) return '<p class="sp-pre ' + (cls || '') + '">' + esc(text) + '</p>'; return '<details class="sp-long"><summary><span class="sp-pre ' + (cls || '') + '">' + esc(text.slice(0, 200)) + '…</span><span class="sp-moretx">더 보기</span></summary><p class="sp-pre ' + (cls || '') + '">' + esc(text) + '</p></details>'; }
   function spText(title, text) { return text ? '<div class="sp-sec"><h3>' + title + '</h3>' + spLong(text) + '</div>' : ''; }
   function spVerdictBox(row, okSay) {
@@ -1343,8 +1343,8 @@ document.addEventListener('DOMContentLoaded', function () {
         spText('지원 내용', it.support) +
         (w.length ? '<div class="sp-sec"><h3>이럴 땐 못 받게 돼요<small>등록된 조건으로 계산</small></h3><ul class="sp-watch">' + w.map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('') + '</ul></div>' : '') +
         (it.how || it.select ? '<div class="sp-sec"><h3>신청·선정</h3>' + (it.how ? '<p class="sp-lbl">신청 방법</p>' + spLong(it.how) : '') + (it.select ? '<p class="sp-lbl" style="margin-top:12px">선정 방식</p>' + spLong(it.select) : '') + '</div>' : '') +
-        spDocs(SP.docLines(it.docs), it.url || it.ref || youthUrl(it)) +
-        '<div class="sp-acts">' + (it.url ? '<a class="btn' + (row.v === 'ok' ? '' : ' ghost') + '" href="' + esc(it.url) + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a>' : '') + (it.ref && it.ref !== it.url ? '<a class="btn ghost" href="' + esc(it.ref) + '" target="_blank" rel="noopener">참고 누리집</a>' : '') +
+        spDocs(SP.docLines(it.docs), SP.noticeLink(it).url) +
+        '<div class="sp-acts">' + (it.url ? '<a class="btn' + (row.v === 'ok' ? '' : ' ghost') + '" href="' + esc(it.url) + '" target="_blank" rel="noopener">' + (SP.isLanding(it.url) ? '신청 누리집 (첫 화면)' : '신청하러 가기') + ic('out', 'sm') + '</a>' : '') + (it.ref && it.ref !== it.url ? '<a class="btn ghost" href="' + esc(it.ref) + '" target="_blank" rel="noopener">' + (SP.isLanding(it.ref) ? '기관 누리집 (첫 화면)' : '참고 누리집') + '</a>' : '') +
         '<a class="btn ghost" href="' + youthUrl(it) + '" target="_blank" rel="noopener">' + (/ythPlcyDetail/.test(youthUrl(it)) ? '온통청년에서 이 정책 보기' : '온통청년에서 찾기') + '</a></div>' +
         '<p class="sp-meta">온통청년에 등록된 내용' + (it.upd ? ' · ' + esc(it.upd) + ' 수정' : '') + ' · 담당자가 공고 원문과 대조하기 전이에요. 신청 전에 공고를 한 번 확인하세요.</p>';
     } else if (row.kind === 'wf') {

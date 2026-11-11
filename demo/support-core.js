@@ -117,6 +117,33 @@
     return { ref: ref, refHome: !!ref && !isDeep(ref), notices: notices };
   }
 
+  // 대문 주소인지: 첫 화면이거나, 파일 이름이 main·index·home·portal 인데 뒤에 붙은 값이 없거나, 폴더 하나로 끝나는 주소
+  // (11/11 확인: 마이홈 getMgtMainPage.do, 국토부 portal.do, 장학재단 /ko/main.do 가 공고 주소 칸에 들어 있었다)
+  function isLanding(s) {
+    if (!isDeep(s)) return true;
+    var m = /^https?:\/\/[^\/?#]+([^?#]*)(\?[^#]*)?/i.exec(String(s)); if ((m[2] || '').length > 1) return false;
+    var seg = m[1].replace(/\/+$/, '').split('/').filter(Boolean), last = seg[seg.length - 1] || '';
+    if (/(main|index|home|portal)[a-z]*\.[a-z]{2,5}$/i.test(last)) return true;
+    // 폴더 하나로 끝나는 주소(/nysc/)나 흔한 대문 이름(/main, /korean). 사업 이름이 붙은 주소(/youngtech)는 공고로 본다
+    return seg.length === 1 && !/\./.test(last) && (/\/$/.test(m[1]) || /^(main|index|home|portal|kor|korean|ko|kr|www|web|site|page)$/i.test(last));
+  }
+  // 온통청년의 그 정책 상세 화면 (2026-11-11 브라우저로 확인: 정책번호를 붙이면 그 정책이 바로 열린다)
+  function youthUrl(it) { var base = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch'; return /^\d{10,30}$/.test((it && it.id) || '') ? base + '/ythPlcyDetail/' + it.id : base; }
+  // '공고 보기'가 갈 곳. 기관 첫 화면으로는 보내지 않는다 (이용자가 사업 이름을 다시 검색하지 않게).
+  //  1) 공고 페이지를 열어 이 사업 글인 것을 확인한 주소  2) 아직 확인 전이면 등록된 주소 중 대문이 아닌 것
+  //  3) 둘 다 없거나, 열어 보니 이 사업 글이 아니면 온통청년의 그 정책 상세 화면
+  // 반환: { url, kind: 'notice' | 'youth', checked }   n 은 api/period 가 돌려준 판독 결과(it.notice)
+  function noticeLink(it, n) {
+    n = n || it.notice || {};
+    var yc = { url: youthUrl(it), kind: 'youth', checked: false };
+    if (n.url && (n.state === 'found' || n.state === 'always')) return { url: n.url, kind: 'notice', checked: true };
+    if (n.url && /^(notstated|stale|ambiguous)$/.test(n.why || '')) return isLanding(n.url) ? yc : { url: n.url, kind: 'notice', checked: true };
+    if (n.why === 'unrelated' || n.why === 'nolink') return yc;
+    // 확인 전이거나 서버에서 열리지 않은 경우(기관이 자동 접속을 막아도 브라우저로는 열릴 수 있다): 등록된 주소 중 대문이 아닌 것
+    var first = (it.notices || []).filter(function (u) { return !isLanding(u); })[0];
+    return first ? { url: first, kind: 'notice', checked: false } : yc;
+  }
+
   // ---------- 공고 글에서 접수 기간 읽기 ----------
   // 규칙으로만 읽는다(AI 없음). 못 읽으면 못 읽었다고 돌려준다. 2026-11-11 실제 공고 790곳으로 맞춰 봄.
   function htmlText(html) {
@@ -548,6 +575,6 @@
   var VR = { ok: 0, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, check: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' && st.sure ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
-  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regStatus: regStatus, regText: regText, isDeep: isDeep, htmlText: htmlText, periodsIn: periodsIn, pickNotice: pickNotice, aboutPolicy: aboutPolicy, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
+  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regStatus: regStatus, regText: regText, isDeep: isDeep, isLanding: isLanding, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, periodsIn: periodsIn, pickNotice: pickNotice, aboutPolicy: aboutPolicy, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
     docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, amountList: amountList, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });
