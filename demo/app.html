@@ -1136,11 +1136,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (best) { S.sido = best[0]; S.zip = best[1]; S.sgg = best[2]; }
     return !!best;
   }
-  function supFetch(kind, key, url) {
-    var box = SUP[kind][key]; if (box) return box;
-    box = SUP[kind][key] = { status: 'loading', data: null };
+  function supFetch(kind, key, url, again) {
+    var box = SUP[kind][key]; if (box && !again) return box;
+    if (!box) box = SUP[kind][key] = { status: 'loading', data: null };
     fetch(url).then(function (r) { return r.json(); }).then(function (j) { box.data = j; box.status = j && j.ok ? 'ok' : j && j.reason === 'nokey' ? 'nokey' : 'error'; })
-      .catch(function () { box.status = 'error'; }).then(function () { if (route() === 'support') render(true); });
+      .catch(function () { box.data = null; box.status = 'error'; }).then(function () {
+        // 공공 API가 잠깐 안 될 때가 있어서, 처음 실패하면 한 번은 알아서 다시 받아 본다
+        if (box.status === 'error' && !again && SUP[kind][key] === box && (!box.data || box.data.reason === 'upstream')) { box.status = 'loading'; setTimeout(function () { supFetch(kind, key, url, true); }, 1500); return; }
+        if (route() === 'support') render(true);
+      });
     return box;
   }
   function houseInc() { var u = sup(); return !u.hh ? undefined : u.hh === 1 ? u.minc : u.hinc; }
@@ -1182,7 +1186,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var kd = SP.kindOf(it), fit = SP.relevance(it, ctx, kd, away);
     // 순서 점수: 내 상황과의 관련(형태·키워드·지역) + 조건 대조 결과 + 접수 상태
     var score = fit.score + (plain ? 0 : v === 'ok' ? 25 : 10) + (st.k === 'open' ? 12 + (st.left <= 14 ? 10 : 0) : st.k === 'always' ? 6 : 4);
-    return { kind: 'youth', key: 'y-' + it.id, name: it.name, one: it.sum || it.support, org: it.org, v: v, conds: conds, it: it, st: st, scope: lab, tag: it.central ? '중앙부처' : away ? it.top + ' 운영' : it.top, plain: plain, kd: kd, why: fit.why, score: score,
+    return { kind: 'youth', key: 'y-' + it.id, name: it.name, one: it.sum || it.support, org: it.org, v: v, conds: conds, it: it, st: st, scope: lab, tag: it.central ? '중앙부처' : away ? it.top + ' 운영' : it.top, plain: plain, away: away, kd: kd, why: fit.why, score: score,
       badge: plain ? ['', '공고 확인 필요'] : v === 'ok' ? ['brand', '조건 맞음'] : null, sort: SP.rank(v, st, it) + (plain ? 5e5 : 0) + (away ? 3e5 : 0) + (personal ? 0 : 2e4) };
   }
   function spItem(row, selKey) {
@@ -1246,6 +1250,8 @@ document.addEventListener('DOMContentLoaded', function () {
       return '<div class="sp-doc"><span>' + esc(d.name) + (s && s.how ? '<small class="sp-how">' + esc(s.how) + '</small>' : '') + '</span>' + right + guide + '</div>';
     }).join('') + '</div>';
   }
+  // 온통청년의 그 정책 상세 화면 (2026-11-11 주소 형식 확인). 정책번호가 숫자가 아니면 검색 화면으로 보낸다
+  function youthUrl(it) { var base = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch'; return /^\d{10,30}$/.test(it.id || '') ? base + '/ythPlcyDetail/' + it.id : base; }
   function spLong(text, cls) { text = String(text || ''); if (text.length <= 240) return '<p class="sp-pre ' + (cls || '') + '">' + esc(text) + '</p>'; return '<details class="sp-long"><summary><span class="sp-pre ' + (cls || '') + '">' + esc(text.slice(0, 200)) + '…</span><span class="sp-moretx">더 보기</span></summary><p class="sp-pre ' + (cls || '') + '">' + esc(text) + '</p></details>'; }
   function spText(title, text) { return text ? '<div class="sp-sec"><h3>' + title + '</h3>' + spLong(text) + '</div>' : ''; }
   function spVerdictBox(row, okSay) {
@@ -1254,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', function () {
       : row.v === 'no' ? ['지금은 받기 어려워요', '‘' + bad.label + '’ 조건이 맞지 않아요.' + (bad.mine ? ' (내 정보: ' + bad.mine + ')' : '')]
       : row.plain ? ['조건은 공고에서 확인해 주세요', '등록 정보에는 대상 지역만 적혀 있어요. 나이·소득 같은 조건은 아래 ‘공고에 적힌 추가 조건’과 공고를 봐 주세요. ' + row.st.text + '.']
       : row.v === 'ok' ? [row.kind === 'youth' ? '등록된 조건이 모두 맞아요' : '조건이 모두 맞아요', okSay]
-      : ['조건 ' + n + '개 중 ' + yes + '개가 맞아요', asks ? '아래 질문 ' + asks + '개만 답하면 바로 알려 드려요.' : '‘' + c.filter(function (x) { return x.ok === null; }).map(function (x) { return x.label; }).join('’, ‘') + '’ 조건은 이 화면에서 따질 수 없어요. 아래 설명을 보고 공고에서 확인해 주세요.'];
+      : ['조건 ' + n + '개 중 ' + yes + '개가 맞아요', asks ? '아래 질문 ' + asks + '개만 답하면 바로 알려 드려요.' : '‘' + c.filter(function (x) { return x.ok === null; }).map(function (x) { return x.label; }).join('’, ‘') + '’ 항목은 이 화면에서 따질 수 없어요. 아래 설명을 보고 공고에서 확인해 주세요.'];
     var tone = row.plain && row.v === 'ok' ? ['x', 'i'] : [SPV[row.v][3], SPV[row.v][2]];
     return '<div class="sp-verdict ' + tone[0] + '"><span class="sp-vic" aria-hidden="true">' + tone[1] + '</span><div><b>' + esc(head[0]) + '</b><span>' + esc(head[1]) + '</span></div></div>';
   }
@@ -1285,9 +1291,9 @@ document.addEventListener('DOMContentLoaded', function () {
         spText('지원 내용', it.support) +
         (w.length ? '<div class="sp-sec"><h3>이럴 땐 못 받게 돼요<small>등록된 조건으로 계산</small></h3><ul class="sp-watch">' + w.map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('') + '</ul></div>' : '') +
         (it.how || it.select ? '<div class="sp-sec"><h3>신청·선정</h3>' + (it.how ? '<p class="sp-lbl">신청 방법</p>' + spLong(it.how) : '') + (it.select ? '<p class="sp-lbl" style="margin-top:12px">선정 방식</p>' + spLong(it.select) : '') + '</div>' : '') +
-        spDocs(SP.docLines(it.docs), it.url || it.ref) +
+        spDocs(SP.docLines(it.docs), it.url || it.ref || youthUrl(it)) +
         '<div class="sp-acts">' + (it.url ? '<a class="btn' + (row.v === 'ok' ? '' : ' ghost') + '" href="' + esc(it.url) + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a>' : '') + (it.ref && it.ref !== it.url ? '<a class="btn ghost" href="' + esc(it.ref) + '" target="_blank" rel="noopener">참고 누리집</a>' : '') +
-        '<a class="btn ghost" href="https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch" target="_blank" rel="noopener">온통청년에서 찾기</a></div>' +
+        '<a class="btn ghost" href="' + youthUrl(it) + '" target="_blank" rel="noopener">' + (/ythPlcyDetail/.test(youthUrl(it)) ? '온통청년에서 이 정책 보기' : '온통청년에서 찾기') + '</a></div>' +
         '<p class="sp-meta">온통청년에 등록된 내용' + (it.upd ? ' · ' + esc(it.upd) + ' 수정' : '') + ' · 담당자가 공고 원문과 대조하기 전이에요. 신청 전에 공고를 한 번 확인하세요.</p>';
     } else if (row.kind === 'wf') {
       var x = row.x;
@@ -1367,10 +1373,10 @@ document.addEventListener('DOMContentLoaded', function () {
       all = rows;
       var liveAll = all.filter(function (x) { return x.v !== 'no'; });
       if (u.kind && !liveAll.some(function (x) { return x.kd === u.kind; })) u.kind = '';
-      sub = '<div class="sp-bar">' + kindTabs(liveAll, SP.KINDS, u.kind) + (liveAll.length > 3 ? '<div class="seg" role="group" aria-label="정렬"><button type="button" data-sp="sort" data-v="fit" aria-pressed="' + (u.sort !== 'due') + '">나에게 맞는 순</button><button type="button" data-sp="sort" data-v="due" aria-pressed="' + (u.sort === 'due') + '">마감 빠른 순</button></div>' : '') + '</div>' + (yb.status !== 'ok' || liveAll.length <= 3 ? '' : u.sort !== 'due' ? fitLine(ctx, r) : '<p class="sp-fit">' + ic('info', 'sm') + '<span>지금 접수 중인 지원을 마감일이 가까운 순서로 놓았어요. 마감일 없이 늘 접수하는 지원과 아직 접수 전인 지원은 그 뒤에 있어요.</span></p>');
+      sub = '<div class="sp-bar">' + kindTabs(liveAll, SP.KINDS, u.kind) + (liveAll.length > 3 ? '<div class="seg" role="group" aria-label="정렬"><button type="button" data-sp="sort" data-v="fit" aria-pressed="' + (u.sort !== 'due') + '">나에게 맞는 순</button><button type="button" data-sp="sort" data-v="due" aria-pressed="' + (u.sort === 'due') + '">마감 빠른 순</button></div>' : '') + '</div>' + (yb.status !== 'ok' || liveAll.length <= 3 ? '' : u.sort !== 'due' ? fitLine(ctx, r) : '<p class="sp-fit">' + ic('info', 'sm') + '<span>지금 접수 중인 지원을 마감일이 가까운 순서로 놓았어요. 마감일 없이 늘 접수하는 지원과 아직 접수 전인 지원은 그 뒤에, 다른 시·도가 운영하는 지원은 맨 뒤에 있어요.</span></p>');
       if (u.kind) rows = rows.filter(function (x) { return x.kd === u.kind; });
       else rows.forEach(function (x) { x.kdLabel = (SP.KINDS.filter(function (k) { return k[0] === x.kd; })[0] || [])[1]; });
-      rows.sort(u.sort === 'due' ? function (x, y) { return (SP.dueRank(x.st) - SP.dueRank(y.st)) || (y.score - x.score) || (x.sort - y.sort); } : function (x, y) { return (y.score - x.score) || (x.sort - y.sort); });
+      rows.sort(u.sort === 'due' ? function (x, y) { return ((x.away ? 1 : 0) - (y.away ? 1 : 0)) || (SP.dueRank(x.st) - SP.dueRank(y.st)) || (y.score - x.score) || (x.sort - y.sort); } : function (x, y) { return (y.score - x.score) || (x.sort - y.sort); });
       var live = rows.filter(function (x) { return x.v !== 'no'; }), off = rows.filter(function (x) { return x.v === 'no'; }), lim = u.more || 20;
       listHtml = live.slice(0, lim).map(function (x) { return spItem(x, u.sel); }).join('') + (live.length > lim ? '<button type="button" class="btn ghost block sm" data-sp="more">' + (live.length - lim) + '건 더 보기</button>' : '') +
         (yb.status !== 'ok' ? spState(yb, '이 지역 정책을') : '') +

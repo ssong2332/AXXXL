@@ -35,17 +35,17 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const key = O.portalKey();
   if (!key) return O.send(res, 200, { ok: false, reason: 'nokey' });
-  if (O.limited(req, 'lh', 60, 60000)) return O.send(res, 429, { ok: false, error: '잠시 뒤 다시 시도해 주세요.' });
+  if (O.limited(req, 'lh', 180, 60000)) return O.send(res, 429, { ok: false, error: '잠시 뒤 다시 시도해 주세요.' });
   try {
     if (req.query.pan) {
       const q = { pan: String(req.query.pan), spl: String(req.query.spl || ''), ccr: String(req.query.ccr || ''), ais: String(req.query.ais || '') };
       if (!/^\d{6,20}$/.test(q.pan) || !/^\d{2,3}$/.test(q.spl) || !/^\d{2}$/.test(q.ccr) || !/^\d{0,2}$/.test(q.ais)) return O.send(res, 400, { ok: false, error: '공고를 다시 골라 주세요.' });
-      const s = await O.cached('lh:spl:' + q.pan + ':' + q.spl + ':' + q.ccr, 6 * 3600e3, () => loadSupply(q, key));
+      const s = await O.cached('lh:spl:' + q.pan + ':' + q.spl + ':' + q.ccr, 6 * 3600e3, () => O.retry(() => loadSupply(q, key), 2));
       return O.send(res, 200, { ok: true, supply: s.value }, 'public, s-maxage=3600');
     }
     const sido = String(req.query.sido || '');
     if (SIDO.indexOf(sido) < 0) return O.send(res, 400, { ok: false, error: '지역을 다시 골라 주세요.' });
-    const c = await O.cached('lh:list', 3 * 3600e3, () => loadList(key));
+    const c = await O.cached('lh:list', 3 * 3600e3, () => O.retry(() => loadList(key), 2));
     return O.send(res, 200, { ok: true, sido, items: c.value.filter((x) => x.sido === sido), elsewhere: c.value.filter((x) => x.sido !== sido).length, fetchedAt: O.iso(c.at), stale: c.stale, source: 'LH 분양임대공고 (한국토지주택공사)' }, 'public, s-maxage=1800');
   } catch (e) {
     return O.send(res, 502, { ok: false, reason: 'upstream', error: 'LH 공고를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.' });

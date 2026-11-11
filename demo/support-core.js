@@ -90,42 +90,65 @@
     school: { q: '학력은 어디에 해당하나요?', o: [['대학 재학', '대학 재학 중'], ['대졸 예정', '졸업 예정'], ['대학 졸업', '대학 졸업'], ['고교 졸업', '고교 졸업'], ['석·박사', '대학원'], ['고교 재학', '고교 재학 중'], ['고졸 미만', '고졸 미만']] }
   };
   function inList(list, v) { return list.indexOf(v) >= 0; }
-  // '5천만원', '7.5천만원', '7,000만원', '3억원' → 만 원 단위 숫자
-  function amounts(text) {
-    var out = [], re = /(\d+(?:[.,]\d+)?)\s*(억|천만|백만|만)\s*원/g, m;
-    while ((m = re.exec(String(text || '')))) {
-      var n = parseFloat(m[1].replace(/,/g, '')), unit = { '억': 10000, '천만': 1000, '백만': 100, '만': 1 }[m[2]];
-      out.push(Math.round(n * unit));
+  // '5천만원', '7.5천만원', '7,000만원', '3억원', '8천5백만 원', '1억 3천만원' → 만 원 단위 숫자. 글 안의 위치(i)도 함께 돌려준다
+  function amountList(text) {
+    var out = [], t = String(text || ''), m, re = /(?:(\d+(?:[.,]\d+)?)\s*억)?\s*(?:(\d+(?:[.,]\d+)?)\s*천)?\s*(?:(\d+(?:[.,]\d+)?)\s*백)?\s*(?:(\d+(?:[.,]\d+)?)\s*(?=만))?(만)?\s*원/g;
+    function num(s) { return s ? parseFloat(s.replace(/,/g, '')) : 0; }
+    while ((m = re.exec(t))) {
+      if (!m[0]) { re.lastIndex++; continue; }
+      var small = num(m[2]) * 1000 + num(m[3]) * 100 + num(m[4]);
+      // '억'이나 '만'이 없으면(3,077,090원, 200천원) 만 원 단위로 바꾸지 않는다
+      if (!(m[1] || (m[5] && small))) continue;
+      out.push({ v: Math.round(num(m[1]) * 10000 + small), i: m.index + (m[0].length - m[0].replace(/^\s+/, '').length) });
     }
     return out;
   }
+  function amounts(text) { return amountList(text).map(function (a) { return a.v; }); }
   // 글로 적힌 소득 조건을 읽는다. 금액으로 바꿀 수 있는 것만 판정에 쓰고, 나머지는 어디서 확인하는지 알려 준다.
-  //  none: 소득과 관계없음 / pct: 기준 중위소득 비율 / year: 연소득 금액 / low: 수급·차상위 / info: 판정 못 함
+  //  skip: 내용 없이 등록된 칸 / none: 소득과 관계없음 / pct: 기준 중위소득 비율 / year: 연소득 금액 / low: 수급·차상위 / info: 판정 못 함
   function incomeRule(text) {
     var t = String(text || '').replace(/\s+/g, ' ').trim(), plain = t.replace(/기준\s*/g, ''), pcts = [], m, re = /중위\s*(?:소득)?\s*(?:의\s*)?(?:(\d{2,3})\s*%?\s*[~∼\-]\s*)?(\d{2,3})\s*%/g;
+    if (!t || /^[-–—.·~]+$/.test(t) || /^(미정|없음)$/.test(t)) return { t: 'skip' };
     if (/^(소득\s*)?(무관|제한\s*없|해당\s*없)/.test(t)) return { t: 'none' };
+    // 건강보험료로 판정하는 사업은 '중위소득 140%'라고 적혀 있어도 소득 금액이 아니라 보험료 기준표로 따진다
+    if (/건강보험료|건보료|건강보험\s*\d분기|과세급여/.test(t)) return { t: 'info', how: '건강보험료로 따지는 사업이에요. 내 보험료는 건강보험공단 누리집·앱 [보험료 조회]에서 보고, 공고에 실린 보험료 기준표와 견줘 보세요.', url: 'https://www.nhis.or.kr', link: '건강보험공단에서 보기' };
     // '100~150%'처럼 범위로 적힌 것도 읽는다
     while ((m = re.exec(plain))) [m[1], m[2]].forEach(function (n) { if (n && pcts.indexOf(+n) < 0) pcts.push(+n); });
     var free = /무관|제한\s*없/.test(t);
-    if (pcts.length) { pcts.sort(function (a, b) { return a - b; }); return { t: 'pct', lo: pcts[0], hi: pcts[pcts.length - 1], soft: free || /순위|우선/.test(t) }; }
+    if (pcts.length) {
+      pcts.sort(function (a, b) { return a - b; });
+      var o = { t: 'pct', lo: pcts[0], hi: pcts[pcts.length - 1], soft: free || /순위|우선/.test(t) };
+      if (/원가구|부모/.test(t)) o.parent = true; // 부모님 가구 소득도 함께 보는 사업
+      return o;
+    }
     if (free && !/\d\s*%/.test(t)) return { t: 'none' };
-    if (/연\s*소득|연간\s*소득|총급여|종합소득/.test(t)) {
-      var mine = /청년\s*[:：]?\s*연\s*소득\s*(\d+(?:[.,]\d+)?\s*(?:억|천만|백만|만)\s*원)/.exec(t), a = mine ? amounts(mine[1]) : amounts(t);
+    if (/연\s*소득|연간\s*소득|총급여|종합소득|부부\s*합산/.test(t)) {
+      // 보증금·재산 같은 다른 금액은 소득 기준으로 읽지 않는다
+      var list = amountList(t).filter(function (a) { return !/(보증금|재산|자산|거래금액|대출|한도|주택\s*가격|매출액?)[^,.;)]{0,10}$/.test(t.slice(Math.max(0, a.i - 16), a.i)); });
+      // 청년·청년 외·신혼부부 금액이 함께 적혀 있으면 청년 금액을 쓴다
+      var mine = list.filter(function (a) { return /청년\)?\s*[:：]?\s*(본인\s*)?(연\s*소득\s*)?$/.test(t.slice(Math.max(0, a.i - 14), a.i)); });
+      var a = (mine.length ? mine : list).map(function (x) { return x.v; });
       if (a.length) return { t: 'year', lo: Math.min.apply(null, a), hi: Math.max.apply(null, a), soft: /순위|우선/.test(t) };
     }
-    if (/수급|차상위/.test(t)) return { t: 'low', strict: t.length <= 40 && !/순위|우선|없으나|등\s*저소득/.test(t) };
+    if (/수급|차상위/.test(t)) return { t: 'low', strict: t.length <= 40 && !/순위|우선|없으나|등\s*저소득|구간|초과|차등|차별|월\s*평균/.test(t) };
     if (/학자금\s*지원\s*구간|학자금지원|소득\s*분위|\d\s*구간/.test(t)) return { t: 'info', how: '학자금 지원구간은 한국장학재단 누리집·앱의 [학자금 지원구간 조회]에서 볼 수 있어요.', url: 'https://www.kosaf.go.kr', link: '한국장학재단에서 보기' };
-    if (/건강보험료|건보료/.test(t)) return { t: 'info', how: '건강보험료로 따지는 사업이에요. 내 보험료는 건강보험공단 누리집·앱 [보험료 조회]에서 볼 수 있어요.', url: 'https://www.nhis.or.kr', link: '건강보험공단에서 보기' };
     if (/월\s*평균\s*소득/.test(t)) return { t: 'info', how: '도시근로자 가구 월평균소득을 기준으로 하는 사업이에요. 금액은 공고에 실린 소득 기준표에서 확인해요.' };
-    return { t: 'info', how: '금액으로 바꿀 수 없는 조건이에요. 공고에서 확인해 주세요.' };
+    return { t: 'info', how: '이 화면에서 따질 수 없는 조건이에요. 공고에서 확인해 주세요.' };
   }
-  // 공고 글에서 읽어 낸 주거 조건 (무주택, 보증금·월세 상한). 계약 정보와 바로 견준다.
+  // 공고 글에서 읽어 낸 주거 조건 (무주택, 보증금·월세 상한). 계약 정보와 견준다.
   function textRules(it) {
-    var t = (it.cond || '') + ' ' + (it.support || '') + ' ' + ((it.earn && it.earn.text) || ''), out = {};
-    if (/무주택/.test(t)) out.homeless = true;
-    var d = /보증금\s*(\d+(?:[.,]\d+)?\s*(?:억|천만|백만|만)\s*원)\s*이하/.exec(t), r = /월\s*(?:세|임대료|임차료)\s*(\d+(?:[.,]\d+)?\s*만\s*원)\s*이하/.exec(t);
-    if (d) out.deposit = amounts(d[1])[0];
-    if (r) out.rent = amounts(r[1])[0];
+    var t = (it.cond || '') + ' ' + (it.support || '') + ' ' + ((it.earn && it.earn.text) || ''), out = {}, m, hre = /무주택[^,.\n]{0,12}/g;
+    // '무주택자 우선'처럼 우대로 적힌 것은 필수 조건으로 보지 않는다
+    while ((m = hre.exec(t))) if (!/우선|우대|가점/.test(m[0])) out.homeless = true;
+    // 상한이 한 가지로 적혀 있을 때만 읽는다. 값이 여럿이거나(전세·월세, 수도권·지방) '폐지'된 요건이면 읽지 않는다
+    function cap(re) {
+      var vals = [], x;
+      while ((x = re.exec(t))) { if (/폐지|삭제|완화/.test(t.slice(x.index, x.index + x[0].length + 14))) continue; var v = amounts(x[1])[0]; if (v && vals.indexOf(v) < 0) vals.push(v); }
+      return vals.length === 1 ? vals[0] : 0;
+    }
+    var d = cap(/보증금\s*([\d.,억천백만 ]{1,16}원)\s*이하/g), r = cap(/월\s*(?:세|임대료|임차료)\s*([\d.,백만 ]{1,10}원)\s*이하/g);
+    if (d) out.deposit = d;
+    if (r) out.rent = r;
     return out;
   }
   // 대상 조건을 풀어 쓴 말
@@ -138,9 +161,11 @@
     var house = !user.hh ? null : user.hh === 1 ? (user.minc === undefined || user.minc === null ? null : user.minc) : (user.hinc === undefined || user.hinc === null ? null : user.hinc);
     function range(v, lo, hi, soft) { return v <= lo ? true : v > hi ? (soft ? null : false) : null; }
     out.push({ key: 'region', label: scopeLabel || '대상 지역', mine: user.region || '', ok: true });
-    if (it.age) {
-      var lab = '만 ' + (it.age[0] || '') + '~' + (it.age[1] || '') + '세';
-      out.push({ key: 'age', label: lab, mine: user.age ? '만 ' + user.age + '세' : '', ok: user.age ? (!it.age[0] || user.age >= it.age[0]) && (!it.age[1] || user.age <= it.age[1]) : null, ask: user.age ? '' : 'age' });
+    // 나이: 하한 0, 상한 99 이상은 '제한 없음'으로 등록한 값이다
+    var a0 = it.age ? it.age[0] || 0 : 0, a1 = it.age && it.age[1] < 99 ? it.age[1] || 0 : 0;
+    if (a0 || a1) {
+      var lab = a0 && a1 ? '만 ' + a0 + '~' + a1 + '세' : a0 ? '만 ' + a0 + '세 이상' : '만 ' + a1 + '세 이하';
+      out.push({ key: 'age', label: lab, mine: user.age ? '만 ' + user.age + '세' : '', ok: user.age ? (!a0 || user.age >= a0) && (!a1 || user.age <= a1) : null, ask: user.age ? '' : 'age' });
     }
     if (it.mrg) out.push({ key: 'mrg', label: it.mrg, mine: user.mrg || '', ok: user.mrg ? user.mrg === it.mrg : null, ask: user.mrg ? '' : 'mrg' });
     ['job', 'school'].forEach(function (k) {
@@ -161,13 +186,16 @@
       out.push({ key: 'earn', label: el.trim(), mine: year === null ? '' : '연 ' + won(year) + ' (월 ' + won(user.minc) + ')', ok: year === null ? null : (!e.max || year <= e.max) && (!e.min || year > e.min), ask: year === null ? 'minc' : '', note: e.max ? '한 달에 약 ' + won(Math.floor(e.max / 12)) + ' 이하로 벌면 돼요.' : '' });
     } else if (it.earn && it.earn.t === 'etc') {
       var ru = incomeRule(it.earn.text), txt = it.earn.text;
-      if (ru.t === 'none') out.push({ key: 'earn:none', label: '소득 조건 없음', mine: '누구나', ok: true, text: txt });
+      if (ru.t === 'skip') { /* 내용 없이 '-'만 등록된 칸은 조건으로 보여 주지 않는다 */ }
+      else if (ru.t === 'none') out.push({ key: 'earn:none', label: '소득 조건 없음', mine: '누구나', ok: true, text: txt });
       else if (ru.t === 'pct') {
         var same = ru.lo === ru.hi, pl = '기준 중위소득 ' + (same ? ru.hi : ru.lo + '~' + ru.hi) + '% 이하';
         var lo = user.hh ? medianMan(user.hh, ru.lo) : 0, hi = user.hh ? medianMan(user.hh, ru.hi) : 0;
-        var okp = house === null ? null : range(house, lo, hi, ru.soft);
-        out.push({ key: 'earn:pct', label: user.hh ? pl + ' · ' + user.hh + '명 가구 월 ' + (same ? won(hi) : won(lo) + '~' + won(hi)) : pl, mine: house === null ? '' : '월 ' + won(house), ok: okp, ask: house === null ? 'hinc' : '', text: txt, pct: ru,
-          note: house !== null && okp === null ? (house > hi ? '기준을 넘지만, 소득을 따지지 않는 유형도 있어요. 공고를 확인해 주세요.' : house > lo ? '유형에 따라 기준이 달라요(' + ru.lo + '% 또는 ' + ru.hi + '%). 어느 쪽인지 공고에서 확인해 주세요.' : '') : '' });
+        var okp = house === null ? null : range(house, lo, hi, ru.soft), pnote = '';
+        if (house !== null && okp === null) pnote = house > hi ? '기준을 넘지만, 소득을 따지지 않는 유형도 있어요. 공고를 확인해 주세요.' : house > lo ? (ru.parent ? '내 가구와 부모님 가구(원가구)에 기준이 따로 있어요(' + ru.lo + '%·' + ru.hi + '%). 어느 쪽이 내 가구 기준인지 공고에서 확인해 주세요.' : '유형에 따라 기준이 달라요(' + ru.lo + '% 또는 ' + ru.hi + '%). 어느 쪽인지 공고에서 확인해 주세요.') : '';
+        // 부모님 가구 소득도 보는 사업은 내 소득만으로 '맞음'이라고 하지 않는다
+        if (ru.parent && okp === true) { okp = null; pnote = '내 소득은 기준 안이에요. 부모님 가구(원가구) 소득도 함께 보는 사업이라, 그 기준은 공고에서 확인해 주세요.'; }
+        out.push({ key: 'earn:pct', label: user.hh ? pl + ' · ' + user.hh + '명 가구 월 ' + (same ? won(hi) : won(lo) + '~' + won(hi)) : pl, mine: house === null ? '' : '월 ' + won(house), ok: okp, ask: house === null ? 'hinc' : '', text: txt, pct: ru, note: pnote });
       } else if (ru.t === 'year') {
         var oky = year === null ? null : range(year, ru.lo, ru.hi, ru.soft), sm = ru.lo === ru.hi;
         out.push({ key: 'earn:year', label: '연소득 ' + (sm ? won(ru.hi) : won(ru.lo) + '~' + won(ru.hi)) + ' 이하', mine: year === null ? '' : '연 ' + won(year) + ' (월 ' + won(user.minc) + ')', ok: oky, ask: year === null ? 'minc' : '', text: txt,
@@ -181,8 +209,10 @@
     // 공고 글에서 읽어 낸 조건
     var tr = textRules(it);
     if (tr.homeless) { var hm = self.homeless; out.push({ key: 'homeless', label: '무주택', mine: hm === 'y' ? '집 없음' : hm === 'n' ? '집 있음' : '', ok: hm === 'y' ? true : hm === 'n' ? false : null, ask: hm ? '' : 'homeless', from: 'text' }); }
-    if (tr.deposit && user.deposit !== undefined) out.push({ key: 'cap:deposit', label: '보증금 ' + won(tr.deposit) + ' 이하', mine: won(user.deposit), ok: user.deposit <= tr.deposit, from: 'text' });
-    if (tr.rent && user.rent !== undefined) out.push({ key: 'cap:rent', label: '월세 ' + won(tr.rent) + ' 이하', mine: won(user.rent), ok: user.rent <= tr.rent, from: 'text' });
+    // 글에서 읽은 상한은 넘어도 '안 맞음'으로 끊지 않는다. 전세·월세나 지역에 따라 기준이 다르게 적힌 공고가 있다
+    var over = '공고 글에서 읽은 상한보다 커요. 전세·월세나 지역에 따라 기준이 다를 수 있으니 공고에서 확인해 주세요.';
+    if (tr.deposit && user.deposit !== undefined) out.push({ key: 'cap:deposit', label: '보증금 ' + won(tr.deposit) + ' 이하', mine: won(user.deposit), ok: user.deposit <= tr.deposit ? true : null, note: user.deposit <= tr.deposit ? '' : over, from: 'text' });
+    if (tr.rent && user.rent !== undefined) out.push({ key: 'cap:rent', label: '월세 ' + won(tr.rent) + ' 이하', mine: won(user.rent), ok: user.rent <= tr.rent ? true : null, note: user.rent <= tr.rent ? '' : over, from: 'text' });
     return out;
   }
   function verdict(conds) {
@@ -197,7 +227,7 @@
   function watch(it, user, scopeLabel) {
     var w = [];
     if (it.scope === 'sgg' || it.scope === 'sido') w.push(['다른 지역으로 주소를 옮기면', '대상 지역(' + scopeLabel.replace(/ 거주$/, '') + ')에서 벗어나요. 신청하고 받는 동안은 주소를 유지하세요.']);
-    if (it.age && it.age[1] && user.age && it.age[1] - user.age <= 1 && user.age <= it.age[1]) w.push(['만 ' + (it.age[1] + 1) + '세가 되면', '나이 기준을 넘어요. 지금 만 ' + user.age + '세라 신청을 미루지 않는 게 좋아요.']);
+    if (it.age && it.age[1] && it.age[1] < 99 && user.age && it.age[1] - user.age <= 1 && user.age <= it.age[1]) w.push(['만 ' + (it.age[1] + 1) + '세가 되면', '나이 기준을 넘어요. 지금 만 ' + user.age + '세라 신청을 미루지 않는 게 좋아요.']);
     if (it.job && inList(it.job, '미취업자') && !inList(it.job, '재직자')) w.push(['받는 중에 취업하면', '미취업 조건에서 벗어날 수 있어요. 공고의 중도 취업 규정을 확인하세요.']);
     if (it.job && inList(it.job, '재직자') && !inList(it.job, '미취업자')) w.push(['받는 중에 퇴사하면', '재직 조건에서 벗어날 수 있어요. 공고의 중도 퇴사 규정을 확인하세요.']);
     if (it.school && it.school.every(function (s) { return /재학|예정/.test(s); })) w.push(['휴학하거나 졸업하면', '재학 조건에서 벗어날 수 있어요.']);
@@ -235,13 +265,17 @@
   }
   // 글로 적힌 제출 서류를 줄 단위로 나눈다. 나눌 수 없으면 한 줄로 둔다.
   function docLines(text) {
-    var t = String(text || '').trim(); if (!t || /^(공고문?\s*참조|공고\s*확인|해당\s*없음|없음|-)\.?$/.test(t)) return [];
+    var t = String(text || '').trim(); if (!t || /^(공고문?\s*(참조|참고|확인)|공고\s*확인|해당\s*없음|없음|-|별도\s*문의|개별\s*문의|미정)\.?$/.test(t)) return [];
     var parts = [];
     t.split(/\n+|(?:^|\s)(?:\d{1,2}[.)]|[①-⑳])\s+/).forEach(function (line) {
       line = line.replace(/^[\s○●◦ㆍ·•▪■□◇◆▶▷※*\-–,;:]+|[\s,;]+$/g, '');
       // 머리말 줄(＜…＞, '…하는 경우', '… 서류')은 서류가 아니다
       if (line.length < 2 || /^[<＜\[(].*[>＞\])]$/.test(line) || /(경우|서류|다음과 같음|아래와 같음)\s*:?$/.test(line)) return;
-      splitTop(line).forEach(function (x) { x = x.replace(/^[\s\-–]+|\s+$/g, ''); if (x.length > 1) parts.push(x); });
+      splitTop(line).forEach(function (x) {
+        x = x.replace(/^[\s\-–☞]+|\s+$/g, '');
+        // '별도 문의', '누리집 참고', '온라인 접수'처럼 서류가 아닌 안내 문장은 뺀다
+        if (x.length > 1 && !(/(참고|참조|문의|바랍니다|바람|접수|확인)\s*[.)]?$/.test(x) && !docSource(x))) parts.push(x);
+      });
     });
     return parts.slice(0, 12).map(function (x) { return { name: x.length > 90 ? x.slice(0, 89) + '…' : x, src: docSource(x) }; });
   }
@@ -314,5 +348,5 @@
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
   return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, statusAt: statusAt, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
-    docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
+    docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, amountList: amountList, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });

@@ -13,6 +13,14 @@ async function getText(url, ms) {
   } finally { clearTimeout(t); }
 }
 async function getJson(url, ms) { return JSON.parse(await getText(url, ms)); }
+// 공공 API는 가끔 한 번씩 오류(400·5xx·시간 초과)를 낸다. 잠깐 쉬고 다시 부른다. (2026-11-11 온통청년: 같은 요청이 400 → 바로 다시 부르면 200)
+async function retry(fn, tries, waitMs) {
+  let err;
+  for (let i = 0; i < (tries || 3); i++) {
+    try { return await fn(); } catch (e) { err = e; if (i < (tries || 3) - 1) await new Promise((ok) => setTimeout(ok, (waitMs || 400) * (i + 1))); }
+  }
+  throw err;
+}
 
 // 공공데이터포털 키는 인코딩 전 값(Decoding)이든 인코딩된 값이든 받는다
 function portalKey() { const k = process.env.DATA_GO_KR_KEY || ''; return k ? (/%[0-9A-Fa-f]{2}/.test(k) ? k : encodeURIComponent(k)) : ''; }
@@ -39,8 +47,10 @@ const hits = new Map();
 function limited(req, name, max, windowMs) {
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'local';
   const k = name + ':' + ip, now = Date.now(), arr = (hits.get(k) || []).filter((t) => now - t < windowMs);
+  // 막힌 요청은 세지 않는다. 세면 계속 누르는 동안 제한이 풀리지 않는다 (발표장처럼 여러 명이 한 주소로 들어올 때도 같다)
+  if (arr.length >= max) { hits.set(k, arr); return true; }
   arr.push(now); hits.set(k, arr); if (hits.size > 5000) hits.clear();
-  return arr.length > max;
+  return false;
 }
 
 function send(res, code, body, cache) { res.setHeader('Cache-Control', cache || 'no-store'); res.status(code).json(body); }
@@ -51,4 +61,4 @@ function unesc(s) { return String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g
 function tag(block, name) { const m = new RegExp('<' + name + '>([\\s\\S]*?)</' + name + '>').exec(block); return m ? unesc(m[1]) : ''; }
 function blocks(xml, name) { return String(xml).split('<' + name + '>').slice(1).map((b) => b.split('</' + name + '>')[0]); }
 
-module.exports = { getText, getJson, portalKey, cached, limited, send, iso, tag, blocks };
+module.exports = { getText, getJson, retry, portalKey, cached, limited, send, iso, tag, blocks };

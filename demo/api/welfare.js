@@ -34,9 +34,9 @@ module.exports = async (req, res) => {
   if (SIDO.indexOf(sido) < 0) return O.send(res, 400, { ok: false, error: '지역을 다시 골라 주세요.' });
   const key = O.portalKey();
   if (!key) return O.send(res, 200, { ok: false, reason: 'nokey' });
-  if (O.limited(req, 'welfare', 60, 60000)) return O.send(res, 429, { ok: false, error: '잠시 뒤 다시 시도해 주세요.' });
+  if (O.limited(req, 'welfare', 180, 60000)) return O.send(res, 429, { ok: false, error: '잠시 뒤 다시 시도해 주세요.' });
   try {
-    const [loc, nat] = await Promise.all([O.cached('wf:' + sido, 12 * 3600e3, () => loadLocal(sido, key)), O.cached('wf:national', 12 * 3600e3, () => loadNational(key))]);
+    const [loc, nat] = await Promise.all([O.cached('wf:' + sido, 12 * 3600e3, () => O.retry(() => loadLocal(sido, key), 2)), O.cached('wf:national', 12 * 3600e3, () => O.retry(() => loadNational(key), 2))]);
     // 복지로는 시군구 이름을 '수원시'처럼 시 단위로 준다
     const names = [sgg, sgg.split(' ')[0]].filter(Boolean);
     const mine = loc.value.filter((x) => names.indexOf(x.sgg) >= 0), wide = loc.value.filter((x) => !x.sgg);

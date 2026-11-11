@@ -119,9 +119,45 @@ test('공고 글의 주거 조건: 무주택은 묻고, 보증금·월세 상한
   const v = (u) => S.verdict(S.check(it, me(u), ''));
   assert.equal(v({ deposit: 1000, rent: 45 }), 'q'); // 무주택 여부를 아직 모른다
   assert.equal(v({ deposit: 1000, rent: 45, self: { homeless: 'y' } }), 'ok');
-  assert.equal(v({ deposit: 1000, rent: 71, self: { homeless: 'y' } }), 'no');
-  assert.equal(v({ deposit: 5001, rent: 45, self: { homeless: 'y' } }), 'no');
+  // 글에서 읽은 상한은 넘어도 '안 맞음'으로 끊지 않고 확인 필요로 둔다 (공고마다 전세·월세, 지역별 기준이 따로 적힌 경우가 있다)
+  assert.equal(v({ deposit: 1000, rent: 71, self: { homeless: 'y' } }), 'q');
+  assert.equal(v({ deposit: 5001, rent: 45, self: { homeless: 'y' } }), 'q');
+  assert.match(S.check(it, me({ deposit: 5001, rent: 45 }), '').filter((x) => x.key === 'cap:deposit')[0].note, /공고에서 확인/);
   assert.equal(v({ deposit: 1000, rent: 45, self: { homeless: 'n' } }), 'no');
+  // 실제 공고에서 잘못 읽던 글 (2026-11-11 전국 점검)
+  const tr = (cond) => S.textRules(S.normalize(raw({ addAplyQlfcCndCn: cond })));
+  assert.deepEqual(tr('전입신고 필수 ※ 기존 월세 임차보증금 5천만원 및 월세 70만원 이하 요건 폐지(2024.4.12.~)'), {}); // 폐지된 요건
+  assert.deepEqual(tr('입주자격(무주택자 우선) 등'), {}); // 우대일 뿐 필수가 아니다
+  assert.deepEqual(tr('(전세) 보증금 3억원 이하 (월세) 보증금 1억원 이하 및 월세 70만원 이하'), { rent: 70 }); // 보증금 상한이 두 가지면 읽지 않는다
+  assert.deepEqual(tr('보증금 8,000만원 이하, 월세 60만원 이하'), { deposit: 8000, rent: 60 });
+});
+
+test('실제 공고 글 읽기 보완: 합쳐 쓴 금액, 청년 금액, 건강보험료, 빈칸, 나이 제한 없음', () => {
+  assert.deepEqual(S.amounts('8천5백만 원, 1억 3천만원, 1.5억원'), [8500, 13000, 15000]);
+  assert.deepEqual(S.amounts('과세급여 3,077,090원 이하, 월 200천원'), []); // 만 원 단위가 아닌 표기는 읽지 않는다
+  const yr = (t) => { const r = S.incomeRule(t); return [r.t, r.lo, r.hi]; };
+  assert.deepEqual(yr('신혼부부(부부합산) 연소득 8천5백만 원 이하, 다자녀가정(부부합산) 연소득 1억 원 이하'), ['year', 8500, 10000]);
+  assert.deepEqual(yr('임차보증금 3억원 이하, 연소득 기준 이하(청년 5천만원, 신혼부부 7.5천만원, 청년 외 6천만원)인 무주택 임차인'), ['year', 5000, 5000]);
+  assert.deepEqual(yr('연소득 (청년)5천만원, (청년 외)6천만원, (신혼부부)7.5천만원 이하'), ['year', 5000, 5000]);
+  assert.deepEqual(yr('(신혼부부)부부합산 연소득 1.3억 원 이하, (청년)연소득 4천만원(부부합산 5천만원) 이하'), ['year', 4000, 4000]);
+  assert.deepEqual(yr('부부합산 1.3억 원 이하'), ['year', 13000, 13000]);
+  // 건강보험료로 따지는 사업은 '중위소득 140%'라고 적혀 있어도 소득 금액으로 판정하지 않는다
+  assert.equal(S.incomeRule('건강보험료 중위소득 140% 미만').t, 'info');
+  assert.equal(S.incomeRule('기초생활수급자, 차상위계층, 한국장학재단 학자금 지원 4구간 이하').strict, false);
+  // 내용 없이 '-'만 등록된 칸은 조건으로 보여 주지 않는다
+  assert.equal(S.incomeRule('-').t, 'skip');
+  const blank = S.check(S.normalize(raw({ earnCndSeCd: '0043003', earnEtcCn: '-' })), me(), '');
+  assert.equal(blank.filter((x) => /^earn/.test(x.key)).length, 0);
+  // 부모님 가구 소득도 보는 사업은 내 소득만으로 맞다고 하지 않는다
+  const par = S.normalize(raw({ earnCndSeCd: '0043003', earnEtcCn: '원가구 기준 중위소득 100% 이하, 청년가구 기준 중위소득 60% 이하' }));
+  const pc = S.check(par, me({ hh: 1, minc: 100 }), '').filter((x) => x.key === 'earn:pct')[0];
+  assert.equal(pc.ok, null); assert.match(pc.note, /부모님 가구/);
+  // 나이: 0·99 이상은 제한 없음으로 등록한 값
+  const age = (lo, hi) => S.check(S.normalize(raw({ sprtTrgtMinAge: lo, sprtTrgtMaxAge: hi })), me(), '').filter((x) => x.key === 'age').map((x) => x.label)[0];
+  assert.equal(age('19', '120'), '만 19세 이상'); assert.equal(age('0', '39'), '만 39세 이하'); assert.equal(age('0', '99'), undefined); assert.equal(age('19', '34'), '만 19~34세');
+  // 서류 칸에 적힌 안내 문장은 서류로 세지 않는다
+  assert.deepEqual(S.docLines('별도 문의'), []);
+  assert.deepEqual(S.docLines('- 주민등록등본\n- ☞ 자세한 내용은 붙임파일을 확인해주시기 바랍니다\n- 시군 홈페이지 참고\n- 차상위계층 확인서').map((x) => x.name), ['주민등록등본', '차상위계층 확인서']);
 });
 
 test('마감 표시: 올해가 아니면 연도를 붙이고, 1년 넘게 남으면 남은 날을 세지 않는다', () => {

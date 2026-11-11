@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
   const key = O.portalKey();
   if (!key) return O.send(res, 200, { ok: false, reason: 'nokey' });
   try {
-    const c = await O.cached('holi:' + year, 7 * 86400e3, () => load(year, key));
+    const c = await O.cached('holi:' + year, 7 * 86400e3, () => O.retry(() => load(year, key), 2));
     return O.send(res, 200, { ok: true, year, items: c.value, source: '특일 정보 (한국천문연구원)' }, 'public, s-maxage=86400');
   } catch (e) {
     return O.send(res, 502, { ok: false, reason: 'upstream' });
