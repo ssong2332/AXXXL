@@ -41,6 +41,8 @@
     { key: 'exclusions', label: '함께 받을 수 없는 지원', group: '서류', type: 'list' }
   ];
   var FIELD = {};
+  // 모집 상태 (계획서 PRD F-03과 같은 이름)
+  var STATUS = { open: '모집 중', closed: '마감', wait: '다음 공고 대기' };
   FIELDS.forEach(function (f) { FIELD[f.key] = f; });
 
   // ---------- 문자열·숫자 도우미 ----------
@@ -178,10 +180,11 @@
   function ymdDash(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function statusOf(v, today) {
     var t = ymdDash(today || new Date());
-    if (v.period_start && t < v.period_start) return ['모집 예정', ''];
-    if (v.period_end && t > v.period_end) return ['접수 마감', 'no'];
-    if (v.period_start || v.period_end) return ['접수 중', 'brand'];
-    return ['모집 예정', ''];
+    // 모집 상태 이름은 계획서(PRD F-03)와 같게: 모집 중 · 마감 · 다음 공고 대기
+    if (v.period_start && t < v.period_start) return [STATUS.wait, ''];
+    if (v.period_end && t > v.period_end) return [STATUS.closed, 'no'];
+    if (v.period_start || v.period_end) return [STATUS.open, 'brand'];
+    return [STATUS.wait, ''];
   }
   function wonText(n) { if (n === null || n === undefined) return ''; return n >= 10000 ? (n / 10000) + '억' + (n % 10000 ? ' ' + (n % 10000).toLocaleString('ko-KR') + '만' : '') + ' 원' : n.toLocaleString('ko-KR') + '만 원'; }
   function md(s) { if (!s) return ''; var p = s.split('-'); return +p[1] + '.' + +p[2]; }
@@ -224,7 +227,7 @@
       else { ok = null; mine = '직접 확인'; }
       return { label: c.label, mine: mine, ok: ok, type: c.type, evidence: c.evidence };
     });
-    var closed = p.status === '접수 마감';
+    var closed = p.status === STATUS.closed;
     return { p: p, res: res, eligible: !closed && !res.some(function (r) { return r.ok === false; }), closed: closed, unknown: res.filter(function (r) { return r.ok === null; }) };
   }
 
@@ -492,7 +495,7 @@
     FIELDS: FIELDS, FIELD: FIELD, FLAG_TEXT: FLAG_TEXT, PERSONAS: PERSONAS,
     normalize: normalize, show: show, values: values, blank: blank,
     inSource: inSource, valueFits: valueFits, missingItems: missingItems, toList: toList, check: check, diff: diff, readyToApprove: readyToApprove,
-    toProgram: toProgram, evalProgram: evalProgram, verdict: verdict, statusOf: statusOf, simulate: simulate,
+    toProgram: toProgram, evalProgram: evalProgram, verdict: verdict, statusOf: statusOf, STATUS: STATUS, simulate: simulate,
     retrieve: retrieve, noticeCards: noticeCards, grams: grams, ruleExtract: ruleExtract, extractNotes: extractNotes,
     safeUrl: safeUrl, manwon: manwon, digits: digits, squash: squash, toDate: toDate,
     renderPrompt: renderPrompt, cardsBlock: cardsBlock, factsBlock: factsBlock, FACT_KEYS: FACT_KEYS,

@@ -946,7 +946,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return x;
   }
   function judge(x) {
-    if (x.closed) return ['no', '접수 마감'];
+    if (x.closed) return ['no', '마감'];
     if (!x.eligible) return ['no', '해당 안 됨'];
     return x.unknown.some(function (r) { return r.type !== 'homeless'; }) ? ['due', '확인 필요'] : ['brand', '해당 가능'];
   }
@@ -1308,7 +1308,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     var v = x.closed ? 'no' : SP.verdict(res), p = x.p;
     return { kind: 'approved', key: 'ap-' + p.id, name: p.name, one: p.amountText, org: p.org, v: v, conds: res, p: p, x: x, kd: SP.kindOf({ name: p.name + ' ' + p.amountText }), why: '담당자 확인 완료', score: 300,
-      st: { k: x.closed ? 'ended' : /예정/.test(p.status) ? 'soon' : p.periodEnd ? 'open' : 'always', text: p.status + (p.period ? ' · ' + p.period : ''), left: p.periodEnd ? Math.round((pd(p.periodEnd) - today) / 86400000) : 0, to: p.periodEnd ? pd(p.periodEnd) : null, far: !!p.periodEnd && Math.round((pd(p.periodEnd) - today) / 86400000) > 365 }, sort: (x.closed ? 3e6 : 0) - 1e7 };
+      // 상태 이름은 rules-core.js STATUS에서 정한다 (11/11 PR #16에서 '모집 예정' → '다음 공고 대기'). 글자로 비교하지 않는다
+      st: { k: x.closed ? 'ended' : p.status === JachwiRules.STATUS.wait ? 'soon' : p.periodEnd ? 'open' : 'always', text: p.status + (p.period ? ' · ' + p.period : ''), left: p.periodEnd ? Math.round((pd(p.periodEnd) - today) / 86400000) : 0, to: p.periodEnd ? pd(p.periodEnd) : null, far: !!p.periodEnd && Math.round((pd(p.periodEnd) - today) / 86400000) > 365 }, sort: (x.closed ? 3e6 : 0) - 1e7 };
   }
   function rowYouth(it, user, r, ctx) {
     var lab = scopeLabel(it, r), conds = SP.check(it, user, lab), st = SP.statusAt(it, today), v = st.k === 'ended' ? 'no' : SP.verdict(conds);
