@@ -109,7 +109,10 @@ test('나이 경계: 하한·상한 당일은 맞고 하루 차이는 안 맞는
   const it = S.normalize(raw());
   const v = (age) => S.verdict(S.check(it, me({ age }), '수원시 거주'));
   assert.equal(v(19), 'ok'); assert.equal(v(34), 'ok'); assert.equal(v(18), 'no'); assert.equal(v(35), 'no');
-  assert.equal(v(0), 'q');
+  assert.equal(v(0), 'ask'); // 나이를 아직 모르면 '확인 필요'가 아니라 '답하면 판정'
+  // 출생연월은 넣었지만 생일 달이라 만 나이를 못 정한 경우: 다시 묻지 않고 확인 필요
+  const bd = S.check(it, me({ age: 0, birth: '2002-11' }), '').filter((x) => x.key === 'age')[0];
+  assert.equal(bd.ask, ''); assert.equal(bd.ok, null); assert.equal(S.verdict(S.check(it, me({ age: 0, birth: '2002-11' }), '')), 'q');
 });
 
 test('연소득 경계: 월 소득을 넣으면 12를 곱해 견준다. 상한과 같으면 맞고 넘으면 안 맞는다. 입력 전에는 묻는다', () => {
@@ -122,9 +125,9 @@ test('연소득 경계: 월 소득을 넣으면 12를 곱해 견준다. 상한�
   assert.match(ask.note, /한 달에 약 400만 원 이하/); // 기준 금액을 먼저 알려 준다
 });
 
-test('취업·혼인 조건: 답하기 전에는 확인 필요, 답하면 판정', () => {
+test('취업·혼인 조건: 답하기 전에는 답하면 판정(ask), 답하면 판정', () => {
   const it = S.normalize(raw({ jobCd: '0013003', mrgSttsCd: '0055002' }));
-  assert.equal(S.verdict(S.check(it, me(), '')), 'q');
+  assert.equal(S.verdict(S.check(it, me(), '')), 'ask');
   assert.equal(S.verdict(S.check(it, me({ job: '미취업자', mrg: '미혼' }), '')), 'ok');
   assert.equal(S.verdict(S.check(it, me({ job: '재직자', mrg: '미혼' }), '')), 'no');
   assert.equal(S.verdict(S.check(it, me({ job: '미취업자', mrg: '기혼' }), '')), 'no');
@@ -184,13 +187,18 @@ test('공고 글의 주거 조건: 무주택은 묻고, 보증금·월세 상한
   const it = S.normalize(raw({ addAplyQlfcCndCn: '무주택 청년으로 임차보증금 5천만원 이하 및 월세 70만원 이하 주택에 거주하는 사람' }));
   assert.deepEqual(S.textRules(it), { homeless: true, deposit: 5000, rent: 70 });
   const v = (u) => S.verdict(S.check(it, me(u), ''));
-  assert.equal(v({ deposit: 1000, rent: 45 }), 'q'); // 무주택 여부를 아직 모른다
-  assert.equal(v({ deposit: 1000, rent: 45, self: { homeless: 'y' } }), 'ok');
+  // 무주택 답은 조건 입력과 같은 값(S.homeless: 'yes'·'no'·'unknown', 답 안 했으면 없음)
+  assert.equal(v({ deposit: 1000, rent: 45 }), 'ask'); // 무주택을 아직 답하지 않았다 → 묻는다
+  assert.equal(S.check(it, me({ deposit: 1000, rent: 45 }), '').filter((x) => x.key === 'homeless')[0].ask, 'homeless');
+  assert.equal(v({ deposit: 1000, rent: 45, homeless: 'yes' }), 'ok');
+  assert.equal(v({ deposit: 1000, rent: 45, homeless: 'unknown' }), 'q'); // '모름'이라고 답했으면 다시 묻지 않고 확인 필요
+  assert.equal(S.check(it, me({ deposit: 1000, rent: 45, homeless: 'unknown' }), '').filter((x) => x.key === 'homeless')[0].ask, '');
   // 글에서 읽은 상한은 넘어도 '안 맞음'으로 끊지 않고 확인 필요로 둔다 (공고마다 전세·월세, 지역별 기준이 따로 적힌 경우가 있다)
-  assert.equal(v({ deposit: 1000, rent: 71, self: { homeless: 'y' } }), 'q');
-  assert.equal(v({ deposit: 5001, rent: 45, self: { homeless: 'y' } }), 'q');
+  assert.equal(v({ deposit: 1000, rent: 71, homeless: 'yes' }), 'q');
+  assert.equal(v({ deposit: 5001, rent: 45, homeless: 'yes' }), 'q');
+  assert.equal(v({ deposit: 5001, rent: 45 }), 'q'); // 답 안 한 질문과 확인할 조건이 같이 있으면 답해도 확인이 남으므로 q
   assert.match(S.check(it, me({ deposit: 5001, rent: 45 }), '').filter((x) => x.key === 'cap:deposit')[0].note, /공고에서 확인/);
-  assert.equal(v({ deposit: 1000, rent: 45, self: { homeless: 'n' } }), 'no');
+  assert.equal(v({ deposit: 1000, rent: 45, homeless: 'no' }), 'no');
   // 실제 공고에서 잘못 읽던 글 (2026-11-11 전국 점검)
   const tr = (cond) => S.textRules(S.normalize(raw({ addAplyQlfcCndCn: cond })));
   assert.deepEqual(tr('전입신고 필수 ※ 기존 월세 임차보증금 5천만원 및 월세 70만원 이하 요건 폐지(2024.4.12.~)'), {}); // 폐지된 요건

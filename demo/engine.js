@@ -87,8 +87,10 @@
 
   // ---------- 지원 자격 판정(rules-core.evalProgram)에 넘길 이용자 값 ----------
   // 나이는 계약일 기준 만 나이, 모르면 null
+  // 무주택·중복 수혜는 답하지 않았으면(값 없음) 그대로 undefined로 넘긴다. 'unknown'은 '모른다고 답함'일 때만.
+  // rules-core.evalProgram은 undefined면 판정에서 빼고, 'unknown'이면 '확인 필요'로 본다.
   function toUser(S) {
-    return { age: age(S.birth, parseDate(S.contract)), income: S.income, deposit: +S.deposit || 0, rent: +S.rent || 0, gu: S.gu, homeless: S.homeless || 'unknown', dup: S.dup || 'unknown' };
+    return { age: age(S.birth, parseDate(S.contract)), income: S.income, deposit: +S.deposit || 0, rent: +S.rent || 0, gu: S.gu, homeless: S.homeless || undefined, dup: S.dup || undefined };
   }
 
   return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, toUser: toUser };

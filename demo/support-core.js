@@ -381,10 +381,11 @@
   }
   // 대상 조건을 풀어 쓴 말
   var TRAIT = { '중소기업': '중소기업에 다녀요', '여성': '여성이에요', '기초생활수급자': '기초생활수급자예요', '한부모가정': '한부모 가정이에요', '장애인': '장애인 등록이 돼 있어요', '농업인': '농사를 지어요', '군인': '군인이에요 (복무 중·전역 예정)', '지역인재': '이 지역 학교를 다니거나 졸업했어요', '수급·차상위': '기초생활수급자나 차상위계층이에요' };
-  // user: { age, region, mrg, job, school, minc(내 월 소득 만원), hh(가구원 수), hinc(가구 월 소득 만원), traits:{이름:true|false}, self:{}, deposit, rent }
+  // user: { age, birth(출생연월, 생일 달이라 age를 못 정했을 때 구분용), region, mrg, job, school, minc(내 월 소득 만원), hh(가구원 수), hinc(가구 월 소득 만원), traits:{이름:true|false},
+  //         homeless('yes'|'no'|'unknown', 답 안 했으면 없음 — app.html S.homeless와 같은 값), deposit, rent }
   // 반환 조건: { key, label, mine, ok(true|false|null), ask?: 질문 종류, ... }
   function check(it, user, scopeLabel) {
-    var out = [], self = user.self || {}, traits = user.traits || {};
+    var out = [], traits = user.traits || {};
     var year = user.minc === undefined || user.minc === null ? null : user.minc * 12;
     var house = !user.hh ? null : user.hh === 1 ? (user.minc === undefined || user.minc === null ? null : user.minc) : (user.hinc === undefined || user.hinc === null ? null : user.hinc);
     function range(v, lo, hi, soft) { return v <= lo ? true : v > hi ? (soft ? null : false) : null; }
@@ -393,7 +394,8 @@
     var a0 = it.age ? it.age[0] || 0 : 0, a1 = it.age && it.age[1] < 99 ? it.age[1] || 0 : 0;
     if (a0 || a1) {
       var lab = a0 && a1 ? '만 ' + a0 + '~' + a1 + '세' : a0 ? '만 ' + a0 + '세 이상' : '만 ' + a1 + '세 이하';
-      out.push({ key: 'age', label: lab, mine: user.age ? '만 ' + user.age + '세' : '', ok: user.age ? (!a0 || user.age >= a0) && (!a1 || user.age <= a1) : null, ask: user.age ? '' : 'age' });
+      // 출생연월을 넣었는데 나이가 없으면 생일 달이라 정할 수 없는 경우다. 다시 묻지 않고 확인 필요로 둔다
+      out.push({ key: 'age', label: lab, mine: user.age ? '만 ' + user.age + '세' : user.birth ? '생일 지났는지 확인' : '', ok: user.age ? (!a0 || user.age >= a0) && (!a1 || user.age <= a1) : null, ask: user.age || user.birth ? '' : 'age' });
     }
     if (it.mrg) out.push({ key: 'mrg', label: it.mrg, mine: user.mrg || '', ok: user.mrg ? user.mrg === it.mrg : null, ask: user.mrg ? '' : 'mrg' });
     ['job', 'school'].forEach(function (k) {
@@ -436,16 +438,21 @@
     }
     // 공고 글에서 읽어 낸 조건
     var tr = textRules(it);
-    if (tr.homeless) { var hm = self.homeless; out.push({ key: 'homeless', label: '무주택', mine: hm === 'y' ? '집 없음' : hm === 'n' ? '집 있음' : '', ok: hm === 'y' ? true : hm === 'n' ? false : null, ask: hm ? '' : 'homeless', from: 'text' }); }
+    // 무주택: 답이 없으면 묻고(ask), '모름'이라고 답했으면 묻지 않고 확인 필요
+    if (tr.homeless) { var hm = user.homeless; out.push({ key: 'homeless', label: '무주택', mine: { yes: '집 없음', no: '집 있음', unknown: '모름' }[hm] || '', ok: hm === 'yes' ? true : hm === 'no' ? false : null, ask: hm ? '' : 'homeless', from: 'text' }); }
     // 글에서 읽은 상한은 넘어도 '안 맞음'으로 끊지 않는다. 전세·월세나 지역에 따라 기준이 다르게 적힌 공고가 있다
     var over = '공고 글에서 읽은 상한보다 커요. 전세·월세나 지역에 따라 기준이 다를 수 있으니 공고에서 확인해 주세요.';
     if (tr.deposit && user.deposit !== undefined) out.push({ key: 'cap:deposit', label: '보증금 ' + won(tr.deposit) + ' 이하', mine: won(user.deposit), ok: user.deposit <= tr.deposit ? true : null, note: user.deposit <= tr.deposit ? '' : over, from: 'text' });
     if (tr.rent && user.rent !== undefined) out.push({ key: 'cap:rent', label: '월세 ' + won(tr.rent) + ' 이하', mine: won(user.rent), ok: user.rent <= tr.rent ? true : null, note: user.rent <= tr.rent ? '' : over, from: 'text' });
     return out;
   }
+  // ok 해당 가능 / no 해당 안 됨 / ask 아직 답하지 않은 질문만 남음(답하면 판정) / q 확인 필요(공고에서 직접 봐야 하거나 '모름'이라고 답함)
+  // 답을 안 한 것과 확인이 필요한 것을 섞지 않는다. 둘 다 있으면 답해도 확인이 남으므로 q
   function verdict(conds) {
     if (conds.some(function (c) { return c.ok === false; })) return 'no';
-    return conds.some(function (c) { return c.ok === null; }) ? 'q' : 'ok';
+    var open = conds.filter(function (c) { return c.ok === null; });
+    if (!open.length) return 'ok';
+    return open.every(function (c) { return c.ask; }) ? 'ask' : 'q';
   }
   function won(man) { var e = Math.floor(man / 10000), r = man % 10000; return (e ? e + '억' : '') + (e && r ? ' ' : '') + (r || !e ? r.toLocaleString('ko-KR') + '만' : '') + ' 원'; }
   function medianPct(text) { var m = /중위\s*소득\s*(?:의\s*)?(\d{2,3})\s*%/.exec(String(text || '').replace(/기준\s*/g, '')); return m ? +m[1] : 0; }
@@ -544,7 +551,7 @@
 
   // ---------- 나에게 맞는 순서 ----------
   // 이용자가 넣은 계약·내 정보에서 상황을 짐작해 점수를 매긴다. 판정이 아니라 보여 주는 순서에만 쓴다.
-  // ctx: { age, rent, deposit, daysIn(입주 후 일수, 입주 전이면 음수), mrg, job, school, self, lowIncome, sido }
+  // ctx: { age, rent, deposit, daysIn(입주 후 일수, 입주 전이면 음수), mrg, job, school, lowIncome, sido }
   var FIT = [
     [function (c) { return c.rent > 0; }, /월세|임차료|주거비/, 30, '월세를 내고 있어서'],
     [function (c) { return c.daysIn !== null && c.daysIn <= 90; }, /이사|중개보수|전입|정착|이주/, 25, '최근에 이사해서'],
@@ -572,7 +579,7 @@
   }
 
   // 목록 순서: 맞는 것 → 확인 필요 → 안 맞는 것, 그 안에서 마감 임박 → 상시 → 접수 전 → 끝남, 범위가 좁은 것 먼저
-  var VR = { ok: 0, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, check: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
+  var VR = { ok: 0, ask: 1, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, check: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' && st.sure ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
   return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regStatus: regStatus, regText: regText, isDeep: isDeep, isLanding: isLanding, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, periodsIn: periodsIn, pickNotice: pickNotice, aboutPolicy: aboutPolicy, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
