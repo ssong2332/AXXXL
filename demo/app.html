@@ -1187,10 +1187,14 @@ document.addEventListener('DOMContentLoaded', function () {
   function supFetch(kind, key, url, again) {
     var box = SUP[kind][key]; if (box && !again) return box;
     if (!box) box = SUP[kind][key] = { status: 'loading', data: null };
-    fetch(url).then(function (r) { return r.json(); }).then(function (j) { box.data = j; box.status = j && j.ok ? 'ok' : j && j.reason === 'nokey' ? 'nokey' : 'error'; })
-      .catch(function () { box.data = null; box.status = 'error'; }).then(function () {
+    // 실패를 셋으로 나눈다: 서버에 닿지 못함(offline) / 이 서버에 기능이 없음(missing, 404) / 공공 API 오류(error)
+    fetch(url).then(function (r) {
+      if (r.status === 404) return { ok: false, reason: 'missing' };
+      return r.json().catch(function () { return { ok: false, reason: 'upstream' }; });
+    }).then(function (j) { box.data = j; box.status = j && j.ok ? 'ok' : j && j.reason === 'nokey' ? 'nokey' : j && j.reason === 'missing' ? 'missing' : 'error'; })
+      .catch(function () { box.data = { ok: false, reason: 'offline' }; box.status = 'offline'; }).then(function () {
         // 공공 API가 잠깐 안 될 때가 있어서, 처음 실패하면 한 번은 알아서 다시 받아 본다
-        if (box.status === 'error' && !again && SUP[kind][key] === box && (!box.data || box.data.reason === 'upstream')) { box.status = 'loading'; setTimeout(function () { supFetch(kind, key, url, true); }, 1500); return; }
+        if ((box.status === 'error' || box.status === 'offline') && !again && SUP[kind][key] === box && (!box.data || /upstream|offline/.test(box.data.reason || ''))) { box.status = 'loading'; setTimeout(function () { supFetch(kind, key, url, true); }, 1500); return; }
         if (route() === 'support') render(true);
       });
     return box;
@@ -1362,7 +1366,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function spState(box, what) {
     if (box.status === 'loading') return '<div class="sp-empty"><p class="muted">' + what + ' 불러오는 중…</p></div>';
     if (box.status === 'nokey') return '<div class="sp-empty"><p class="sub">이 서버에는 공공 API 키가 없어서 ' + what + ' 불러오지 못했어요.</p><p class="s13 muted">운영자가 환경변수에 키를 넣으면 실제 데이터가 나와요.</p></div>';
-    if (box.status === 'error') return '<div class="sp-empty"><p class="sub">' + esc((box.data && box.data.error) || what + ' 불러오지 못했어요.') + '</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
+    var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname), file = location.protocol === 'file:';
+    if (box.status === 'offline') return '<div class="sp-empty"><p class="sub"><b>지원사업 서버에 연결하지 못했어요.</b></p><p class="s13 muted">' + (file ? '파일을 바로 열면 서버 기능이 동작하지 않아요. demo 폴더에서 <code>node dev-server.js</code>를 실행한 뒤 http://localhost:4173/app.html 로 열어 주세요.' : local ? '로컬 서버가 꺼져 있어요. demo 폴더에서 <code>node dev-server.js</code>를 다시 실행한 뒤 [다시 시도]를 눌러 주세요.' : '인터넷 연결을 확인하고 다시 시도해 주세요.') + '</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
+    if (box.status === 'missing') return '<div class="sp-empty"><p class="sub"><b>이 주소의 서버에는 아직 지원사업 기능이 없어요.</b></p><p class="s13 muted">지원사업 실제 데이터는 <code>feat/support-api</code> 브랜치에 있어요. 팀 레포에 합쳐서 배포하고, 배포 환경변수에 API 키를 넣으면 이 화면에 나와요. 그 전에는 로컬 서버에서 볼 수 있어요.</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
+    if (box.status === 'error') return '<div class="sp-empty"><p class="sub">' + esc((box.data && box.data.error) || what + ' 불러오지 못했어요.') + '</p><p class="s13 muted">공공 API(온통청년·복지로·LH)가 잠깐 응답하지 않을 때가 있어요. 잠시 뒤 다시 시도해 주세요.</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
     return '';
   }
   function supCtx(r) { var u = sup(); return { age: +S.age || 0, rent: +S.rent || 0, deposit: +S.deposit || 0, daysIn: S.move ? Math.round((today - pd(S.move)) / 86400000) : null, mrg: u.mrg, job: u.job, school: u.school, self: u.self, lowIncome: S.income === '100', sido: r.sido }; }
@@ -1467,7 +1474,7 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'more') u.more = (u.more || 20) + 20;
     else if (a === 'panel') u.panel = !u.panel;
     else if (a === 'copy') { var src = document.getElementById(v); try { navigator.clipboard.writeText(src ? src.textContent : ''); } catch (err) {} toast('문구를 복사했어요.'); return; }
-    else if (a === 'retry') { ['youth', 'wf', 'lh'].forEach(function (kind) { Object.keys(SUP[kind]).forEach(function (key) { if (SUP[kind][key].status === 'error') delete SUP[kind][key]; }); }); }
+    else if (a === 'retry') { ['youth', 'wf', 'lh'].forEach(function (kind) { Object.keys(SUP[kind]).forEach(function (key) { if (/error|offline|missing/.test(SUP[kind][key].status)) delete SUP[kind][key]; }); }); }
     else return;
     save(); render(true);
     if (jump && window.innerWidth <= 960) { var d = document.getElementById('sp-detail'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
