@@ -1,0 +1,67 @@
+# main에 병합(푸시)되면 Vercel 운영 배포를 자동으로 실행한다.
+# Vercel 프로젝트(jachwi-navi)가 저장소 주인 계정과 직접 연결되지 않아서, GitHub이 대신 Vercel API로 배포를 요청한다.
+# 필요한 것: 저장소 Settings → Secrets and variables → Actions 의 VERCEL_TOKEN (Vercel 계정 토큰)
+# 수동 실행: Actions 탭 → "Vercel 운영 배포" → Run workflow
+name: Vercel 운영 배포
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 연달아 병합되면 앞 배포는 기다리지 않고 마지막 것만 끝까지 본다
+concurrency:
+  group: vercel-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # 아래 두 값은 비밀이 아니라 프로젝트 주소 같은 식별자다
+  VERCEL_TEAM_ID: team_IjcNs9iLhu3SHIk8sqrMjV42
+  VERCEL_PROJECT_ID: prj_TQf1WVwjldSjfzUqnYkPBRW9Y8jD
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 배포 요청
+        id: create
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::저장소 Secrets에 VERCEL_TOKEN이 없어요. Settings → Secrets and variables → Actions에서 추가해 주세요."
+            exit 1
+          fi
+          body=$(jq -n --arg sha "$GITHUB_SHA" --arg pid "$VERCEL_PROJECT_ID" \
+            '{name:"jachwi-navi", project:$pid, target:"production",
+              gitSource:{type:"github", org:"ssong2332", repo:"AXXXL", ref:"main", sha:$sha}}')
+          res=$(curl -sS -X POST "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" -d "$body")
+          id=$(echo "$res" | jq -r '.id // empty')
+          if [ -z "$id" ]; then
+            echo "::error::배포 요청 실패: $(echo "$res" | jq -c '.error // .')"
+            exit 1
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "배포 시작: https://$(echo "$res" | jq -r '.url')"
+
+      - name: 배포 끝날 때까지 확인
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          ID: ${{ steps.create.outputs.id }}
+        run: |
+          for i in $(seq 1 60); do
+            state=$(curl -sS "https://api.vercel.com/v13/deployments/$ID?teamId=$VERCEL_TEAM_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" | jq -r '.readyState // .status // "UNKNOWN"')
+            echo "상태: $state"
+            case "$state" in
+              READY) echo "배포 완료 → https://jachwi-navi.vercel.app"; exit 0 ;;
+              ERROR|CANCELED) echo "::error::배포 실패($state). Vercel 대시보드에서 빌드 로그를 확인하세요: https://vercel.com/zun-it/jachwi-navi"; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::10분 안에 끝나지 않았어요"; exit 1
