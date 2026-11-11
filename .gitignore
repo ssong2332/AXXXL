@@ -42,7 +42,7 @@ venv/
 .artifacts/
 AGENTS.md
 CLAUDE.md
-scripts/
+/scripts/
 docs/KitFeedback.md
 docs/HarnessAudit.md
 docs/ToolPacks.md
