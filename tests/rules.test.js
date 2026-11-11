@@ -174,3 +174,27 @@ test('시스템 프롬프트: 코치 독립판에 승인 카드가 들어간다'
   assert.ok(chat.includes(C.REFUSE));
   assert.ok(!R.renderPrompt(raw, 'api').includes('{{'));
 });
+
+// ---------- 품질 평가 (운영자 콘솔 '품질 평가'와 같은 세트) ----------
+const E = require('../demo/eval-core.js');
+const EV = require('../demo/rules/evals.js');
+test('품질: 코치 기본 질문 95% 이상, 틀린 답 0개', () => {
+  const r = E.runCoach(SEED, EV.coach);
+  assert.equal(r.wrong, 0, r.rows.filter((x) => x.wrong).map((x) => x.q).join(', '));
+  assert.ok(r.rate >= 0.95, r.pass + '/' + r.total);
+});
+test('품질: 처음 보는 질문에서도 틀린 답 0개', () => {
+  const r = E.runCoach(SEED, EV.coachHoldout);
+  assert.equal(r.wrong, 0, r.rows.filter((x) => x.wrong).map((x) => x.q).join(', '));
+});
+test('품질: 시연 공고 추출 항목 모두 맞음', () => {
+  const r = E.runExtract(SAMPLES, EV.extract);
+  assert.equal(r.pass, r.total, JSON.stringify(r.rows.map((x) => x.miss)));
+});
+test('내장 AI 코치: 오늘 할 일은 내 타임라인에서', () => {
+  const S2 = SEED, v = R.publicView(S2, new Date('2026-11-10'));
+  const f = E.demoFacts(v.programs);
+  const a = C.answer({ q: '오늘 뭐 해야 돼?', cards: v.cards, facts: f });
+  assert.ok(a.text.includes('잔금 계좌와 이체 한도 확인'));
+  assert.deepEqual(a.topic, ['todo']);
+});

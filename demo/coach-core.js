@@ -54,7 +54,11 @@
     top.sort(function (a, b) { return a.i - b.i; });
     // "세 가지를 챙기세요"처럼 목록을 여는 문장이면 뒤따르는 문장을 함께
     var opener = top.filter(function (x) { return /(두|세|네) 가지|다음과 같/.test(x.s); })[0];
-    if (opener) { var n = /두 가지/.test(opener.s) ? 2 : /세 가지/.test(opener.s) ? 3 : /네 가지/.test(opener.s) ? 4 : 3; top = scored.slice(opener.i, opener.i + n + 1); }
+    if (opener) {
+      var n = /두 가지/.test(opener.s) ? 2 : /세 가지/.test(opener.s) ? 3 : /네 가지/.test(opener.s) ? 4 : 3, best = scored.slice().sort(function (a, b) { return b.v - a.v; })[0];
+      top = scored.slice(opener.i, opener.i + n + 1);
+      if (best && top.indexOf(best) < 0 && best.v >= 4) top.push(best); // 질문이 콕 집은 문장이 목록 밖이면 덧붙임
+    }
     return top.map(function (x) { return x.s; });
   }
 
@@ -119,12 +123,41 @@
     return parts;
   }
 
+  // ---------- 모르는 주제 거르기 ----------
+  // 질문의 핵심 낱말이 어느 승인 안내에도 없고, 카드와는 흔한 낱말('신고' 등)로만 이어지면 엉뚱한 카드로 답하지 않는다.
+  var GENERIC = ['신고', '지원', '신청', '집', '계약', '월세', '보증금', '전세', '주소', '등록', '수수료', '서류'];
+  var FUNC = /^(이번달|다음달|이달|요즘|진짜|너무|혹시|정말|제가|저|우리|언제|어디|어디서|얼마|얼마나|뭐|뭘|무엇|왜|어떻게|해|돼|되나|해야|해야돼|하나|할|할때|때|같이|있어|있나|없어|알려줘|알려|꼭|좀|나|내|이번|오늘|지금|그럼|그거|그건|해요|돼요|되요|하면|해도|되는|되면|뭐야|뭐임|있을까|가능해|가능)$/;
+  // 명사로 보이는 낱말만: 조사를 떼고, 동사·형용사 꼴(해야돼, 밀리면, 싶어…)은 뺀다
+  var JOSA = /(에서|으로|이랑|하고|까지|부터|에게|한테|은|는|이|가|을|를|에|의|도|로|랑|와|과|만)$/;
+  var VERBY = /(요|야|해|돼|됨|함|임|지|까|면|게|어|아|래|니|나|냐|든|데|거|건|던|을|려|러|며|죠|네|군|다|란|싶|같|된|한|할|될|봐|줘|워|켜|쳐|져|겨|셔|켰|했|됐|낼|갈|올|살|줄|볼)$/;
+  function contentWords(q) {
+    return String(q).replace(/[^0-9a-zA-Z가-힣\s]/g, ' ').split(/\s+/).map(function (w) { return w.replace(JOSA, ''); })
+      .filter(function (w) { return w.length >= 2 && !FUNC.test(w) && !/^\d+$/.test(w) && !VERBY.test(w); });
+  }
+  function unknownTopic(q, card, corpus) {
+    var flat = corpus.replace(/\s+/g, ''), words = contentWords(q), unknown = words.filter(function (w) { return corpus.indexOf(w) < 0 && flat.indexOf(w) < 0; });
+    if (!unknown.length) return null;
+    var ql = q.toLowerCase().replace(/\s+/g, ''), matched = (card.keywords || []).filter(function (w) { return w && ql.indexOf(w.toLowerCase().replace(/\s+/g, '')) >= 0; });
+    var weak = matched.every(function (w) { return GENERIC.indexOf(w) >= 0 || unknown.some(function (u) { return u.indexOf(w) >= 0 && u !== w; }); });
+    return weak ? unknown : null;
+  }
+  // ---------- 오늘·이번 주 할 일 (내 타임라인) ----------
+  var P_TODO = /(오늘|이번\s*주|지금|당장|요즘|내일|이번\s*달).{0,8}(뭐|할\s*일|해야|챙겨)|할\s*일\s*(알려|뭐|있)|뭐부터/;
+  function todoAnswer(f) {
+    var ts = (f.tasks || []).slice(0, 4);
+    if (!ts.length) return { kind: 'answer', text: '지금 기한이 다가온 할 일은 없어요. 타임라인에서 다음 단계를 확인해 보세요.', topic: ['todo'], cites: [{ id: 'todo', title: '내 타임라인', src: [['타임라인', '#timeline']] }], chips: ['전입신고는 언제 해?', '받을 수 있는 지원금 있어?'], steps: ['내 타임라인에서 기한이 다가온 할 일 확인'] };
+    var first = ts[0];
+    var lines = ts.map(function (t) { return '· ' + (t.urgent ? '**' + t.title + '**' : t.title) + ' — ' + (t.due === f.today ? '오늘' : t.due + '까지') + (t.stage ? ' (' + t.stage + ')' : ''); });
+    return { kind: 'answer', text: '지금 챙길 일은 ' + ts.length + '가지예요. 가장 먼저 할 일은 ‘' + first.title + '’' + josa(first.title, '이에요').slice(first.title.length) + '.\n' + lines.join('\n') + '\n\n다 하면 타임라인에서 체크해 두세요. 다음 할 일을 알려드릴게요.', topic: ['todo'], cites: [{ id: 'todo', title: '내 타임라인', src: [['타임라인', '#timeline']] }], chips: ['전입신고는 어디서 해?', '잔금 보내기 전에 뭘 확인해?'], steps: ['질문 이해: 지금 할 일', '내 타임라인에서 기한이 가까운 할 일 ' + ts.length + '개 찾음', '급한 일 먼저 정리'] };
+  }
+
   // ---------- 5. 답하기 ----------
   /* opts: { q, history: [{ q, topic: [cardId] }], cards, facts, programs } → 답 */
   function answer(opts) {
     var q = String(opts.q || '').replace(/\s+/g, ' ').trim(), f = opts.facts || {}, cards = opts.cards || [], hist = opts.history || [];
     var steps = [], pre = [];
     if (!q) return { kind: 'clarify', text: '궁금한 걸 적어 주세요.', chips: POPULAR, cites: [], topic: [], steps: steps };
+    if (P_TODO.test(q) && f.tasks) return todoAnswer(f);
     if (P_INJECT.test(q)) return { kind: 'guard', text: GUARD, chips: POPULAR, cites: [], topic: [], steps: ['요청 확인: 규칙을 바꾸려는 요청이라 따르지 않음'] };
     if (P_PII.test(q)) pre.push('주민등록번호·전화번호·계좌번호 같은 개인 정보는 적지 않아도 돼요. 아래는 그 부분을 빼고 답할게요.');
 
@@ -150,6 +183,13 @@
       if (q.length <= 6) return { kind: 'clarify', text: '어떤 게 궁금한지 조금만 더 알려 주세요. 예를 들면 이런 걸 물어볼 수 있어요.', chips: POPULAR, cites: [], topic: [], steps: steps };
       return { kind: 'refuse', text: (pre.length ? pre.join(' ') + '\n\n' : '') + REFUSE, chips: POPULAR, cites: [], topic: [], steps: steps.concat(['승인된 안내에서 맞는 내용을 찾지 못함']) };
     }
+    // 사업 이름을 콕 집으면 그 공고를 먼저
+    var named = hits.filter(function (h) { return h.card.kind === 'notice' && h.card.title.split(/[\s·]+/).some(function (w) { return w.length >= 3 && !/^(서울시|지원|청년)$/.test(w) && q.indexOf(w.replace(/지원$/, '')) >= 0; }); })[0];
+    if (named && named !== hits[0]) { hits.splice(hits.indexOf(named), 1); hits.unshift(named); }
+    // 승인 안내에 없는 주제를 흔한 낱말로 엮어 답하지 않기
+    var corpus = cards.map(function (c) { return c.title + ' ' + (c.keywords || []).join(' ') + ' ' + c.body; }).join(' ');
+    var unk = !followed && !P_LEGAL.test(q) ? unknownTopic(q, hits[0].card, corpus) : null;
+    if (unk) return { kind: 'refuse', text: (pre.length ? pre.join(' ') + '\n\n' : '') + REFUSE, chips: POPULAR, cites: [], topic: [], steps: steps.concat(['‘' + unk.join(', ') + '’에 대한 승인된 안내가 없어 답하지 않음']) };
     var crisis = P_CRISIS.test(q);
     if (crisis) pre.unshift('많이 불안하시겠어요. 지금 할 수 있는 것부터 알려드릴게요.');
 
@@ -158,7 +198,9 @@
     var isSup = function (c) { return c.id === 'k-support' || c.kind === 'notice'; };
     var kwHit = function (c) { return (c.keywords || []).some(function (w) { return w && ctxQ.indexOf(w) >= 0; }); };
     // 위급한 상황이면 가장 맞는 안내 하나를 더 자세히
-    if (!crisis) hits.slice(1).forEach(function (h) { if (use.length < 2 && h.score >= Math.max(4, top.score * 0.75) && kwHit(h.card) && !(isSup(top.card) && isSup(h.card))) use.push(h.card); });
+    // "A랑 B 둘 다"처럼 두 가지를 같이 물으면, 각각 이름이 불린 카드를 함께
+    var compound = /(랑|이랑|하고|와|과|및|그리고|,)\s|둘\s*다|각각/.test(q);
+    if (!crisis) hits.slice(1).forEach(function (h) { if (use.length < 2 && (h.score >= Math.max(4, top.score * 0.75) || (compound && h.score >= 4)) && kwHit(h.card) && !(isSup(top.card) && isSup(h.card))) use.push(h.card); });
     steps.push('승인된 안내 ' + hits.length + '개 중 ' + use.map(function (c) { return '‘' + c.title + '’'; }).join(', ') + ' 사용');
 
     var paras = [], mine = [];

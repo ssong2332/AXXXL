@@ -12,6 +12,8 @@
 <script src="rules/seed.js" defer></script>
 <script src="rules/samples.js" defer></script>
 <script src="coach-core.js" defer></script>
+<script src="eval-core.js" defer></script>
+<script src="rules/evals.js" defer></script>
 <style>
 /* 운영자 콘솔 — 이용자 화면(app.html)과 같은 색·글꼴, 정보 밀도는 더 높게 */
 :root {
@@ -59,7 +61,7 @@ main { padding: 24px 28px 60px; min-width: 0 }
 .stack { display: flex; flex-direction: column; gap: 12px }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
 .grid { display: grid; gap: 14px; grid-template-columns: repeat(12, minmax(0, 1fr)) }
-.c4 { grid-column: span 4 } .c5 { grid-column: span 5 } .c6 { grid-column: span 6 } .c7 { grid-column: span 7 } .c8 { grid-column: span 8 } .c12 { grid-column: span 12 }
+.c3q { grid-column: span 3 } .c4 { grid-column: span 4 } .c5 { grid-column: span 5 } .c6 { grid-column: span 6 } .c7 { grid-column: span 7 } .c8 { grid-column: span 8 } .c12 { grid-column: span 12 }
 .muted { color: var(--ink-3) } .s12 { font-size: 12px } .s13 { font-size: 13px } .b { font-weight: 700 }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 14px; border: 0; border-radius: 9px; background: var(--ink); color: var(--surface); font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none }
 .btn:disabled { opacity: .4; cursor: not-allowed }
@@ -214,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function shell(main) {
     var R = route(), nd = drafts().filter(function (d) { return d.status !== 'rejected'; }).length, nm = A.st ? A.st.unanswered.items.length : 0, nn = Object.keys(notices()).length, nc = A.st ? A.st.published.cards.length : 0;
-    var nav = [['queue', '검수함', nd, true], ['new', '새 공고 추출'], ['published', '승인된 공고', nn], ['cards', '코치 지식', nc], ['missed', '답 못 한 질문', nm, true], ['prompts', '시스템 프롬프트'], ['log', '변경 기록']];
+    var nav = [['queue', '검수함', nd, true], ['new', '새 공고 추출'], ['published', '승인된 공고', nn], ['cards', '코치 지식', nc], ['missed', '답 못 한 질문', nm, true], ['quality', '품질 평가'], ['prompts', '시스템 프롬프트'], ['log', '변경 기록']];
     var cur = { review: 'queue', notice: 'published' }[R.r] || R.r;
     return '<div class="shell"><nav class="side" aria-label="운영자 메뉴"><div class="brand"><i>내비</i><div>운영자 콘솔<small>공고 검수 · AI 코치</small></div></div>' +
       nav.map(function (n) { return '<a class="nav" href="#' + n[0] + '"' + (cur === n[0] ? ' aria-current="page"' : '') + '><span>' + n[1] + '</span>' + (n[2] !== undefined ? '<span class="n' + (n[3] && n[2] ? '' : ' z') + '">' + n[2] + '</span>' : '') + '</a>'; }).join('') +
@@ -426,6 +428,27 @@ document.addEventListener('DOMContentLoaded', function () {
       '<section class="card">' + (items.length ? '<table><thead><tr><th>질문</th><th>횟수</th><th>이유</th><th>마지막</th><th></th></tr></thead><tbody>' + items.map(function (q) { return '<tr><td><b>' + esc(q.q) + '</b>' + (q.top && q.top.length ? '<div class="s12 muted">가까웠던 지식: ' + esc(q.top.join(', ')) + '</div>' : '') + '</td><td>' + (q.count || 1) + '</td><td class="s12">' + (why[q.reason] || esc(q.reason)) + '</td><td class="s12 muted">' + when(q.at) + '</td><td><div class="row" style="justify-content:flex-end"><button class="btn sm" data-act="q2card" data-v="' + esc(q.id) + '">지식 만들기</button><button class="btn sm line" data-act="qdone" data-v="' + esc(q.id) + '">처리 완료</button></div></td></tr>'; }).join('') + '</tbody></table>' : '<div class="empty">답 못 한 질문이 없어요.</div>') + '</section>';
   }
 
+  // ---------- 품질 평가 ----------
+  // 평가 세트를 지금 승인본으로 바로 돌린다. 지식 카드를 고치거나 공고를 승인한 뒤 다시 돌려 전에 맞던 질문이 깨졌는지 본다.
+  function viewQuality() {
+    var EV = window.JACHWI_EVALS, E = window.JachwiEval;
+    var c = E.runCoach(A.st.published, EV.coach), h = E.runCoach(A.st.published, EV.coachHoldout), x = E.runExtract(SAMPLES, EV.extract);
+    var pct = function (r) { return Math.round(r.rate * 1000) / 10 + '%'; };
+    var tile = function (lab, r, sub) { return '<section class="card c3q stack" style="gap:4px"><span class="s12 muted">' + lab + '</span><b style="font-size:28px;letter-spacing:-0.04em">' + pct(r) + '</b><span class="s12 muted">' + r.pass + ' / ' + r.total + (sub ? ' · ' + sub : '') + '</span></section>'; };
+    var fails = function (r, title) {
+      var bad = r.rows.filter(function (x) { return !x.pass; });
+      return '<section class="card"><div class="card-h"><h2>' + title + '</h2><span class="s12 muted">' + (bad.length ? '통과 못 한 질문 ' + bad.length + '개' : '모두 통과') + '</span></div>' +
+        (bad.length ? '<table><thead><tr><th>질문</th><th>결과</th><th>왜</th></tr></thead><tbody>' + bad.map(function (b) { return '<tr' + (b.wrong ? ' class="chg"' : '') + '><td><b>' + esc(b.q) + '</b>' + (b.follow ? '<div class="s12 muted">앞 질문: ' + esc(b.follow) + '</div>' : '') + '</td><td>' + (b.wrong ? '<span class="badge bad">틀린 답</span>' : '<span class="badge due">답 안 함 (안전)</span>') + '</td><td class="s12">' + esc(b.why.join(' · ')) + '<div class="muted" style="margin-top:4px">' + esc(b.text.replace(/\n/g, ' ').slice(0, 120)) + '</div></td></tr>'; }).join('') + '</tbody></table>' : '<p class="s13 muted">기대한 근거 카드로 답했고, 답하면 안 되는 질문은 멈췄어요.</p>') + '</section>';
+    };
+    var xr = x.rows.map(function (r) { return '<tr><th>' + esc(r.title) + '</th><td>' + r.right + ' / ' + r.total + '</td><td class="s12">' + (r.miss.length ? r.miss.map(function (m) { return esc(m.label) + ': 기대 ' + esc(String(m.want)) + ' → ' + esc(String(m.got)); }).join('<br>') : '모두 맞음') + '</td></tr>'; }).join('');
+    return head('내장 AI', '품질 평가', '<button class="btn" data-act="requality">다시 평가</button>') +
+      '<div class="banner" style="margin-bottom:14px">실제 자취생 말투의 질문으로 내장 AI를 시험해요. 지금 승인된 지식·공고로 바로 돌리니, 지식을 고치거나 공고를 승인한 뒤 다시 평가해 전에 맞던 질문이 깨지지 않았는지 확인하세요. ‘처음 보는 질문’은 엔진을 다듬을 때 보지 않고 따로 떼어 둔 질문이에요.</div>' +
+      '<div class="grid" style="margin-bottom:14px">' + tile('코치 · 기본 질문 ' + c.total + '개', c, '틀린 답 ' + c.wrong) + tile('코치 · 처음 보는 질문 ' + h.total + '개', h, '틀린 답 ' + h.wrong) + tile('공고 추출 · 항목 ' + x.total + '개', x, '시연 공고 ' + x.rows.length + '개') +
+      '<section class="card c3q stack" style="gap:4px"><span class="s12 muted">틀린 답 (전체)</span><b style="font-size:28px;letter-spacing:-0.04em">' + (c.wrong + h.wrong) + '</b><span class="s12 muted">모르면 답하지 않은 질문 ' + (c.safe + h.safe) + '개</span></section></div>' +
+      '<div class="stack">' + fails(c, '코치 · 기본 질문') + fails(h, '코치 · 처음 보는 질문') +
+      '<section class="card"><div class="card-h"><h2>공고 추출 · 시연 공고</h2><span class="s12 muted">내장 AI가 뽑은 값과 정답 비교</span></div><table><thead><tr><th>공고</th><th>맞음</th><th>틀린 항목</th></tr></thead><tbody>' + xr + '</tbody></table></section></div>';
+  }
+
   // ---------- 시스템 프롬프트 ----------
   // 내장 AI와 Claude가 함께 따르는 규칙 문서. 코치 독립판은 지금 승인된 지식·공고를 모두 넣어 만든다.
   function promptText(which) {
@@ -454,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (A.mode === 'boot') { root.innerHTML = '<div class="login"><span class="spin"></span></div>'; return; }
     if (A.mode === 'login') { root.innerHTML = viewLogin(); return; }
     var R = route(), y = window.scrollY, srcEl = document.querySelector('[data-src]'), srcY = srcEl ? srcEl.parentNode.scrollTop : 0;
-    var V = { queue: viewQueue, new: viewNew, review: function () { return viewReview(R.id); }, published: viewPublished, notice: function () { return viewNotice(R.id); }, cards: viewCards, missed: viewMissed, prompts: viewPrompts, log: viewLog }[R.r] || viewQueue;
+    var V = { queue: viewQueue, new: viewNew, review: function () { return viewReview(R.id); }, published: viewPublished, notice: function () { return viewNotice(R.id); }, cards: viewCards, missed: viewMissed, quality: viewQuality, prompts: viewPrompts, log: viewLog }[R.r] || viewQueue;
     root.innerHTML = shell(V());
     document.title = (R.r === 'review' ? '검수 · ' : '') + '운영자 콘솔 · 자취 계약 내비';
     if (keep) { window.scrollTo(0, y); var s2 = document.querySelector('[data-src]'); if (s2) s2.parentNode.scrollTop = srcY; }
@@ -503,6 +526,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     else if (a === 'carddel') { if (confirm('이 지식을 지울까요? 코치가 더는 이 내용으로 답하지 않아요.')) op({ op: 'deleteCard', id: v }, function () { A.cardEdit = null; toast('지웠어요.'); }); }
     else if (a === 'q2card') { var q = A.st.unanswered.items.filter(function (x) { return x.id === v; })[0]; A.cardEdit = { title: '', keywords: Object.keys(J.grams(q.q)).filter(function (g) { return g.indexOf('w:') === 0; }).map(function (g) { return g.slice(2); }).slice(0, 6), body: '', cite: [], fromQuestion: q.id, q: q.q }; location.hash = '#cards'; setTimeout(function () { scrollToId('cardform'); }, 50); }
+    else if (a === 'requality') { render(true); toast('지금 승인본으로 다시 평가했어요.'); }
     else if (a === 'pcopy') { var pt = promptText(A.tab.prompts || 'coach'); (navigator.clipboard ? navigator.clipboard.writeText(pt) : Promise.reject()).then(function () { toast('복사했어요.'); }, function () { toast('복사하지 못했어요. 글을 직접 선택해 주세요.'); }); }
     else if (a === 'pdown') { var w = A.tab.prompts || 'coach', blob = new Blob([promptText(w)], { type: 'text/markdown' }), u = document.createElement('a'); u.href = URL.createObjectURL(blob); u.download = 'jachwi-' + w + '-system-prompt.md'; document.body.appendChild(u); u.click(); setTimeout(function () { URL.revokeObjectURL(u.href); u.remove(); }, 800); }
     else if (a === 'qdone') op({ op: 'resolveQuestion', id: v }, function () { toast('처리했어요.'); });

@@ -265,7 +265,8 @@
     if (!keys.length) return [];
     return cards.map(function (c) {
       var kw = (c.keywords || []).map(function (x) { return x.toLowerCase(); }), cg = grams(cardText(c)), s = 0, ql = String(q).toLowerCase();
-      kw.forEach(function (w) { if (w && ql.indexOf(w) >= 0) s += 4; });
+      var qn = ql.replace(/\s+/g, '');
+      kw.forEach(function (w) { if (w && (ql.indexOf(w) >= 0 || qn.indexOf(w.replace(/\s+/g, '')) >= 0)) s += 4; });
       keys.forEach(function (g) { if (cg[g]) s += g.charAt(0) === 'w' ? 1.5 : 0.5; });
       if (c.title && ql.indexOf(c.title.toLowerCase()) >= 0) s += 3;
       return { card: c, score: s };
@@ -473,13 +474,13 @@
   function cardsBlock(cards) {
     return cards.map(function (c) { return '<card id="' + xmlEsc(c.id) + '" title="' + xmlEsc(c.title) + '">\n' + xmlEsc(c.body) + ((c.cite || []).length ? '\n근거: ' + c.cite.map(function (x) { return x[0]; }).join(' · ') : '') + '\n</card>'; }).join('\n');
   }
-  var FACT_KEYS = { today: '오늘', contract: '계약일', move: '입주일', end: '계약 만료일', noticeBy: '나간다고 알려야 하는 마지막 날(만료 2개월 전)', reportRequired: '전월세 신고 대상 여부', reportReason: '신고 대상 판단 이유', reportDue: '전월세 신고 기한', reportDone: '전월세 신고 완료 여부', reportEarly: '신고 기한이 입주보다 먼저 오는지', moveinDue: '전입신고 법정 기한', moveinDone: '전입신고 완료 여부', deposit: '보증금(만 원)', rent: '월세(만 원)', fee: '관리비(만 원)', brokerBase: '중개보수 계산용 거래 금액(원)', brokerCap: '중개보수 상한(원, 부가세 별도)', programs: '지원사업 판정' };
+  var FACT_KEYS = { today: '오늘', contract: '계약일', move: '입주일', end: '계약 만료일', noticeBy: '나간다고 알려야 하는 마지막 날(만료 2개월 전)', reportRequired: '전월세 신고 대상 여부', reportReason: '신고 대상 판단 이유', reportDue: '전월세 신고 기한', reportDone: '전월세 신고 완료 여부', reportEarly: '신고 기한이 입주보다 먼저 오는지', moveinDue: '전입신고 법정 기한', moveinDone: '전입신고 완료 여부', deposit: '보증금(만 원)', rent: '월세(만 원)', fee: '관리비(만 원)', brokerBase: '중개보수 계산용 거래 금액(원)', brokerCap: '중개보수 상한(원, 부가세 별도)', programs: '지원사업 판정', tasks: '지금 챙길 일(내 타임라인)' };
   function factsBlock(f) {
     if (!f || typeof f !== 'object') return '';
     var lines = [];
     Object.keys(FACT_KEYS).forEach(function (k) {
       var v = f[k]; if (v === undefined || v === null || v === '') return;
-      if (Array.isArray(v)) v = v.slice(0, 6).map(function (x) { return String(x).slice(0, 80); }).join(' / ');
+      if (Array.isArray(v)) v = v.slice(0, 6).map(function (x) { return (x && typeof x === 'object' ? x.title + (x.due ? ' (' + x.due + '까지)' : '') : String(x)).slice(0, 80); }).join(' / ');
       else if (typeof v === 'boolean') v = v ? '예' : '아니오';
       else v = String(v).slice(0, 100);
       lines.push(FACT_KEYS[k] + ': ' + v);
