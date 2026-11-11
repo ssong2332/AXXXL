@@ -232,3 +232,16 @@ test('말투 페르소나: 줄임말·오타·걱정 장문·부모·영어 섞�
   const r = E.runStyles(SEED, EV.styles, AS, SEED.repairs);
   assert.equal(r.pass, r.total, r.rows.filter((x) => !x.pass).map((x) => x.persona + ': ' + x.q + ' → ' + x.why.join(', ')).join(' / '));
 });
+
+test('내장 AI 코치·봇: 무주택·중복 수혜를 안 답한 지원은 "답하면 판정"으로 전하고 답하라고 안내한다', () => {
+  const { cards, facts } = coachSetup();
+  facts.programList = facts.programList.map((p) => Object.assign({}, p, { verdict: '답하면 판정' }));
+  const a = C.answer({ q: '받을 수 있는 지원금 있어?', cards, facts });
+  assert.ok(a.text.includes('답하면 판정'));
+  assert.ok(a.text.includes('조건 입력에서 답하면'));
+  assert.ok(!a.text.includes('해당되는 지원이 없어요'));
+  const n = C.answer({ q: '청년월세 지원 받을 수 있어?', cards, facts });
+  assert.ok(n.text.includes('판정 전'));
+  const m = AS.answer({ q: '생활비 줄이는 방법 알려줘', bot: 'money', cards, facts, repairs: SEED.repairs });
+  assert.ok(m.text.includes('답하면 판정') || JSON.stringify(m.blocks).includes('답하면 판정'));
+});
