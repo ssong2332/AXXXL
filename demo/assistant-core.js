@@ -213,7 +213,7 @@
     var rent = items.filter(function (x) { return /월세/.test(x.name); })[0], rentAmt = rent ? rent.amount : 0, share = rentAmt ? Math.round(rentAmt / total * 100) : 0;
     items = items.slice().sort(function (a, b) { return b.amount - a.amount; });
     var bars = function (list, title, sum) { return { type: 'bars', title: title, total: sum, items: list.slice(0, 6).map(function (x) { return { label: x.name, amount: x.amount, pct: Math.round(x.amount / sum * 100), est: x.est }; }) }; };
-    var ok = (f.programList || []).filter(function (p) { return p.verdict === '해당 가능' || p.verdict === '확인 필요'; });
+    var ok = (f.programList || []).filter(function (p) { return p.verdict === '해당 가능' || p.verdict === '확인 필요' || p.verdict === '답하면 판정'; });
     var monthly = ok.filter(function (p) { return /월\s*최대/.test(p.amountText || ''); }), month = m.month || '이번 달';
     var progMonthly = function (p) { var mm = /월\s*최대\s*([\d,.]+)\s*만/.exec(p.amountText || ''), mo = /최대\s*(\d+)\s*개월/.exec(p.amountText || ''); return { per: mm ? +mm[1].replace(/,/g, '') * 10000 : 0, months: mo ? +mo[1] : 0 }; };
     var base = { topic: ['money'], cites: citeOf(o.cards, ['k-support']), actions: [{ label: '지원사업 자세히 보기', href: '#support' }, { label: '자취 캘린더에서 금액 고치기', href: '#calendar' }] };
