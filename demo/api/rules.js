@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
       const n = P.notices[id];
       notices[id] = { id: n.id, version: n.version, basis: n.basis, approvedAt: n.approvedAt, approvedBy: n.approvedBy, source: n.source, fields: n.fields, changes: n.changes || [], demo: !!n.demo };
     });
-    L.send(res, 200, { ok: true, storage: L.storage(), ai: L.aiReady(), updatedAt: (P.meta && P.meta.updatedAt) || '', notices, cards: (P.cards || []).filter((c) => c.status === 'approved') }, 'public, s-maxage=20, stale-while-revalidate=60');
+    L.send(res, 200, { ok: true, storage: L.storage(), ai: L.aiReady(), updatedAt: (P.meta && P.meta.updatedAt) || '', notices, cards: (P.cards || []).filter((c) => c.status === 'approved'), repairs: P.repairs || L.SEED.repairs || [] }, 'public, s-maxage=20, stale-while-revalidate=60');
   } catch (e) {
     console.error('[rules]', e && e.message);
     L.send(res, 503, { ok: false, error: '승인본을 불러오지 못했어요.' });

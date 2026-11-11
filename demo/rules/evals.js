@@ -119,6 +119,28 @@
     { q: '택배 경비실에 맡겨도 돼?', kind: ['refuse', 'scope'] },
     { q: '인터넷 회사 어디가 싸?', kind: ['refuse', 'scope', 'answer'], cards: ['k-utility'] }
   ],
+  // 자취 AI 비서: 어느 봇이 답해야 하는지(bot)와 답에 꼭 있어야 할 말(has, 블록 글 포함)
+  assistant: [
+    { q: '집주인에게 보일러 수리를 요청하고 싶어', bot: 'landlord', has: ['보일러가 작동하지 않는', '수리'] },
+    { q: '계약 끝나고 나간다고 알리고 싶어', bot: 'landlord', has: ['2028.11.10', '2028.09.11'] },
+    { q: '보증금 돌려달라고 연락하고 싶어', bot: 'landlord', has: ['1,000만 원', '[은행·계좌번호]'] },
+    { q: '집주인이 월세 올린대 답장 써줘', bot: 'landlord', has: ['5%', '472,500원'] },
+    { q: '월세가 늦어질 것 같다고 말하고 싶어', bot: 'landlord', has: ['[날짜]'] },
+    { q: '천장에서 물이 새요', bot: 'repair', has: ['집주인', '사진'] },
+    { q: '전구가 나갔어', bot: 'repair', has: ['세입자'] },
+    { q: '가스 냄새가 나요', bot: 'repair', has: ['안전', '119'] },
+    { q: '벽에 곰팡이가 폈어', bot: 'repair', has: ['원인에 따라'] },
+    { q: '이번 달 생활비 얼마 나가?', bot: 'money', has: ['월세', '청년월세'] },
+    { q: '생활비 줄이는 방법 알려줘', bot: 'money', has: ['세액공제'] },
+    { q: '가까운 약국 어디야?', bot: 'local', has: ['약국', '분'] },
+    { q: '근처 빨래방', bot: 'local', has: ['빨래방'] },
+    { q: '전입신고 언제 해야 해?', bot: 'rights', has: ['14일'] },
+    { q: '보증금 지키려면 뭘 해야 해?', bot: 'rights', has: ['등기부등본'] },
+    { q: '오늘 뭐 해야 돼?', bot: 'auto', has: ['잔금 계좌와 이체 한도 확인'] },
+    { q: '층간소음 신고 어디서 해?', bot: 'rights', kind: 'refuse' },
+    { q: '보일러 고장 문자 써줘', want: 'repair', bot: 'landlord', has: ['보일러'] },
+    { q: '전입신고 언제 해?', want: 'local', bot: 'rights', has: ['14일'] }
+  ],
   extract: {
     'rent-2026-2': { name: '서울시 청년월세 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: 150, deposit_max: 8000, rent_max: 70, amount_monthly_max: 20, amount_months: 12, period_start: '2026-11-17', period_end: '2026-11-27', homeless: true, docs: 6, exclusions: 2, url: 'https://housing.seoul.go.kr' },
     'deposit-2026': { name: '서울시 청년 임차보증금 이자 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: null, deposit_max: 30000, period_start: '2026-11-24', period_end: '2026-12-11', homeless: true, docs: 3, exclusions: 1 },

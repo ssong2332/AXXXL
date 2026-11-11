@@ -65,5 +65,23 @@
     });
     return { total: fields, pass: right, rate: fields ? right / fields : 0, rows: rows };
   }
-  return { runCoach: runCoach, runExtract: runExtract, demoFacts: demoFacts, PERSON: PERSON };
+  // 자취 AI 비서: 알맞은 봇에게 갔는지 + 꼭 있어야 할 말
+  function runAssistant(published, evals, A, repairs, today) {
+    var view = J.publicView(published, today || new Date('2026-11-10T09:00:00+09:00'));
+    var cards = view.cards.concat(J.noticeCards(view.programs)), facts = demoFacts(view.programs);
+    facts.house = '봉천동 원룸';
+    facts.money = { month: '11월', items: [{ name: '월세', amount: 450000, kind: 'out' }, { name: '관리비', amount: 70000, kind: 'out' }, { name: '통신비', amount: 33000, kind: 'out' }] };
+    facts.places = { hasHome: true, source: '시연용 예시 데이터', list: [{ id: 'pharm', name: '약국', cat: 'medical', sub: '약국', min: 3, m: 160 }, { id: 'laundry', name: '셀프 빨래방', cat: 'life', sub: '빨래방', min: 2, m: 108 }, { id: 'bus', name: '버스정류장', cat: 'transit', min: 2, m: 108 }] };
+    var rows = evals.map(function (e) {
+      var a = A.answer({ q: e.q, bot: e.want || 'auto', cards: cards, facts: facts, repairs: repairs || published.repairs || [] }), why = [];
+      var all = a.text + ' ' + (a.blocks || []).map(function (b) { return (b.text || '') + ' ' + (b.label || '') + ' ' + (b.items || []).map(function (x) { return typeof x === 'string' ? x : (x.name || x.label || ''); }).join(' '); }).join(' ');
+      if (a.bot !== e.bot) why.push('봇 ' + a.bot + ' (기대 ' + e.bot + ')');
+      if ((e.kind || 'answer') !== a.kind) why.push('답 종류 ' + a.kind + ' (기대 ' + (e.kind || 'answer') + ')');
+      (e.has || []).forEach(function (w) { if (all.indexOf(w) < 0) why.push('“' + w + '” 빠짐'); });
+      return { q: e.q, pass: !why.length, why: why, bot: a.bot, kind: a.kind, text: a.text, wrong: !!why.length && a.kind === 'answer' && a.bot !== e.bot };
+    });
+    var pass = rows.filter(function (r) { return r.pass; }).length;
+    return { total: rows.length, pass: pass, rate: rows.length ? pass / rows.length : 0, wrong: rows.filter(function (r) { return r.wrong; }).length, safe: 0, rows: rows };
+  }
+  return { runAssistant: runAssistant, runCoach: runCoach, runExtract: runExtract, demoFacts: demoFacts, PERSON: PERSON };
 });
