@@ -100,18 +100,21 @@
     'k-fee': function (f) { return f.fee ? '내 계약에는 관리비가 ' + won(f.fee) + '만 원으로 적혀 있어요.' : ''; },
     'k-support': function (f) { return progLine(f); }
   };
+  var PENDING = '답하면 판정'; // 무주택·중복 수혜를 아직 안 답함 (engine.js verdict)
   function progLine(f) {
     var ps = f.programList || [];
     if (!ps.length) return '';
-    var ok = ps.filter(function (p) { return p.verdict === '해당 가능' || p.verdict === '확인 필요'; });
+    var ok = ps.filter(function (p) { return p.verdict === '해당 가능' || p.verdict === '확인 필요' || p.verdict === PENDING; });
+    var ask = ok.some(function (p) { return p.verdict === PENDING; }) ? ' 무주택·중복 수혜를 아직 답하지 않아서 판정 전인 지원이 있어요. 조건 입력에서 답하면 바로 판정해 드려요.' : '';
     var why = function (p) { return p.fails && p.fails.length ? ' — ' + p.fails[0] + ' 조건에 맞지 않아요' : ''; };
     if (!ok.length) return '지금 입력한 조건으로는 해당되는 지원이 없어요.\n' + ps.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n');
     var no = ps.filter(function (p) { return ok.indexOf(p) < 0; });
-    return '지금 조건으로는 ' + ok.map(function (p) { return '**' + p.name + '**(' + p.verdict + (p.amountText ? ' · ' + p.amountText : '') + (p.status ? ' · ' + p.status : '') + ')'; }).join(', ') + josa(ok[ok.length - 1].name, '을를').slice(-1) + ' 신청해 볼 수 있어요. 금액은 공고마다 따로 보고, 합쳐서 받는다고 생각하지 마세요.' + (no.length ? '\n' + no.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') : '');
+    return '지금 조건으로는 ' + ok.map(function (p) { return '**' + p.name + '**(' + p.verdict + (p.amountText ? ' · ' + p.amountText : '') + (p.status ? ' · ' + p.status : '') + ')'; }).join(', ') + josa(ok[ok.length - 1].name, '을를').slice(-1) + ' 신청해 볼 수 있어요. 금액은 공고마다 따로 보고, 합쳐서 받는다고 생각하지 마세요.' + (no.length ? '\n' + no.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') : '') + ask;
   }
   function noticePersonal(card, f) {
     var p = (f.programList || []).filter(function (x) { return 'notice-' + x.id === card.id; })[0];
     if (!p) return '';
+    if (p.verdict === PENDING) return '무주택·중복 수혜를 아직 답하지 않아서 내 조건으로는 **판정 전**이에요' + (p.status ? '(' + p.status + (p.period ? ' · ' + p.period : '') + ')' : '') + '. 조건 입력에서 답하면 바로 판정해 드려요.';
     var bad = p.verdict === '해당 안 됨' || p.verdict === '마감';
     return '내 조건으로는 **' + p.verdict + '**' + josa(p.verdict, '이에요').slice(p.verdict.length) + (p.status ? '(' + p.status + (p.period ? ' · ' + p.period : '') + ')' : '') + '.' +
       (bad && p.fails && p.fails.length ? ' ' + p.fails.join(', ') + ' 조건에 맞지 않아요.' : '') + (!bad && p.unknown && p.unknown.length ? ' ' + josa(p.unknown.join(', '), '은는') + ' 서류로 확인해야 해요.' : '');

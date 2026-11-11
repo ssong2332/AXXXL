@@ -1017,10 +1017,11 @@ document.addEventListener('DOMContentLoaded', function () {
     x.eligible = !x.closed && !x.res.some(function (r) { return r.ok === false; }); x.unknown = x.res.filter(function (r) { return r.ok === null; });
     return x;
   }
+  // 판정은 엔진(JE.verdict) 하나로: 홈·코치·봇·자격 판정 화면이 같은 말을 하도록 (무주택·중복 수혜를 안 답했으면 '답하면 판정')
   function judge(x) {
     if (x.closed) return ['no', '마감'];
-    if (!x.eligible) return ['no', '해당 안 됨'];
-    return x.unknown.some(function (r) { return r.asked || (r.type !== 'homeless' && r.type !== 'dup'); }) ? ['due', '확인 필요'] : ['brand', '해당 가능'];
+    var v = JE.verdict(x);
+    return [{ '해당 안 됨': 'no', '확인 필요': 'due', '답하면 판정': '', '해당 가능': 'brand' }[v], v];
   }
 
   // 기준일 두 개: C = 계약일(전월세 신고 30일), M = 입주일(전입신고 14일). 기간은 첫날을 빼고 센다(민법 제157조).
@@ -2894,11 +2895,15 @@ document.addEventListener('DOMContentLoaded', function () {
       (rp.required === true ? '<p><b>' + ymd(rp.due) + '</b>까지 (' + dday(rp.due) + ') · 계약일부터 30일</p>' + (rp.early ? '<div class="banner due">' + ic('info') + '<span>입주보다 기한이 먼저 와요. 전입신고와 합치지 말고 따로 신고하세요.</span></div>' : '<p class="s13 sub">입주 후 전입신고 때 계약서를 함께 내면 신고와 확정일자가 한 번에 끝나요.</p>') : rp.required === false ? '<p class="s13 sub">신고 대상은 아니지만 전입신고 때 확정일자를 받아 두면 보증금을 지키는 데 도움이 돼요.</p>' : '') +
       src(rp.src, rp.url, rp.basis) + '</section>' +
       '<section class="card c6 stack"><div class="split"><h2 style="font-size:17px">전입신고</h2><span class="badge due">모두 해당</span></div><p>입주한 날부터 14일 안에 해야 해요.</p><p><b>' + ymd(R.movein.due) + '</b>까지 (' + dday(R.movein.due) + ') · 보증금을 지키려면 입주 당일(' + md(R.M) + ') 권장</p>' + src(R.movein.src, R.movein.url, R.movein.basis) + '</section>';
+    // 무주택·중복 수혜를 아직 답하지 않은 조건 (모른다고 답한 것과 구분)
+    var notAsked = function (r) { return (r.type === 'homeless' || r.type === 'dup') && r.ok === null && !r.asked; };
+    var VB = { '해당 안 됨': 'no', '확인 필요': 'due', '답하면 판정': '', '해당 가능': 'brand' };
     var progs = R.programs.map(function (x) {
-      var j = judge(x), p = x.p;
+      var p = x.p, v = JE.verdict(x), j = x.closed ? judge(x) : [VB[v], v];
       return '<section class="card c6 stack"><div><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:18px;font-weight:800">' + esc(p.name) + '</h2></div>' +
         '<div class="row"><span class="badge ' + j[0] + '">' + j[1] + '</span><span class="badge ' + p.statusCls + '">' + p.status + '</span><span class="badge">' + esc(p.select) + '</span></div>' +
-        '<div>' + x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + esc(r.mine) + ' ' + mark(r.ok) + '</span></div>'; }).join('') + '</div>' +
+        '<div>' + x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + (notAsked(r) ? '아직 안 답함 <a class="badge" href="#input">답하면 판정</a>' : esc(r.mine) + ' ' + mark(r.ok)) + '</span></div>'; }).join('') + '</div>' +
+        (v === '답하면 판정' && !x.closed ? '<p class="s13 sub"><a href="#input">조건 입력</a>에서 무주택·중복 수혜를 답하면 바로 판정해요.</p>' : '') +
         '<p class="s13 sub">지원 내용: ' + esc(p.amountText) + '</p>' +
         '<p class="s12 muted">원문 <a href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">' + esc(p.channel) + '</a> · ' + progBasis(p) + (p.demo ? ' · 시연용 예시 공고' : '') + '</p></section>';
     }).join('');
