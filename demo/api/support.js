@@ -13,13 +13,19 @@ REGIONS.forEach(([sido, list]) => list.forEach(([code, name]) => { ZIP[code] = s
 const CATS = S.CATS.map((c) => c[0]);
 
 async function loadZip(zip, key) {
-  const base = 'https://www.youthcenter.go.kr/go/ythip/getPlcy?rtnType=json&pageSize=1000&zipCd=' + zip + '&apiKeyNm=' + encodeURIComponent(key);
-  let page = 1, all = [], total = 0;
-  do {
-    const j = await O.getJson(base + '&pageNum=' + page, 25000);
-    if (!j || !j.result || !Array.isArray(j.result.youthPolicyList)) throw new Error('bad response');
-    all = all.concat(j.result.youthPolicyList); total = +((j.result.pagging || {}).totCount) || all.length; page++;
-  } while (all.length < total && page <= 6);
+  // 한 번에 1000건을 받으면 응답이 25초를 넘길 때가 있어(2026-11-11 측정) 200건씩 나눠 동시에 받는다
+  const SIZE = 200, base = 'https://www.youthcenter.go.kr/go/ythip/getPlcy?rtnType=json&pageSize=' + SIZE + '&zipCd=' + zip + '&apiKeyNm=' + encodeURIComponent(key);
+  const pageOf = async (n) => {
+    const j = await O.getJson(base + '&pageNum=' + n, 25000);
+    // 끝을 넘긴 쪽은 목록이 비어 올 수 있다. 첫 쪽은 반드시 목록이 있어야 한다
+    if (!j || !j.result || (n === 1 && !Array.isArray(j.result.youthPolicyList))) throw new Error('bad response');
+    return { list: j.result.youthPolicyList || [], total: +((j.result.pagging || {}).totCount) || 0 };
+  };
+  const range = (from, to) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i);
+  let pages = await Promise.all(range(1, 5).map(pageOf));
+  const total = pages[0].total || pages.reduce((n, p) => n + p.list.length, 0), last = Math.min(Math.ceil(total / SIZE), 30);
+  if (last > 5) pages = pages.concat(await Promise.all(range(6, last).map(pageOf)));
+  const all = [].concat(...pages.map((p) => p.list));
   // 승인된 정책만, 접수가 '마감'으로 등록된 것은 뺀다
   const live = all.filter((p) => p.plcyAprvSttsCd === '0044002' && p.aplyPrdSeCd !== '0057003').map((p) => S.normalize(p, SIDO_SIZE));
   // 같은 기관(최상위 기관 기준)이 같은 이름으로 여러 번 등록한 정책은 가장 최근에 고친 것 하나만 남긴다

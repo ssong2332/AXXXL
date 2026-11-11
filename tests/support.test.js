@@ -45,12 +45,14 @@ test('나이 경계: 하한·상한 당일은 맞고 하루 차이는 안 맞는
   assert.equal(v(0), 'q');
 });
 
-test('연소득 경계: 상한과 같으면 맞고 1만 원 넘으면 안 맞는다. 입력 전에는 묻는다', () => {
-  const it = S.normalize(raw({ earnCndSeCd: '0043002', earnMaxAmt: '5000' }));
-  const c = (earn) => S.check(it, me({ earn }), '');
-  assert.equal(S.verdict(c(5000)), 'ok'); assert.equal(S.verdict(c(5001)), 'no');
-  const ask = c(0).filter((x) => x.key === 'earn')[0];
-  assert.equal(ask.ok, null); assert.equal(ask.ask, 'earn');
+test('연소득 경계: 월 소득을 넣으면 12를 곱해 견준다. 상한과 같으면 맞고 넘으면 안 맞는다. 입력 전에는 묻는다', () => {
+  const it = S.normalize(raw({ earnCndSeCd: '0043002', earnMaxAmt: '4800' }));
+  const c = (minc) => S.check(it, me(minc === undefined ? {} : { minc }), '');
+  assert.equal(S.verdict(c(400)), 'ok'); assert.equal(S.verdict(c(401)), 'no');
+  assert.equal(S.verdict(c(0)), 'ok'); // 버는 돈이 없다고 답한 경우
+  const ask = c().filter((x) => x.key === 'earn')[0];
+  assert.equal(ask.ok, null); assert.equal(ask.ask, 'minc');
+  assert.match(ask.note, /한 달에 약 400만 원 이하/); // 기준 금액을 먼저 알려 준다
 });
 
 test('취업·혼인 조건: 답하기 전에는 확인 필요, 답하면 판정', () => {
@@ -61,12 +63,86 @@ test('취업·혼인 조건: 답하기 전에는 확인 필요, 답하면 판정
   assert.equal(S.verdict(S.check(it, me({ job: '미취업자', mrg: '기혼' }), '')), 'no');
 });
 
-test('글로만 적힌 소득 조건은 판정하지 않고, 중위소득 비율이 있으면 금액으로 바꿔 준다', () => {
+test('글로 적힌 중위소득 조건: 가구원 수를 알면 금액으로 바꿔 견준다', () => {
   const it = S.normalize(raw({ earnCndSeCd: '0043003', earnEtcCn: '청년독립가구 소득 기준 중위소득 60% 이하' }));
-  const c = S.check(it, me(), '').filter((x) => /^earn:/.test(x.key))[0];
-  assert.equal(c.ok, null); assert.equal(c.pct, 60);
-  assert.equal(S.medianMan(1, 60), 153);
-  assert.equal(S.medianMan(3, 100), 535);
+  const c = (u) => S.check(it, me(u), '').filter((x) => x.key === 'earn:pct')[0];
+  assert.equal(S.medianMan(1, 60), 153); assert.equal(S.medianMan(3, 60), 321); assert.equal(S.medianMan(3, 100), 535);
+  const first = c();
+  assert.equal(first.ok, null); assert.equal(first.ask, 'hinc'); assert.deepEqual([first.pct.lo, first.pct.hi], [60, 60]);
+  assert.equal(c({ hh: 1, minc: 153 }).ok, true); assert.equal(c({ hh: 1, minc: 154 }).ok, false);
+  assert.match(c({ hh: 1, minc: 153 }).label, /1명 가구 월 153만 원/);
+  // 가족과 같이 등본에 올라 있으면 내 소득이 아니라 가족 소득 합계로 본다
+  assert.equal(c({ hh: 3, minc: 100 }).ask, 'hinc');
+  assert.equal(c({ hh: 3, minc: 100, hinc: 321 }).ok, true); assert.equal(c({ hh: 3, minc: 100, hinc: 322 }).ok, false);
+});
+
+test('글 소득 조건 읽기: 무관·중위소득·연소득·수급·판정 못 함을 가른다', () => {
+  assert.equal(S.incomeRule('무관').t, 'none'); assert.equal(S.incomeRule('소득 제한 없음').t, 'none');
+  assert.deepEqual(S.incomeRule('중위소득 150% 이하'), { t: 'pct', lo: 150, hi: 150, soft: false });
+  const two = S.incomeRule('기준 중위소득 60% 이하 또는 기준 중위소득 100% 이하');
+  assert.deepEqual([two.lo, two.hi], [60, 100]);
+  const span = S.incomeRule('청년, 신혼부부 중위소득 100~150% 이하');
+  assert.deepEqual([span.t, span.lo, span.hi], ['pct', 100, 150]);
+  assert.equal(S.incomeRule('중위소득 60% 이하 우선 선발').soft, true);
+  assert.deepEqual(S.incomeRule('연소득 5천만원 이하'), { t: 'year', lo: 5000, hi: 5000, soft: false });
+  assert.equal(S.incomeRule('기초생활수급자 및 차상위계층').t, 'low'); assert.equal(S.incomeRule('기초생활수급자 및 차상위계층').strict, true);
+  assert.match(S.incomeRule('학자금 지원구간 8구간 이하').url, /kosaf/);
+  assert.match(S.incomeRule('건강보험료 본인부담금 기준').url, /nhis/);
+  assert.equal(S.incomeRule('공고문 참조').t, 'info');
+  // 소득 무관 정책은 조건이 맞은 것으로 본다
+  const free = S.normalize(raw({ earnCndSeCd: '0043003', earnEtcCn: '무관' }));
+  assert.equal(S.verdict(S.check(free, me(), '')), 'ok');
+  // 글 연소득도 월 소득으로 견준다
+  const yr = S.normalize(raw({ earnCndSeCd: '0043003', earnEtcCn: '연소득 6천만원 이하' }));
+  const y = (minc) => S.check(yr, me({ minc }), '').filter((x) => x.key === 'earn:year')[0].ok;
+  assert.equal(y(500), true); assert.equal(y(501), false);
+});
+
+test('금액 읽기: 억·천만·백만·만 원을 만 원 단위로', () => {
+  assert.deepEqual(S.amounts('5천만원, 7.5천만원, 7,000만원, 3억원, 5백만원, 70만 원'), [5000, 7500, 7000, 30000, 500, 70]);
+  assert.deepEqual(S.amounts('금액 없음'), []);
+  assert.equal(S.won(5000), '5,000만 원'); assert.equal(S.won(12500), '1억 2,500만 원');
+});
+
+test('대상 조건: 한 번 답하면 기억하고, 해당 없으면 안 맞는다', () => {
+  const it = S.normalize(raw({ sbizCd: '0014005,0014004' }));
+  const c = (traits) => S.check(it, me({ traits }), '').filter((x) => x.key === 'traits')[0];
+  assert.equal(c().ok, null); assert.equal(c().ask, 'traits'); assert.deepEqual(c().traits.slice().sort(), ['장애인', '한부모가정']);
+  assert.equal(c({ '장애인': true }).ok, true);
+  assert.equal(c({ '장애인': false }).ask, 'traits'); assert.deepEqual(c({ '장애인': false }).traits, ['한부모가정']); // 안 물어본 것만 다시 묻는다
+  assert.equal(c({ '장애인': false, '한부모가정': false }).ok, false);
+});
+
+test('공고 글의 주거 조건: 무주택은 묻고, 보증금·월세 상한은 계약 정보와 견준다', () => {
+  const it = S.normalize(raw({ addAplyQlfcCndCn: '무주택 청년으로 임차보증금 5천만원 이하 및 월세 70만원 이하 주택에 거주하는 사람' }));
+  assert.deepEqual(S.textRules(it), { homeless: true, deposit: 5000, rent: 70 });
+  const v = (u) => S.verdict(S.check(it, me(u), ''));
+  assert.equal(v({ deposit: 1000, rent: 45 }), 'q'); // 무주택 여부를 아직 모른다
+  assert.equal(v({ deposit: 1000, rent: 45, self: { homeless: 'y' } }), 'ok');
+  assert.equal(v({ deposit: 1000, rent: 71, self: { homeless: 'y' } }), 'no');
+  assert.equal(v({ deposit: 5001, rent: 45, self: { homeless: 'y' } }), 'no');
+  assert.equal(v({ deposit: 1000, rent: 45, self: { homeless: 'n' } }), 'no');
+});
+
+test('마감 표시: 올해가 아니면 연도를 붙이고, 1년 넘게 남으면 남은 날을 세지 않는다', () => {
+  const at = (ymd, on) => S.statusAt(S.normalize(raw({ aplyYmd: ymd })), day(on));
+  const near = at('20261101 ~ 20261122', '20261111');
+  assert.equal(near.text, '접수 중 · 11월 22일 마감'); assert.equal(S.leftText(near), '11일 남음'); assert.ok(!near.far);
+  assert.equal(S.leftText(at('20261101 ~ 20261111', '20261111')), '오늘 마감');
+  const far = at('20250101 ~ 20300422', '20261111');
+  assert.equal(far.left, 1258); assert.equal(far.far, true);
+  assert.equal(far.text, '접수 중 · 2030년 4월 22일 마감'); assert.equal(S.leftText(far), '');
+  const next = at('20261201 ~ 20270131', '20261211'); // 해를 넘기는 마감
+  assert.equal(next.text, '접수 중 · 2027년 1월 31일 마감'); assert.equal(S.leftText(next), '51일 남음');
+  assert.equal(at('20270105 ~ 20270131', '20261111').text, '2027년 1월 5일부터 접수');
+  assert.equal(at('20250301 ~ 20250331', '20261111').text, '접수 끝남 · 2025년 3월 31일 마감');
+});
+
+test('마감 빠른 순: 마감일 있는 접수 중 → 상시 → 접수 전 → 끝남', () => {
+  const on = day('20261111'), st = (o) => S.statusAt(S.normalize(raw(o)), on);
+  const list = [['상시', st({ aplyPrdSeCd: '0057002', aplyYmd: '' })], ['먼 마감', st({ aplyYmd: '20250101 ~ 20300422' })], ['접수 전', st({ aplyYmd: '20261201 ~ 20261231' })],
+    ['12일', st({ aplyYmd: '20261101 ~ 20261123' })], ['끝남', st({ aplyYmd: '20261001 ~ 20261031' })], ['3일', st({ aplyYmd: '20261101 ~ 20261114' })]];
+  assert.deepEqual(list.sort((a, b) => S.dueRank(a[1]) - S.dueRank(b[1])).map((x) => x[0]), ['3일', '12일', '먼 마감', '상시', '접수 전', '끝남']);
 });
 
 test('조심할 것: 지역·미취업·연소득 조건에서 만든다', () => {

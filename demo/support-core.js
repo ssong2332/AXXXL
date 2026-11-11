@@ -1,7 +1,7 @@
 /* 자취 계약 내비 · 지원사업 공용 로직 (브라우저 + 서버 + 테스트)
  *  1. 온통청년 정책 한 건을 화면용으로 정리 (normalize)
  *  2. 이용 시점 기준 접수 상태 (statusAt)
- *  3. 등록된 조건과 내 정보 대조 (check) — 공고에 구조화돼 있는 항목만. 글로만 적힌 조건은 판정하지 않는다
+ *  3. 등록된 조건과 내 정보 대조 (check) — 구조화된 항목 + 글에서 금액으로 바꿀 수 있는 조건(소득 기준, 무주택, 보증금·월세 상한). 나머지 글 조건은 판정하지 않는다
  *  4. 받는 동안 조심할 것 (watch), 서류 줄 나누기와 발급처 찾기 (docLines)
  * AI를 부르지 않는다. 전부 정해 둔 규칙으로 계산한다.
  */
@@ -62,19 +62,26 @@
   function d8(s) { return s ? new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)) : null; }
   function md(d) { return (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; }
   function days(a, b) { return Math.round((a - b) / 86400000); }
-  // 반환: { k: 'open'|'always'|'soon'|'ended', text, left(남은 날), to(Date) }
+  // 올해가 아닌 날짜에는 연도를 붙인다 ('4월 22일'만 보이면 올해로 읽힌다)
+  function dl(d, today) { return (d.getFullYear() !== today.getFullYear() ? d.getFullYear() + '년 ' : '') + md(d); }
+  // 반환: { k: 'open'|'always'|'soon'|'ended', text, left(남은 날), to(Date), far(마감이 1년 넘게 남음) }
   function statusAt(it, today) {
     var a = it.apply || {}, from = d8(a.from), to = d8(a.to), bizEnd = d8((it.biz || {}).to);
     if (a.t === 'closed') return { k: 'ended', text: '접수 끝남' };
     if (a.t === 'period' && from && to) {
-      if (today < from) return { k: 'soon', text: md(from) + '부터 접수', left: days(from, today), to: to };
-      if (today > to) return { k: 'ended', text: '접수 끝남 · ' + md(to) + ' 마감' };
+      if (today < from) return { k: 'soon', text: dl(from, today) + '부터 접수', left: days(from, today), to: to };
+      if (today > to) return { k: 'ended', text: '접수 끝남 · ' + dl(to, today) + ' 마감' };
       var l = days(to, today);
-      return { k: 'open', text: '접수 중 · ' + md(to) + ' 마감', left: l, to: to };
+      return { k: 'open', text: '접수 중 · ' + dl(to, today) + ' 마감', left: l, to: to, far: l > 365 };
     }
     if (bizEnd && today > bizEnd) return { k: 'ended', text: '사업 기간 끝남' };
     return { k: 'always', text: a.t === 'always' ? '상시 접수' : '접수 기간은 공고 확인' };
   }
+
+  // 남은 날 표시. 마감이 1년 넘게 남았으면 날짜만 보여 주고 'n일 남음'은 붙이지 않는다.
+  function leftText(st) { return !st || st.k !== 'open' || st.far || !(st.left >= 0) ? '' : st.left ? st.left + '일 남음' : '오늘 마감'; }
+  // '마감 빠른 순' 순서: 접수 중이고 마감일이 있는 것(가까운 순) → 상시 접수 → 접수 전(시작이 가까운 순) → 끝남
+  function dueRank(st) { return st.k === 'open' ? Math.min(Math.max(st.left, 0), 99999) : st.k === 'always' ? 1e6 : st.k === 'soon' ? 2e6 + Math.min(st.left || 0, 99999) : 3e6; }
 
   // ---------- 조건 대조 ----------
   var ASK = {
@@ -83,10 +90,53 @@
     school: { q: '학력은 어디에 해당하나요?', o: [['대학 재학', '대학 재학 중'], ['대졸 예정', '졸업 예정'], ['대학 졸업', '대학 졸업'], ['고교 졸업', '고교 졸업'], ['석·박사', '대학원'], ['고교 재학', '고교 재학 중'], ['고졸 미만', '고졸 미만']] }
   };
   function inList(list, v) { return list.indexOf(v) >= 0; }
-  // user: { age, zip, region(이름), mrg, job, school, earn(연소득 만원), self:{키:'y'|'n'} }
-  // 반환 조건: { key, label, mine, ok(true|false|null), ask?: 질문 키, note? }
+  // '5천만원', '7.5천만원', '7,000만원', '3억원' → 만 원 단위 숫자
+  function amounts(text) {
+    var out = [], re = /(\d+(?:[.,]\d+)?)\s*(억|천만|백만|만)\s*원/g, m;
+    while ((m = re.exec(String(text || '')))) {
+      var n = parseFloat(m[1].replace(/,/g, '')), unit = { '억': 10000, '천만': 1000, '백만': 100, '만': 1 }[m[2]];
+      out.push(Math.round(n * unit));
+    }
+    return out;
+  }
+  // 글로 적힌 소득 조건을 읽는다. 금액으로 바꿀 수 있는 것만 판정에 쓰고, 나머지는 어디서 확인하는지 알려 준다.
+  //  none: 소득과 관계없음 / pct: 기준 중위소득 비율 / year: 연소득 금액 / low: 수급·차상위 / info: 판정 못 함
+  function incomeRule(text) {
+    var t = String(text || '').replace(/\s+/g, ' ').trim(), plain = t.replace(/기준\s*/g, ''), pcts = [], m, re = /중위\s*(?:소득)?\s*(?:의\s*)?(?:(\d{2,3})\s*%?\s*[~∼\-]\s*)?(\d{2,3})\s*%/g;
+    if (/^(소득\s*)?(무관|제한\s*없|해당\s*없)/.test(t)) return { t: 'none' };
+    // '100~150%'처럼 범위로 적힌 것도 읽는다
+    while ((m = re.exec(plain))) [m[1], m[2]].forEach(function (n) { if (n && pcts.indexOf(+n) < 0) pcts.push(+n); });
+    var free = /무관|제한\s*없/.test(t);
+    if (pcts.length) { pcts.sort(function (a, b) { return a - b; }); return { t: 'pct', lo: pcts[0], hi: pcts[pcts.length - 1], soft: free || /순위|우선/.test(t) }; }
+    if (free && !/\d\s*%/.test(t)) return { t: 'none' };
+    if (/연\s*소득|연간\s*소득|총급여|종합소득/.test(t)) {
+      var mine = /청년\s*[:：]?\s*연\s*소득\s*(\d+(?:[.,]\d+)?\s*(?:억|천만|백만|만)\s*원)/.exec(t), a = mine ? amounts(mine[1]) : amounts(t);
+      if (a.length) return { t: 'year', lo: Math.min.apply(null, a), hi: Math.max.apply(null, a), soft: /순위|우선/.test(t) };
+    }
+    if (/수급|차상위/.test(t)) return { t: 'low', strict: t.length <= 40 && !/순위|우선|없으나|등\s*저소득/.test(t) };
+    if (/학자금\s*지원\s*구간|학자금지원|소득\s*분위|\d\s*구간/.test(t)) return { t: 'info', how: '학자금 지원구간은 한국장학재단 누리집·앱의 [학자금 지원구간 조회]에서 볼 수 있어요.', url: 'https://www.kosaf.go.kr', link: '한국장학재단에서 보기' };
+    if (/건강보험료|건보료/.test(t)) return { t: 'info', how: '건강보험료로 따지는 사업이에요. 내 보험료는 건강보험공단 누리집·앱 [보험료 조회]에서 볼 수 있어요.', url: 'https://www.nhis.or.kr', link: '건강보험공단에서 보기' };
+    if (/월\s*평균\s*소득/.test(t)) return { t: 'info', how: '도시근로자 가구 월평균소득을 기준으로 하는 사업이에요. 금액은 공고에 실린 소득 기준표에서 확인해요.' };
+    return { t: 'info', how: '금액으로 바꿀 수 없는 조건이에요. 공고에서 확인해 주세요.' };
+  }
+  // 공고 글에서 읽어 낸 주거 조건 (무주택, 보증금·월세 상한). 계약 정보와 바로 견준다.
+  function textRules(it) {
+    var t = (it.cond || '') + ' ' + (it.support || '') + ' ' + ((it.earn && it.earn.text) || ''), out = {};
+    if (/무주택/.test(t)) out.homeless = true;
+    var d = /보증금\s*(\d+(?:[.,]\d+)?\s*(?:억|천만|백만|만)\s*원)\s*이하/.exec(t), r = /월\s*(?:세|임대료|임차료)\s*(\d+(?:[.,]\d+)?\s*만\s*원)\s*이하/.exec(t);
+    if (d) out.deposit = amounts(d[1])[0];
+    if (r) out.rent = amounts(r[1])[0];
+    return out;
+  }
+  // 대상 조건을 풀어 쓴 말
+  var TRAIT = { '중소기업': '중소기업에 다녀요', '여성': '여성이에요', '기초생활수급자': '기초생활수급자예요', '한부모가정': '한부모 가정이에요', '장애인': '장애인 등록이 돼 있어요', '농업인': '농사를 지어요', '군인': '군인이에요 (복무 중·전역 예정)', '지역인재': '이 지역 학교를 다니거나 졸업했어요', '수급·차상위': '기초생활수급자나 차상위계층이에요' };
+  // user: { age, region, mrg, job, school, minc(내 월 소득 만원), hh(가구원 수), hinc(가구 월 소득 만원), traits:{이름:true|false}, self:{}, deposit, rent }
+  // 반환 조건: { key, label, mine, ok(true|false|null), ask?: 질문 종류, ... }
   function check(it, user, scopeLabel) {
-    var out = [], self = user.self || {};
+    var out = [], self = user.self || {}, traits = user.traits || {};
+    var year = user.minc === undefined || user.minc === null ? null : user.minc * 12;
+    var house = !user.hh ? null : user.hh === 1 ? (user.minc === undefined || user.minc === null ? null : user.minc) : (user.hinc === undefined || user.hinc === null ? null : user.hinc);
+    function range(v, lo, hi, soft) { return v <= lo ? true : v > hi ? (soft ? null : false) : null; }
     out.push({ key: 'region', label: scopeLabel || '대상 지역', mine: user.region || '', ok: true });
     if (it.age) {
       var lab = '만 ' + (it.age[0] || '') + '~' + (it.age[1] || '') + '세';
@@ -96,21 +146,43 @@
     ['job', 'school'].forEach(function (k) {
       var need = it[k]; if (!need) return;
       var only = need.filter(function (x) { return x !== '기타'; }), v = user[k];
-      if (!only.length) { out.push({ key: k, label: (k === 'job' ? '취업 상태' : '학력') + ' 조건 있음', mine: '공고에서 확인', ok: null }); return; }
+      if (!only.length) { out.push({ key: k + ':etc', label: (k === 'job' ? '취업 상태' : '학력') + ' 조건이 따로 있어요', mine: '공고에서 확인', ok: null }); return; }
       out.push({ key: k, label: only.join('·'), mine: v || '', ok: v ? (inList(only, v) ? true : inList(need, '기타') ? null : false) : null, ask: v ? '' : k });
     });
     if (it.sbiz) {
-      var sk = 'sbiz:' + it.sbiz.join(','), only2 = it.sbiz.filter(function (x) { return x !== '기타'; });
-      if (only2.length) out.push({ key: sk, label: '대상: ' + only2.join('·'), mine: self[sk] === 'y' ? '해당' : self[sk] === 'n' ? '해당 안 됨' : '', ok: self[sk] === 'y' ? true : self[sk] === 'n' ? (inList(it.sbiz, '기타') ? null : false) : null, ask: self[sk] ? '' : 'self', q: only2.join(', ') + ' 중 하나에 해당하나요?' });
-      else out.push({ key: sk, label: '특정 대상 조건 있음', mine: '공고에서 확인', ok: null });
+      var only2 = it.sbiz.filter(function (x) { return x !== '기타'; });
+      if (only2.length) {
+        var yes = only2.filter(function (x) { return traits[x] === true; }), unknown = only2.filter(function (x) { return traits[x] === undefined; });
+        out.push({ key: 'traits', label: '대상: ' + only2.join('·'), mine: yes.length ? yes.join('·') : unknown.length ? '' : '해당 없음', ok: yes.length ? true : unknown.length ? null : (inList(it.sbiz, '기타') ? null : false), ask: !yes.length && unknown.length ? 'traits' : '', traits: unknown, all: only2 });
+      } else out.push({ key: 'sbiz:etc', label: '특정 대상 조건이 따로 있어요', mine: '공고에서 확인', ok: null });
     }
     if (it.earn && it.earn.t === 'year' && (it.earn.max || it.earn.min)) {
       var e = it.earn, el = '연소득 ' + (e.min ? won(e.min) + ' 초과 ' : '') + (e.max ? won(e.max) + ' 이하' : '');
-      out.push({ key: 'earn', label: el.trim(), mine: user.earn ? '연 ' + won(user.earn) : '', ok: user.earn ? (!e.max || user.earn <= e.max) && (!e.min || user.earn > e.min) : null, ask: user.earn ? '' : 'earn' });
+      out.push({ key: 'earn', label: el.trim(), mine: year === null ? '' : '연 ' + won(year) + ' (월 ' + won(user.minc) + ')', ok: year === null ? null : (!e.max || year <= e.max) && (!e.min || year > e.min), ask: year === null ? 'minc' : '', note: e.max ? '한 달에 약 ' + won(Math.floor(e.max / 12)) + ' 이하로 벌면 돼요.' : '' });
     } else if (it.earn && it.earn.t === 'etc') {
-      var ek = 'earn:' + it.id, pct = medianPct(it.earn.text);
-      out.push({ key: ek, label: '소득 조건', mine: self[ek] === 'y' ? '기준 이하' : self[ek] === 'n' ? '기준 초과' : '', ok: self[ek] === 'y' ? true : self[ek] === 'n' ? false : null, ask: self[ek] ? '' : 'earnetc', text: it.earn.text, pct: pct });
+      var ru = incomeRule(it.earn.text), txt = it.earn.text;
+      if (ru.t === 'none') out.push({ key: 'earn:none', label: '소득 조건 없음', mine: '누구나', ok: true, text: txt });
+      else if (ru.t === 'pct') {
+        var same = ru.lo === ru.hi, pl = '기준 중위소득 ' + (same ? ru.hi : ru.lo + '~' + ru.hi) + '% 이하';
+        var lo = user.hh ? medianMan(user.hh, ru.lo) : 0, hi = user.hh ? medianMan(user.hh, ru.hi) : 0;
+        var okp = house === null ? null : range(house, lo, hi, ru.soft);
+        out.push({ key: 'earn:pct', label: user.hh ? pl + ' · ' + user.hh + '명 가구 월 ' + (same ? won(hi) : won(lo) + '~' + won(hi)) : pl, mine: house === null ? '' : '월 ' + won(house), ok: okp, ask: house === null ? 'hinc' : '', text: txt, pct: ru,
+          note: house !== null && okp === null ? (house > hi ? '기준을 넘지만, 소득을 따지지 않는 유형도 있어요. 공고를 확인해 주세요.' : house > lo ? '유형에 따라 기준이 달라요(' + ru.lo + '% 또는 ' + ru.hi + '%). 어느 쪽인지 공고에서 확인해 주세요.' : '') : '' });
+      } else if (ru.t === 'year') {
+        var oky = year === null ? null : range(year, ru.lo, ru.hi, ru.soft), sm = ru.lo === ru.hi;
+        out.push({ key: 'earn:year', label: '연소득 ' + (sm ? won(ru.hi) : won(ru.lo) + '~' + won(ru.hi)) + ' 이하', mine: year === null ? '' : '연 ' + won(year) + ' (월 ' + won(user.minc) + ')', ok: oky, ask: year === null ? 'minc' : '', text: txt,
+          note: year !== null && oky === null ? '대상에 따라 기준이 달라요. 어느 쪽인지 공고에서 확인해 주세요.' : '한 달에 약 ' + won(Math.floor(ru.lo / 12)) + ' 이하로 벌면 돼요.' });
+      } else if (ru.t === 'low') {
+        var tv = traits['수급·차상위'];
+        out.push({ key: 'earn:low', label: '기초생활수급자·차상위계층 대상', mine: tv === true ? '해당' : tv === false ? '해당 없음' : '', ok: tv === true ? true : tv === false ? (ru.strict ? false : null) : null, ask: tv === undefined ? 'traits' : '', traits: ['수급·차상위'], all: ['수급·차상위'], text: txt,
+          note: tv === false && !ru.strict ? '수급·차상위가 아니어도 되는 경우가 있어요. 공고의 대상 순위를 확인해 주세요.' : '' });
+      } else out.push({ key: 'earn:info', label: '소득 조건', mine: '공고에서 확인', ok: null, text: txt, note: ru.how, url: ru.url, link: ru.link });
     }
+    // 공고 글에서 읽어 낸 조건
+    var tr = textRules(it);
+    if (tr.homeless) { var hm = self.homeless; out.push({ key: 'homeless', label: '무주택', mine: hm === 'y' ? '집 없음' : hm === 'n' ? '집 있음' : '', ok: hm === 'y' ? true : hm === 'n' ? false : null, ask: hm ? '' : 'homeless', from: 'text' }); }
+    if (tr.deposit && user.deposit !== undefined) out.push({ key: 'cap:deposit', label: '보증금 ' + won(tr.deposit) + ' 이하', mine: won(user.deposit), ok: user.deposit <= tr.deposit, from: 'text' });
+    if (tr.rent && user.rent !== undefined) out.push({ key: 'cap:rent', label: '월세 ' + won(tr.rent) + ' 이하', mine: won(user.rent), ok: user.rent <= tr.rent, from: 'text' });
     return out;
   }
   function verdict(conds) {
@@ -148,7 +220,8 @@
     [/이체\s*(확인|내역|증빙)|송금\s*확인|월세\s*납부/, 'bankT', '받는 방법 보기', ''],
     [/통장\s*사본|계좌\s*사본/, 'bankP', '받는 방법 보기', '']
   ];
-  function docSource(name) { for (var i = 0; i < SRC.length; i++) if (SRC[i][0].test(name)) return { t: SRC[i][1], label: SRC[i][2], url: SRC[i][3] }; return null; }
+  var HOW = { 'https://www.gov.kr': '정부24 검색창에 서류 이름(예: 주민등록표 등본)을 넣고 [발급하기]를 눌러요. 본인인증이 필요하고 무료예요.', 'https://efamily.scourt.go.kr': '본인인증 뒤 [증명서 발급]에서 서류를 골라요. 무료예요.', 'https://www.iros.go.kr': '집 주소로 검색해서 열람·발급해요. 수수료가 있어요.' };
+  function docSource(name) { for (var i = 0; i < SRC.length; i++) if (SRC[i][0].test(name)) return { t: SRC[i][1], label: SRC[i][2], url: SRC[i][3], how: HOW[SRC[i][3]] || (SRC[i][1] === 'link' ? '로그인 뒤 증명서 발급 메뉴에서 서류 이름을 찾아요.' : '') }; return null; }
   // 괄호 밖의 쉼표에서만 나눈다: '등본(전체공개, 1개월 이내), 통장 사본' → 2개
   function splitTop(line) {
     var out = [], depth = 0, cur = '';
@@ -226,7 +299,7 @@
     var text = (it.name || '') + ' ' + (it.sum || '') + ' ' + String(it.cond || '').slice(0, 200), head = (it.name || '') + ' ' + (it.sum || '');
     var score = { cash: 40, loan: 18, home: 15, edu: 6, info: 0, etc: 3 }[kind] || 0, why = '';
     // 특정 대상(자립준비청년·신혼부부 등) 사업은 내 상황 키워드가 겹쳐도 올리지 않는다
-    var mine = it.sbiz && (ctx.self || {})['sbiz:' + it.sbiz.join(',')] === 'y';
+    var mine = it.sbiz && it.sbiz.some(function (x) { return (ctx.traits || {})[x] === true; });
     var notMe = (!mine && NOT_ME.test(head)) || (ctx.mrg !== '기혼' && FAMILY.test(head));
     if (!notMe) FIT.forEach(function (f) { if (f[0](ctx) && f[1].test(text)) { score += f[2]; if (!why) why = f[3]; } });
     if (it.age && ctx.age && (!it.age[0] || ctx.age >= it.age[0]) && (!it.age[1] || ctx.age <= it.age[1])) score += 10;
@@ -240,6 +313,6 @@
   var VR = { ok: 0, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
-  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, statusAt: statusAt, check: check, verdict: verdict, watch: watch,
-    docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
+  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, statusAt: statusAt, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
+    docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });
