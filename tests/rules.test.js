@@ -223,3 +223,8 @@ test('AI 비서: 인사·감사·소개에는 지금 방의 봇이 직접 답한
   assert.equal(AS.answer({ q: '고마워!', bot: 'landlord', cards: SEED.cards, facts: {}, repairs: [] }).kind, 'smalltalk');
   assert.notEqual(AS.answer({ q: '안녕 전입신고 언제 해?', bot: 'auto', cards: SEED.cards, facts: {}, repairs: [] }).kind, 'smalltalk');
 });
+test('페르소나: 계약 조건이 다른 7명이 같은 질문을 해도 내 조건에 맞게 답한다', () => {
+  const r = E.runPersonas(SEED, EV.personas, AS, SEED.repairs);
+  assert.equal(r.wrong, 0, r.rows.filter((x) => x.wrong).map((x) => x.persona + ': ' + x.q).join(' / '));
+  assert.equal(r.pass, r.total, r.rows.filter((x) => !x.pass).map((x) => x.persona + ': ' + x.q + ' → ' + x.why.join(', ')).join(' / '));
+});
