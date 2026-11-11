@@ -110,7 +110,7 @@
     var f = o.facts || {}, it = LL.filter(function (x) { return x.re.test(q); })[0];
     // 정해진 상황이 아니어도, 문자를 써 달라는 말이면 내 말을 넣어 기본 틀로 써 줌
     var topic = q.replace(/(집주인|임대인|주인)\s*(한테|에게|께|님께|님한테)?/g, '').replace(/(문자|메시지|카톡|톡)\s*(로|를|좀)?/g, '').replace(/(말하고|전하고|보내고|알리고|요청하고|부탁하고|물어보고)\s*싶어(요)?|써\s*줘|써줄래|보내\s*줘|작성해\s*줘|어떻게\s*(말|보내)\S*|뭐라고\s*\S*/g, '').replace(/[?!.]/g, '').replace(/\s+/g, ' ').trim();
-    if (!it && topic.length >= 2 && P_WRITE.test(q)) it = { id: 'free', title: '직접 쓰는 문자' };
+    if (!it && topic.length >= 2 && P_WRITE.test(q)) it = { id: 'free', title: '직접 쓰기' };
     if (!it) return { kind: 'clarify', text: '어떤 내용을 전하고 싶은지 골라 주세요. 상황에 맞는 문자를 바로 써 드릴게요.', chips: ['보일러 수리 요청 문자 써줘', '계약 끝나고 나간다고 알리고 싶어', '보증금 돌려달라고 연락하고 싶어', '월세가 늦어질 것 같다고 말하고 싶어', '관리비 항목 물어보고 싶어'], steps: ['전할 내용을 찾지 못함'] };
     var house = f.house ? f.house : '', me = '안녕하세요, ' + (house ? house + ' ' : '') + '세입자' + (f.nick ? ' ' + f.nick : '') + '입니다.';
     var polite = '', short = '', tips = [], cites = [], extra = '';
@@ -259,7 +259,18 @@
         blocks: [{ type: 'steps', title: '해 볼 일', items: ['관리비에 수도·인터넷·청소비·공용 전기 중 무엇이 들어가는지 집주인에게 문자로 물어봐요', '들어 있는 항목은 자취 캘린더에서 꺼서 두 번 계산되지 않게 해요', '인터넷이 관리비에 있는데 따로 또 가입했다면 하나를 정리해요'] }], cites: citeOf(o.cards, ['k-fee']),
         actions: [{ label: '관리비 항목 묻는 문자 만들기', bot: 'landlord', q: '관리비 항목 물어보고 싶어' }], chips: ['공과금 줄이는 방법', '이번 달 고정비 얼마야?'], steps: ['관리비 금액과 비중 확인', '승인된 관리비 안내 사용'] });
     }
-    // 6) 전체 보기
+    // 6) 줄일 수 있는 거
+    if (/줄일|아낄|절약|아끼|줄이/.test(q)) {
+      var tips = [];
+      if (monthly.length) { var pmx = progMonthly(monthly[0]); tips.push('**' + monthly[0].name + '**(' + monthly[0].verdict + ') — 선정되면 매달 최대 ' + won(pmx.per) + '원 줄어요'); }
+      ok.filter(function (p) { return monthly.indexOf(p) < 0; }).forEach(function (p) { tips.push(p.name + '(' + p.verdict + ') — ' + (p.amountText || '') + ' 한 번'); });
+      var ut2 = items.filter(function (x) { return UTIL.test(x.name); }), us2 = ut2.reduce(function (a, b) { return a + b.amount; }, 0);
+      if (ut2.length) tips.push('공과금 ' + won(us2) + '원 — 보일러 외출 모드, 멀티탭으로 대기 전력 끄기');
+      tips.push('관리비 ' + (items.filter(function (x) { return /관리비/.test(x.name); })[0] ? won(items.filter(function (x) { return /관리비/.test(x.name); })[0].amount) + '원 ' : '') + '— 들어 있는 항목을 확인해 따로 내는 공과금과 겹치지 않게');
+      tips.push('월세 세액공제 — 직장인 무주택 세대주면 연말정산 때 일부 돌려받기');
+      return done({ text: '줄일 수 있는 건 ' + tips.length + '가지예요. 가장 큰 건 ' + (monthly.length ? '월세 지원이에요.' : '고정비에서 가장 큰 월세라, 지원·세액공제부터 보세요.'), blocks: [{ type: 'steps', title: '큰 것부터', items: tips }], cites: citeOf(o.cards, ['k-support', 'k-save-utility', 'k-fee', 'k-tax']), chips: ['지원금 받으면 얼마나 줄어?', '공과금 줄이는 방법'], steps: ['고정비에서 줄일 수 있는 항목 찾기', '큰 것부터 정렬'] });
+    }
+    // 7) 전체 보기
     var save = ok.map(function (p) { return p.name + ' (' + p.verdict + ') — ' + (p.amountText || '') + (p.status ? ' · ' + p.status : ''); });
     save.push('월세 세액공제 — 근로소득이 있는 무주택 세대주면 연말정산 때 낸 월세 일부를 돌려받아요');
     save.push('관리비 항목 확인 — 관리비에 수도·인터넷이 들어 있는데 따로 또 내고 있지 않은지 봐요');
@@ -315,9 +326,33 @@
     // 인사·감사·"뭐 할 수 있어?" 같은 짧은 말에는 지금 방의 봇이 직접 답한다
     var me = BOTS[want || 'auto'], small = smallTalk(q, want || 'auto');
     if (small) { small.bot = want || 'auto'; small.routed = false; small.blocks = []; small.actions = []; small.cites = []; small.topic = []; return small; }
+    // ---------- 같은 방에서 이어 묻기 ----------
+    var lastTopic = (last && last.topic && last.topic[0]) || '', fin = function (r, b) { r.bot = b; r.routed = !!want && want !== b; ['blocks', 'actions', 'cites', 'chips', 'steps', 'topic'].forEach(function (k) { r[k] = r[k] || []; }); return r; };
+    // 고쳐봇 다음: 안 고쳐 주면 / 내가 고치면 / 문자 써줘
+    if (/^repair-/.test(lastTopic) && !matchRepair(q, o.repairs)) {
+      var rp = (o.repairs || []).filter(function (x) { return 'repair-' + x.id === lastTopic; })[0];
+      if (rp && /안\s*고쳐|안\s*해\s*(줘|준|주)|무시|거절|미뤄|답이\s*없|연락이\s*없/.test(q)) return fin({ kind: 'answer', text: '집주인이 ' + rp.label + ' 수리를 미루면 이렇게 하세요.', blocks: [{ type: 'steps', title: '순서', items: ['문자로 다시 한 번 수리를 요청하고 언제까지 고쳐 달라고 날짜를 적어요 (말로 한 건 기록이 남지 않아요)', '그래도 안 고쳐 주면 먼저 고치고 영수증을 받아 두세요. 집을 쓰는 데 필요한 수리비는 집주인에게 돌려 달라고 할 수 있어요 (민법 제626조)', '다툼이 커지면 주택임대차분쟁조정위원회 조정이나 대한법률구조공단(132) 상담을 받을 수 있어요'] }], actions: [{ label: '다시 요청하는 문자 만들기', bot: 'landlord', q: rp.label + ' 수리 요청했는데 연락이 없어요 다시 보내는 문자 써줘' }], cites: [{ id: 'law-626', title: '민법 제626조 (필요비 상환청구)', src: [['민법 제626조', 'https://www.law.go.kr']] }].concat(citeOf(o.cards, ['k-dispute'])), topic: [lastTopic], chips: ['내가 고치면 돈 돌려받을 수 있어?'], steps: ['앞 대화 이어 받기: ' + rp.label, '수리를 미룰 때 할 일 정리'] }, 'repair');
+      if (rp && /내가\s*(고치|고쳐|먼저)|돈\s*돌려|수리비|비용.*(돌려|청구|받)|돌려\s*받/.test(q)) return fin({ kind: 'answer', text: rp.who === 'tenant' ? '**' + josa(rp.label, '은는') + '** 보통 세입자 몫이라 수리비를 돌려받기는 어려워요.' : '**네, 돌려받을 수 있어요.** 집을 쓰는 데 꼭 필요한 수리비(필요비)는 세입자가 먼저 냈어도 집주인에게 돌려 달라고 할 수 있어요 (민법 제626조).', blocks: rp.who === 'tenant' ? [] : [{ type: 'steps', title: '돌려받으려면', items: ['고치기 전에 문자로 집주인에게 먼저 알려요', '수리 전·후 사진과 영수증을 남겨요', '영수증을 보내며 돌려 달라고 문자로 요청해요'] }], actions: rp.who === 'tenant' ? [] : [{ label: '수리비 청구 문자 만들기', bot: 'landlord', q: rp.label + ' 수리비 내가 냈는데 돌려받고 싶어' }], cites: [{ id: 'law-626', title: '민법 제626조 (필요비 상환청구)', src: [['민법 제626조', 'https://www.law.go.kr']] }], topic: [lastTopic], chips: ['집주인이 안 고쳐 주면?'], steps: ['앞 대화 이어 받기: ' + rp.label, '수리비 돌려받기 안내'] }, 'repair');
+      if (rp && /문자|써\s*줘|말해|보내|연락/.test(q)) { var rl = landlordBot(rp.label + ' 수리 요청 문자 써줘', o); return fin(rl, 'landlord'); }
+    }
+    // 집주인톡 다음: 그거 언제 보내?
+    if (/^landlord-/.test(lastTopic) && /언제|타이밍|며칠|미리|몇\s*일/.test(q) && !LL.some(function (x) { return x.re.test(q); })) {
+      var lid = lastTopic.slice(9), F = o.facts || {}, six = '';
+      if (F.end) { var e = F.end.split('.'), d6 = new Date(+e[0], +e[1] - 7, +e[2]); six = d6.getFullYear() + '.' + String(d6.getMonth() + 1).padStart(2, '0') + '.' + String(d6.getDate()).padStart(2, '0'); }
+      var WHEN = { repair: '고장을 알게 된 **그날 바로** 보내세요. 늦게 알려 피해가 커지면 세입자 책임이 될 수 있어요 (민법 제634조).',
+        deposit: F.noticeBy ? '계약 만료 2개월 전인 **' + F.noticeBy + '**까지는 보내세요(만료일 ' + F.end + '). 더 일찍 보내도 괜찮아요.' : '계약 만료 2개월 전까지는 보내세요.',
+        leave: F.noticeBy ? '늦어도 **' + F.noticeBy + '**(만료 2개월 전)까지 보내야 해요. 그때까지 말이 없으면 같은 조건으로 계약이 이어질 수 있어요.' : '만료 2개월 전까지 보내야 해요.',
+        renew: F.noticeBy && six ? '만료 6개월 전부터 2개월 전 사이, **' + six + ' ~ ' + F.noticeBy + '**에 보내야 해요.' : '만료 6개월 전부터 2개월 전 사이에 보내야 해요.',
+        late: '월세 내는 날 **전에** 미리 보내세요. 밀린 뒤에 알리는 것보다 먼저 알리는 게 좋아요.', photo: F.move ? '입주 당일(' + F.move + '), **짐을 넣기 전에** 찍어서 바로 보내세요.' : '입주 당일, 짐을 넣기 전에 보내세요.',
+        fee: '첫 관리비가 나오기 전에 물어보세요.', payday: '다음 월세 날 **전에** 보내고, 집주인이 괜찮다고 한 뒤부터 바꾼 날짜에 보내세요.', visit: '집 보러 온다는 연락을 받았을 때 바로 답하세요.',
+        nocontact: '처음 보낸 뒤 며칠이 지나도 답이 없을 때 보내세요.', refund: '수리를 마치고 영수증을 받은 뒤 바로 보내세요.' };
+      return fin({ kind: 'answer', text: WHEN[lid] || '상황이 생긴 뒤 되도록 빨리 보내세요. 문자로 보내야 날짜가 기록으로 남아요.', topic: [lastTopic], cites: citeOf(o.cards, lid === 'repair' ? ['k-repair'] : ['k-moveout']), chips: ['더 짧게 써줘'], steps: ['앞 대화 이어 받기', '보낼 때를 승인된 안내로 계산'] }, 'landlord');
+    }
+    // 동네봇 다음: 영업시간
+    if ((want === 'local' || lastTopic === 'local') && /새벽|24\s*시|영업\s*시간|몇\s*시|여는|문\s*열|닫|밤에\s*(여|열|하는)/.test(q) && !/위험|무서|경찰|치안/.test(q)) return fin({ kind: 'answer', text: '영업시간은 지도 데이터에 없어서 확실히 알려 드리기 어려워요. 지도에서 장소를 누르면 운영 정보가 있는 곳은 함께 보여요. 급한 약은 가까운 편의점의 상비약을, 급한 진료는 119에 물어볼 수 있어요.', actions: [{ label: '지도 탐색 열기', href: '#map' }], topic: ['local'], steps: ['영업시간 정보가 없음을 밝힘'] }, 'local');
     var bot = want || route(q, last && last.bot);
     if (want && want !== 'landlord' && P_WRITE.test(q) && !/알려|뭐|어떻게/.test(q)) bot = 'landlord';
-    if (want === 'repair' && !P_REPAIR.test(q)) bot = route(q, 'repair') === 'repair' ? 'repair' : 'rights';
+    if (want === 'repair' && !P_REPAIR.test(q)) bot = route(q, 'repair');
     if (want === 'local' && !P_LOCAL.test(q) && /전입|신고|보증금|계약/.test(q)) bot = 'rights';
     var r = bot === 'landlord' ? landlordBot(q, o) : bot === 'repair' ? repairBot(q, o) : bot === 'money' ? moneyBot(q, o) : bot === 'local' ? localBot(q, o) : rightsBot(q, o);
     // 고쳐봇이 물건을 못 찾았으면 권리봇 지식으로 한 번 더
