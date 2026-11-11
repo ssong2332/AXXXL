@@ -86,6 +86,21 @@ test('toUser: 계약일 기준 만 나이와 입력값을 rules-core 형식으�
   assert.deepEqual(E.toUser(base), { age: 24, income: '150', deposit: 1000, rent: 45, gu: '관악구', homeless: 'yes', dup: 'no' });
   assert.equal(E.toUser(Object.assign({}, base, { birth: '2002-11' })).age, null);
 });
+// 무주택·중복 수혜: 값이 없음 = 아직 답하지 않음, 'unknown' = 모른다고 답함. 둘을 섞지 않는다 (11/11, 예전 사용자 '확인 필요' 문제)
+test('toUser: 무주택·중복 수혜를 답하지 않았으면 unknown으로 채우지 않고 그대로(undefined) 넘긴다', () => {
+  const noAnswer = Object.assign({}, base); delete noAnswer.homeless; delete noAnswer.dup;
+  const u = E.toUser(noAnswer);
+  assert.equal(u.homeless, undefined); assert.equal(u.dup, undefined);
+  // '아직 안 정함'(빈칸)이나 null로 저장된 값도 답 없음
+  const blank = E.toUser(Object.assign({}, base, { homeless: '', dup: null }));
+  assert.equal(blank.homeless, undefined); assert.equal(blank.dup, undefined);
+});
+test('toUser: yes·no·unknown으로 답했으면 그대로 넘긴다', () => {
+  for (const a of ['yes', 'no', 'unknown']) {
+    const u = E.toUser(Object.assign({}, base, { homeless: a, dup: a }));
+    assert.equal(u.homeless, a); assert.equal(u.dup, a);
+  }
+});
 
 // ---------- F-03 지원 자격 (rules-core 연결) ----------
 test('자격: 조건을 모두 충족하면 해당 가능', () => {
@@ -110,4 +125,9 @@ test('자격: 무주택 아님이면 해당 안 됨', () => {
 });
 test('자격: 유사 지원을 이미 받으면 청년월세는 해당 안 됨', () => {
   assert.equal(judge({ dup: 'yes' }, 'rent'), '해당 안 됨');
+});
+test('자격: 무주택·중복 수혜를 답하지 않았으면 판정에서 빼고(해당 가능), 모른다고 답했으면 확인 필요', () => {
+  assert.equal(judge({ homeless: undefined, dup: undefined }, 'rent'), '해당 가능');
+  assert.equal(judge({ homeless: 'unknown' }, 'rent'), '확인 필요');
+  assert.equal(judge({ dup: 'unknown' }, 'rent'), '확인 필요');
 });
