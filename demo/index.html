@@ -241,6 +241,8 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
   var WD = ['일','월','화','수','목','금','토'];
   function pd(s) { var p = String(s || '').split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]); return isNaN(d) ? new Date() : d; }
   function add(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  // n개월 앞뒤 같은 날, 없으면 말일 (민법 제160조 · engine.js addMonths와 같은 계산)
+  function addMonths(d, n) { var m = d.getMonth() + n, y = d.getFullYear() + Math.floor(m / 12), mm = ((m % 12) + 12) % 12; return new Date(y, mm, Math.min(d.getDate(), new Date(y, mm + 1, 0).getDate())); }
   function md(d) { return (d.getMonth() + 1) + '.' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
   function ymd(d) { return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); }
   var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -331,7 +333,7 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
       }) });
     }
     st.push({ name: '퇴거', when: ymd(end) + ' 만료', at: end, tasks: [
-      { id: 't13', title: '갱신 여부 미리 알리기', desc: '계약 만료 2개월 전까지 집주인에게 갱신할지 나갈지 알려요.', due: add(end, -60), src: '주택임대차보호법 제6조' },
+      { id: 't13', title: '갱신 여부 미리 알리기', desc: '계약 만료 2개월 전까지 집주인에게 갱신할지 나갈지 알려요.', due: addMonths(end, -2), src: '주택임대차보호법 제6조' },
       { id: 't14', title: '보증금 돌려받은 뒤 전출하기', desc: '보증금을 받기 전에 주소를 옮기면 대항력이 사라질 수 있어요.', due: end, src: '주택임대차보호법 제3조' }
     ] });
     var nowIdx = 0;
