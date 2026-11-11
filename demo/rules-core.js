@@ -197,6 +197,7 @@
     if (v.deposit_max !== null || v.rent_max !== null) conds.push({ type: 'house', deposit: v.deposit_max, rent: v.rent_max, label: [v.deposit_max !== null ? '보증금 ' + wonText(v.deposit_max) : '', v.rent_max !== null ? '월세 ' + wonText(v.rent_max) : ''].filter(Boolean).join('·') + ' 이하', evidence: [ev('deposit_max'), ev('rent_max')].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(' / ') });
     if (v.residency) conds.push({ type: 'residency', text: v.residency, label: v.residency, evidence: ev('residency') });
     if (v.homeless !== false) conds.push({ type: 'homeless', label: '무주택', evidence: ev('homeless') });
+    if (v.exclusions && v.exclusions.length) conds.push({ type: 'dup', list: v.exclusions, label: '함께 받을 수 없는 지원(' + v.exclusions.join(', ') + ')을 받고 있지 않음', evidence: ev('exclusions') });
     var amount = v.amount_text || [v.amount_monthly_max ? '월 최대 ' + wonText(v.amount_monthly_max) : '', v.amount_months ? '최대 ' + v.amount_months + '개월' : '', v.amount_lump_max ? '최대 ' + wonText(v.amount_lump_max) : ''].filter(Boolean).join(' · ');
     return {
       id: rec.id, name: v.name || '이름 없는 공고', org: v.org || '', amountText: amount,
@@ -224,8 +225,11 @@
       else if (c.type === 'income') { ok = incomeOk(user, c.pct); mine = { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' }[user.income] || '입력 안 함'; }
       else if (c.type === 'house') { ok = (c.deposit === null || user.deposit <= c.deposit) && (c.rent === null || user.rent <= c.rent); mine = wonShort(user.deposit || 0) + ' / ' + (user.rent || 0) + '만'; }
       else if (c.type === 'residency') { ok = /서울/.test(c.text) && user.gu ? true : null; mine = user.gu ? '서울 ' + user.gu : '직접 확인'; }
+      // 무주택·중복 수혜: 이용자가 답한 경우에만 반영(asked). 값이 없으면(관리자 미리보기·시뮬레이션) 기존처럼 '직접 확인'
+      else if (c.type === 'homeless') { if (user.homeless === undefined) { mine = '직접 확인'; } else { ok = user.homeless === 'yes' ? true : user.homeless === 'no' ? false : null; mine = { yes: '예', no: '아니오' }[user.homeless] || '모름'; } }
+      else if (c.type === 'dup') { if (user.dup === undefined) { mine = '직접 확인'; } else { ok = user.dup === 'no' ? true : user.dup === 'yes' ? false : null; mine = { yes: '받고 있음', no: '받고 있지 않음' }[user.dup] || '모름'; } }
       else { ok = null; mine = '직접 확인'; }
-      return { label: c.label, mine: mine, ok: ok, type: c.type, evidence: c.evidence };
+      return { label: c.label, mine: mine, ok: ok, type: c.type, evidence: c.evidence, asked: (c.type === 'homeless' && user.homeless !== undefined) || (c.type === 'dup' && user.dup !== undefined) };
     });
     var closed = p.status === STATUS.closed;
     return { p: p, res: res, eligible: !closed && !res.some(function (r) { return r.ok === false; }), closed: closed, unknown: res.filter(function (r) { return r.ok === null; }) };
@@ -240,7 +244,7 @@
     { id: 'e', name: '만 39세 · 월세 70만', age: 39, income: '150', deposit: 1000, rent: 70, gu: '강서구' },
     { id: 'f', name: '만 40세', age: 40, income: '100', deposit: 500, rent: 40, gu: '은평구' }
   ];
-  function verdict(x) { if (x.closed) return '마감'; if (!x.eligible) return '해당 안 됨'; return x.unknown.some(function (r) { return r.type !== 'homeless'; }) ? '확인 필요' : '해당 가능'; }
+  function verdict(x) { if (x.closed) return '마감'; if (!x.eligible) return '해당 안 됨'; return x.unknown.some(function (r) { return r.asked || (r.type !== 'homeless' && r.type !== 'dup'); }) ? '확인 필요' : '해당 가능'; }
   function simulate(prevRec, nextRec, today) {
     var pp = prevRec ? toProgram(prevRec, today) : null, np = toProgram(nextRec, today);
     return PERSONAS.map(function (u) {

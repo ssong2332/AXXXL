@@ -14,6 +14,7 @@
 <script src="places-core.js" defer></script>
 <script src="rules-core.js" defer></script>
 <script src="rules/seed.js" defer></script>
+<script src="engine.js" defer></script>
 <script src="coach-core.js" defer></script>
 <script src="assistant-core.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
@@ -768,13 +769,13 @@ document.addEventListener('DOMContentLoaded', function () {
     { id: 'sup-rent', name: '청년월세 지원 입금', kind: 'in', amount: 200000, day: 25, every: 1, count: 12, on: false, off: 1, note: '선정되면 켜 두세요. 입금일과 남은 횟수를 챙겨드려요' }
   ];
   // 예시 데이터(둘러보기용): 2주 전에 계약했고 내일 입주
-  var DEMO = { gu: '관악구', addr: '신림동 원룸', deposit: 1000, rent: 45, fee: 7, term: 2, age: 24, income: '150',
+  var DEMO = { gu: '관악구', addr: '신림동 원룸', deposit: 1000, rent: 45, fee: 7, term: 2, age: 24, birth: '2002-03', homeless: 'yes', dup: 'no', income: '150',
     contract: iso(add(realToday(), -14)), move: iso(add(realToday(), 1)), demo: true, onboarded: true,
     done: { t1: true, t2: true, t3: true, t4: true, t5: true, t6: true, p1: true, p2: true, p3: true, p4: true },
     bills: DEFAULT_BILLS, paid: {}, calM: '', calSel: '', calTab: 'day', calEdit: '', nick: '', home: null, saved: {}, savedP: {}, events: [], pickHome: false, chal: {}, homeCat: 'all', mapCat: 'all', mapSel: '', recCat: 'park', cond: { in: {}, out: {} }, condTab: 'in', chat: [], areaChk: {}, sim: null, qa: '', remind: '1d', files: [] };
   // 처음 쓰는 사람: 아무것도 체크하지 않은 빈 상태에서 시작해 온보딩으로 입력받는다
   var FRESH = JSON.parse(JSON.stringify(DEMO));
-  Object.assign(FRESH, { gu: '관악구', addr: '', deposit: 0, rent: 0, fee: 0, age: 0, income: 'unknown', contract: iso(realToday()), move: iso(add(realToday(), 14)), done: {}, demo: false, onboarded: false, obStep: 1 });
+  Object.assign(FRESH, { gu: '관악구', addr: '', deposit: 0, rent: 0, fee: 0, age: 0, birth: '', homeless: 'unknown', dup: 'unknown', income: 'unknown', contract: iso(realToday()), move: iso(add(realToday(), 14)), done: {}, demo: false, onboarded: false, obStep: 1 });
   var DEFAULT = FRESH;
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   var S = clone(FRESH);
@@ -785,7 +786,11 @@ document.addEventListener('DOMContentLoaded', function () {
   var BASIS = '2026.10.28';
   var LAW = 'https://www.law.go.kr';
   var BASE_SRC = '자취 계약 내비 기본 체크리스트';
-  function contractEnd() { var M = pd(S.move); return add(new Date(M.getFullYear() + (+S.term || 2), M.getMonth(), M.getDate()), -1); }
+  // 신고·기한·나이 계산은 engine.js(계약·신고 담당), 지원 자격은 rules-core.js(evalProgram)
+  var JE = window.JachwiEngine;
+  function contractEnd() { return JE.contractEnd(pd(S.move), S.term); }
+  function curAge() { var a = JE.age(S.birth, pd(S.contract)); return a === null && !S.birth && +S.age ? +S.age : a; }
+  function ageText() { var a = curAge(); return a === null ? '나이 확인 필요' : '만 ' + a + '세'; }
   function incomeOk(limit) { if (S.income === 'unknown') return null; if (S.income === 'over') return false; return +S.income <= limit; }
   function incomeLabel() { return { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' }[S.income]; }
   // 지원사업은 운영자가 공고 원문과 대조해 승인한 공고(승인본)에서 만든다. (운영자 콘솔: admin.html)
@@ -809,20 +814,18 @@ document.addEventListener('DOMContentLoaded', function () {
       RS.loaded = true; render(true);
     }).catch(function () {});
   }
-  function userOf() { return { age: +S.age || 0, income: S.income, deposit: +S.deposit || 0, rent: +S.rent || 0, gu: S.gu }; }
+  function userOf() { var u = JE.toUser(S); u.age = curAge(); return u; }
   function progBasis(p) { return 'v' + p.version + (p.basis ? ' · ' + p.basis + ' 승인' : ''); }
   function evaluate() {
-    var C = pd(S.contract), M = pd(S.move);
-    var required = S.deposit > 6000 || S.rent > 30;
-    var reason = S.rent > 30 ? '월세 30만 원 초과' : S.deposit > 6000 ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하';
+    var D = JE.deadlines(S);
     if (RS.published) { var tk = today.toDateString(); if (RS.day !== tk) { RS.day = tk; setRules(RS.published, RS.src); } }
     var u = userOf(), programs = RS.programs.map(function (p) { return JachwiRules.evalProgram(p, u); });
-    return { C: C, M: M, report: { required: required, reason: reason, due: add(C, 30) }, movein: { due: add(M, 14) }, programs: programs, eligible: programs.filter(function (x) { return x.eligible; }) };
+    return { C: D.C, M: D.M, end: D.end, renewDue: D.renewDue, report: D.report, movein: D.movein, programs: programs, eligible: programs.filter(function (x) { return x.eligible; }) };
   }
   function judge(x) {
     if (x.closed) return ['no', '마감'];
     if (!x.eligible) return ['no', '해당 안 됨'];
-    return x.unknown.some(function (r) { return r.type !== 'homeless'; }) ? ['due', '확인 필요'] : ['brand', '해당 가능'];
+    return x.unknown.some(function (r) { return r.asked || (r.type !== 'homeless' && r.type !== 'dup'); }) ? ['due', '확인 필요'] : ['brand', '해당 가능'];
   }
 
   // 기준일 두 개: C = 계약일(전월세 신고 30일), M = 입주일(전입신고 14일). 기간은 첫날을 빼고 센다(민법 제157조).
@@ -873,7 +876,7 @@ document.addEventListener('DOMContentLoaded', function () {
       { id: 'l2', title: '월세 세액공제 챙기기 (직장인)', desc: '무주택 세대주이고 전입신고를 했다면 연말정산 때 낸 월세 일부를 돌려받아요. 계약서 사본과 월세 이체 내역이 필요해요.', due: jan, dueText: jan.getFullYear() + '년 1월 연말정산', src: '조세특례제한법 제95조의2' }
     ] });
     st.push({ key: 'out', name: '만료·퇴거', when: ymd(end), at: end, tasks: [
-      { id: 'o1', title: '갱신 여부 미리 알리기', desc: '계약 만료 2개월 전까지 집주인에게 갱신할지 나갈지 알려요.', due: add(end, -60), src: '주택임대차보호법 제6조' },
+      { id: 'o1', title: '갱신 여부 미리 알리기', desc: '계약 만료 2개월 전까지 집주인에게 갱신할지 나갈지 알려요.', due: R.renewDue, src: '주택임대차보호법 제6조' },
       { id: 'o2', title: '입주 사진과 비교하며 집 점검', desc: '입주 날 찍은 사진과 같은 자리를 찍어 비교하면 원상복구 범위를 두고 다툴 일이 줄어요.', due: add(end, -7), act: ['집 상태 기록', '#condition'], src: BASE_SRC },
       { id: 'o3', title: '보증금 돌려받은 뒤 전출하기', desc: '보증금을 받기 전에 주소를 옮기면 대항력이 사라질 수 있어요.', due: end, src: '주택임대차보호법 제3조' }
     ] });
@@ -1066,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '<p class="s12 muted">운영자 ' + esc(p.approvedBy || '') + '님이 원문과 대조해 승인했어요. ' + (p.source && p.source.name ? '출처: ' + esc(p.source.name) : '') + '</p></div></details>' +
         '<div class="row" style="margin-top:auto"><a class="btn" href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a><a class="btn ghost" href="' + esc(JachwiRules.safeUrl(p.source && p.source.url) || p.url || '#support') + '" target="_blank" rel="noopener">공고 원문 · ' + esc(p.basis) + '</a></div></section>';
     }).join('');
-    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · 만 ' + S.age + '세 · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>지원사업</h1></div><a class="btn line" href="#contract">조건 바꾸기</a></div>' +
+    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · ' + ageText() + ' · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>지원사업</h1></div><a class="btn line" href="#contract">조건 바꾸기</a></div>' +
       '<div class="banner" style="margin-bottom:16px">' + ic('info') + '<span>' + (demo ? '<b>시연용 예시 공고예요.</b> ' : '') + '운영자가 공고 원문과 한 줄씩 대조해 <b>승인한 기준</b>으로만 판정해요. 카드의 ‘공고 원문 근거’에서 조건마다 원문 문장을 볼 수 있어요. 금액은 공고마다 따로 보여주고 합치지 않아요. <b>해당 가능</b>도 최종 선정은 기관 심사로 정해져요. <a href="admin.html">운영자 검수 화면 보기</a> ' + srcNote + '</span></div>' +
       '<div class="grid">' + (cards || '<section class="card c12"><p class="muted">승인된 공고가 없어요.</p></section>') + '</div>';
   }
@@ -1606,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ---------- 퇴거 준비 ----------
   function viewMoveout() {
     var R = evaluate(), T = buildTimeline(R), end = contractEnd(), left = Math.round((end - today) / 86400000);
-    var keyDates = [[add(end, -60), '갱신 여부 알리기 마감', '나갈지 더 살지 집주인에게 문자로 남겨 두세요.'], [add(end, -30), '새 집·이사 날짜 정하기', '새 집 계약일과 지금 집 보증금 받는 날을 맞춰요.'], [add(end, -7), '집 상태 점검', '입주 때 기록과 같은 자리를 다시 찍어요.'], [end, '계약 만료 · 보증금 돌려받기', '보증금을 받은 뒤에 전출(새 집 전입신고)해요.']];
+    var keyDates = [[R.renewDue, '갱신 여부 알리기 마감', '나갈지 더 살지 집주인에게 문자로 남겨 두세요.'], [add(end, -30), '새 집·이사 날짜 정하기', '새 집 계약일과 지금 집 보증금 받는 날을 맞춰요.'], [add(end, -7), '집 상태 점검', '입주 때 기록과 같은 자리를 다시 찍어요.'], [end, '계약 만료 · 보증금 돌려받기', '보증금을 받은 뒤에 전출(새 집 전입신고)해요.']];
     var extra = [{ id: 'x1', title: '관리비·공과금 정산 요청', desc: '마지막 달 사용량을 계량기 사진으로 남기고 정산 금액을 확인해요.', due: add(end, -1), src: BASE_SRC }, { id: 'x2', title: '원상복구 범위 집주인과 맞추기', desc: '살면서 생긴 자연스러운 낡음은 원상복구 대상이 아니에요. 입주 때 사진과 비교해 이야기해요.', due: add(end, -14), act: ['집 상태 기록', '#condition'], src: BASE_SRC }];
     var tasks = T.filter(function (s) { return s.key === 'out'; })[0].tasks.concat(extra).sort(function (a, b) { return a.due - b.due; });
     return '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · ' + ymd(end) + ' 만료</p><h1>퇴거 준비</h1></div><span class="badge ' + (left <= 90 ? 'due' : '') + '">만료까지 ' + (left >= 0 ? left + '일' : '지남') + '</span></div>' +
@@ -1778,7 +1781,7 @@ document.addEventListener('DOMContentLoaded', function () {
       f('보증금', num('deposit', '만 원')) + f('월세', num('rent', '만 원')) + f('관리비', num('fee', '만 원')) + f('계약 기간', '<select class="inp" data-field="term">' + [1, 2].map(function (n) { return '<option value="' + n + '"' + (+S.term === n ? ' selected' : '') + '>' + n + '년</option>'; }).join('') + '</select>') +
       f('계약일 (계약서 쓴 날)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">') + f('입주일 (잔금·이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">') + '</div>' +
       (pd(S.move) < pd(S.contract) ? '<div class="banner due">' + ic('info') + '<span>입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.</span></div>' : R.report.required && R.report.due < R.M ? '<div class="banner due">' + ic('info') + '<span>전월세 신고 기한(' + md(R.report.due) + ')이 입주보다 먼저 와요. 전입신고와 합칠 수 없어요.</span></div>' : '') +
-      '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' + f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + f('만 나이', num('age', '세')) +
+      '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' + f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">') +
       f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + '</div>' +
       (!S.demo ? '' : '<label class="field"><span>시연용 날짜 (발표용)</span><select class="inp" data-sim>' + [['', '실제 오늘'], ['-1', '입주 전날'], ['0', '입주 당일'], ['10', '입주 10일 후'], ['40', '입주 40일 후']].map(function (o) { var sv = S.sim === null || S.sim === undefined ? '' : String(S.sim); return '<option value="' + o[0] + '"' + (sv === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>') +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div>' +
@@ -1803,7 +1806,7 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (st === 3) body = '<h1>집은 어디예요?</h1><p class="sub">가까운 행정복지센터·마트·병원을 찾고 지도에 집을 표시해요. 나중에 정해도 돼요.</p>' + homeCard() +
       '<div class="form-grid">' + f('집 별칭 (화면에 보일 이름)', '<input class="inp" data-field="addr" maxlength="20" placeholder="예: 봉천동 원룸" value="' + esc(S.addr || '') + '">') + f('구', '<select class="inp" data-field="gu">' + GU_LIST.map(function (g) { return '<option' + (g === S.gu ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select>') + '</div>';
     else body = '<h1>지원 자격도 미리 볼까요?</h1><p class="sub">청년 주거 지원을 신청해 볼 수 있는지 따져 볼게요. 몰라도 괜찮아요.</p><div class="form-grid">' +
-      f('만 나이', num('age', '세', '예: 24')) + f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['unknown', '잘 모르겠어요'], ['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') +
+      f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">') + f('무주택인가요?', '<select class="inp" data-field="homeless">' + [['unknown', '잘 모르겠어요'], ['yes', '예'], ['no', '아니오']].map(function (o) { return '<option value="' + o[0] + '"' + (S.homeless === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + f('비슷한 주거 지원을 지금 받고 있나요?', '<select class="inp" data-field="dup">' + [['unknown', '잘 모르겠어요'], ['yes', '예'], ['no', '아니오']].map(function (o) { return '<option value="' + o[0] + '"' + (S.dup === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['unknown', '잘 모르겠어요'], ['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') +
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + '</div>';
     var btns = '<div class="row" style="justify-content:space-between;margin-top:8px">' + (st > 1 ? '<button type="button" class="btn ghost" data-act="obprev">이전</button>' : '<span></span>') +
       (st < 4 ? '<button type="button" class="btn" data-act="obnext">' + (st === 3 && !S.home ? '나중에 정하고 다음' : '다음') + '</button>' : '<button type="button" class="btn" data-act="obdone">내 자취 시작하기</button>') + '</div>';
@@ -1828,15 +1831,69 @@ document.addEventListener('DOMContentLoaded', function () {
     }).catch(function () { toast('자취 계약 내비 백업 파일이 아니에요.'); });
   }
 
+  // ---------- 조건 입력 (필수 ①) ----------
+  function viewInput() {
+    var err = JE.validate(S);
+    var f = function (lab, inner, k, hint) { return '<label class="field"><span>' + lab + '</span>' + inner + (err[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">' + err[k] + '</em>' : hint ? '<em class="s12 muted" style="font-style:normal">' + hint + '</em>' : '') + '</label>'; };
+    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + esc(S[k]) + '"' + (err[k] ? ' aria-invalid="true"' : '') + '><em>' + unit + '</em></div>'; };
+    var sel = function (k, opts) { return '<select class="inp" data-field="' + k + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(S[k]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; };
+    var yn = [['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']];
+    var bad = Object.keys(err).length;
+    return '<div class="page-head"><div><p class="eyebrow">필수 ① · 한 번 넣으면 모든 화면이 다시 계산돼요</p><h1>조건 입력</h1></div><button type="button" class="btn line sm" data-act="reset">예시 값으로 되돌리기</button></div>' +
+      '<div class="grid"><section class="card c8 stack"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
+      f('시·군·구 (서울)', sel('gu', JE.LAW.seoulGu.map(function (g) { return [g, g]; })), 'gu') +
+      f('계약 기간', sel('term', [['1', '1년'], ['2', '2년']]), 'term') +
+      f('보증금', num('deposit', '만 원'), 'deposit') + f('월세 (관리비 제외)', num('rent', '만 원'), 'rent') +
+      f('계약일 (예정)', '<input class="inp" type="date" data-field="contract" value="' + esc(S.contract) + '">', 'contract', '전월세 신고 기한의 기준이에요') +
+      f('입주(전입) 예정일', '<input class="inp" type="date" data-field="move" value="' + esc(S.move) + '">', 'move', '전입신고 기한과 계약 기간의 기준이에요') + '</div>' +
+      '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' +
+      f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">', 'birth', '계약일 기준 만 나이로 계산해요') +
+      f('가구 소득 (기준 중위소득 대비)', sel('income', [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과'], ['unknown', '잘 모르겠어요']]), 'income') +
+      f('무주택인가요?', sel('homeless', yn), 'homeless', '본인과 세대원 모두 집이 없으면 예') +
+      f('비슷한 주거 지원을 지금 받고 있나요?', sel('dup', yn), 'dup', '예: 국토교통부 청년월세 특별지원') + '</div>' +
+      '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div></section>' +
+      '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">다 넣었나요?</h2>' +
+      (bad ? '<p class="s13" style="color:var(--no)">고칠 칸이 ' + bad + '개 있어요.</p>' : '<p class="s13 sub">모름으로 둔 항목은 판정에서 "확인 필요"로 보여드려요.</p>') +
+      '<a class="btn" href="#result"' + (bad ? ' aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.5"' : '') + '>판정 보기' + ic('chev', 'sm') + '</a></section></aside></div>';
+  }
+
+  // ---------- 자격 판정 (필수 ①) ----------
+  function viewResult() {
+    var err = JE.validate(S);
+    if (Object.keys(err).length) return '<div class="page-head"><div><h1>자격 판정</h1></div></div><section class="card stack"><p>조건에 고칠 칸이 있어 판정할 수 없어요.</p><a class="btn" href="#input">조건 입력으로</a></section>';
+    var R = evaluate(), rp = R.report;
+    var src = function (name, url, basis) { return '<p class="s12 muted">근거 <a href="' + url + '" target="_blank" rel="noopener">' + name + '</a> · ' + basis + ' 기준</p>'; };
+    var mark = function (ok) { return ok === true ? '<span class="badge brand">충족</span>' : ok === false ? '<span class="badge no">안 맞음</span>' : '<span class="badge due">확인 필요</span>'; };
+    var repBadge = rp.required === true ? '<span class="badge due">신고 대상</span>' : rp.required === false ? '<span class="badge">대상 아님</span>' : '<span class="badge due">확인 필요</span>';
+    var reports = '<section class="card c6 stack"><div class="split"><h2 style="font-size:17px">전월세 신고</h2>' + repBadge + '</div><p>' + esc(rp.reason) + '</p>' +
+      (rp.required === true ? '<p><b>' + ymd(rp.due) + '</b>까지 (' + dday(rp.due) + ') · 계약일부터 30일</p>' + (rp.early ? '<div class="banner due">' + ic('info') + '<span>입주보다 기한이 먼저 와요. 전입신고와 합치지 말고 따로 신고하세요.</span></div>' : '<p class="s13 sub">입주 후 전입신고 때 계약서를 함께 내면 신고와 확정일자가 한 번에 끝나요.</p>') : rp.required === false ? '<p class="s13 sub">신고 대상은 아니지만 전입신고 때 확정일자를 받아 두면 보증금을 지키는 데 도움이 돼요.</p>' : '') +
+      src(rp.src, rp.url, rp.basis) + '</section>' +
+      '<section class="card c6 stack"><div class="split"><h2 style="font-size:17px">전입신고</h2><span class="badge due">모두 해당</span></div><p>입주한 날부터 14일 안에 해야 해요.</p><p><b>' + ymd(R.movein.due) + '</b>까지 (' + dday(R.movein.due) + ') · 보증금을 지키려면 입주 당일(' + md(R.M) + ') 권장</p>' + src(R.movein.src, R.movein.url, R.movein.basis) + '</section>';
+    var progs = R.programs.map(function (x) {
+      var j = judge(x), p = x.p;
+      return '<section class="card c6 stack"><div><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:18px;font-weight:800">' + esc(p.name) + '</h2></div>' +
+        '<div class="row"><span class="badge ' + j[0] + '">' + j[1] + '</span><span class="badge ' + p.statusCls + '">' + p.status + '</span><span class="badge">' + esc(p.select) + '</span></div>' +
+        '<div>' + x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + esc(r.mine) + ' ' + mark(r.ok) + '</span></div>'; }).join('') + '</div>' +
+        '<p class="s13 sub">지원 내용: ' + esc(p.amountText) + '</p>' +
+        '<p class="s12 muted">원문 <a href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">' + esc(p.channel) + '</a> · ' + progBasis(p) + (p.demo ? ' · 시연용 예시 공고' : '') + '</p></section>';
+    }).join('');
+    var none = R.eligible.length ? '' : '<section class="card c12"><p>지금 조건으로 해당되는 지원이 없어요. 꼭 해야 하는 신고는 위에서 확인하세요.</p></section>';
+    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · ' + ageText() + ' · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>자격 판정</h1></div><a class="btn line" href="#input">조건 바꾸기</a></div>' +
+      '<h2 class="s13 muted" style="margin:4px 0 8px">꼭 해야 하는 신고</h2><div class="grid">' + reports + '</div>' +
+      '<h2 class="s13 muted" style="margin:20px 0 8px">신청해 볼 수 있는 지원 · 금액은 지원마다 따로예요</h2><div class="grid">' + progs + none + '</div>' +
+      '<p class="s12 muted" style="margin-top:16px">이 결과는 승인된 규칙으로만 계산했어요. 법률 자문이나 권리분석을 대신하지 않아요. 계약 위험 진단은 <a href="https://www.khug.or.kr" target="_blank" rel="noopener">안심전세 앱</a>에서 받을 수 있어요.</p>' +
+      '<a class="btn" style="margin-top:12px" href="#timeline">내 타임라인 보기' + ic('chev', 'sm') + '</a>';
+  }
+
   // ---------- 메뉴 구조 ----------
   var GROUPS = [
     { k: 'home', label: '', def: 'home', tab: ['홈', 'home'], items: [['home', '홈', 'home']] },
-    { k: 'house', label: '내 주거 관리', def: 'timeline', tab: ['내 주거', 'doc'], items: [['contract', '내 계약', 'doc'], ['timeline', '타임라인', 'route'], ['docs', '서류함', 'folder'], ['moveout', '퇴거 준비', 'box']] },
+    { k: 'house', label: '내 주거 관리', def: 'timeline', tab: ['내 주거', 'doc'], items: [['input', '조건 입력', 'doc'], ['result', '자격 판정', 'shield'], ['contract', '내 계약', 'doc'], ['timeline', '타임라인', 'route'], ['docs', '서류함', 'folder'], ['moveout', '퇴거 준비', 'box']] },
     { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'compass'], ['infra', '생활 인프라', 'grid']] },
     { k: 'life', label: '생활 관리', def: 'calendar', tab: ['생활', 'chart'], items: [['spend', '지출 관리', 'chart'], ['calendar', '자취 캘린더', 'cal'], ['condition', '집 상태 기록', 'camera']] },
     { k: 'help', label: '지원 & 상담', def: 'support', tab: ['지원', 'gift'], items: [['support', '지원사업', 'gift'], ['coach', 'AI 자취 코치', 'chat']] }
   ];
-  var ROUTES = { start: viewStart, home: viewHome, contract: viewContract, timeline: viewTimeline, docs: viewDocs, moveout: viewMoveout, map: viewMap, recommend: viewRecommend, infra: viewInfra, spend: viewSpend, calendar: viewCalendar, condition: viewCondition, support: viewSupport, coach: viewCoach };
+  var ROUTES = { start: viewStart, home: viewHome, input: viewInput, result: viewResult, contract: viewContract, timeline: viewTimeline, docs: viewDocs, moveout: viewMoveout, map: viewMap, recommend: viewRecommend, infra: viewInfra, spend: viewSpend, calendar: viewCalendar, condition: viewCondition, support: viewSupport, coach: viewCoach };
   function groupOf(r) { return GROUPS.filter(function (g) { return g.items.some(function (i) { return i[0] === r; }); })[0]; }
   var app = document.getElementById('app'), last = '';
   function route() { var h = location.hash.slice(1); return ROUTES[h] ? h : 'home'; }
