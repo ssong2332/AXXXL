@@ -338,7 +338,7 @@
     // 집주인톡 다음: 그거 언제 보내?
     if (/^landlord-/.test(lastTopic) && /언제|타이밍|며칠|미리|몇\s*일/.test(q) && !LL.some(function (x) { return x.re.test(q); })) {
       var lid = lastTopic.slice(9), F = o.facts || {}, six = '';
-      if (F.end) { var e = F.end.split('.'), d6 = new Date(+e[0], +e[1] - 7, +e[2]); six = d6.getFullYear() + '.' + String(d6.getMonth() + 1).padStart(2, '0') + '.' + String(d6.getDate()).padStart(2, '0'); }
+      if (F.end) { var e = F.end.split('.'), m6 = +e[1] - 7, y6 = +e[0] + Math.floor(m6 / 12); m6 = ((m6 % 12) + 12) % 12; var d6 = new Date(y6, m6, Math.min(+e[2], new Date(y6, m6 + 1, 0).getDate())); six = d6.getFullYear() + '.' + String(d6.getMonth() + 1).padStart(2, '0') + '.' + String(d6.getDate()).padStart(2, '0'); }
       var WHEN = { repair: '고장을 알게 된 **그날 바로** 보내세요. 늦게 알려 피해가 커지면 세입자 책임이 될 수 있어요 (민법 제634조).',
         deposit: F.noticeBy ? '계약 만료 2개월 전인 **' + F.noticeBy + '**까지는 보내세요(만료일 ' + F.end + '). 더 일찍 보내도 괜찮아요.' : '계약 만료 2개월 전까지는 보내세요.',
         leave: F.noticeBy ? '늦어도 **' + F.noticeBy + '**(만료 2개월 전)까지 보내야 해요. 그때까지 말이 없으면 같은 조건으로 계약이 이어질 수 있어요.' : '만료 2개월 전까지 보내야 해요.',
