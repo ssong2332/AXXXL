@@ -14,6 +14,8 @@
 <script src="places-core.js" defer></script>
 <script src="rules-core.js" defer></script>
 <script src="rules/seed.js" defer></script>
+<script src="data/regions.js" defer></script>
+<script src="support-core.js" defer></script>
 <script src="coach-core.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5B4CDB">
@@ -594,6 +596,108 @@ body.ob .shell { display: block }
 .thumb .fdoc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 100%; padding: 4px; font-size: 10px; color: var(--ink-2); text-align: center; overflow-wrap: anywhere; text-decoration: none }
 .thumb .x { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 }
 .thumb .x svg { width: 12px; height: 12px }
+
+/* ---------- 지원사업 (목록 + 상세) ---------- */
+.sp-region { margin-bottom: 16px }
+.sp-todo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 20px; margin-bottom: 16px; border-radius: var(--r-card); background: var(--brand-tint) }
+.sp-todo small { display: block; font-size: 12px; font-weight: 700; color: var(--brand-text) }
+.sp-todo b { display: block; font-size: 18px; font-weight: 800; letter-spacing: -0.03em; margin: 2px 0 }
+.sp-todo span { font-size: 13px; color: var(--ink-2) }
+.sp-tabs { margin-bottom: 10px }
+.sp-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 10px }
+.sp-kinds { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: 10px }
+.sp-bar .sp-kinds { margin-bottom: 0; flex: 1 1 320px; min-width: 0 }
+.sp-kinds::-webkit-scrollbar { display: none }
+.sp-kind { flex: 0 0 auto; min-height: 32px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--fill); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer }
+.sp-kind i { font-style: normal; font-size: 11px; opacity: .7 }
+.sp-kind[aria-pressed="true"] { background: var(--brand-tint); color: var(--brand-text); box-shadow: inset 0 0 0 1px var(--brand) }
+.sp-fit { display: flex; gap: 6px; align-items: flex-start; margin: 0 2px 12px; font-size: 12px; color: var(--ink-3) }
+.sp-fit a { color: var(--brand-text); font-weight: 600 }
+.sp-why { color: var(--brand-text); font-weight: 700 }
+.sp-tabs .cat i { font-style: normal; font-size: 11px; font-weight: 700; opacity: .7 }
+.sp-cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start }
+.sp-item { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 14px 16px; margin-bottom: 8px; border: 1px solid var(--hair); border-radius: 16px; background: var(--surface); color: inherit; font: inherit; text-align: left; cursor: pointer }
+.sp-item:hover { border-color: var(--line) }
+.sp-item[aria-current="true"] { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint) }
+.sp-i1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px }
+.sp-i1 b { font-weight: 700; font-size: 15px; line-height: 1.4 }
+.sp-one { font-size: 13px; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.sp-i3 { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ink-3); margin-top: 2px }
+.sp-hot { color: var(--due-text); font-weight: 700 }
+.sp-ask-n { color: var(--brand-text); font-weight: 700 }
+.sp-group { font-size: 13px; font-weight: 700; color: var(--ink-2); margin: 14px 2px 8px }
+.sp-group:first-child { margin-top: 0 }
+.sp-more { margin-top: 10px; font-size: 13px; color: var(--ink-2) }
+.sp-more summary { cursor: pointer; padding: 8px 2px; font-weight: 600 }
+.sp-more .sp-item { margin-top: 8px; margin-bottom: 0 }
+.sp-empty { padding: 22px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start }
+.sp-detail { position: sticky; top: 16px; padding: 0; max-height: calc(100vh - 32px); overflow-y: auto }
+.sp-dh { padding: 22px 22px 0 }
+.sp-dh h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.35 }
+.sp-verdict { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; margin: 16px 22px 0; padding: 14px; border-radius: var(--r-in) }
+.sp-verdict b { display: block; font-weight: 700 }
+.sp-verdict div span { font-size: 13px; color: var(--ink-2) }
+.sp-vic { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff }
+.sp-verdict.ok { background: var(--brand-tint) } .sp-verdict.ok .sp-vic { background: var(--brand) }
+.sp-verdict.q { background: var(--due-tint) } .sp-verdict.q .sp-vic { background: var(--due) }
+.sp-verdict.x { background: var(--no-tint) } .sp-verdict.x .sp-vic { background: var(--no) }
+.sp-sec { margin: 0 22px; padding: 16px 0; border-bottom: 1px solid var(--hair); font-size: 14px }
+.sp-sec h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 14px; font-weight: 700; margin-bottom: 10px }
+.sp-sec h3 small { font-size: 12px; font-weight: 500; color: var(--ink-3); text-align: right }
+.sp-pre { white-space: pre-line; overflow-wrap: anywhere }
+.sp-long summary { list-style: none; cursor: pointer } .sp-long summary::-webkit-details-marker { display: none }
+.sp-long[open] > summary { display: none }
+.sp-moretx { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--brand-text) }
+.sp-quote { padding-left: 12px; border-left: 2px solid var(--line); color: var(--ink-2); font-size: 13px }
+.sp-cond { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px 10px; align-items: start; padding: 6px 0 }
+.sp-cond .mk { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; cursor: default }
+.sp-mv { font-size: 13px; color: var(--ink-3); text-align: right }
+.sp-redo { border: 0; background: none; padding: 0 0 0 8px; color: var(--brand-text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer }
+.sp-ask, .sp-guide { grid-column: 2 / 4; padding: 14px; border-radius: var(--r-in); background: var(--fill) }
+.sp-guide { grid-column: 1 / 3 }
+.sp-ask > p, .sp-guide > p { font-weight: 700; margin-bottom: 10px }
+.sp-lbl { font-size: 12px; color: var(--ink-2); margin-bottom: 6px }
+.sp-opts { display: flex; flex-wrap: wrap; gap: 6px }
+.sp-opt { min-height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--brand-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer }
+.sp-opt:hover { border-color: var(--brand) }
+.sp-opt[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink) }
+.sp-crit { margin: 12px 0; padding: 12px 14px; border-radius: 12px; background: var(--surface) }
+.sp-crit b { display: block; font-size: 16px; font-weight: 700; letter-spacing: -0.02em }
+.sp-crit span { display: block; font-size: 12px; color: var(--ink-3) }
+.sp-amt { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px }
+.sp-amt label { flex: 1 1 170px; font-size: 12px; color: var(--ink-2) }
+.sp-inp { display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 14px; white-space: nowrap }
+.sp-inp input { width: 100%; min-width: 0; padding: 9px 0; border: 0; outline: 0; background: none; color: inherit; font: inherit; font-weight: 600 }
+.sp-inp:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint) }
+.sp-note { font-size: 12px; color: var(--ink-3); margin-top: 8px }
+.sp-note a, .sp-meta a, .sp-mv a { color: var(--brand-text); font-weight: 600 }
+.sp-watch { list-style: none; margin: 0; padding: 0 }
+.sp-watch li { padding: 10px 12px; margin-bottom: 6px; border-radius: 12px; background: var(--fill) }
+.sp-watch li b { display: block; font-weight: 700 }
+.sp-watch li span { font-size: 13px; color: var(--ink-2) }
+.sp-doc { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px dashed var(--line) }
+.sp-doc:first-of-type { border-top: 0; padding-top: 0 }
+.sp-get { display: inline-flex; align-items: center; min-height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--brand-tint); color: var(--brand-text); font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; text-decoration: none; cursor: pointer }
+.sp-steps { list-style: none; counter-reset: s; margin: 0; padding: 0 }
+.sp-steps li { counter-increment: s; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 4px 0 }
+.sp-steps li::before { content: counter(s); width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; background: var(--surface); color: var(--brand-text); font-size: 12px; font-weight: 700; display: grid; place-items: center }
+.sp-range { position: relative; height: 10px; margin: 30px 0 26px; border-radius: 99px; background: var(--fill) }
+.sp-range .z { position: absolute; top: 0; bottom: 0; border-radius: 99px; background: var(--brand-tint); box-shadow: inset 0 0 0 1px var(--brand) }
+.sp-range .me { position: absolute; top: -5px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--brand); border: 3px solid var(--surface) }
+.sp-range .lab { position: absolute; font-size: 12px; white-space: nowrap; transform: translateX(-50%) }
+.sp-range .lab.top { top: -24px; color: var(--brand-text); font-weight: 700 }
+.sp-range .lab.bot { top: 18px; color: var(--ink-2) }
+.sp-tbl { overflow-x: auto }
+.sp-tbl table { width: 100%; border-collapse: collapse; font-size: 12px }
+.sp-tbl th, .sp-tbl td { padding: 7px 8px; border-bottom: 1px solid var(--hair); text-align: left; white-space: nowrap }
+.sp-tbl th { color: var(--ink-3); font-weight: 600 }
+.sp-acts { display: flex; flex-wrap: wrap; gap: 8px; padding: 18px 22px 0 }
+.sp-meta { font-size: 12px; color: var(--ink-3); padding: 10px 22px 22px }
+@media (max-width: 960px) {
+  .sp-cols { grid-template-columns: minmax(0, 1fr) }
+  .sp-detail { position: static; max-height: none; scroll-margin-top: 70px }
+  .sp-acts .btn { flex: 1 1 auto }
+}
 </style>
 </head>
 <body>
@@ -736,8 +840,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var required = S.deposit > 6000 || S.rent > 30;
     var reason = S.rent > 30 ? '월세 30만 원 초과' : S.deposit > 6000 ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하';
     if (RS.published) { var tk = today.toDateString(); if (RS.day !== tk) { RS.day = tk; setRules(RS.published, RS.src); } }
-    var u = userOf(), programs = RS.programs.map(function (p) { return JachwiRules.evalProgram(p, u); });
+    var u = userOf(), rg = regionOf(), programs = RS.programs.map(function (p) { return fixResidency(JachwiRules.evalProgram(p, u), rg); });
     return { C: C, M: M, report: { required: required, reason: reason, due: add(C, 30) }, movein: { due: add(M, 14) }, programs: programs, eligible: programs.filter(function (x) { return x.eligible; }) };
+  }
+  // 승인본의 거주 조건은 서울 기준으로 적혀 있다. 고른 지역이 서울이 아니면 '해당 안 됨'으로 바로잡는다.
+  function fixResidency(x, rg) {
+    if (!rg.sido || rg.sido === '서울특별시') return x;
+    x.res.forEach(function (r) { if (r.type === 'residency' && /서울/.test(r.label)) { r.ok = false; r.mine = regionName(rg); } });
+    x.eligible = !x.closed && !x.res.some(function (r) { return r.ok === false; }); x.unknown = x.res.filter(function (r) { return r.ok === null; });
+    return x;
   }
   function judge(x) {
     if (x.closed) return ['no', '접수 마감'];
@@ -969,27 +1080,286 @@ document.addEventListener('DOMContentLoaded', function () {
       '<label class="split full s13"><span>예상 금액 (매달 달라요)</span><input class="sw" type="checkbox" role="switch"' + a + '"est"' + (b.est ? ' checked' : '') + '></label>' +
       (L ? '' : '<button type="button" class="btn line sm full" data-act="billdel" data-v="' + b.id + '">이 항목 지우기</button>') + '</div>';
   }
-  function viewSupport() {
-    var R = evaluate(), demo = RS.programs.some(function (p) { return p.demo; });
-    var srcNote = RS.src === 'local' ? '<span class="badge due">이 브라우저 연습 승인본</span>' : '';
-    var cards = R.programs.map(function (x) {
-      var j = judge(x), p = x.p, ch = (RS.published && RS.published.notices[p.id] && RS.published.notices[p.id].changes) || [];
-      var conds = x.res.map(function (r) { var mk = r.ok === true ? ['ok', '✓'] : r.ok === false ? ['x', '✕'] : ['q', '?']; return '<div class="cond"><span class="mk ' + mk[0] + '" aria-label="' + (r.ok === true ? '충족' : r.ok === false ? '미충족' : '확인 필요') + '">' + mk[1] + '</span><span style="flex:1 1 auto">' + esc(r.label) + '</span><span class="s13 ' + (r.ok === null ? '' : 'muted') + '" style="' + (r.ok === null ? 'color:var(--due-text);font-weight:700' : '') + '">' + esc(r.mine) + '</span></div>'; }).join('');
-      var ev = x.res.filter(function (r) { return r.evidence; }).map(function (r) { return '<div class="ev-row"><b>' + esc(r.label) + '</b><q>' + esc(r.evidence.trim()) + '</q></div>'; }).join('');
-      return '<section class="card c6 stack"><div class="row"><span class="prog-ic">' + ic('gift') + '</span><div style="flex:1 1 200px;min-width:0"><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:19px;font-weight:800">' + esc(p.name) + '</h2></div></div><div class="row">' + badge(j) + '<span class="badge ' + p.statusCls + '">' + p.status + (p.period ? ' · ' + p.period : '') + '</span>' + (p.firstCome ? '<span class="badge due">선착순 · 일찍 마감될 수 있음</span>' : '') + '</div>' +
-        '<div><div class="kv"><span class="muted">지원 내용</span><b>' + esc(p.amountText) + '</b></div><div class="kv"><span class="muted">선정 방식</span><b>' + esc(p.select) + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + esc(p.channel) + '</b></div></div>' +
-        '<div><b class="s13">자격 확인</b><div style="margin-top:6px">' + conds + '</div></div>' +
-        '<div><b class="s13">제출 서류 ' + p.docs.length + '개</b><div class="chips" style="margin-top:8px">' + p.docs.map(function (dd) { return '<span class="pill">' + esc(dd) + '</span>'; }).join('') + '</div></div>' +
-        (p.exclusions.length ? '<div class="banner due" style="padding:10px 12px">' + ic('info') + '<span><b>함께 받을 수 없어요</b> · ' + esc(p.exclusions.join(', ')) + '</span></div>' : '') +
-        '<details class="why"><summary>' + ic('doc', 'sm') + ' 공고 원문 근거 · ' + progBasis(p) + (ch.length ? ' · 지난 버전에서 ' + ch.length + '개 바뀜' : '') + '</summary><div class="stack" style="gap:8px;margin-top:10px">' + (ev || '<p class="s13 muted">근거 문장이 없어요.</p>') +
-        (ch.length ? '<div class="ev-row"><b>이번 버전에서 바뀐 점</b>' + ch.map(function (c) { return '<span class="s13">' + esc(c.label) + ': <s class="muted">' + esc(c.before || '없음') + '</s> → ' + esc(c.after || '없음') + '</span>'; }).join('') + '</div>' : '') +
-        '<p class="s12 muted">운영자 ' + esc(p.approvedBy || '') + '님이 원문과 대조해 승인했어요. ' + (p.source && p.source.name ? '출처: ' + esc(p.source.name) : '') + '</p></div></details>' +
-        '<div class="row" style="margin-top:auto"><a class="btn" href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a><a class="btn ghost" href="' + esc(JachwiRules.safeUrl(p.source && p.source.url) || p.url || '#support') + '" target="_blank" rel="noopener">공고 원문 · ' + esc(p.basis) + '</a></div></section>';
-    }).join('');
-    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · 만 ' + S.age + '세 · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>지원사업</h1></div><a class="btn line" href="#contract">조건 바꾸기</a></div>' +
-      '<div class="banner" style="margin-bottom:16px">' + ic('info') + '<span>' + (demo ? '<b>시연용 예시 공고예요.</b> ' : '') + '운영자가 공고 원문과 한 줄씩 대조해 <b>승인한 기준</b>으로만 판정해요. 카드의 ‘공고 원문 근거’에서 조건마다 원문 문장을 볼 수 있어요. 금액은 공고마다 따로 보여주고 합치지 않아요. <b>해당 가능</b>도 최종 선정은 기관 심사로 정해져요. <a href="admin.html">운영자 검수 화면 보기</a> ' + srcNote + '</span></div>' +
-      '<div class="grid">' + (cards || '<section class="card c12"><p class="muted">승인된 공고가 없어요.</p></section>') + '</div>';
+  // ---------- 지원사업 (승인된 공고 + 공공 API 실제 데이터) ----------
+  // 판정 수준이 둘이다. 승인된 공고는 운영자가 원문과 대조한 규칙으로 판정하고, API로 받아 온 정책은 '등록 정보'에
+  // 구조화돼 있는 조건(지역·나이·취업·학력·연소득)만 대조한다. 글로만 적힌 조건은 그대로 보여 주고 판정하지 않는다.
+  var SP = window.JachwiSupport, REGIONS = window.JACHWI_REGIONS || [];
+  var SP_TABS = SP.CATS.concat([['welfare', '지역 복지'], ['lh', '다음 집']]);
+  var SPV = { ok: ['brand', '해당 가능', '✓', 'ok'], q: ['due', '확인 필요', '?', 'q'], no: ['no', '해당 안 됨', '✕', 'x'] };
+  var SUP = { youth: {}, wf: {}, lh: {}, spl: {}, holi: {} };
+  function sup() { if (!S.sup || typeof S.sup !== 'object') S.sup = {}; var u = S.sup; if (!u.self) u.self = {}; if (!u.cat) u.cat = '주거'; if (!u.hh) u.hh = 3; return u; }
+  function regionOf() {
+    if (S.zip && S.sido && S.sgg) return { zip: S.zip, sido: S.sido, sgg: S.sgg };
+    var seoul = REGIONS.filter(function (r) { return r[0] === '서울특별시'; })[0], hit = seoul && seoul[1].filter(function (x) { return x[1] === S.gu; })[0];
+    return hit ? { zip: hit[0], sido: '서울특별시', sgg: hit[1] } : { zip: '', sido: '', sgg: '' };
   }
+  function regionName(r) { return r.zip ? r.sido.replace(/특별자치도|특별자치시|통합특별시|특별시|광역시/, '').replace(/^(충청|전라|경상)(북|남)도$/, function (m, a, b) { return a[0] + b; }).replace(/도$/, '') + ' ' + r.sgg : '지역 미정'; }
+  function regionFields() {
+    var r = regionOf(), list = (REGIONS.filter(function (x) { return x[0] === r.sido; })[0] || ['', []])[1];
+    return '<label class="field"><span>시·도</span><select class="inp" data-sp-sel="sido"><option value="">고르기</option>' + REGIONS.map(function (x) { return '<option' + (x[0] === r.sido ? ' selected' : '') + '>' + esc(x[0]) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="field"><span>시·군·구</span><select class="inp" data-sp-sel="sgg"' + (list.length ? '' : ' disabled') + '>' + (r.zip ? '' : '<option value="">고르기</option>') + list.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === r.zip ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select></label>';
+  }
+  function supFetch(kind, key, url) {
+    var box = SUP[kind][key]; if (box) return box;
+    box = SUP[kind][key] = { status: 'loading', data: null };
+    fetch(url).then(function (r) { return r.json(); }).then(function (j) { box.data = j; box.status = j && j.ok ? 'ok' : j && j.reason === 'nokey' ? 'nokey' : 'error'; })
+      .catch(function () { box.status = 'error'; }).then(function () { if (route() === 'support') render(true); });
+    return box;
+  }
+  function supUser() { var u = sup(), r = regionOf(); return { age: +S.age || 0, zip: r.zip, region: regionName(r), mrg: u.mrg, job: u.job, school: u.school, earn: +u.earn || 0, self: u.self }; }
+  function scopeLabel(it, r) { return it.scope === 'sgg' ? r.sgg + ' 거주' : it.scope === 'sido' ? r.sido + ' 거주' : it.scope === 'multi' ? '여러 지역 대상 (내 지역 포함)' : '전국 대상'; }
+  function restNote(d) {
+    if (!d) return '';
+    var y = d.getFullYear(), h = supFetch('holi', y, 'api/holidays?year=' + y), key = String(y) + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+    var hd = h.status === 'ok' ? (h.data.items || []).filter(function (x) { return x.date === key; })[0] : null, wd = d.getDay();
+    var why = hd ? '공휴일(' + hd.name + ')' : wd === 0 ? '일요일' : wd === 6 ? '토요일' : '';
+    return why ? '마감일(' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일)은 ' + why + '이에요. 방문·우편으로 낸다면 그 전 평일까지 내세요.' : '';
+  }
+  // 승인된 공고를 목록 한 줄로
+  function rowApproved(x) {
+    var u = sup(), res = x.res.map(function (r) {
+      var o = { key: 'ap:' + r.type, label: r.label, mine: r.mine, ok: r.ok, evidence: r.evidence };
+      if (r.type === 'homeless' && r.ok === null) { var a = u.self.homeless; o.ok = a === 'y' ? true : a === 'n' ? false : null; o.mine = a === 'y' ? '집 없음' : a === 'n' ? '집 있음' : ''; o.key = 'homeless'; o.ask = a ? '' : 'self'; o.q = '본인 이름으로 된 집이 있나요?'; o.yn = [['y', '없어요'], ['n', '있어요']]; }
+      else if (r.type === 'age' && r.ok === null) { o.ask = 'age'; o.mine = ''; }
+      else if (r.type === 'income' && r.ok === null) { o.mine = '소득 구간을 알려 주세요'; o.go = '#contract'; }
+      else if (r.ok === null) o.mine = '공고에서 확인';
+      return o;
+    });
+    var v = x.closed ? 'no' : SP.verdict(res), p = x.p;
+    return { kind: 'approved', key: 'ap-' + p.id, name: p.name, one: p.amountText, org: p.org, v: v, conds: res, p: p, x: x, kd: SP.kindOf({ name: p.name + ' ' + p.amountText }), why: '담당자 검수 완료', score: 300,
+      st: { k: x.closed ? 'ended' : /예정/.test(p.status) ? 'soon' : p.periodEnd ? 'open' : 'always', text: p.status + (p.period ? ' · ' + p.period : ''), left: p.periodEnd ? Math.round((pd(p.periodEnd) - today) / 86400000) : 0, to: p.periodEnd ? pd(p.periodEnd) : null }, sort: (x.closed ? 3e6 : 0) - 1e7 };
+  }
+  function rowYouth(it, user, r, ctx) {
+    var lab = scopeLabel(it, r), conds = SP.check(it, user, lab), st = SP.statusAt(it, today), v = st.k === 'ended' ? 'no' : SP.verdict(conds);
+    // 등록 정보에 대상 지역만 있으면 '맞음'이라고 하지 않는다. 개인이 신청하는 지원(보조금·바우처·대출 등)을 앞에 둔다.
+    var plain = conds.length < 2 && st.k !== 'ended', personal = /보조금|바우처|대출|보험|조세|프로그램/.test(it.method);
+    // 전국 대상으로 등록됐지만 다른 시·도가 운영하는 사업(그 지역 시설·귀환 지원 등)은 뒤로 보낸다
+    var away = !it.central && (it.scope === 'all' || it.scope === 'multi') && it.top && it.top !== r.sido;
+    var kd = SP.kindOf(it), fit = SP.relevance(it, ctx, kd, away);
+    // 순서 점수: 내 상황과의 관련(형태·키워드·지역) + 조건 대조 결과 + 접수 상태
+    var score = fit.score + (plain ? 0 : v === 'ok' ? 25 : 10) + (st.k === 'open' ? 12 + (st.left <= 14 ? 10 : 0) : st.k === 'always' ? 6 : 4);
+    return { kind: 'youth', key: 'y-' + it.id, name: it.name, one: it.sum || it.support, org: it.org, v: v, conds: conds, it: it, st: st, scope: lab, tag: it.central ? '중앙부처' : away ? it.top + ' 운영' : it.top, plain: plain, kd: kd, why: fit.why, score: score,
+      badge: plain ? ['', '조건은 공고에서 확인'] : v === 'ok' ? ['brand', '등록 조건 맞음'] : null, sort: SP.rank(v, st, it) + (plain ? 5e5 : 0) + (away ? 3e5 : 0) + (personal ? 0 : 2e4) };
+  }
+  function spItem(row, selKey) {
+    var asks = row.conds ? row.conds.filter(function (c) { return c.ask; }).length : 0, V = row.badge || (row.v ? SPV[row.v] : null);
+    return '<button type="button" class="sp-item" data-sp="pick" data-v="' + esc(row.key) + '" aria-current="' + (row.key === selKey) + '"><span class="sp-i1"><b>' + esc(row.name) + '</b>' + (V ? '<span class="badge ' + V[0] + '">' + V[1] + '</span>' : '') + '</span>' +
+      '<span class="sp-one">' + esc(SP.clip(row.one || '', 70)) + '</span><span class="sp-i3">' + (row.why ? '<span class="sp-why">' + esc(row.why) + '</span>' : '') + (row.kdLabel ? '<span>' + esc(row.kdLabel) + '</span>' : '') + (row.st ? '<span class="' + (row.st.k === 'open' && row.st.left <= 14 ? 'sp-hot' : '') + '">' + esc(row.st.text) + (row.st.k === 'open' && row.st.left >= 0 ? ' · ' + (row.st.left ? row.st.left + '일 남음' : '오늘 마감') : '') + '</span>' : '') +
+      (row.tag ? '<span>' + esc(row.tag) + '</span>' : '') + (asks && row.v === 'q' ? '<span class="sp-ask-n">질문 ' + asks + '개 남음</span>' : '') + '</span></button>';
+  }
+  function spAsk(c, row) {
+    var u = sup(), T = SP.ASK[c.ask], h = '<div class="sp-ask">';
+    if (c.ask === 'age') h += '<p>만 나이가 어떻게 되나요?</p><form class="sp-amt" data-form="spage"><label>만 나이<span class="sp-inp"><input name="v" inputmode="numeric" autocomplete="off" placeholder="예: 24">세</span></label><button class="btn sm">확인</button></form>';
+    else if (c.ask === 'earn') h += '<p>세전 연소득이 얼마인가요?</p><div class="sp-crit"><b>기준 · ' + esc(c.label) + '</b><span>한 해 동안 번 돈의 세전 합계예요. 월급이라면 월 소득 × 12로 넣어도 돼요.</span></div><form class="sp-amt" data-form="spearn"><label>세전 연소득<span class="sp-inp"><input name="v" inputmode="numeric" autocomplete="off" placeholder="예: 1800">만 원</span></label><button class="btn sm">확인</button></form>';
+    else if (c.ask === 'self') h += '<p>' + esc(c.q) + '</p><div class="sp-opts">' + (c.yn || [['y', '해당해요'], ['n', '해당하지 않아요']]).map(function (o) { return '<button type="button" class="sp-opt" data-sp="self" data-k="' + esc(c.key) + '" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
+    else if (c.ask === 'earnetc') {
+      h += '<p>소득 조건에 맞나요?</p><div class="sp-crit"><span>공고에 적힌 소득 조건</span><b class="sp-pre">' + esc(c.text || '공고에서 확인') + '</b></div>';
+      if (c.pct) h += '<div class="sp-lbl">가구원이 몇 명인가요? (나 포함, 주민등록을 같이 둔 가족)</div><div class="sp-opts">' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" class="sp-opt" data-sp="hh" data-v="' + n + '" aria-pressed="' + (u.hh === n) + '">' + n + '명</button>'; }).join('') + '</div>' +
+        '<div class="sp-crit"><b>' + u.hh + '명 가구 · 기준 중위소득 ' + c.pct + '% = 월 약 ' + won(SP.medianMan(u.hh, c.pct)) + '만 원</b><span>2026년 기준 · 가족 모두의 세전 월 소득 합계와 견줘 보세요. 소득을 따지는 방식(건강보험료, 재산 환산 등)은 공고마다 달라요.</span></div>';
+      h += '<div class="sp-opts"><button type="button" class="sp-opt" data-sp="self" data-k="' + esc(c.key) + '" data-v="y">기준 이하예요</button><button type="button" class="sp-opt" data-sp="self" data-k="' + esc(c.key) + '" data-v="n">넘어요</button></div>';
+    }
+    else if (T) h += '<p>' + T.q + '</p><div class="sp-opts">' + T.o.map(function (o) { return '<button type="button" class="sp-opt" data-sp="ans" data-k="' + c.ask + '" data-v="' + esc(o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div><div class="sp-note">한 번 답하면 다른 지원에도 똑같이 적용돼요.</div>';
+    return h + '</div>';
+  }
+  function spConds(row) {
+    var UNDO = { mrg: 1, job: 1, school: 1, earn: 1 };
+    return '<div class="sp-sec"><h3>조건' + (row.kind === 'youth' ? '<small>공고에 등록된 항목만 대조했어요</small>' : '<small>운영자가 공고 원문과 대조해 승인한 기준</small>') + '</h3>' + row.conds.map(function (c) {
+      var mk = c.ok === true ? SPV.ok : c.ok === false ? SPV.no : SPV.q, selfKey = /^(sbiz:|earn:|homeless$)/.test(c.key);
+      var undo = c.mine && !c.ask && (UNDO[c.key] || selfKey) ? '<button type="button" class="sp-redo" data-sp="undo" data-k="' + esc(c.key) + '">고치기</button>' : '';
+      return '<div class="sp-cond"><span class="mk ' + mk[3] + '" aria-label="' + (c.ok === true ? '충족' : c.ok === false ? '미충족' : '확인 필요') + '">' + mk[2] + '</span><span>' + esc(c.label) + '</span><span class="sp-mv">' + (c.go ? '<a href="' + c.go + '">' + esc(c.mine) + '</a>' : esc(c.mine || '')) + undo + '</span>' + (c.ask ? spAsk(c, row) : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  function spDocs(lines, fallbackUrl) {
+    var u = sup();
+    if (!lines.length) return '<div class="sp-sec"><h3>필요한 서류</h3><p class="s13 sub">등록된 서류 목록이 없어요. ' + (fallbackUrl ? '<a href="' + esc(fallbackUrl) + '" target="_blank" rel="noopener">공고에서 확인하기</a>' : '공고에서 확인해 주세요.') + '</p></div>';
+    return '<div class="sp-sec"><h3>필요한 서류<small>' + lines.length + '개</small></h3>' + lines.map(function (d, i) {
+      var s = d.src, right = !s ? '' : s.t === 'link' ? '<a class="sp-get" href="' + s.url + '" target="_blank" rel="noopener">' + s.label + ' ↗</a>' : s.t === 'docs' ? '<a class="sp-get" href="#docs">' + s.label + '</a>' :
+        '<button type="button" class="sp-get" data-sp="guide" data-v="' + i + '" aria-expanded="' + (u.guide === i) + '">' + (u.guide === i ? '닫기' : s.label) + '</button>';
+      var guide = '';
+      if (s && (s.t === 'bankT' || s.t === 'bankP') && u.guide === i) {
+        var who = s.t === 'bankT' ? 'bankT' : 'bankP', b = u[who];
+        guide = !b ? '<div class="sp-guide"><p>' + (who === 'bankT' ? '월세가 나가는 통장은 어느 은행인가요?' : '지원금을 받을 통장은 어느 은행인가요?') + '</p><div class="sp-opts">' + Object.keys(SP.BANK).map(function (k) { return '<button type="button" class="sp-opt" data-sp="bank" data-k="' + who + '" data-v="' + k + '">' + SP.BANK[k][0] + '</button>'; }).join('') + '</div><div class="sp-note">은행에 맞춰 받는 방법을 알려 드려요.</div></div>'
+          : '<div class="sp-guide"><div class="split" style="margin-bottom:6px"><b>' + SP.BANK[b][0] + '에서 받는 방법</b><button type="button" class="sp-redo" data-sp="bank" data-k="' + who + '" data-v="">다른 은행</button></div><ol class="sp-steps">' + SP.bankSteps(s.t, b).map(function (t) { return '<li><span>' + esc(t) + '</span></li>'; }).join('') + '</ol>' +
+            '<div class="sp-note">서류에 꼭 보여야 하는 것: ' + (who === 'bankT' ? '보낸 날짜 · 보낸 사람(나) · 받는 사람(집주인) · 금액' + (S.rent ? ' ' + S.rent + '만 원' : '') : '예금주(나) · 은행 이름 · 계좌번호') + '<br>메뉴 이름은 앱 버전에 따라 조금 다를 수 있어요. 받은 파일은 <a href="#docs">서류함</a>에 넣어 두세요.</div></div>';
+      }
+      return '<div class="sp-doc"><span>' + esc(d.name) + '</span>' + right + guide + '</div>';
+    }).join('') + '</div>';
+  }
+  function spLong(text, cls) { text = String(text || ''); if (text.length <= 240) return '<p class="sp-pre ' + (cls || '') + '">' + esc(text) + '</p>'; return '<details class="sp-long"><summary><span class="sp-pre ' + (cls || '') + '">' + esc(text.slice(0, 200)) + '…</span><span class="sp-moretx">더 보기</span></summary><p class="sp-pre ' + (cls || '') + '">' + esc(text) + '</p></details>'; }
+  function spText(title, text) { return text ? '<div class="sp-sec"><h3>' + title + '</h3>' + spLong(text) + '</div>' : ''; }
+  function spVerdictBox(row, okSay) {
+    var c = row.conds, n = c.length, yes = c.filter(function (x) { return x.ok === true; }).length, asks = c.filter(function (x) { return x.ask; }).length, bad = c.filter(function (x) { return x.ok === false; })[0];
+    var head = row.st && row.st.k === 'ended' ? ['지금은 신청할 수 없어요', row.st.text + '. 다음 공고가 등록되면 이 화면에 다시 나와요.']
+      : row.v === 'no' ? ['지금은 받기 어려워요', '‘' + bad.label + '’ 조건이 맞지 않아요.' + (bad.mine ? ' (내 정보: ' + bad.mine + ')' : '')]
+      : row.plain ? ['조건은 공고에서 확인해 주세요', '등록 정보에는 대상 지역만 적혀 있어요. 나이·소득 같은 조건은 아래 내용과 공고를 봐 주세요. ' + row.st.text + '.']
+      : row.v === 'ok' ? [row.kind === 'youth' ? '등록된 조건이 모두 맞아요' : '조건이 모두 맞아요', okSay]
+      : ['조건 ' + n + '개 중 ' + yes + '개가 맞아요', asks ? '아래 질문 ' + asks + '개만 답하면 바로 알려 드려요.' : '표시된 조건은 공고에서 직접 확인해 주세요.'];
+    var tone = row.plain && row.v === 'ok' ? ['x', 'i'] : [SPV[row.v][3], SPV[row.v][2]];
+    return '<div class="sp-verdict ' + tone[0] + '"><span class="sp-vic" aria-hidden="true">' + tone[1] + '</span><div><b>' + esc(head[0]) + '</b><span>' + esc(head[1]) + '</span></div></div>';
+  }
+  function spDetail(row, r) {
+    if (!row) return '<div class="sp-empty"><p class="muted">왼쪽에서 지원을 고르면 조건과 준비할 것을 보여 드려요.</p></div>';
+    var u = sup(), h = '', note = row.st && row.st.k === 'open' ? restNote(row.st.to) : '';
+    if (row.kind === 'approved') {
+      var p = row.p, ev = row.conds.filter(function (c) { return c.evidence; }).map(function (c) { return '<div class="ev-row"><b>' + esc(c.label) + '</b><q>' + esc(String(c.evidence).trim()) + '</q></div>'; }).join('');
+      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><div class="row" style="margin-top:8px"><span class="badge solid">담당자 검수 완료</span>' + (p.demo ? '<span class="badge due">시연용 예시 공고</span>' : '') + (p.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
+        spVerdictBox(row, '선정 방식: ' + p.select + '. 최종 선정은 기관 심사로 정해져요.') + (note ? '<div class="sp-sec"><div class="banner due">' + ic('info') + '<span>' + esc(note) + '</span></div></div>' : '') +
+        '<div class="sp-sec"><h3>지원 내용</h3><p>' + esc(p.amountText) + '</p><div class="kv" style="margin-top:8px"><span class="muted">선정 방식</span><b>' + esc(p.select) + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + esc(p.channel) + '</b></div></div>' + spConds(row) +
+        (p.exclusions.length ? '<div class="sp-sec"><h3>함께 받을 수 없어요</h3><p class="s13 sub">' + esc(p.exclusions.join(', ')) + '</p></div>' : '') +
+        spDocs(p.docs.map(function (d) { return { name: d, src: SP.docSource(d) }; }), p.url) +
+        '<div class="sp-sec"><details class="why"><summary>' + ic('doc', 'sm') + ' 공고 원문 근거 · ' + progBasis(p) + '</summary><div class="stack" style="gap:8px;margin-top:10px">' + (ev || '<p class="s13 muted">근거 문장이 없어요.</p>') + '</div></details></div>' +
+        '<div class="sp-acts"><a class="btn' + (row.v === 'ok' ? '' : ' ghost') + '" href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a><a class="btn ghost" href="' + esc(JachwiRules.safeUrl(p.source && p.source.url) || p.url || '#support') + '" target="_blank" rel="noopener">공고 원문</a></div>' +
+        '<p class="sp-meta">운영자 ' + esc(p.approvedBy || '') + ' 승인 · ' + esc(p.basis || '') + ' · ‘해당 가능’은 선정을 뜻하지 않아요.</p>';
+    } else if (row.kind === 'youth') {
+      var it = row.it, user = supUser(), w = row.v === 'no' ? [] : SP.watch(it, user, row.scope), e = it.earn;
+      var bar = '';
+      if (e && e.t === 'year' && e.max && user.earn) { var sc = Math.max(e.max * 1.4, user.earn * 1.15), pc = function (n) { return Math.min(100, n / sc * 100) + '%'; }, gap = e.max - user.earn;
+        bar = '<div class="sp-sec"><h3>얼마까지 벌어도 되나요</h3><div class="sp-range" role="img" aria-label="연소득 기준과 내 소득"><span class="z" style="left:' + pc(e.min) + ';width:' + ((e.max - e.min) / sc * 100) + '%"></span><span class="me" style="left:' + pc(user.earn) + '"></span><span class="lab top" style="left:' + pc(user.earn) + '">내 연소득 ' + won(user.earn) + '만</span><span class="lab bot" style="left:' + pc(e.max) + '">' + won(e.max) + '만 이하</span></div>' +
+          '<p class="s13 sub">' + (gap >= 0 ? '기준까지 연 ' + won(gap) + '만 원(월 약 ' + won(Math.floor(gap / 12)) + '만 원) 여유가 있어요. 알바나 이직으로 소득이 늘면 이 선을 넘는지 보세요.' : '기준보다 연 ' + won(-gap) + '만 원 많아요.') + '</p></div>'; }
+      h = '<div class="sp-dh"><h2>' + esc(it.name) + '</h2><p class="s13 muted">' + esc(it.org || it.top) + ' · ' + esc(row.scope) + '</p><div class="row" style="margin-top:8px"><span class="badge">검수 전 · 등록 정보 기준</span>' + (it.method ? '<span class="badge">' + esc(it.method) + '</span>' : '') + (it.first ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
+        spVerdictBox(row, row.st.text + (row.st.k === 'open' ? (row.st.left ? ' · ' + row.st.left + '일 남았어요.' : ' · 오늘 마감이에요.') : '.') + ' 아래 ‘공고에 적힌 추가 조건’도 꼭 읽어 보세요.') +
+        (note ? '<div class="sp-sec"><div class="banner due">' + ic('info') + '<span>' + esc(note) + '</span></div></div>' : '') +
+        (it.sum ? '<div class="sp-sec"><p class="sub">' + esc(it.sum) + '</p></div>' : '') + spConds(row) +
+        (it.cond || it.excl ? '<div class="sp-sec"><h3>공고에 적힌 추가 조건<small>판정하지 않았어요 · 직접 확인</small></h3>' + (it.cond ? spLong(it.cond, 'sp-quote') : '') + (it.excl ? '<p class="s13" style="margin-top:10px"><b>제외 대상</b></p>' + spLong(it.excl, 'sp-quote') : '') + '</div>' : '') + bar +
+        spText('지원 내용', it.support) +
+        (w.length ? '<div class="sp-sec"><h3>이럴 땐 못 받게 돼요<small>등록된 조건으로 계산</small></h3><ul class="sp-watch">' + w.map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('') + '</ul></div>' : '') +
+        (it.how || it.select ? '<div class="sp-sec"><h3>신청·선정</h3>' + (it.how ? '<p class="sp-lbl">신청 방법</p>' + spLong(it.how) : '') + (it.select ? '<p class="sp-lbl" style="margin-top:12px">선정 방식</p>' + spLong(it.select) : '') + '</div>' : '') +
+        spDocs(SP.docLines(it.docs), it.url || it.ref) +
+        '<div class="sp-acts">' + (it.url ? '<a class="btn' + (row.v === 'ok' ? '' : ' ghost') + '" href="' + esc(it.url) + '" target="_blank" rel="noopener">신청하러 가기' + ic('out', 'sm') + '</a>' : '') + (it.ref && it.ref !== it.url ? '<a class="btn ghost" href="' + esc(it.ref) + '" target="_blank" rel="noopener">참고 누리집</a>' : '') +
+        '<a class="btn ghost" href="https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch" target="_blank" rel="noopener">온통청년에서 찾기</a></div>' +
+        '<p class="sp-meta">온통청년 등록 정보' + (it.upd ? ' · ' + esc(it.upd) + ' 수정' : '') + ' · 담당자가 공고 원문과 대조하기 전이에요. 신청 전에 공고를 확인하세요.</p>';
+    } else if (row.kind === 'wf') {
+      var x = row.x;
+      h = '<div class="sp-dh"><h2>' + esc(x.name) + '</h2><p class="s13 muted">' + esc(x.dept) + '</p><div class="row" style="margin-top:8px"><span class="badge">판정하지 않음 · 복지로 등록 정보</span></div></div>' +
+        '<div class="sp-sec"><p class="sub">' + esc(x.sum) + '</p></div><div class="sp-sec">' + [['지원 주기', x.cycle], ['제공 유형', x.kind], ['신청 방법', x.how], ['주제', x.theme], ['문의', x.tel]].filter(function (k) { return k[1]; }).map(function (k) { return '<div class="kv"><span class="muted">' + k[0] + '</span><b>' + esc(k[1]) + '</b></div>'; }).join('') + '</div>' +
+        '<div class="sp-acts">' + (x.url ? '<a class="btn" href="' + esc(x.url) + '" target="_blank" rel="noopener">복지로에서 조건 보기' + ic('out', 'sm') + '</a>' : '') + '</div><p class="sp-meta">대상·선정 기준은 복지로 상세 화면에 있어요. 이 목록에서는 자격을 따지지 않았어요.</p>';
+    } else if (row.kind === 'lh') {
+      var n = row.x, sp = /^\d+$/.test(n.id) && n.spl && n.ccr ? supFetch('spl', n.id, 'api/lh?pan=' + n.id + '&spl=' + n.spl + '&ccr=' + n.ccr + '&ais=' + n.ais) : null, tb = '';
+      if (sp && sp.status === 'loading') tb = '<p class="s13 muted">공급 정보를 불러오는 중…</p>';
+      else if (sp && sp.status === 'ok' && sp.data.supply.rows.length) tb = '<div class="sp-tbl"><table><thead><tr>' + sp.data.supply.cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' + sp.data.supply.rows.slice(0, 12).map(function (rw) { return '<tr>' + rw.map(function (c) { return '<td>' + esc(/^\d{5,}$/.test(c) ? (+c).toLocaleString('ko-KR') : c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' + (sp.data.supply.rows.length > 12 ? '<p class="sp-note">주택형이 더 있어요. LH 공고에서 전체를 볼 수 있어요.</p>' : '');
+      else tb = '<p class="s13 muted">등록된 공급 정보가 없어요. LH 공고에서 확인해 주세요.</p>';
+      h = '<div class="sp-dh"><h2>' + esc(n.name) + '</h2><p class="s13 muted">한국토지주택공사(LH) · ' + esc(n.sido) + '</p><div class="row" style="margin-top:8px"><span class="badge">' + esc(n.type) + '</span><span class="badge due">' + esc(n.state) + '</span></div></div>' +
+        '<div class="sp-sec"><div class="kv"><span class="muted">공고일</span><b>' + esc(n.posted) + '</b></div><div class="kv"><span class="muted">마감일</span><b>' + esc(n.close) + '</b></div></div><div class="sp-sec"><h3>주택형·임대 조건</h3>' + tb + '</div>' +
+        '<div class="sp-acts"><a class="btn" href="' + esc(n.url) + '" target="_blank" rel="noopener">LH 청약플러스에서 보기' + ic('out', 'sm') + '</a></div><p class="sp-meta">입주 자격(소득·자산·무주택)은 공고마다 달라요. 이 화면에서는 자격을 따지지 않았어요.</p>';
+    }
+    return h;
+  }
+  function spState(box, what) {
+    if (box.status === 'loading') return '<div class="sp-empty"><p class="muted">' + what + ' 불러오는 중…</p></div>';
+    if (box.status === 'nokey') return '<div class="sp-empty"><p class="sub">이 서버에는 공공 API 키가 없어서 ' + what + ' 불러오지 못했어요.</p><p class="s13 muted">운영자가 환경변수에 키를 넣으면 실제 데이터가 나와요.</p></div>';
+    if (box.status === 'error') return '<div class="sp-empty"><p class="sub">' + esc((box.data && box.data.error) || what + ' 불러오지 못했어요.') + '</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
+    return '';
+  }
+  function supCtx(r) { var u = sup(); return { age: +S.age || 0, rent: +S.rent || 0, deposit: +S.deposit || 0, daysIn: S.move ? Math.round((today - pd(S.move)) / 86400000) : null, mrg: u.mrg, job: u.job, school: u.school, self: u.self, lowIncome: S.income === '100', sido: r.sido }; }
+  // 상세 탭: 지금 목록에 있는 형태만 건수와 함께 보여 준다
+  function kindTabs(rows, kinds, cur) {
+    var n = {}; rows.forEach(function (x) { n[x.kd] = (n[x.kd] || 0) + 1; });
+    var has = kinds.filter(function (k) { return n[k[0]]; }); if (has.length < 2) return '';
+    return '<div class="sp-kinds" role="group" aria-label="지원 형태">' + [['', '전체']].concat(has).map(function (k) { return '<button type="button" class="sp-kind" data-sp="kind" data-v="' + k[0] + '" aria-pressed="' + ((cur || '') === k[0]) + '">' + k[1] + ' <i>' + (k[0] ? n[k[0]] : rows.length) + '</i></button>'; }).join('') + '</div>';
+  }
+  var WF_KINDS = [['cash', '현금·바우처'], ['goods', '현물'], ['svc', '서비스']];
+  function wfKind(x) { return /현금|바우처|감면/.test(x.kind || '') ? 'cash' : /현물/.test(x.kind || '') ? 'goods' : 'svc'; }
+  function fitLine(ctx, r) {
+    var bits = [regionName(r)]; if (ctx.rent) bits.push('월세 세입자'); else if (ctx.deposit) bits.push('전세 세입자');
+    if (ctx.daysIn !== null) bits.push(ctx.daysIn < 0 ? '입주 전' : ctx.daysIn <= 90 ? '입주 ' + ctx.daysIn + '일째' : '거주 중'); if (ctx.age) bits.push('만 ' + ctx.age + '세');
+    if (ctx.job) bits.push(ctx.job); if (ctx.school) bits.push(ctx.school);
+    return '<p class="sp-fit">' + ic('info', 'sm') + '<span>내 정보(' + esc(bits.join(' · ')) + ')와 가까운 지원을 위에 놓았어요. 현금으로 받는 지원이 먼저예요. <a href="#contract">내 정보 고치기</a></span></p>';
+  }
+  function viewSupport() {
+    var u = sup(), r = regionOf(), R = evaluate(), user = supUser(), ctx = supCtx(r), tab = u.cat, rows = [], all = null, sub = '', extra = '', listHtml = '', meta = '', counts = null;
+    var head = '<div class="page-head"><div><p class="eyebrow">' + esc(regionName(r)) + (S.age ? ' · 만 ' + S.age + '세' : '') + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>지원사업</h1></div><div class="row"><button type="button" class="btn line" data-sp="region" aria-expanded="' + !!u.regionOpen + '">' + ic('pin', 'sm') + '지역 바꾸기</button><a class="btn line" href="#contract">내 정보 고치기</a></div></div>';
+    var picker = u.regionOpen || !r.zip ? '<section class="card sp-region"><div class="form-grid">' + regionFields() + '</div><p class="s12 muted" style="margin-top:8px">주민등록을 둔(전입신고한) 곳을 골라 주세요. 지원 대상 지역은 주민등록 기준이에요.</p></section>' : '';
+    if (!r.zip) return head + picker + '<div class="sp-empty card"><p class="sub">사는 지역을 고르면 그 지역에서 신청할 수 있는 지원을 찾아 드려요.</p></div>';
+
+    if (tab === 'welfare') {
+      var wb = supFetch('wf', r.sido + '|' + r.sgg, 'api/welfare?sido=' + encodeURIComponent(r.sido) + '&sgg=' + encodeURIComponent(r.sgg));
+      if (wb.status !== 'ok') listHtml = spState(wb, '복지 서비스를');
+      else {
+        var mk = function (tagName, scope) { return function (x) { var kd = wfKind(x), fit = SP.relevance({ name: x.name, sum: x.sum, scope: scope, central: scope === 'all' }, ctx, kd === 'cash' ? 'cash' : kd === 'goods' ? 'home' : 'edu', false); return { kind: 'wf', key: 'w-' + x.id, name: x.name, one: x.sum, x: x, kd: kd, why: fit.why, score: fit.score, tag: [tagName, x.cycle, x.how].filter(Boolean).join(' · ') }; }; };
+        var byFit = function (x, y) { return y.score - x.score; }, pickKind = function (x) { return !u.kind || x.kd === u.kind; };
+        var a = wb.data.local.map(mk(r.sgg.split(' ')[0], 'sgg')), b = wb.data.sidoWide.map(mk(r.sido, 'sido')), c = wb.data.national.map(mk('전국', 'all'));
+        all = a.concat(b, c); sub = kindTabs(all, WF_KINDS, u.kind);
+        if (u.kind && !all.some(pickKind)) u.kind = '';
+        a = a.filter(pickKind).sort(byFit); b = b.filter(pickKind).sort(byFit); c = c.filter(pickKind).sort(byFit);
+        rows = a.concat(b, c);
+        listHtml = (a.length ? '<p class="sp-group">' + esc(r.sgg.split(' ')[0]) + ' ' + a.length + '건</p>' + a.map(function (x) { return spItem(x, u.sel); }).join('') : '<p class="sp-group">' + esc(r.sgg.split(' ')[0]) + '에 등록된 청년 대상 서비스가 없어요</p>') +
+          (b.length ? '<p class="sp-group">' + esc(r.sido) + ' 전체 ' + b.length + '건</p>' + b.map(function (x) { return spItem(x, u.sel); }).join('') : '') +
+          (c.length ? '<details class="sp-more"' + (c.some(function (x) { return x.key === u.sel; }) ? ' open' : '') + '><summary>전국 공통 (주거·생활지원·서민금융) ' + c.length + '건</summary>' + c.map(function (x) { return spItem(x, u.sel); }).join('') + '</details>' : '');
+        meta = wb.data.source + ' · ' + String(wb.data.fetchedAt).slice(0, 10) + ' 받아 옴';
+      }
+      extra = '<div class="banner" style="margin-bottom:12px">' + ic('info') + '<span>전입신고를 한 지역의 주민이라 받을 수 있는 복지 서비스예요. 청년 대상으로 등록된 것만 모았고, <b>자격은 따지지 않았어요.</b></span></div>';
+    } else if (tab === 'lh') {
+      var lb = supFetch('lh', r.sido, 'api/lh?sido=' + encodeURIComponent(r.sido)), end = contractEnd(), mon = Math.max(0, Math.round((end - today) / 86400000 / 30));
+      extra = '<div class="banner" style="margin-bottom:12px">' + ic('info') + '<span>지금 계약은 <b>' + ymd(end) + '</b>에 끝나요(약 ' + mon + '개월 뒤). 공공임대는 신청부터 입주까지 오래 걸려서 미리 봐 두는 게 좋아요.</span></div>';
+      if (lb.status !== 'ok') listHtml = spState(lb, 'LH 공고를');
+      else {
+        rows = lb.data.items.map(function (x) { return { kind: 'lh', key: 'l-' + x.id, name: x.name, one: x.type, x: x, tag: x.state + ' · ' + x.close + ' 마감' }; });
+        listHtml = rows.length ? rows.map(function (x) { return spItem(x, u.sel); }).join('') : '<div class="sp-empty"><p class="sub">' + esc(r.sido) + '에서 지금 공고·접수 중인 LH 임대주택이 없어요.</p></div>';
+        if (lb.data.elsewhere) listHtml += '<p class="sp-note" style="margin-top:10px">다른 시·도에는 ' + lb.data.elsewhere + '건이 공고 중이에요. <a href="https://apply.lh.or.kr" target="_blank" rel="noopener">LH 청약플러스 ↗</a></p>';
+        meta = lb.data.source + ' · ' + String(lb.data.fetchedAt).slice(0, 10) + ' 받아 옴';
+      }
+    } else {
+      var yb = supFetch('youth', r.zip + '|' + tab, 'api/support?zip=' + r.zip + '&cat=' + encodeURIComponent(tab));
+      var ap = tab === '주거' ? R.programs.map(rowApproved) : [];
+      if (yb.status === 'ok') { counts = yb.data.counts; rows = ap.concat(yb.data.items.map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : ''); }
+      else rows = ap;
+      all = rows;
+      var liveAll = all.filter(function (x) { return x.v !== 'no'; });
+      if (u.kind && !liveAll.some(function (x) { return x.kd === u.kind; })) u.kind = '';
+      sub = '<div class="sp-bar">' + kindTabs(liveAll, SP.KINDS, u.kind) + (liveAll.length > 3 ? '<div class="seg" role="group" aria-label="정렬"><button type="button" data-sp="sort" data-v="fit" aria-pressed="' + (u.sort !== 'due') + '">나에게 맞는 순</button><button type="button" data-sp="sort" data-v="due" aria-pressed="' + (u.sort === 'due') + '">마감 빠른 순</button></div>' : '') + '</div>' + (yb.status === 'ok' && u.sort !== 'due' ? fitLine(ctx, r) : '');
+      if (u.kind) rows = rows.filter(function (x) { return x.kd === u.kind; });
+      else rows.forEach(function (x) { x.kdLabel = (SP.KINDS.filter(function (k) { return k[0] === x.kd; })[0] || [])[1]; });
+      rows.sort(u.sort === 'due' ? function (x, y) { return x.sort - y.sort; } : function (x, y) { return (y.score - x.score) || (x.sort - y.sort); });
+      var live = rows.filter(function (x) { return x.v !== 'no'; }), off = rows.filter(function (x) { return x.v === 'no'; }), lim = u.more || 20;
+      listHtml = live.slice(0, lim).map(function (x) { return spItem(x, u.sel); }).join('') + (live.length > lim ? '<button type="button" class="btn ghost block sm" data-sp="more">' + (live.length - lim) + '건 더 보기</button>' : '') +
+        (yb.status !== 'ok' ? spState(yb, '이 지역 정책을') : '') +
+        (off.length ? '<details class="sp-more"' + (off.some(function (x) { return x.key === u.sel; }) ? ' open' : '') + '><summary>지금은 해당 안 되거나 접수가 끝난 지원 ' + off.length + '건</summary>' + off.slice(0, 40).map(function (x) { return spItem(x, u.sel); }).join('') + '</details>' : '');
+      if (!rows.length && yb.status === 'ok') listHtml = '<div class="sp-empty"><p class="sub">이 분류에 등록된 정책이 없어요.</p></div>';
+    }
+    var selRow = rows.filter(function (x) { return x.key === u.sel; })[0] || rows.filter(function (x) { return x.v !== 'no'; })[0] || rows[0];
+    if (selRow && selRow.key !== u.sel) { u.sel = selRow.key; listHtml = listHtml.split('data-v="' + esc(selRow.key) + '" aria-current="false"').join('data-v="' + esc(selRow.key) + '" aria-current="true"'); }
+    // 이번에 할 일: 받을 수 있어 보이는 것 중 마감이 가장 가까운 것
+    var hot = (all || rows).filter(function (x) { return x.v && x.v !== 'no' && !x.plain && x.score > 40 && x.st && x.st.k === 'open' && x.st.left >= 0; }).sort(function (x, y) { return x.st.left - y.st.left; })[0];
+    var hero = hot ? '<section class="sp-todo"><div><small>' + (hot.st.left ? hot.st.left + '일 남았어요' : '오늘 마감이에요') + '</small><b>' + esc(hot.name) + '</b><span>' + esc(hot.st.text) + (hot.v === 'q' ? ' · 조건을 조금만 더 확인하면 돼요' : ' · 조건이 맞아요') + '</span></div><button type="button" class="btn" data-sp="pick" data-v="' + esc(hot.key) + '">자세히 보기</button></section>' : '';
+    var tabs = '<div class="cats sp-tabs" role="group" aria-label="지원 종류">' + SP_TABS.map(function (t) { return '<button type="button" class="cat" data-sp="tab" data-v="' + esc(t[0]) + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + (counts && counts[t[0]] !== undefined ? ' <i>' + counts[t[0]] + '</i>' : '') + '</button>'; }).join('') + '</div>';
+    return head + picker + hero + tabs + sub + extra +
+      '<div class="sp-cols"><div class="sp-list">' + listHtml + (meta ? '<p class="sp-meta" style="padding:10px 2px 0">' + esc(meta) + '</p>' : '') + '</div><aside class="card sp-detail" id="sp-detail">' + spDetail(selRow, r) + '</aside></div>' +
+      '<p class="sp-meta" style="padding:16px 2px 0">금액은 사업마다 따로 보여 주고 합치지 않아요. 입력한 내용은 이 기기에만 저장되고, 서버에는 지역 코드와 분류만 보내요. <a href="admin.html">운영자 검수 화면</a></p>';
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-sp]'); if (!t) return;
+    var a = t.dataset.sp, v = t.dataset.v, k = t.dataset.k, u = sup(), jump = false;
+    if (a === 'tab') { u.cat = v; u.kind = ''; u.sel = ''; u.more = 0; u.guide = null; }
+    else if (a === 'kind') { u.kind = v; u.sel = ''; u.more = 0; u.guide = null; }
+    else if (a === 'sort') { u.sort = v; u.sel = ''; u.more = 0; }
+    else if (a === 'pick') { u.sel = v; u.guide = null; jump = true; }
+    else if (a === 'ans') u[k] = v;
+    else if (a === 'self') u.self[k] = v;
+    else if (a === 'undo') { if (k === 'earn' || k === 'mrg' || k === 'job' || k === 'school') delete u[k]; else delete u.self[k]; }
+    else if (a === 'hh') u.hh = +v;
+    else if (a === 'guide') u.guide = u.guide === +v ? null : +v;
+    else if (a === 'bank') u[k] = v;
+    else if (a === 'more') u.more = (u.more || 20) + 20;
+    else if (a === 'region') u.regionOpen = !u.regionOpen;
+    else if (a === 'retry') { ['youth', 'wf', 'lh'].forEach(function (kind) { Object.keys(SUP[kind]).forEach(function (key) { if (SUP[kind][key].status === 'error') delete SUP[kind][key]; }); }); }
+    else return;
+    save(); render(true);
+    if (jump && window.innerWidth <= 960) { var d = document.getElementById('sp-detail'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+  document.addEventListener('change', function (e) {
+    var t = e.target, w = t.dataset && t.dataset.spSel; if (!w) return;
+    var u = sup();
+    if (w === 'sido') { var rg = REGIONS.filter(function (x) { return x[0] === t.value; })[0]; if (!rg) return; S.sido = rg[0]; S.zip = rg[1][0][0]; S.sgg = rg[1][0][1]; }
+    else { var cur = REGIONS.filter(function (x) { return x[0] === regionOf().sido; })[0], hit = cur && cur[1].filter(function (x) { return x[0] === t.value; })[0]; if (!hit) return; S.sido = cur[0]; S.zip = hit[0]; S.sgg = hit[1]; }
+    S.gu = S.sgg; u.sel = ''; u.more = 0; save(); render(true);
+  });
+  document.addEventListener('submit', function (e) {
+    var f = e.target.dataset.form; if (f !== 'spage' && f !== 'spearn') return; e.preventDefault();
+    var n = parseInt(String(e.target.v.value).replace(/[^0-9]/g, ''), 10);
+    if (isNaN(n) || n <= 0) { e.target.v.focus(); return; }
+    if (f === 'spage') { if (n > 120) return; S.age = n; } else sup().earn = n;
+    save(); render(true);
+  });
 
   // ---------- 이 기기 파일 저장 (IndexedDB) : 서류함 · 집 상태 사진 ----------
   var FILES = [], FURL = {}, FILES_OK = true, IDBP = null;
@@ -1637,7 +2007,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="grid"><section class="card dday c4"><div class="split" style="position:relative;z-index:1"><span class="lbl">' + (P.dm <= 0 ? '입주까지' : '자취') + '</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">' + P.badge + '</span></div><div class="big" style="position:relative;z-index:1">' + big + '</div>' +
       '<dl><dt>집</dt><dd>' + esc(S.addr || '내 자취방') + ' · ' + esc(S.gu) + '</dd><dt>계약일</dt><dd>' + ymd(R.C) + '</dd><dt>입주일</dt><dd>' + ymd(R.M) + '</dd><dt>만료</dt><dd>' + ymd(end) + '</dd><dt>전월세 신고</dt><dd>' + (R.report.required ? md(R.report.due) + '까지' : '대상 아님') + '</dd><dt>전입신고 기한</dt><dd>' + md(R.movein.due) + '</dd></dl></section>' +
       '<section class="card c8 stack"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
-      f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + f('구', '<select class="inp" data-field="gu">' + GU.map(function (g) { return '<option' + (g === S.gu ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select>') +
+      f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + regionFields() +
       f('보증금', num('deposit', '만 원')) + f('월세', num('rent', '만 원')) + f('관리비', num('fee', '만 원')) + f('계약 기간', '<select class="inp" data-field="term">' + [1, 2].map(function (n) { return '<option value="' + n + '"' + (+S.term === n ? ' selected' : '') + '>' + n + '년</option>'; }).join('') + '</select>') +
       f('계약일 (계약서 쓴 날)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">') + f('입주일 (잔금·이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">') + '</div>' +
       (pd(S.move) < pd(S.contract) ? '<div class="banner due">' + ic('info') + '<span>입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.</span></div>' : R.report.required && R.report.due < R.M ? '<div class="banner due">' + ic('info') + '<span>전월세 신고 기한(' + md(R.report.due) + ')이 입주보다 먼저 와요. 전입신고와 합칠 수 없어요.</span></div>' : '') +
@@ -1664,7 +2034,7 @@ document.addEventListener('DOMContentLoaded', function () {
       f('보증금', num('deposit', '만 원', '예: 500')) + f('월세 (관리비 빼고)', num('rent', '만 원', '예: 50')) + f('관리비 (없으면 0)', num('fee', '만 원', '예: 7')) + '</div>' +
       ((S.deposit || S.rent) ? '<div class="banner">' + ic('info') + '<span>' + (R.report.required ? '<b>전월세 신고 대상이에요</b> (' + R.report.reason + '). 기한은 ' + md(R.report.due) + '까지예요.' : '전월세 신고 대상은 아니에요. 확정일자는 따로 받아 두는 게 좋아요.') + '</span></div>' : '');
     else if (st === 3) body = '<h1>집은 어디예요?</h1><p class="sub">가까운 행정복지센터·마트·병원을 찾고 지도에 집을 표시해요. 나중에 정해도 돼요.</p>' + homeCard() +
-      '<div class="form-grid">' + f('집 별칭 (화면에 보일 이름)', '<input class="inp" data-field="addr" maxlength="20" placeholder="예: 봉천동 원룸" value="' + esc(S.addr || '') + '">') + f('구', '<select class="inp" data-field="gu">' + GU_LIST.map(function (g) { return '<option' + (g === S.gu ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select>') + '</div>';
+      '<div class="form-grid">' + f('집 별칭 (화면에 보일 이름)', '<input class="inp" data-field="addr" maxlength="20" placeholder="예: 봉천동 원룸" value="' + esc(S.addr || '') + '">') + regionFields() + '</div>';
     else body = '<h1>지원 자격도 미리 볼까요?</h1><p class="sub">청년 주거 지원을 신청해 볼 수 있는지 따져 볼게요. 몰라도 괜찮아요.</p><div class="form-grid">' +
       f('만 나이', num('age', '세', '예: 24')) + f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['unknown', '잘 모르겠어요'], ['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') +
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + '</div>';
