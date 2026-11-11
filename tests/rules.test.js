@@ -198,3 +198,22 @@ test('내장 AI 코치: 오늘 할 일은 내 타임라인에서', () => {
   assert.ok(a.text.includes('잔금 계좌와 이체 한도 확인'));
   assert.deepEqual(a.topic, ['todo']);
 });
+
+// ---------- 자취 AI 비서 (봇 6개) ----------
+const AS = require('../demo/assistant-core.js');
+test('AI 비서: 질문마다 알맞은 봇이 답한다 (평가 세트 전부 통과)', () => {
+  const r = E.runAssistant(SEED, EV.assistant, AS, SEED.repairs);
+  assert.equal(r.pass, r.total, r.rows.filter((x) => !x.pass).map((x) => x.q + ' → ' + x.why.join(', ')).join(' / '));
+});
+test('AI 비서: 집주인톡 문자는 정중한 판과 짧은 판, 모르는 값은 [ ]', () => {
+  const v = R.publicView(SEED, new Date('2026-11-10')), f = E.demoFacts(v.programs);
+  const a = AS.answer({ q: '보증금 돌려달라고 연락하고 싶어', bot: 'landlord', cards: v.cards, facts: f, repairs: SEED.repairs });
+  const m = a.blocks.find((b) => b.type === 'message');
+  assert.ok(m.text.length > m.short.length && m.text.includes('[은행·계좌번호]'));
+});
+test('AI 비서: 가스 냄새는 판정보다 안전 순서가 먼저', () => {
+  const v = R.publicView(SEED, new Date('2026-11-10')), f = E.demoFacts(v.programs);
+  const a = AS.answer({ q: '집에서 가스 냄새가 나요', cards: v.cards, facts: f, repairs: SEED.repairs });
+  assert.equal(a.bot, 'repair');
+  assert.ok(a.blocks[0].type === 'steps' && a.blocks[0].items[0].includes('밸브'));
+});

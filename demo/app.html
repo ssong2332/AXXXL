@@ -15,6 +15,7 @@
 <script src="rules-core.js" defer></script>
 <script src="rules/seed.js" defer></script>
 <script src="coach-core.js" defer></script>
+<script src="assistant-core.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5B4CDB">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -376,6 +377,52 @@ details.why summary { cursor: pointer; font-size: 13px; font-weight: 650; color:
 details.why summary::-webkit-details-marker { display: none }
 .ev-row { display: flex; flex-direction: column; gap: 2px; font-size: 13px }
 .ev-row q { quotes: "“" "”"; color: var(--ink-2); padding-left: 10px; border-left: 2px solid var(--line) }
+.asst { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; padding: 22px }
+.asst-h { display: flex; align-items: center; gap: 14px }
+.asst-h h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.035em }
+.asst-h > div { flex: 1 1 auto; min-width: 0 }
+.asst-av { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--brand-tint); color: var(--brand-text) }
+.badge.brand-b { background: var(--brand-tint); color: var(--brand-text) }
+.bots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
+.bot-c { display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px; border: 1px solid var(--hair); border-radius: var(--r-in); background: var(--surface); cursor: pointer; color: inherit; font: inherit; min-height: 64px }
+.bot-c:hover { background: var(--fill) }
+.bot-c[aria-selected="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink) }
+.bot-c b { display: block; font-size: 15px; letter-spacing: -0.02em } .bot-c small { display: block; color: var(--ink-3); font-size: 12px }
+.bots.compact { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px } .bots.compact::-webkit-scrollbar { display: none }
+.bots.compact .bot-c { flex: 0 0 auto; min-height: 0; padding: 6px 12px 6px 6px; border-radius: 999px; gap: 6px } .bots.compact .bot-c small { display: none } .bots.compact .bot-c b { font-size: 13px }
+.bot-av { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--fill); color: var(--ink-2) }
+.bot-av.sm { width: 24px; height: 24px; border-radius: 8px }
+.b-landlord { background: #E8F0FB; color: #1F5FAF } .b-repair { background: #FCEFE6; color: #A6380B } .b-money { background: #EAF5EC; color: #1E7A3D } .b-rights { background: var(--brand-tint); color: var(--brand-text) } .b-local { background: #F3ECFA; color: #6B3FA0 } .b-auto { background: var(--ink); color: var(--surface) }
+:root[data-theme="dark"] .b-landlord { background: #1A2A40; color: #8CB8F0 } :root[data-theme="dark"] .b-repair { background: #36231A; color: #F5A673 } :root[data-theme="dark"] .b-money { background: #17301F; color: #7CD39A } :root[data-theme="dark"] .b-local { background: #2A1F38; color: #C7A5EE }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .b-landlord { background: #1A2A40; color: #8CB8F0 } :root:not([data-theme="light"]) .b-repair { background: #36231A; color: #F5A673 } :root:not([data-theme="light"]) .b-money { background: #17301F; color: #7CD39A } :root:not([data-theme="light"]) .b-local { background: #2A1F38; color: #C7A5EE } }
+.asst .chat { gap: 14px }
+.turn { display: flex; gap: 10px; align-items: flex-start; max-width: 100% }
+.turn-b { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px }
+.turn-b .bubble-a { max-width: 100% }
+.who { font-size: 12.5px; font-weight: 700; color: var(--ink-2) } .who em { font-style: normal; font-weight: 500; color: var(--ink-3); margin-left: 4px }
+.blk { border-top: 1px solid var(--hair); padding-top: 10px; display: flex; flex-direction: column; gap: 8px }
+.blk-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700 } .blk-h > span:first-child { display: inline-flex; align-items: center; gap: 6px }
+.msg { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; border-top-width: 1px }
+.msg-t { margin: 0; white-space: pre-wrap; line-height: 1.65; font-size: 14.5px } .msg-t mark { background: var(--due-tint); color: var(--due-text); border-radius: 4px; padding: 0 2px }
+.seg { display: inline-flex; background: var(--fill); border-radius: 8px; padding: 2px } .seg button { border: 0; background: none; font: inherit; font-size: 12px; font-weight: 650; padding: 4px 8px; border-radius: 6px; color: var(--ink-3); cursor: pointer } .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08) }
+.verdict { flex-direction: row; align-items: flex-start; gap: 10px } .verdict p { margin: 0; font-size: 13.5px; color: var(--ink-2) }
+.verdict .pill { flex: 0 0 auto; font-size: 12.5px; font-weight: 750; padding: 4px 9px; border-radius: 7px }
+.v-ok .pill { background: var(--brand-tint); color: var(--brand-text) } .v-ink .pill { background: var(--ink); color: var(--surface) } .v-due .pill { background: var(--due-tint); color: var(--due-text) } .v-bad .pill { background: #FBEAEA; color: #A12A2A }
+.stp { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px } .stp li::marker { color: var(--ink-3); font-weight: 700 }
+.bars { display: flex; flex-direction: column; gap: 6px } .bar-r { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px } .bar-r em { font-style: normal; font-size: 11px; color: var(--ink-3) }
+.bar { height: 8px; border-radius: 4px; background: var(--fill-2); overflow: hidden } .bar i { display: block; height: 100%; background: var(--brand-text); border-radius: 4px }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12.5px; color: var(--ink-2) }
+.places { gap: 4px } .pl-r { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--hair); border-radius: 10px; background: var(--surface); text-align: left; font: inherit; color: inherit; cursor: pointer } .pl-r:hover { background: var(--fill) }
+.pl-r > span:nth-child(2) { flex: 1 1 auto; min-width: 0 } .pl-r b { display: block; font-size: 14px } .pl-r small { display: block; font-size: 12px; color: var(--ink-3) } .pl-r .num { text-align: right } .pl-r .num small { text-align: right }
+.blk-note { margin: 0; font-size: 12px; color: var(--ink-3) } .blk-note.due { padding: 10px 12px; border-radius: 10px; background: var(--due-tint); color: var(--due-text); font-size: 13px }
+.acts { display: flex; flex-wrap: wrap; gap: 6px } .act { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px 0 6px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font: inherit; font-size: 13px; font-weight: 650; color: var(--ink); cursor: pointer; text-decoration: none } a.act { padding-left: 12px }
+.ask2 { display: flex; flex-direction: column; gap: 6px; padding: 12px 12px 10px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--fill) }
+.ask2 label { font-size: 13px; font-weight: 650; color: var(--ink-2) }
+.ask2-row { display: flex; align-items: flex-end; gap: 8px } .ask2 textarea { flex: 1 1 auto; min-width: 0; border: 0; background: none; resize: none; font: inherit; font-size: 15.5px; line-height: 1.5; padding: 4px 0; color: var(--ink); max-height: 140px; field-sizing: content } .ask2 textarea:focus { outline: none }
+.ask2:focus-within { border-color: var(--ink) }
+.send { flex: 0 0 auto; width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--ink); color: var(--surface); display: grid; place-items: center; cursor: pointer }
+.asst-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: -6px 0 0 } .ai-tg { display: inline-flex; gap: 4px; align-items: center; margin-left: 6px; color: var(--ink-2); font-weight: 650 }
+@media (max-width: 640px) { .asst { padding: 14px; gap: 14px } .bots { grid-template-columns: repeat(2, minmax(0, 1fr)) } .bot-c { padding: 10px; min-height: 56px } .bar-r { grid-template-columns: 64px minmax(0, 1fr) auto } .asst-av { width: 46px; height: 46px; border-radius: 13px } .turn > .bot-av { display: none } }
 .think { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-3) }
 .think li { display: flex; align-items: center; gap: 6px } .think svg { color: var(--brand-text) }
 .caret { display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--ink-3); animation: tp 1s infinite }
@@ -653,6 +700,8 @@ document.addEventListener('DOMContentLoaded', function () {
     shield: '<path d="M12 3.5 19 6v5.5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6Z"/><path d="m9 12 2 2 4-4"/>',
     bookmark: '<path d="M6.5 4h11v16.5L12 16.5l-5.5 4Z"/>',
     x: '<path d="M6 6l12 12M18 6 6 18"/>',
+    wrench: '<path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-2 2-1.3-1.3-6.6 6.6a2.1 2.1 0 0 1-3-3l6.6-6.6L13.4 9.4l2-2Z" transform="translate(-2 -1)"/>',
+    wallet: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M16 13.5h1.5"/>',
     copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     send: '<path d="M4 12 20 4l-6 16-2.5-6.5Z"/><path d="m11.5 13.5 3-3"/>',
     compass: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/>',
@@ -725,7 +774,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return fetch('api/rules', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j || !j.ok) return;
       RS.ai = !!j.ai;
-      if (!practiceRules()) setRules({ notices: j.notices, cards: j.cards, meta: { updatedAt: j.updatedAt } }, 'server');
+      if (!practiceRules()) setRules({ notices: j.notices, cards: j.cards, repairs: j.repairs, meta: { updatedAt: j.updatedAt } }, 'server');
       RS.loaded = true; render(true);
     }).catch(function () {});
   }
@@ -1552,80 +1601,118 @@ document.addEventListener('DOMContentLoaded', function () {
       tasks: (function () { var O = openTasks(R, buildTimeline(R)), wk = add(today, 7); return O.dueNow.concat(O.upcoming.filter(function (x) { return x.t.due <= wk; })).slice(0, 5).map(function (x) { return { title: x.t.title, due: ymd(x.t.due), stage: x.s.name, urgent: !!x.t.urgent || x.t.due < today }; }); })(),
       programList: R.programs.map(function (x) { return { id: x.p.id, name: x.p.name, verdict: judge(x)[1], status: x.p.status, period: x.p.period, amountText: x.p.amountText, docs: x.p.docs, channel: x.p.channel, select: x.p.select, firstCome: x.p.firstCome, exclusions: x.p.exclusions, unknown: x.unknown.map(function (r) { return r.label; }) }; }) };
   }
-  function localAnswer(q, hist, R) { return JachwiCoach.answer({ q: q, history: hist || [], cards: coachCards(), facts: coachFacts(R) }); }
+  // AI 비서가 쓰는 값: 계약 계산값 + 집 별칭·부를 이름(문자 초안에만) + 이번 달 고정비 + 집 주변 장소
+  function assistantFacts(R) {
+    var f = coachFacts(R), y = today.getFullYear(), mo = today.getMonth();
+    f.house = S.addr || ''; f.nick = S.nick || '';
+    f.money = { month: (mo + 1) + '월', items: billsInMonth(y, mo).map(function (b) { return { name: b.title, amount: b.amount, kind: b.kind, est: b.est }; }) };
+    var hasHome = !!(S.home || S.demo), list = hasHome ? places().slice(0, 60).map(function (p) { return { id: p.id, name: p.name, cat: p.cat, sub: p.sub, min: p.min, m: Math.round(p.m) }; }) : [];
+    f.places = { hasHome: hasHome && DATA.status !== 'nohome', list: list, source: isReal() ? 'OpenStreetMap 기준 · 걸리는 시간은 직선거리로 계산' : '시연용 예시 데이터' };
+    return f;
+  }
+  function repairsData() { return (RS.published && RS.published.repairs) || (window.JACHWI_SEED && window.JACHWI_SEED.repairs) || []; }
+  function botAnswer(q, bot, hist, R) { return JachwiAssistant.answer({ q: q, bot: bot, history: hist || [], cards: coachCards(), facts: assistantFacts(R), repairs: repairsData() }); }
+  var BOTS = JachwiAssistant.BOTS;
+  function botAv(id, sm) { var b = BOTS[id] || BOTS.auto; return '<span class="bot-av' + (sm ? ' sm' : '') + ' b-' + id + '" aria-hidden="true">' + ic(b.icon, sm ? 'sm' : '') + '</span>'; }
+  // 답 블록: 문자 초안 · 판정 · 할 일 · 지출 막대 · 장소 · 안내
+  function blockHtml(b, i, bi, c) {
+    if (b.type === 'message') {
+      var short = c.short === undefined ? !!c.preferShort : c.short, t = short ? b.short : b.text;
+      return '<div class="blk msg"><div class="blk-h"><span>' + ic('chat', 'sm') + esc(b.title) + '</span><span class="seg" role="group" aria-label="문자 길이"><button type="button" data-act="msgtone" data-v="' + i + '" data-k="0" aria-pressed="' + !short + '">정중하게</button><button type="button" data-act="msgtone" data-v="' + i + '" data-k="1" aria-pressed="' + short + '">짧게</button></span></div>' +
+        '<p class="msg-t">' + esc(t).replace(/\[([^\]]+)\]/g, '<mark>[$1]</mark>') + '</p><div class="row"><button type="button" class="btn sm" data-act="msgcopy" data-v="' + i + '" data-k="' + bi + '">' + ic('copy', 'sm') + '복사하기</button><a class="btn sm ghost" href="sms:?&body=' + encodeURIComponent(t) + '">' + ic('send', 'sm') + '문자 앱에서 열기</a></div></div>';
+    }
+    if (b.type === 'verdict') return '<div class="blk verdict v-' + b.tone + '"><span class="pill">' + esc(b.label) + '</span><p>' + md2html(b.text) + '</p></div>';
+    if (b.type === 'steps') return '<div class="blk"><b class="blk-h">' + esc(b.title) + '</b><ol class="stp">' + b.items.map(function (x) { return '<li>' + md2html(x) + '</li>'; }).join('') + '</ol></div>';
+    if (b.type === 'bars') return '<div class="blk"><div class="blk-h"><b>' + esc(b.title) + '</b><b class="num">' + won(b.total) + '원</b></div><div class="bars">' + b.items.map(function (x) { return '<div class="bar-r"><span>' + esc(x.label) + (x.est ? ' <em>예상</em>' : '') + '</span><span class="bar"><i style="width:' + Math.max(3, x.pct) + '%"></i></span><span class="num">' + won(x.amount) + '원 · ' + x.pct + '%</span></div>'; }).join('') + '</div></div>';
+    if (b.type === 'places') return '<div class="blk places">' + b.items.map(function (p) { return '<button type="button" class="pl-r" data-act="place" data-v="' + esc(p.id) + '" data-go="1">' + ic((CATS[p.cat] || ['', 'pin'])[1], 'sm') + '<span><b>' + esc(p.name) + '</b><small>' + esc((CATS[p.cat] || [''])[0]) + (p.sub && p.sub !== p.name ? ' · ' + esc(p.sub) : '') + '</small></span><span class="num">도보 ' + p.min + '분<small>' + p.m + 'm</small></span></button>'; }).join('') + '</div>';
+    if (b.type === 'note') return b.text ? '<p class="blk-note' + (b.tone === 'due' ? ' due' : '') + '">' + md2html(b.text) + '</p>' : '';
+    return '';
+  }
   function chatItem(c, i, R, last) {
-    if (typeof c === 'string') { var la = localAnswer(c, [], R); c = { q: c, mode: 'local', a: la.text, kind: la.kind, cites: la.cites, steps: la.steps }; }
-    var q = '<span class="bubble-q">' + esc(c.q) + '</span>';
-    if (c.mode === 'pending') return q + '<div class="bubble-a" id="cb-' + i + '" aria-busy="true"><span class="typing"><i></i><i></i><i></i></span><ul class="think">' + (c.steps || []).slice(0, c.stepN || 0).map(function (st) { return '<li>' + ic('check', 'sm') + esc(st) + '</li>'; }).join('') + '</ul></div>';
-    if (c.mode === 'place') { var pa = qaAnswer(c.q, R); return q + (pa ? '<div class="bubble-a"><span>' + pa.a + '</span><div class="row" style="gap:4px 12px">' + pa.src.map(function (x) { return '<a class="s12" href="' + x[1] + '"' + ext(x[1]) + '>근거 · ' + x[0] + '</a>'; }).join('') + '</div><span class="s12 muted">내 동네 지도 데이터로 찾았어요.</span></div>' : '<div class="bubble-a"><span>' + esc(JachwiCoach.REFUSE) + '</span></div>'); }
+    if (typeof c === 'string') { var la = botAnswer(c, 'auto', [], R); c = { q: c, mode: 'local', bot: la.bot, a: la.text, kind: la.kind, cites: la.cites, steps: la.steps, blocks: la.blocks, actions: la.actions }; }
+    if (c.mode === 'hello') { var hb = BOTS[c.bot] || BOTS.auto; return '<div class="turn">' + botAv(c.bot) + '<div class="turn-b"><span class="who">' + hb.name + '</span><div class="bubble-a"><span>' + esc(hb.hello) + '</span></div>' + (last ? '<div class="chips">' + hb.ex.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '') + '</div></div>'; }
+    var q = '<span class="bubble-q">' + esc(c.q) + '</span>', bot = c.bot || 'rights', B = BOTS[bot] || BOTS.rights;
+    if (c.mode === 'pending') return q + '<div class="turn">' + botAv(c.want || 'auto') + '<div class="turn-b"><span class="who">' + (BOTS[c.want] || BOTS.auto).name + '</span><div class="bubble-a" id="cb-' + i + '" aria-busy="true"><span class="typing"><i></i><i></i><i></i></span><ul class="think">' + (c.steps || []).slice(0, c.stepN || 0).map(function (st) { return '<li>' + ic('check', 'sm') + esc(st) + '</li>'; }).join('') + '</ul></div></div></div>';
     var streaming = c.shown !== undefined && c.shown < (c.a || '').length;
     var body = md2html(streaming ? c.a.slice(0, c.shown) : c.a) + (streaming ? '<span class="caret"></span>' : '');
     var cites = (c.cites || []).map(function (ct) { return (ct.src || []).slice(0, 2).map(function (x) { return '<a class="s12" href="' + esc(x[1] || '#coach') + '"' + ext(x[1] || '') + '>근거 · ' + esc(x[0]) + '</a>'; }).join(''); }).join('');
-    var who = c.mode === 'ai' ? 'Claude' : '내장 AI';
-    var foot = c.kind === 'answer' || c.mode === 'ai' ? who + ' · 승인된 안내 ' + (c.cites || []).length + '개 안에서 답했어요' : c.kind === 'refuse' ? who + ' · 질문은 운영자에게 전달했어요' : who;
-    var chips = last && !streaming && c.chips && c.chips.length ? '<div class="chips" style="margin-top:2px">' + c.chips.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '';
+    var engine = c.mode === 'ai' ? 'Claude' : '내장 AI';
+    var foot = c.kind === 'refuse' ? engine + ' · 질문은 운영자에게 전달했어요' : (c.cites || []).length ? engine + ' · 승인된 안내 ' + c.cites.length + '개 근거' : engine;
+    var blocks = streaming ? '' : (c.blocks || []).map(function (b, bi) { return blockHtml(b, i, bi, c); }).join('');
+    var acts = !streaming && (c.actions || []).length ? '<div class="acts">' + c.actions.map(function (a) { return a.href ? '<a class="act" href="' + esc(a.href) + '">' + esc(a.label) + ic('chev', 'sm') + '</a>' : '<button type="button" class="act" data-act="askbot" data-k="' + a.bot + '" data-v="' + esc(a.q) + '">' + botAv(a.bot, true) + esc(a.label) + '</button>'; }).join('') + '</div>' : '';
+    var chips = last && !streaming && c.chips && c.chips.length ? '<div class="chips">' + c.chips.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '';
     var how = !streaming && c.steps && c.steps.length ? '<details class="how"><summary class="s12 muted">' + foot + '</summary><ol class="s12 muted">' + c.steps.map(function (st) { return '<li>' + esc(st) + '</li>'; }).join('') + '</ol></details>' : '<span class="s12 muted">' + foot + '</span>';
-    return q + '<div class="bubble-a" id="cb-' + i + '"><span class="ans">' + body + '</span>' + (streaming ? '' : (cites ? '<div class="row" style="gap:4px 12px">' + cites + '</div>' : '') + (c.kind === 'refuse' ? REFUSE_LINKS : '') + how) + '</div>' + chips;
+    return q + '<div class="turn">' + botAv(bot) + '<div class="turn-b"><span class="who">' + B.name + (c.routed && c.want !== bot ? ' <em>' + (c.want && c.want !== 'auto' ? BOTS[c.want].name + ' 대신 답했어요' : '자동 연결') + '</em>' : '') + '</span><div class="bubble-a" id="cb-' + i + '"><span class="ans">' + body + '</span>' + blocks +
+      (streaming ? '' : (cites ? '<div class="row" style="gap:4px 12px">' + cites + '</div>' : '') + (c.kind === 'refuse' ? REFUSE_LINKS : '') + how) + '</div>' + acts + chips + '</div></div>';
   }
-  var PLACE_Q = /약국|병원|의원|치과|마트|다이소|편의점|세탁|빨래|카페|지하철|정류장|버스|공원|산책|헬스|체육|도서관|스터디|주민센터|청년센터|우체국|식당|맛집|밥집|경찰|지구대|파출소/;
   function logMissLocal(q) {
     try { var k = 'jachwi-coach-miss', m = JSON.parse(localStorage.getItem(k) || '[]'); if (!m.some(function (x) { return x.q === q; })) m.unshift({ id: 'q-l' + Date.now().toString(36), at: new Date().toISOString(), q: q.slice(0, 200), top: [], reason: 'local', count: 1 }); localStorage.setItem(k, JSON.stringify(m.slice(0, 100))); } catch (e) {}
   }
-  // 생각하는 단계를 하나씩 보여 준 뒤 답을 글자 단위로 흘려 보여 준다 (AI 대화처럼)
+  // 생각하는 단계를 하나씩 보여 준 뒤 답을 글자 단위로 흘려 보여 준다
   var STREAM = null;
   function streamAnswer(c) {
-    var idx = S.chat.indexOf(c), stepT = 0;
+    var stepT = 0;
     clearInterval(STREAM);
     var tick = function () {
       var el = document.getElementById('cb-' + S.chat.indexOf(c));
       if (c.mode === 'pending') {
         c.stepN = (c.stepN || 0) + 1;
-        if (c.stepN > (c.steps || []).length) { c.mode = c.final; c.shown = 0; }
+        if (c.stepN > (c.steps || []).length) { c.mode = c.final; c.shown = 0; render(true); return; }
         if (el) { var tmp = document.createElement('div'); tmp.innerHTML = chatItem(c, S.chat.indexOf(c), evaluate(), false); var nb = tmp.querySelector('#cb-' + S.chat.indexOf(c)); if (nb) el.innerHTML = nb.innerHTML; }
         return;
       }
-      c.shown = Math.min((c.a || '').length, (c.shown || 0) + Math.max(3, Math.ceil(c.a.length / 45)));
-      if (el) { var span = el.querySelector('.ans'); if (span) span.innerHTML = md2html(c.a.slice(0, c.shown)) + '<span class="caret"></span>'; else el.innerHTML = md2html(c.a.slice(0, c.shown)); }
-      if (c.shown >= c.a.length || !el) { clearInterval(STREAM); delete c.shown; delete c.stepN; save(); if (location.hash === '#coach' || location.hash === '') render(true); var box = app.querySelector('.chat'); if (box) box.scrollTop = box.scrollHeight; }
+      c.shown = Math.min((c.a || '').length, (c.shown || 0) + Math.max(3, Math.ceil(c.a.length / 40)));
+      if (el) { var span = el.querySelector('.ans'); if (span) span.innerHTML = md2html(c.a.slice(0, c.shown)) + '<span class="caret"></span>'; }
+      if (c.shown >= c.a.length || !el) { clearInterval(STREAM); delete c.shown; delete c.stepN; save(); if (location.hash === '#coach') { render(true); scrollChat(); } }
     };
-    STREAM = setInterval(function () { stepT++; if (c.mode === 'pending' && stepT % 7 !== 0) return; tick(); }, 40);
+    STREAM = setInterval(function () { stepT++; if (c.mode === 'pending' && stepT % 6 !== 0) return; tick(); }, 40);
   }
-  function askCoach(q) {
-    q = q.replace(/\s+/g, ' ').trim().slice(0, 120); if (!q) return;
-    var R = evaluate(), hist = S.chat.filter(function (x) { return x && typeof x === 'object' && x.topic; }).slice(-3).map(function (x) { return { q: x.q, topic: x.topic }; });
-    // 진행 중인 답이 있으면 바로 끝까지 보여 주고 다음 질문으로
-    S.chat.forEach(function (x) { if (x && x.mode === 'pending') { x.mode = x.final || 'local'; } delete x.shown; delete x.stepN; });
-    var c = { q: q, mode: 'pending', steps: ['질문 읽는 중'] };
-    S.chat.push(c); while (S.chat.length > 30) S.chat.shift();
-    var useLocal = function () {
-      var r = localAnswer(q, hist, R);
-      c.final = 'local'; c.a = r.text; c.kind = r.kind; c.cites = r.cites; c.chips = r.chips; c.topic = r.topic; c.steps = r.steps;
-      if (r.kind === 'refuse' || r.kind === 'scope') logMissLocal(q);
+  function scrollChat() { var box = app.querySelector('.chat'); if (box) { var lastQ = box.querySelectorAll('.bubble-q'); var el = lastQ[lastQ.length - 1]; if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }
+  function chatHist() { return S.chat.filter(function (x) { return x && typeof x === 'object' && x.q; }).slice(-3).map(function (x) { return { q: x.q, bot: x.bot, topic: x.topic || [] }; }); }
+  function askCoach(q, forceBot) {
+    q = String(q).replace(/\s+/g, ' ').trim().slice(0, 150); if (!q) return;
+    var R = evaluate(), want = forceBot || S.bot || 'auto', hist = chatHist();
+    S.chat.forEach(function (x) { if (x && x.mode === 'pending') x.mode = x.final || 'local'; if (x && typeof x === 'object') { delete x.shown; delete x.stepN; } });
+    var r = botAnswer(q, want, hist, R);
+    var c = { q: q, want: want, mode: 'pending', steps: ['질문 읽는 중'].concat(r.steps || []) };
+    S.chat.push(c); while (S.chat.length > 40) S.chat.shift();
+    var fill = function (x, mode) {
+      c.final = mode; c.bot = x.bot; c.routed = x.routed; c.a = x.text; c.kind = x.kind; c.cites = x.cites; c.chips = x.chips; c.topic = x.topic; c.blocks = x.blocks; c.actions = x.actions; c.preferShort = x.preferShort;
+      if (x.kind === 'refuse' || x.kind === 'scope') logMissLocal(q);
       streamAnswer(c);
     };
-    if (PLACE_Q.test(q) && !/신고|계약|보증금|지원|월세/.test(q)) { c.mode = 'place'; save(); render(true); return; }
-    save(); render(true);
-    if (RS.ai && RS.src !== 'local' && S.aiCoach !== false) {
+    save(); render(true); scrollChat();
+    // 권리 질문은 Claude가 연결돼 있고 켜 두었으면 Claude가, 아니면 내장 AI가
+    if (r.bot === 'rights' && RS.ai && RS.src !== 'local' && S.aiCoach !== false) {
       c.steps = ['질문 읽는 중', '승인된 안내 찾는 중', 'Claude가 답 만드는 중'];
-      fetch('api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: q, facts: coachFacts(R) }) }).then(function (r) { return r.json(); }).then(function (j) {
-        if (j && j.mode === 'ai') { c.final = 'ai'; c.a = j.answer; c.kind = 'answer'; c.cites = j.cites; c.topic = j.cites.map(function (x) { return x.id; }); c.steps = ['승인된 안내 ' + j.cites.length + '개를 근거로 Claude가 답함', '답에 나온 숫자를 근거와 대조함']; streamAnswer(c); }
-        else if (j && j.mode === 'refuse') { c.final = 'local'; c.a = JachwiCoach.REFUSE; c.kind = 'refuse'; c.cites = []; c.chips = JachwiCoach.POPULAR; c.steps = ['승인된 안내에서 근거를 찾지 못해 답하지 않음']; streamAnswer(c); }
-        else useLocal();
-      }).catch(useLocal);
+      fetch('api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: q, facts: coachFacts(R) }) }).then(function (res) { return res.json(); }).then(function (j) {
+        if (j && j.mode === 'ai') fill({ bot: 'rights', routed: want !== 'rights', text: j.answer, kind: 'answer', cites: j.cites, topic: j.cites.map(function (x) { return x.id; }), chips: [], blocks: [], actions: [] }, 'ai');
+        else if (j && j.mode === 'refuse') fill({ bot: 'rights', routed: want !== 'rights', text: JachwiCoach.REFUSE, kind: 'refuse', cites: [], chips: JachwiCoach.POPULAR, blocks: [], actions: [] }, 'local');
+        else fill(r, 'local');
+      }).catch(function () { fill(r, 'local'); });
       return;
     }
-    useLocal();
+    fill(r, 'local');
+  }
+  function pickBot(id) {
+    S.bot = id;
+    var lastC = S.chat[S.chat.length - 1];
+    if (!(lastC && lastC.mode === 'hello' && lastC.bot === id)) { S.chat = S.chat.filter(function (x) { return !(x && x.mode === 'hello'); }); if (S.chat.length) S.chat.push({ mode: 'hello', bot: id }); }
+    save(); render(true);
+    var inp = app.querySelector('form[data-form=coach] textarea'); if (inp) inp.focus({ preventScroll: true });
   }
   function viewCoach() {
-    var R = evaluate();
+    var R = evaluate(), cur = S.bot || 'auto', B = BOTS[cur];
     var thread = S.chat.map(function (c, i) { return chatItem(c, i, R, i === S.chat.length - 1); }).join('');
     var aiOn = RS.ai && RS.src !== 'local' && S.aiCoach !== false;
+    var grid = '<div class="bots' + (S.chat.length ? ' compact' : '') + '" role="tablist" aria-label="봇 고르기">' + JachwiAssistant.ORDER.map(function (id) { var b = BOTS[id]; return '<button type="button" class="bot-c" role="tab" aria-selected="' + (cur === id) + '" data-act="pickbot" data-v="' + id + '">' + botAv(id, !!S.chat.length) + '<span><b>' + b.name + '</b><small>' + b.desc + '</small></span></button>'; }).join('') + '</div>';
+    var empty = '<div class="turn">' + botAv(cur) + '<div class="turn-b"><span class="who">' + B.name + '</span><div class="bubble-a"><span>' + (S.nick ? esc(S.nick) + '님, ' : '') + esc(B.hello) + '</span></div><div class="chips">' + B.ex.map(function (x) { return '<button type="button" class="chip" data-act="ask" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div></div></div>';
     return '<div class="page-head"><div><p class="eyebrow">지원 & 상담</p><h1>AI 자취 코치</h1></div>' + (S.chat.length ? '<button type="button" class="btn line sm" data-act="chatclear">대화 지우기</button>' : '') + '</div>' +
-      '<div class="grid"><section class="card c8 stack"><div class="chat" aria-live="polite">' + (thread || '<div class="bubble-a"><span>안녕하세요' + (S.nick ? ', ' + esc(S.nick) + '님' : '') + '. 계약·신고·지원·퇴거·동네에 대해 물어보세요. <b>운영자가 승인한 안내 안에서만</b> 답하고, 모르는 건 모른다고 할게요.</span></div>') + '</div>' +
-      '<form class="ask" data-form="coach"><input class="inp" aria-label="질문" placeholder="궁금한 걸 물어보세요" maxlength="120"><button class="btn" type="submit" aria-label="보내기">' + ic('send') + '</button></form></section>' +
-      '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">이런 걸 물어볼 수 있어요</h2><div class="chips">' + QA.concat(['중개수수료 얼마야?', '월세 밀리면 어떻게 돼?', '집주인이 월세 올려 달래', '곰팡이 생기면 누가 고쳐?', '확정일자 꼭 받아야 해?', '계약 끝나고 나가려면?', '가까운 병원 어디야?']).map(function (q) { return '<button type="button" class="chip" data-act="ask" data-v="' + q + '">' + q + '</button>'; }).join('') + '</div></section>' +
-      (RS.ai && RS.src !== 'local' ? '<label class="card split s13" style="gap:12px"><span><b>Claude로 답하기</b><br><span class="muted">끄면 이 기기 안의 내장 AI가 답해요. 켜면 질문과 앱이 계산한 날짜·금액만 서버로 보내요(이름·주소·집 위치 제외).</span></span><input class="sw" type="checkbox" role="switch" data-act="aicoach"' + (aiOn ? ' checked' : '') + '></label>' : '') +
-      '<div class="privacy">' + ic('info', 'sm') + '<span>' + (aiOn ? 'Claude가 운영자가 승인한 안내 ' + (RS.cards.length + RS.programs.length) + '개 중 질문과 맞는 것만 읽고 답해요. 근거를 꼭 붙이고, 근거에 없는 숫자가 나오면 답을 버려요. ' : '<b>내장 AI</b>가 이 기기 안에서 답해요. 질문이 서버로 가지 않아요. 운영자가 승인한 안내 ' + (RS.cards.length + RS.programs.length) + '개 안에서만 답을 만들고, 내 계약 날짜·금액을 넣어 드려요. 앞 질문에 이어서 물어봐도 돼요. ') + '답하지 못한 질문은 질문 글만 운영자에게 전달돼요. 질문에 이름·연락처는 적지 마세요. 법률 자문을 대신하지 않아요.</span></div></aside></div>';
+      '<section class="card asst"><div class="asst-h"><span class="asst-av" aria-hidden="true"><svg viewBox="0 0 48 48" width="34" height="34"><path d="M8 22 24 9l16 13v17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><rect x="15" y="24" width="18" height="11" rx="5.5" fill="currentColor"/><circle cx="20.5" cy="29.5" r="1.8" fill="var(--surface)"/><circle cx="27.5" cy="29.5" r="1.8" fill="var(--surface)"/></svg></span><div><h2>자취 AI 비서</h2><p class="s13 muted">무엇이든 물어보세요. 내 계약·동네·생활비를 알고 답해요.</p></div><span class="badge ' + (aiOn ? 'solid' : 'brand-b') + '">' + (aiOn ? 'Claude' : '내장 AI') + '</span></div>' + grid +
+      '<div class="chat" aria-live="polite">' + (thread || empty) + '</div>' +
+      '<form class="ask2" data-form="coach"><label for="ask-in">무엇을 도와드릴까요?' + (cur !== 'auto' ? ' <span class="muted">· ' + B.name + '</span>' : '') + '</label><div class="ask2-row"><textarea id="ask-in" rows="1" maxlength="150" placeholder="' + esc(B.ph) + '"></textarea><button class="send" type="submit" aria-label="보내기">' + ic('send') + '</button></div></form>' +
+      '<p class="s12 muted asst-foot">' + ic('lock', 'sm') + (aiOn ? '권리 질문은 Claude가 운영자가 승인한 안내 안에서 답해요. 질문과 계산한 날짜·금액만 보내요.' : '내장 AI가 이 기기 안에서 답해요. 질문이 서버로 가지 않아요.') + ' 승인된 안내에 없으면 답하지 않고 운영자에게 넘겨요. 법률 자문을 대신하지 않아요.' +
+      (RS.ai && RS.src !== 'local' ? ' <label class="ai-tg"><input type="checkbox" data-act="aicoach"' + (aiOn ? ' checked' : '') + '> Claude로 답하기</label>' : '') + '</p></section>';
   }
 
   // ---------- 내 계약 ----------
@@ -1760,6 +1847,10 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'condtab') { S.condTab = v; save(); render(true); }
     else if (a === 'copymsg') { var txt = condMsg(S.condTab === 'out' ? 'out' : 'in'); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast('복사했어요. 문자 앱에 붙여 넣어 보내세요.'); }, function () { var ta = app.querySelector('textarea'); ta.select(); toast('글자를 길게 눌러 복사해 주세요.'); }); }
     else if (a === 'ask') { askCoach(v); }
+    else if (a === 'askbot') { askCoach(v, b.dataset.k); }
+    else if (a === 'pickbot') { pickBot(v); }
+    else if (a === 'msgtone') { var ce = S.chat[+v]; if (ce) { ce.short = b.dataset.k === '1'; save(); render(true); } }
+    else if (a === 'msgcopy') { var cm = S.chat[+v], bk = cm && cm.blocks && cm.blocks[+b.dataset.k]; if (bk) { var mt = (cm.short === undefined ? cm.preferShort : cm.short) ? bk.short : bk.text; (navigator.clipboard ? navigator.clipboard.writeText(mt) : Promise.reject()).then(function () { toast('복사했어요. [ ] 칸은 직접 채워 보내세요.'); }, function () { toast('복사하지 못했어요. 글을 길게 눌러 복사해 주세요.'); }); } }
     else if (a === 'chatclear') { S.chat = []; save(); render(true); }
     else if (a === 'calnav') { if (v === '0') { S.calM = ''; S.calSel = iso(today); } else { var c = calBase(); c.setMonth(c.getMonth() + (+v)); S.calM = c.getFullYear() + '-' + (c.getMonth() + 1); S.calSel = ''; } save(); render(true); }
     else if (a === 'calday') { S.calSel = v; S.calTab = 'day'; save(); render(true); }
@@ -1799,6 +1890,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }).catch(function (err) { if (!err || err.name !== 'AbortError') toast('보내지 못했어요. 문자 내용 복사로 보내 주세요.'); });
     }
   });
+  // 질문 창: Enter로 보내고 Shift+Enter로 줄바꿈
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.target.id === 'ask-in') { e.preventDefault(); var fm = e.target.form; if (fm) fm.requestSubmit ? fm.requestSubmit() : fm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); } });
   document.addEventListener('keydown', function (e) { var g = e.target.closest && e.target.closest('g[data-act]'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); } if (e.key === 'Escape') { var qr = document.getElementById('q-res'); if (qr) qr.hidden = true; } });
   document.addEventListener('change', function (e) {
     var t = e.target, d = t.dataset;
@@ -1832,7 +1925,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var f = e.target.dataset.form; if (!f) return; e.preventDefault();
     if (f === 'geo') { var gq = e.target.querySelector('input').value.trim(); if (gq.length >= 2) geoSearch(gq); else toast('두 글자 이상 입력해 주세요.'); return; }
     if (f === 'evadd') { var fe = new FormData(e.target), et = String(fe.get('title') || '').trim().slice(0, 30), edt = String(fe.get('date') || ''); if (!et || !/^\d{4}-\d{2}-\d{2}$/.test(edt)) { toast('날짜와 내용을 넣어 주세요.'); return; } S.events = S.events || []; S.events.push({ id: 'ev' + Date.now(), date: edt, time: /^\d{2}:\d{2}$/.test(String(fe.get('time'))) ? String(fe.get('time')) : '', title: et }); S.calSel = edt; save(); render(true); toast('일정을 추가했어요. 폰 연동 탭에서 휴대폰 캘린더에도 넣을 수 있어요.'); return; }
-    if (f === 'coach') { var q = e.target.querySelector('input').value.trim(); if (q) { askCoach(q); var inp = app.querySelector('form[data-form=coach] input'); if (inp) inp.focus({ preventScroll: true }); } }
+    if (f === 'coach') { var q = e.target.querySelector('textarea').value.trim(); if (q) { askCoach(q); var inp = app.querySelector('form[data-form=coach] textarea'); if (inp) inp.focus({ preventScroll: true }); } }
     else if (f === 'billadd') {
       var fd = new FormData(e.target), name = String(fd.get('name') || '').trim().slice(0, 20), amt = parseInt(String(fd.get('amount') || '').replace(/[^0-9]/g, ''), 10);
       if (!name || !amt) { toast('이름과 금액을 넣어 주세요.'); return; }
@@ -1848,7 +1941,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
       decodePayload(dd).then(function (o) { if (o && typeof o === 'object' && confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); S.onboarded = true; S.demo = false; save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
     }
-    S.chat = (S.chat || []).map(function (c) { if (c && typeof c === 'object') { delete c.shown; delete c.stepN; if (c.mode === 'pending' || (!c.a && c.mode !== 'place')) return c.q; } return c; });
+    S.chat = (S.chat || []).map(function (c) { if (c && typeof c === 'object') { delete c.shown; delete c.stepN; if (c.mode === 'hello') return c; if (c.mode === 'pending' || !c.a) return c.q; } return c; }).filter(Boolean);
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () {});
     render(false);
     loadFiles().then(function () { if (FILES.length) render(true); });
