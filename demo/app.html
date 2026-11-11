@@ -1630,6 +1630,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function assistantFacts(R) {
     var f = coachFacts(R), y = today.getFullYear(), mo = today.getMonth();
     f.house = S.addr || ''; f.nick = S.nick || '';
+    // 단계별 체크리스트 (계약 전 · 계약 당일 · 입주 준비 · 입주 당일 · 신고·정리 · 퇴거)
+    f.stages = buildTimeline(R).map(function (st) { return { key: st.key, name: st.name, when: st.when, tasks: st.tasks.map(function (t) { return { title: t.title, done: !!S.done[t.id], urgent: !!t.urgent }; }) }; });
     f.money = { month: (mo + 1) + '월', items: billsInMonth(y, mo).map(function (b) { return { name: b.title, amount: b.amount, kind: b.kind, est: b.est }; }) };
     var hasHome = !!(S.home || S.demo), list = hasHome ? places().slice(0, 60).map(function (p) { return { id: p.id, name: p.name, cat: p.cat, sub: p.sub, min: p.min, m: Math.round(p.m) }; }) : [];
     f.places = { hasHome: hasHome && DATA.status !== 'nohome', list: list, source: isReal() ? 'OpenStreetMap 기준 · 걸리는 시간은 직선거리로 계산' : '시연용 예시 데이터' };

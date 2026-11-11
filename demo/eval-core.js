@@ -70,8 +70,9 @@
     var view = J.publicView(published, today || new Date('2026-11-10T09:00:00+09:00'));
     var cards = view.cards.concat(J.noticeCards(view.programs)), facts = demoFacts(view.programs);
     facts.house = '봉천동 원룸';
+    facts.stages = [{ key: 'prep', name: '입주 준비', when: '10.29 ~ 11.10', tasks: [{ title: '이사 수단 예약하기', done: true }, { title: '인터넷 설치 예약' }, { title: '도시가스 개통 예약' }, { title: '잔금 계좌와 이체 한도 확인' }] }, { key: 'mday', name: '입주 당일', when: '11.11', tasks: [{ title: '잔금 보내기 전 등기부등본 다시 떼기' }, { title: '전입신고 + 임대차계약서 제출', urgent: true }] }];
     facts.money = { month: '11월', items: [{ name: '월세', amount: 450000, kind: 'out' }, { name: '관리비', amount: 70000, kind: 'out' }, { name: '통신비', amount: 33000, kind: 'out' }] };
-    facts.places = { hasHome: true, source: '시연용 예시 데이터', list: [{ id: 'pharm', name: '약국', cat: 'medical', sub: '약국', min: 3, m: 160 }, { id: 'laundry', name: '셀프 빨래방', cat: 'life', sub: '빨래방', min: 2, m: 108 }, { id: 'bus', name: '버스정류장', cat: 'transit', min: 2, m: 108 }] };
+    facts.places = { hasHome: true, source: '시연용 예시 데이터', list: [{ id: 'pharm', name: '약국', cat: 'medical', sub: '약국', min: 3, m: 160 }, { id: 'laundry', name: '셀프 빨래방', cat: 'life', sub: '빨래방', min: 2, m: 108 }, { id: 'bus', name: '봉천역 버스정류장', cat: 'transit', min: 2, m: 108 }, { id: 'sub', name: '서울대입구역', cat: 'transit', sub: '지하철역', min: 9, m: 600 }, { id: 'police', name: '봉천지구대', cat: 'safety', min: 6, m: 380 }, { id: 'center', name: '청룡동 행정복지센터', cat: 'public', min: 4, m: 262 }] };
     var rows = evals.map(function (e) {
       var a = A.answer({ q: e.q, bot: e.want || 'auto', cards: cards, facts: facts, repairs: repairs || published.repairs || [] }), why = [];
       var all = a.text + ' ' + (a.blocks || []).map(function (b) { return (b.text || '') + ' ' + (b.label || '') + ' ' + (b.items || []).map(function (x) { return typeof x === 'string' ? x : (x.name || x.label || ''); }).join(' '); }).join(' ');

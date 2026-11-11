@@ -432,7 +432,7 @@
         var c = op.card || {}, cite = (c.cite || []).filter(function (x) { return x && x[0]; }).slice(0, 5).map(function (x) { return [clip(x[0], 80), safeUrl(clip(x[1], 300))]; });
         if (!c.title || !c.body) return { ok: false, error: '제목과 내용을 적어 주세요.' };
         if (!cite.length) return { ok: false, error: '근거(법령·공식 안내)를 하나 이상 적어 주세요.' };
-        var card = { id: c.id || uid('k'), title: clip(c.title, 60), ask: (c.ask || []).slice(0, 4).map(function (x) { return clip(x, 40); }), keywords: (c.keywords || []).map(function (w) { return clip(String(w).trim(), 20); }).filter(Boolean).slice(0, 15), body: clip(c.body, 1500), cite: cite, status: 'approved', approvedBy: name, approvedAt: t.iso };
+        var card = { id: c.id || uid('k'), whole: !!c.whole, title: clip(c.title, 60), ask: (c.ask || []).slice(0, 4).map(function (x) { return clip(x, 40); }), keywords: (c.keywords || []).map(function (w) { return clip(String(w).trim(), 20); }).filter(Boolean).slice(0, 15), body: clip(c.body, 1500), cite: cite, status: 'approved', approvedBy: name, approvedAt: t.iso };
         var ci = -1; P.cards.forEach(function (y, n) { if (y.id === card.id) ci = n; });
         if (ci >= 0) P.cards[ci] = card; else P.cards.push(card);
         if (op.fromQuestion) U.items = U.items.filter(function (q) { return q.id !== op.fromQuestion; });
