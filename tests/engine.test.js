@@ -105,9 +105,9 @@ test('자격: 지원마다 모집 상태·선정 방식·원문 링크·승인 �
     assert.ok(p.status, p.id); assert.ok(p.select); assert.match(p.url, /^https:\/\//); assert.ok(p.basis);
   }
 });
-test('자격: 무주택 아님이면 해당 안 됨', { todo: 'rules-core.evalProgram이 user.homeless를 반영해야 함 (이성준 님 확인)' }, () => {
+test('자격: 무주택 아님이면 해당 안 됨', () => {
   assert.equal(judge({ homeless: 'no' }, 'rent'), '해당 안 됨');
 });
-test('자격: 유사 지원을 이미 받으면 청년월세는 해당 안 됨', { todo: 'seed 승인본에 함께 받을 수 없는 지원(exclusions)과 판정 필요 (이성준 님 확인)' }, () => {
+test('자격: 유사 지원을 이미 받으면 청년월세는 해당 안 됨', () => {
   assert.equal(judge({ dup: 'yes' }, 'rent'), '해당 안 됨');
 });
