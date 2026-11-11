@@ -820,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return { C: C, M: M, report: { required: required, reason: reason, due: add(C, 30) }, movein: { due: add(M, 14) }, programs: programs, eligible: programs.filter(function (x) { return x.eligible; }) };
   }
   function judge(x) {
-    if (x.closed) return ['no', '접수 마감'];
+    if (x.closed) return ['no', '마감'];
     if (!x.eligible) return ['no', '해당 안 됨'];
     return x.unknown.some(function (r) { return r.type !== 'homeless'; }) ? ['due', '확인 필요'] : ['brand', '해당 가능'];
   }

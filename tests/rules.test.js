@@ -58,7 +58,7 @@ test('자격 판정: 나이·소득·주거비·마감', () => {
   assert.equal(R.verdict(R.evalProgram(p, { age: 25, income: 'unknown', deposit: 500, rent: 50, gu: '관악구' })), '확인 필요');
   assert.equal(R.verdict(R.evalProgram(p, { age: 25, income: 'over', deposit: 500, rent: 50, gu: '관악구' })), '해당 안 됨');
   const closed = R.toProgram(SEED.notices.move, new Date('2027-01-05'));
-  assert.equal(closed.status, '접수 마감');
+  assert.equal(closed.status, '마감');
   assert.equal(R.verdict(R.evalProgram(closed, { age: 25, income: '100', deposit: 500, rent: 50, gu: '관악구' })), '마감');
 });
 

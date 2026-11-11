@@ -123,7 +123,7 @@
     var T = josa(card.title, '은는');
     if (/서류|준비|필요/.test(q) && p.docs) parts.push(card.title + ' 제출 서류는 ' + josa(p.docs.join(', '), '이에요') + '.');
     else if (/얼마|금액|받을 수 있는 돈/.test(q) && p.amountText) parts.push(T + ' ' + josa(p.amountText, '이에요') + '.');
-    else if (/언제|기간|마감|접수/.test(q)) parts.push(T + ' ' + (p.period ? p.period + ' 접수예요' : '지금 ' + josa(p.status || '모집 예정', '이에요')) + (p.firstCome ? '. 선착순이라 일찍 마감될 수 있어요' : '') + '.');
+    else if (/언제|기간|마감|접수/.test(q)) parts.push(T + ' ' + (p.period ? p.period + ' 접수예요' : '지금 ' + josa(p.status || '다음 공고 대기', '이에요')) + (p.firstCome ? '. 선착순이라 일찍 마감될 수 있어요' : '') + '.');
     else if (/어디|어떻게|신청/.test(q) && p.channel) parts.push(T + ' ' + josa(p.channel, '으로') + ' 신청해요.');
     else parts.push(T + ' ' + josa((p.amountText || '') + (p.select ? ', ' + p.select : ''), '이에요') + '.');
     if (p.exclusions && p.exclusions.length && /같이|함께|중복|둘 다/.test(q)) parts.push('함께 받을 수 없는 지원: ' + p.exclusions.join(', ') + '.');
