@@ -38,7 +38,7 @@
   function citeOf(cards, ids) { return ids.map(function (id) { var c = cardById(cards, id); return c ? { id: c.id, title: c.title, src: c.cite || [] } : null; }).filter(Boolean); }
 
   // ---------- 자유 질문: 알맞은 봇 고르기 ----------
-  var P_WRITE = /뭐라고\s*(보내|말|써)|어떻게\s*(말|보내|전해)|문자|메시지|카톡|톡\s|톡$|연락\s*(하고|드리|해야|해서)|말하고\s*싶|말해야|전하고|보내고|보낼|써\s*줘|써줄|작성|요청하고\s*싶|부탁하고\s*싶|알리고\s*싶|통보|답장/;
+  var P_WRITE = /뭐라고\s*(보내|말|써|해)|뭐라고\s*\S*\s*(보내|말)|어떻게\s*(말|보내|전해)|문자|메시지|카톡|톡\s|톡$|연락\s*(하고|드리|해야|해서)|말하고\s*싶|말해야|전하고|보내고|보낼|써\s*줘|써줄|작성|요청하고\s*싶|부탁하고\s*싶|알리고\s*싶|통보|답장/;
   var P_REPAIR = /냄새|하수구|습기|배터리|건전지|흘러|물이\s*안\s*빠|찢어|들떴|금\s*갔|고장|수리|고쳐|고치|새요|새는|샌다|샙니다|누수|막혔|막힘|안\s*나와|안\s*켜|안\s*돼요|안\s*돼$|깨졌|부서|곰팡이|결로|보일러|변기|배수|수압|전구|전등|형광등|콘센트|차단기|누전|도어락|에어컨|세탁기|냉장고|방충망|가스\s*냄새|벽지|장판/;
   var P_MONEY = /예산|수입|월급|소득|남는\s*돈|지원금\s*받으면|얼마나\s*줄|공과금|전기세|가스비|난방비|관리비\s*아끼|생활비|고정비|지출|돈이|돈을|아끼|절약|얼마\s*나가|한\s*달에|가계부|예산|공과금\s*(얼마|합)|줄이|부담|비중|많이\s*나가/;
   var P_LOCAL = /근처|가까운|가까이|주변|동네|어디\s*있|약국|병원|의원|치과|편의점|마트|다이소|빨래방|세탁소|카페|맛집|식당|밥집|공원|산책|헬스|도서관|스터디|공부하기|지하철|정류장|버스|주민센터|행정복지센터|청년센터|우체국|경찰|지구대|파출소/;
@@ -301,8 +301,13 @@
     if (P_WHO.test(q)) return { kind: 'smalltalk', text: '저는 ' + me + (id === 'auto' ? '. 집주인톡·고쳐봇·절약봇·권리봇·동네봇 중 알맞은 봇에게 질문을 넘겨 답해요.' : '(' + B.desc + '). ' + B.hello + ' 다른 일은 자유 질문 방에서 물어보면 알맞은 봇이 답해요.'), chips: B.ex.slice(0, 3), steps: ['봇 소개'] };
     return null;
   }
+  // 말투 다듬기: 초성 줄임말 · 영어 섞인 말 · 흔한 오타를 알아듣게 바꿈 (뜻은 그대로)
+  var NORM = [[/ㅈㅇㅅㄱ/g, '전입신고'], [/ㅈㅇㅅ\s*ㅅㄱ|ㅈㅇㅅㅅㄱ/g, '전월세 신고'], [/ㅎㅈㅇㅈ/g, '확정일자'], [/ㅂㅈㄱ/g, '보증금'], [/ㅈㄱㅂㅅ/g, '중개보수'], [/ㄱㄹㅂ/g, '관리비'],
+    [/\bdeadline\b/gi, '기한'], [/\brent\b/gi, '월세'], [/\bdeposit\b/gi, '보증금'], [/\bbroken\b/gi, '고장'], [/\blandlord\b/gi, '집주인'], [/\bsupport\b/gi, '지원'], [/\bcontract\b/gi, '계약'],
+    [/임대인/g, '집주인'], [/건물주/g, '집주인'], [/임차인/g, '세입자'], [/머라고/g, '뭐라고'], [/어케|어캐/g, '어떻게'], [/머임|뭐임/g, '뭐야'], [/언제임/g, '언제야'], [/얼마임/g, '얼마야'], [/업나|없나여/g, '없나'], [/넘\s/g, '너무 '], [/ㅠ+|ㅜ+|ㅋ+|ㅎ+/g, ' ']];
+  function normalize(q) { var t = String(q || ''); NORM.forEach(function (n) { t = t.replace(n[0], n[1]); }); return t.replace(/\s+/g, ' ').trim(); }
   function answer(o) {
-    var q = String(o.q || '').replace(/\s+/g, ' ').trim(), want = o.bot && o.bot !== 'auto' ? o.bot : null;
+    var q = normalize(o.q), want = o.bot && o.bot !== 'auto' ? o.bot : null;
     var last = (o.history || []).length ? o.history[o.history.length - 1] : null;
     // 짧게/다시 써 달라는 요청은 바로 앞 문자에
     if (last && last.bot === 'landlord' && /짧게|간단히|줄여/.test(q) && last.q) { var re = landlordBot(last.q, o); re.preferShort = true; re.text = '짧게 줄여 봤어요.'; re.bot = 'landlord'; re.routed = !want; return re; }
@@ -329,5 +334,5 @@
     if (r.routed) r.steps.unshift((want ? BOTS[want].name + ' 대신 ' : '') + BOTS[bot].name + '에게 맡김');
     return r;
   }
-  return { answer: answer, route: route, BOTS: BOTS, ORDER: ORDER, matchRepair: matchRepair };
+  return { answer: answer, normalize: normalize, route: route, BOTS: BOTS, ORDER: ORDER, matchRepair: matchRepair };
 });

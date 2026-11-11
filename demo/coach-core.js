@@ -136,13 +136,14 @@
   // ---------- 모르는 주제 거르기 ----------
   // 질문의 핵심 낱말이 어느 승인 안내에도 없고, 카드와는 흔한 낱말('신고' 등)로만 이어지면 엉뚱한 카드로 답하지 않는다.
   var GENERIC = ['신고', '지원', '신청', '집', '계약', '월세', '보증금', '전세', '주소', '등록', '수수료', '서류'];
-  var FUNC = /^(이번달|다음달|이달|요즘|진짜|너무|혹시|정말|제가|저|우리|언제|어디|어디서|얼마|얼마나|뭐|뭘|무엇|왜|어떻게|해|돼|되나|해야|해야돼|하나|할|할때|때|같이|있어|있나|없어|알려줘|알려|꼭|좀|나|내|이번|오늘|지금|그럼|그거|그건|해요|돼요|되요|하면|해도|되는|되면|뭐야|뭐임|있을까|가능해|가능)$/;
+  var FUNC = /^(어제|그제|아직|이미|계속|처음|며칠|일주일|한달|그냥|일단|혹시나|문제|걱정|불안|잠|생각|경우|상황|방법|부분|내용|정도|때문|이유|사람|아이|애|딸|아들|부모|부모님|엄마|아빠|자녀|자식|학생|대학생|직장인|저희|우리|제|저는|자취방|원룸|이사|자취|이번달|다음달|이달|요즘|진짜|너무|혹시|정말|제가|저|우리|언제|어디|어디서|얼마|얼마나|뭐|뭘|무엇|왜|어떻게|해|돼|되나|해야|해야돼|하나|할|할때|때|같이|있어|있나|없어|알려줘|알려|꼭|좀|나|내|이번|오늘|지금|그럼|그거|그건|해요|돼요|되요|하면|해도|되는|되면|뭐야|뭐임|있을까|가능해|가능)$/;
   // 명사로 보이는 낱말만: 조사를 떼고, 동사·형용사 꼴(해야돼, 밀리면, 싶어…)은 뺀다
   var JOSA = /(에서|으로|이랑|하고|까지|부터|에게|한테|은|는|이|가|을|를|에|의|도|로|랑|와|과|만)$/;
   var VERBY = /(요|야|해|돼|됨|함|임|지|까|면|게|어|아|래|니|나|냐|든|데|거|건|던|을|려|러|며|죠|네|군|다|란|싶|같|된|한|할|될|봐|줘|워|켜|쳐|져|겨|셔|켰|했|됐|낼|갈|올|살|줄|볼)$/;
+  var VERB2 = /(아서|어서|해서|와서|워서|여서|돼서|되서|가서|봐서|려고|면서|는데|니까|다고|라고|대요|래요)$|^(걱정|불안|무서|막막|답답)/;
   function contentWords(q) {
     return String(q).replace(/[^0-9a-zA-Z가-힣\s]/g, ' ').split(/\s+/).map(function (w) { return w.replace(JOSA, ''); })
-      .filter(function (w) { return w.length >= 2 && !FUNC.test(w) && !/^\d+$/.test(w) && !VERBY.test(w); });
+      .filter(function (w) { return w.length >= 2 && !FUNC.test(w) && !/^\d+$/.test(w) && !VERBY.test(w) && !VERB2.test(w); });
   }
   function unknownTopic(q, card, corpus) {
     var kws = []; (card.keywords || []).forEach(function (k) { kws.push(k.replace(/\s+/g, '')); });
@@ -225,8 +226,9 @@
     var corpus = cards.map(function (c) { return c.title + ' ' + (c.keywords || []).join(' ') + ' ' + c.body; }).join(' ');
     var unk = !followed && !P_LEGAL.test(q) ? unknownTopic(q, hits[0].card, corpus) : null;
     if (unk) return { kind: 'refuse', text: (pre.length ? pre.join(' ') + '\n\n' : '') + REFUSE, chips: POPULAR, cites: [], topic: [], steps: steps.concat(['‘' + unk.join(', ') + '’에 대한 승인된 안내가 없어 답하지 않음']) };
-    var crisis = P_CRISIS.test(q);
+    var crisis = P_CRISIS.test(q), worry = /걱정|불안|무서|잠이\s*안|어떡해|어떻게\s*해요|큰일|막막/.test(q);
     if (crisis) pre.unshift('많이 불안하시겠어요. 지금 할 수 있는 것부터 알려드릴게요.');
+    else if (worry) pre.unshift('걱정되셨겠어요. 지금 할 수 있는 것부터 알려드릴게요.');
 
     // 가장 맞는 카드 하나 + 점수가 비슷한 카드 하나까지. 지원 원칙 카드와 공고 카드는 섞지 않음(판정이 겹침)
     var top = hits[0], use = [top.card];
@@ -248,6 +250,14 @@
       if (me) mine.push(me);
     });
     if (mine.length) steps.push('내 계약 날짜·금액 반영');
+    // 고른 안내에 없는 낱말이 질문에 있으면: 2개 이상은 멈추고, 1개는 그 부분이 안내에 없다고 밝힘
+    if (!followed && !crisis && !P_LEGAL.test(q) && top.card.kind !== 'notice') {
+      var useText = use.map(function (c) { return c.title + ' ' + (c.keywords || []).join(' ') + ' ' + c.body; }).join(' '), useFlat = useText.replace(/\s+/g, '');
+      var ukw = []; use.forEach(function (c) { (c.keywords || []).forEach(function (k) { ukw.push(k.replace(/\s+/g, '')); }); });
+      var missing = contentWords(q).filter(function (w) { return useText.indexOf(w) < 0 && useFlat.indexOf(w) < 0 && !ukw.some(function (k) { return k.length >= 2 && w.indexOf(k) === 0 && w.length - k.length <= 2; }); });
+      if (missing.length >= 2) return { kind: 'refuse', text: (pre.length ? pre.join(' ') + '\n\n' : '') + REFUSE, chips: POPULAR, cites: [], topic: [], steps: steps.concat(['‘' + missing.join(', ') + '’에 대한 승인된 안내가 없어 답하지 않음']) };
+      if (missing.length === 1) { mine.push('물어보신 ‘' + missing[0] + '’ 부분은 승인된 안내에 없어서 확실히 답하기 어려워요.'); steps.push('‘' + missing[0] + '’ 부분은 안내에 없음을 밝힘'); }
+    }
     var said = paras.join(' ') + ' ' + mine.join(' '), gap = [];
     var askedFee = /(과태료|벌금|비용|수수료|요금)/.exec(q);
     if (askedFee && !new RegExp(askedFee[1] + '[^.]{0,20}\\d').test(said)) gap.push(askedFee[1] === '과태료' || askedFee[1] === '벌금' ? askedFee[1] + ' 금액' : '비용');

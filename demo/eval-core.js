@@ -118,5 +118,13 @@
     var pass = rows.filter(function (r) { return r.pass; }).length;
     return { total: rows.length, pass: pass, rate: rows.length ? pass / rows.length : 0, wrong: rows.filter(function (r) { return r.wrong; }).length, safe: 0, rows: rows, personas: byP };
   }
-  return { runPersonas: runPersonas, personaFacts: personaFacts, runAssistant: runAssistant, runCoach: runCoach, runExtract: runExtract, demoFacts: demoFacts, PERSON: PERSON };
+  // 말투 페르소나: 하나의 계약 조건으로 말투만 바꿔 묻기
+  function runStyles(published, styles, A, repairs) {
+    var r = runPersonas(published, [{ id: 'style', name: '말투', who: '', p: styles.p, qs: styles.qs.map(function (x) { return { q: x.q, bot: x.bot || 'auto', has: x.has, not: x.not }; }) }], A, repairs);
+    r.rows.forEach(function (row, i) { row.persona = styles.qs[i].style; });
+    var by = {}; styles.qs.forEach(function (x, i) { by[x.style] = by[x.style] || { name: x.style, total: 0, pass: 0 }; by[x.style].total++; if (r.rows[i].pass) by[x.style].pass++; });
+    r.styles = Object.keys(by).map(function (k) { return by[k]; });
+    return r;
+  }
+  return { runStyles: runStyles, runPersonas: runPersonas, personaFacts: personaFacts, runAssistant: runAssistant, runCoach: runCoach, runExtract: runExtract, demoFacts: demoFacts, PERSON: PERSON };
 });
