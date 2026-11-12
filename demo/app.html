@@ -86,6 +86,8 @@ svg.i.sm { width: 16px; height: 16px }
 .nav[aria-current="page"] { background: var(--brand-tint); color: var(--brand-text); font-weight: 700 }
 .nav .cnt { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--due); color: #fff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center }
 .side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px }
+.side-tool { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 12px; border: 0; border-radius: 12px; background: transparent; color: var(--ink-2); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; text-align: left }
+.side-tool:hover { background: var(--fill) } .side-tool small { margin-left: auto; color: var(--ink-3); font-size: 12px; font-weight: 600 }
 .privacy { display: flex; gap: 8px; align-items: flex-start; padding: 12px; border-radius: 14px; background: var(--fill); color: var(--ink-3); font-size: 12px; line-height: 1.5 }
 .privacy svg { margin-top: 1px; color: var(--ink-2) }
 .side-foot a.small-link { font-size: 12px; color: var(--ink-3); padding: 0 12px }
@@ -533,6 +535,8 @@ details.how summary { cursor: pointer; list-style: none } details.how summary::-
 .bell { position: relative }
 .bell .cnt { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--due); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center }
 @media (max-width: 640px) { .hbar-r select { display: none } .hbar { margin-bottom: 14px } }
+.demo-strip select { min-height: 32px; width: auto; font-size: 12px; padding: 0 8px; border-radius: 9px; background: var(--surface) }
+@media (max-width: 899px) { .demo-strip select { display: none } }
 /* 휴대폰 첫 화면 위쪽 정리: 알림·화면 모드는 위쪽 바(#top-acts)로 옮겼으니 검색 줄은 지도 탐색에서만 */
 @media (max-width: 899px) { .hbar { display: none } .hbar.hbar-msearch { display: flex } .hbar .hbar-r { display: none } .hbar-float + .subnav { margin-right: 0 } }
 .subnav { display: none }
@@ -1068,6 +1072,7 @@ details.fold[open] > summary { margin-bottom: 10px }
     <a class="brand" href="#home"><span class="brand-mark"><img src="icons/logo-mark.png" alt="" width="34" height="34"></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></a>
     <nav id="side-nav" style="display:flex;flex-direction:column;gap:2px"></nav>
     <div class="side-foot">
+      <div id="side-tools"></div>
       <div class="privacy"><span data-icon="lock"></span><span>로그인 없이 쓰고, 입력한 정보는 이 기기에만 저장돼요.</span></div>
       <a class="small-link" href="index.html">← 계약 전 화면 (조건 입력·집 보기)</a>
     </div>
@@ -3585,14 +3590,18 @@ document.addEventListener('DOMContentLoaded', function () {
   var SEARCH_ON = ['home', 'map'];
   function bellBtn() { var n = BELL_N; return '<a class="icon-btn bell" href="#timeline" aria-label="할 일 알림' + (n ? ' ' + n + '개' : '') + '">' + ic('bell') + (n ? '<span class="cnt">' + n + '</span>' : '') + '</a>'; }
   function headerBar(n, bellOnly) {
-    if (bellOnly) return '<div class="hbar desk hbar-float"><div class="hbar-r">' + themeBtn() + bellBtn() + '</div></div>';
-    var simV = S.sim === null || S.sim === undefined ? '' : String(S.sim);
-    var simSel = !S.demo ? '' : '<select class="inp" data-sim aria-label="시연용 날짜">' + [['', '시연: 실제 오늘'], ['-1', '시연: 입주 전날'], ['0', '시연: 입주 당일'], ['10', '시연: 입주 10일 후'], ['40', '시연: 입주 40일 후']].map(function (o) { return '<option value="' + o[0] + '"' + (simV === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
-    var withSearch = SEARCH_ON.indexOf(route()) >= 0;
-    if (!withSearch) return '<div class="hbar desk"><div class="hbar-r">' + simSel + themeBtn() + bellBtn() + '</div></div>';
-    return '<div class="hbar desk' + (route() === 'map' ? ' hbar-msearch' : '') + '"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div>' +
-      '<div class="hbar-r">' + simSel + themeBtn() + bellBtn() + '</div></div>';
+    // PC: 알림은 왼쪽 메뉴 '타임라인' 옆 숫자와 같아서 빼고, 화면 모드는 왼쪽 메뉴 아래(#side-tools)로. 휴대폰은 위쪽 바(#top-acts).
+    // 그래서 위쪽 줄은 주변 장소 검색창이 있는 화면(홈·지도 탐색)에서만 그린다.
+    if (bellOnly || SEARCH_ON.indexOf(route()) < 0) return '';
+    return '<div class="hbar desk' + (route() === 'map' ? ' hbar-msearch' : '') + '"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div></div>';
   }
+  // 시연용 날짜(예시 데이터일 때만) — 예시 데이터 안내 줄 안에 둔다 (PC만, 휴대폰은 숨김)
+  function simSelect() {
+    if (!S.demo) return '';
+    var simV = S.sim === null || S.sim === undefined ? '' : String(S.sim);
+    return '<select class="inp" data-sim aria-label="시연용 날짜">' + [['', '시연: 실제 오늘'], ['-1', '시연: 입주 전날'], ['0', '시연: 입주 당일'], ['10', '시연: 입주 10일 후'], ['40', '시연: 입주 40일 후']].map(function (o) { return '<option value="' + o[0] + '"' + (simV === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+  }
+
   function render(keep) {
     pendRender = false;
     if (!S.demo) S.sim = null;
@@ -3613,8 +3622,9 @@ document.addEventListener('DOMContentLoaded', function () {
     loadPlaces();
     var listPos = keep ? listScroll() : [];
     BELL_N = n;
+    var st = document.getElementById('side-tools'); if (st) { var tt = getTheme(); st.innerHTML = '<button type="button" class="side-tool" data-act="theme" aria-label="화면 모드: ' + THEMES[tt][0] + ' (누르면 ' + THEMES[THEME_NEXT[tt]][0] + ')">' + ic(THEMES[tt][1]) + '화면 모드<small>' + THEMES[tt][0] + '</small></button>'; }
     var ta = document.getElementById('top-acts'); if (ta) ta.innerHTML = '<a class="icon-btn" href="#coach" aria-label="AI 자취 코치">' + ic('chat') + '</a>' + bellBtn() + themeBtn();
-    var demoBar = S.demo ? '<div class="demo-strip"><span><b>예시 데이터</b>로 둘러보는 중<span class="dm-more">이에요. 체크·입력해도 내 기록이 아니에요.</span></span><button type="button" class="btn sm" data-act="startreal">내 정보로 시작하기</button></div>' : '';
+    var demoBar = S.demo ? '<div class="demo-strip"><span><b>예시 데이터</b>로 둘러보는 중<span class="dm-more">이에요. 체크·입력해도 내 기록이 아니에요.</span></span><span class="row demo-tools-r" style="gap:8px">' + simSelect() + '<button type="button" class="btn sm" data-act="startreal">내 정보로 시작하기</button></span></div>' : '';
     app.innerHTML = r === 'start' ? viewStart() : demoBar + headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
     fitLists();
     listScroll(listPos);
