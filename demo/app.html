@@ -16,6 +16,7 @@
 <script src="rules-core.js" defer></script>
 <script src="rules/seed.js" defer></script>
 <script src="engine.js" defer></script>
+<script src="screens-core.js" defer></script>
 <script src="data/regions.js" defer></script>
 <script src="support-core.js" defer></script>
 <script src="coach-core.js" defer></script>
@@ -928,6 +929,45 @@ details.fold[open] > summary { margin-bottom: 10px }
   .sp-detail { position: static; max-height: none; scroll-margin-top: 70px }
   .sp-acts .btn { flex: 1 1 auto }
 }
+
+/* ===== mo:T-09 내 화면 6개 모션 (계약·신고 전용) ===== */
+.mo { --mo-short: 200ms; --mo-base: 300ms; --mo-long: 400ms; --mo-step: 50ms; --mo-shift: 8px; --mo-ease: cubic-bezier(0.2, 0, 0, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
+.mo .mo-fold { display: grid; grid-template-rows: 0fr }
+.mo .mo-fold.open { grid-template-rows: 1fr }
+.mo .mo-fold-in { min-height: 0; overflow: hidden }
+@keyframes mo-in { from { opacity: 0; transform: translateY(var(--mo-shift)) } }
+@keyframes mo-fill { from { width: 0 } }
+@keyframes mo-grow { from { width: var(--mo-from, 0) } }
+@keyframes mo-pop { from { opacity: 0; transform: scale(.6) } }
+@media (prefers-reduced-motion: no-preference) {
+  .mo[data-mo-enter] .mo-in { animation: mo-in var(--mo-base) var(--mo-ease) both }
+  .mo[data-mo-enter] .mo-in.mo-s0 { animation-delay: calc(var(--mo-step) * 0) }
+  .mo[data-mo-enter] .mo-in.mo-s1 { animation-delay: calc(var(--mo-step) * 1) }
+  .mo[data-mo-enter] .mo-in.mo-s2 { animation-delay: calc(var(--mo-step) * 2) }
+  .mo[data-mo-enter] .mo-in.mo-s3 { animation-delay: calc(var(--mo-step) * 3) }
+  .mo[data-mo-enter] .mo-in.mo-s4 { animation-delay: calc(var(--mo-step) * 4) }
+  .mo[data-mo-enter] .mo-in.mo-s5 { animation-delay: calc(var(--mo-step) * 5) }
+  .mo[data-mo-enter] .mo-in.mo-s6 { animation-delay: calc(var(--mo-step) * 6) }
+  .mo[data-mo-enter] .mo-fill { animation: mo-fill var(--mo-long) var(--mo-ease) both }
+  /* .mo-grow·.mo-pop은 같은 화면에서 값이 바뀐 render(true) 피드백용이라 [data-mo-enter]를 걸지 않는다.
+     재생 조건은 JS가 정한다: moChanged(key, value)가 등장 렌더·첫 기록·같은 값이면 undefined → 클래스를 붙이지 않음. */
+  .mo .mo-grow { animation: mo-grow var(--mo-long) var(--mo-ease) both }
+  .mo .mo-pop { animation: mo-pop var(--mo-short) var(--mo-ease) both }
+  .mo .mo-fold { transition: grid-template-rows var(--mo-base) var(--mo-ease-io) }
+}
+/* ===== /mo:T-09 ===== */
+
+/* ===== mo:T-10 #result ===== */
+/* ===== /mo:T-10 ===== */
+
+/* ===== mo:T-11 #timeline ===== */
+/* ===== /mo:T-11 ===== */
+
+/* ===== mo:T-12 #moveout #docs ===== */
+/* ===== /mo:T-12 ===== */
+
+/* ===== mo:T-13 #input #contract ===== */
+/* ===== /mo:T-13 ===== */
 </style>
 </head>
 <body>
@@ -3170,6 +3210,79 @@ document.addEventListener('DOMContentLoaded', function () {
       '<p class="s12 muted" style="margin-top:16px">이 결과는 승인된 규칙으로만 계산했어요. 법률 자문이나 권리분석을 대신하지 않아요. 계약 위험 진단은 <a href="https://www.khug.or.kr" target="_blank" rel="noopener">안심전세 앱</a>에서 받을 수 있어요.</p>' +
       '<a class="btn" style="margin-top:12px" href="#timeline">내 타임라인 보기' + ic('chev', 'sm') + '</a>';
   }
+
+  // ===== mo:T-09 =====
+  // 계약·신고 6개 화면 전용 모션 연결 (팀 공통 아님). 공용 렌더 함수가 view를 부른 뒤에 last를 바꾸므로 view 안의 last는 직전 화면이다.
+  var JS = window.JachwiScreens || null;
+  var MO = { prev: {}, open: {}, enter: {}, jobs: [] }, moSeq = 0;
+  function moReduce() { return !JS || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function moScreenOf(key) { return String(key).split(':')[0]; }
+  function moBegin(screen) {
+    var on = JS ? JS.isEnter(last, screen) : last !== screen;
+    MO.enter[screen] = on;
+    MO.jobs = [];
+    if (on) Object.keys(MO.open).forEach(function (k) { if (k.indexOf(screen + ':') === 0) delete MO.open[k]; });
+    return on;
+  }
+  function moAfter(fn) { MO.jobs.push(fn); }
+  function moRoot(screen, html) {
+    var id = ++moSeq, jobs = MO.jobs, on = !!JS && JS.shouldAnimate(moReduce(), MO.enter[screen]);
+    MO.jobs = [];
+    if (jobs.length) requestAnimationFrame(function () {
+      var root = app.querySelector('.mo.mo-' + screen);
+      if (id !== moSeq || !root) return;
+      jobs.forEach(function (fn) { try { fn(root); } catch (err) { console.error(err); } });
+    });
+    return '<div class="mo mo-' + screen + '"' + (on ? ' data-mo-enter' : '') + '>' + html + '</div>';
+  }
+  function moStep(i) { return ' mo-in mo-s' + (JS ? JS.stepIndex(i) : 0); }
+  function moChanged(key, value) {
+    var had = Object.prototype.hasOwnProperty.call(MO.prev, key), prev = MO.prev[key];
+    MO.prev[key] = value;
+    if (MO.enter[moScreenOf(key)] || !had || prev === value) return undefined;
+    return prev;
+  }
+  function moNum(key, value) {
+    var entering = MO.enter[moScreenOf(key)], prev = moChanged(key, value), to = Number(value);
+    var from = entering ? 0 : Number(prev);
+    if (!moReduce() && isFinite(to) && isFinite(from) && (entering || prev !== undefined) && from !== to) moAfter(function (root) {
+      var el = [].filter.call(root.querySelectorAll('[data-mo-num]'), function (x) { return x.getAttribute('data-mo-num') === String(key); })[0];
+      if (!el || !el.animate) return;
+      var clock = el.animate([{ opacity: 1 }, { opacity: 1 }], { duration: JS.T.long, easing: 'linear', id: 'mo-count' });
+      var tick = function () {
+        if (!el.isConnected) { clock.cancel(); return; }
+        if (clock.playState !== 'running') return;
+        el.textContent = String(JS.countAt(from, to, clock.effect.getComputedTiming().progress));
+        requestAnimationFrame(tick);
+      };
+      var done = function () { el.textContent = String(value); };
+      el.textContent = String(from);
+      clock.finished.then(done, done);
+      requestAnimationFrame(tick);
+    });
+    return '<span class="mo-num" data-mo-num="' + esc(key) + '">' + esc(value) + '</span>';
+  }
+  function moOpen(key, def) {
+    if (!Object.prototype.hasOwnProperty.call(MO.open, key)) MO.open[key] = !!def;
+    return MO.open[key];
+  }
+  function moPanelId(key) { return 'mo-p-' + String(key).replace(/[^\w-]/g, '-'); }
+  function moToggle(key, open, labelHtml, cls) {
+    return '<button type="button"' + (cls ? ' class="' + esc(cls) + '"' : '') + ' data-mo-toggle="' + esc(key) + '" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="' + moPanelId(key) + '">' + labelHtml + '</button>';
+  }
+  function moPanel(key, open, innerHtml) {
+    return '<div class="mo-fold' + (open ? ' open' : '') + '" id="' + moPanelId(key) + '" data-mo-panel="' + esc(key) + '"' + (open ? '' : ' inert') + '><div class="mo-fold-in">' + innerHtml + '</div></div>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-mo-toggle]');
+    if (!b || !app.contains(b)) return;
+    var key = b.getAttribute('data-mo-toggle'), open = b.getAttribute('aria-expanded') !== 'true';
+    var p = document.getElementById(b.getAttribute('aria-controls'));
+    MO.open[key] = open;
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (p) { p.classList.toggle('open', open); if (open) p.removeAttribute('inert'); else p.setAttribute('inert', ''); }
+  });
+  // ===== /mo:T-09 =====
 
   // ---------- 메뉴 구조 ----------
   var GROUPS = [

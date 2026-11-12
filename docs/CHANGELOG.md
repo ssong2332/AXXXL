@@ -5,6 +5,8 @@
 ## [Unreleased]
 
 ### Added
+- 2026-11-12 계약·신고 6개 화면 모션 기반 (T-09) — 모션 토큰 `JachwiScreens.T`와 순수 함수 `demo/screens-core.js`, `demo/app.html`의 T-09 CSS·JS 구역과 T-10~T-13 구역 마커, `tests/screens-core.test.js`·`tests/screens-zones.test.js` (화면에 보이는 변화는 아직 없음 — 모션 적용은 T-10~T-13)
+- 2026-11-12 내 화면 디자인 개선·모션 설계 — PRD F-07~F-11, Architecture, ADR-0001/0002, Tasks T-09~T-14
 - 2026-11-11 서류함 지원별 준비 현황 — 승인된 공고의 제출 서류를 서류함 칸과 이어 "청년월세 3 / 5 준비"처럼 표시 (`engine.js` `docSlot`·`docReadiness`, `tests/docs.test.js`)
 - 2026-11-11 자격 판정 화면 '답하면 판정' — 무주택·중복 수혜를 아직 안 답했으면 '해당 가능' 대신 표시 (`engine.js` `verdict`)
 - 2026-11-11 계약·신고 계산 엔진 `demo/engine.js`(전월세 신고·전입신고·만료·갱신 통지 기한, 만 나이, 입력 검사)와 조건 입력·자격 판정 화면, 무주택·중복 수혜 판정, 테스트 조건 30개 정답표
@@ -27,6 +29,7 @@
 - {{DATE}} 프로젝트 초기화 (start_coding 템플릿)
 
 ### Changed
+- 2026-11-12 Architecture R3 문구 정리, Tasks T-09 완료 전환
 - 2026-11-11 서류함을 `app.html#docs` 한 곳으로 통합 — `index.html#docs`는 서류함으로 가는 안내만 남김
 - 2026-11-11 README 주요 기능의 타임라인을 실제 화면대로 7단계로 고침 (DECISIONS #8)
 - 2026-10-27 역할 단일 원본을 `.agents/roles/*.role.md`로 통합 — `.claude/agents/*.md`와 `.codex/agents/*.toml`은 원본을 가리키는 연결 파일로 축소
