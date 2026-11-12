@@ -91,9 +91,11 @@ test('F-11 ①: 고칠 칸이 있으면 판정 보기를 막는 기존 동작 �
 // ---------- F-01·F-11 ⑥: 저장값 그대로 ----------
 test('F-11 ⑥/F-01: 조건 입력은 판정에 쓰는 10개 칸을 그대로 받는다', () => {
   const f = fields(INPUT);
-  for (const k of ['gu', 'term', 'deposit', 'rent', 'contract', 'move', 'birth', 'income', 'homeless', 'dup']) {
+  // T-20(2026-11-12): 지역(gu)은 data-field 대신 공용 regionFields()(시·도 + 시·군·구, 전국)로 받는다
+  for (const k of ['term', 'deposit', 'rent', 'contract', 'move', 'birth', 'income', 'homeless', 'dup']) {
     assert.ok(f.includes(k), '조건 입력 칸 빠짐: ' + k);
   }
+  assert.match(INPUT, /regionFields\(\)/, '지역 칸(전국)');
   assert.match(INPUT, /JE\.validate\(S\)/, '잘못된 값 안내 유지');
 });
 
@@ -151,4 +153,11 @@ test("contractFacts 예외: 입력이 없거나 null이어도 7행, 모두 '아�
     assert.equal(rows.length, 7);
     assert.ok(rows.every((r) => r.value === '아직 안 넣음' && r.missing === true));
   }
+});
+
+// ---------- T-20: 조건 입력 지역 전국 선택 (F-01 ②, 사용자 답 "내 작업이면 하고 아니면 하지마") ----------
+test('T-20: 조건 입력은 서울 25개 구 목록 대신 공용 regionFields()로 전국 시·도·시·군·구를 고른다', () => {
+  assert.match(INPUT, /regionFields\(\)/);
+  assert.doesNotMatch(INPUT, /JE\.LAW\.seoulGu/, '서울 구만 고르는 목록이 남아 있음');
+  assert.doesNotMatch(INPUT, /시·군·구 \(서울\)/);
 });

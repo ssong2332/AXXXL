@@ -5,6 +5,9 @@
 ## [Unreleased]
 
 ### Added
+- 2026-11-12 조건 입력 지역 선택을 서울 25개 구에서 전국 시·도/시·군·구로 확장 (T-20, PRD F-01, 사용자 원문 "내 작업이면 하고 아니면 하지마") — `demo/app.html` 조건 입력의 시·군·구 칸을 공용 `regionFields()` 호출로 교체, `tests/screen-input-contract.test.js`
+- 2026-11-12 전월세 신고 지역 판정 보완 (T-21, PR #37 리뷰 반영, PRD F-02, DECISIONS #23, ADR-0004 승인 — 사용자 답 "승인 (Recommended)") — `demo/engine.js` `reportArea`에 7개 도(충북·충남·경북·경남·강원·전북·전남광주) 시·군·구 이름 표 136개 추가(`reportAreaSgg`로 노출, `demo/data/regions.js`와 일치하는지 테스트), 시·군·구 미선택·시·도 불일치는 '확인 필요'(null). `demo/app.html`: 지역 선택에서 시·도만 바꾸면 `S.gu`를 비움, 내 계약 '전월세 신고' 칸을 기한/대상 아님/확인 필요로 구분, `qaAnswer`의 신고·확정일자 답을 false(이유는 `rep.reason`)/null로 구분. `tests/report-area.test.js`, `tests/screen-input-contract.test.js`
+- 2026-11-12 전월세 신고 대상 지역 전국 판정 (T-18, PRD F-02, DECISIONS #21, 팀원 요청 "수홍님: 지역이 전국으로 바뀌었는데 전월세 신고 판정이 서울만 돼요. 부산 같은 광역시도 대상 지역이라 엔진에서 같이 봐 주시면 좋겠어요") — `demo/engine.js` `reportArea(sido, gu)` 추가(시행령 제4조의3 기준: 광역시·경기·세종·제주 전역, 일반 도는 시·구만 대상이고 군은 제외, 강원·전북·전남광주의 군은 '확인 필요'(null)), `deadlines`가 이를 사용. `demo/app.html` 자격 판정 카드·타임라인·첫 실행 길잡이 2단계에 '확인 필요' 안내 추가(사용자 답 "확인 필요로 (Recommended)"), 리뷰 권고에 따라 reason을 `esc` 처리. `tests/report-area.test.js`·`screen-timeline.test.js` 등
 - 2026-11-12 첫 실행 길잡이(`app.html#start`) 단계 등장 모션 (T-16, PRD F-12, DECISIONS #20, ADR-0003 제안 상태) — 담당 편입 후 `viewStart()` 단계 카드가 차례로 등장, `tests/screen-start.test.js`
 - 2026-11-12 계약·신고 화면 디자인 개선과 모션 (T-10~T-13) — 자격 판정(요약·판정 배지·조건 접기), 타임라인(끝난 단계 접기·'지금' 이동·진행 막대·체크 그리기), 퇴거 준비·서류함, 조건 입력·내 계약 화면, `tests/result-screen.test.js`·`screen-timeline.test.js`·`screen-moveout-docs.test.js`·`screen-input-contract.test.js`
 - 2026-11-12 계약·신고 6개 화면 모션 기반 (T-09) — 모션 토큰 `JachwiScreens.T`와 순수 함수 `demo/screens-core.js`, `demo/app.html`의 T-09 CSS·JS 구역과 T-10~T-13 구역 마커, `tests/screens-core.test.js`·`tests/screens-zones.test.js` (화면에 보이는 변화는 아직 없음 — 모션 적용은 T-10~T-13)
@@ -31,6 +34,9 @@
 - {{DATE}} 프로젝트 초기화 (start_coding 템플릿)
 
 ### Changed
+- 2026-11-12 테스트 300/300 통과 (T-20·T-21, `.artifacts/verification/T-21/20261112-164428-green`, QA `20261112-1700-qa`), 사용자 화면 확인 통과("통과, PR에 올려")
+- 2026-11-12 퇴거 준비 '나가기 전 할 일'에서 '입주 사진과 비교하며 집 점검'(o2)도 날짜 숨김 (T-19, PRD F-10 ①, DECISIONS #22, 사용자 답 "같이 없애기 (Recommended)") — 날짜는 '중요한 날짜'에만 표시. `demo/app.html`, `tests/screen-moveout-docs.test.js`
+- 2026-11-12 테스트 287/287 통과 (T-18·T-19, `.artifacts/verification/T-18/20261112-161909-green4`), 사용자 화면 확인 통과("통과, PR까지")
 - 2026-11-12 모션 강도 조정 (T-15, DECISIONS #19, 사용자 답 "더 눈에 띄게") — 이동 8px→20px, 기본 300ms→450ms, 차례 간격 80ms(최대 6단), 전체 상한 930ms. 대상은 `JachwiScreens.T`와 `demo/app.html` CSS
 - 2026-11-12 README "현재 상태"를 "소스 코드 없음"에서 실제 데모 구현 상태로 고치고 단위 테스트 명령 추가
 - 2026-11-12 테스트 256/256 통과 (`.artifacts/verification/T-14/` main 병합 후 실행)

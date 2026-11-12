@@ -109,7 +109,7 @@ test('퇴거 준비: moBegin/moRoot로 감싸고, 날짜 칩은 새 helper(공�
   assert.match(v, /moveoutChip\(k\[0\]\)/, '중요한 날짜는 새 칩 helper');
   assert.match(v, /moveoutTasks\(/, '나가기 전 할 일은 날짜 숨김 helper를 거친다');
   const h = fnText('moveoutTasks(tasks) {');
-  assert.match(h, /JS\.hideDue\(tasks, \['o1'\]\)/);
+  assert.match(h, /JS\.hideDue\(tasks, \['o1'[^\]]*\]\)/);   // T-19가 o2를 더함 — o1 숨김은 그대로
   assert.match(h, /Object\.assign\(\{\}, t, \{ due: null \}\)/, 'screens-core가 없을 때도 같은 규칙');
 });
 
@@ -167,4 +167,15 @@ test('T-12 CSS 구역: 비어 있지 않고 선택자는 .mo-moveout/.mo-docs, k
     if (/^(from|to|\d+%)/.test(s)) continue;
     for (const part of s.split(',')) assert.match(part.trim(), /^\.mo-(moveout|docs)(?![\w-])/, '범위 밖 선택자: ' + part.trim());
   }
+});
+
+// ---------- T-19: 집 상태 점검(o2)도 '중요한 날짜'에만 날짜 (사용자 답 "같이 없애기 (Recommended)") ----------
+test('T-19: moveoutTasks는 o1·o2 두 할 일의 날짜를 숨긴 복사본을 쓴다', () => {
+  const a = HTML.indexOf('  function moveoutTasks(tasks) {'), b = HTML.indexOf('  function viewMoveout() {', a);
+  const body = HTML.slice(a, b);
+  assert.match(body, /JS\.hideDue\(tasks, \['o1', 'o2'\]\)/);
+  assert.match(body, /\['o1', 'o2'\]\.indexOf\(t\.id\) >= 0/, 'screens-core 없을 때 대체 경로도 같은 규칙');
+});
+test('T-19: 중요한 날짜에는 집 상태 점검(만료 7일 전)이 남아 있다', () => {
+  assert.match(HTML, /\[add\(end, -7\), '집 상태 점검'/);
 });
