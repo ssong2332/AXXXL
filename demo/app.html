@@ -2058,7 +2058,30 @@ document.addEventListener('DOMContentLoaded', function () {
   var API = (function () { try { var o = new URLSearchParams(location.search).get('api'); if (o && /^https:\/\/[\w.-]+$/.test(o)) return o; } catch (e) {} return /^https?:$/.test(location.protocol) ? '' : 'https://jachwi-navi.vercel.app'; })();
   var ORIGIN = API || location.origin;
   var DEMO_HOME = { lat: 37.48120, lng: 126.92750, label: '예시 위치 · 서울 관악구 신림역 근처', src: 'demo' };
-  function home() { return S.home && S.home.lat ? S.home : DEMO_HOME; }
+  // 집 위치를 아직 안 정했으면 지도는 고른 시·군·구(없으면 시·도) 중심으로 연다. 예시 모드는 예시 데이터가 신림역 둘레라 그대로 둔다.
+  // 중심 좌표는 지역 이름으로 한 번 찾아 S.rgc 에 기억해 둔다(지역을 바꾸면 다시 찾는다). 못 찾으면 예시 위치.
+  function home() {
+    if (S.home && S.home.lat) return S.home;
+    if (S.demo) return DEMO_HOME;
+    var r = regionOf(), q = r.sido ? r.sido + (r.sgg ? ' ' + r.sgg : '') : '';
+    if (!q) return DEMO_HOME;
+    if (S.rgc && S.rgc.k === q) return { lat: S.rgc.lat, lng: S.rgc.lng, label: (r.zip ? regionName(r) : r.sido) + ' 중심 · 집 위치를 정하기 전', src: 'region', wide: r.sgg ? 1 : 2 };
+    regionCenter(q, r);
+    return DEMO_HOME;
+  }
+  function regionCenter(q, r) {
+    if (regionCenter.q === q) return; regionCenter.q = q;   // 같은 지역은 한 번만 찾는다
+    var tries = [q].concat(r.sgg ? [r.sgg] : []), got = function (lat, lng) {
+      if (regionCenter.q !== q || !(lat > 33 && lat < 39 && lng > 124 && lng < 132)) return;
+      S.rgc = { k: q, lat: +(+lat).toFixed(5), lng: +(+lng).toFixed(5) }; save(); if (!S.home) render(true);
+    };
+    var next = function () {
+      var t = tries.shift(); if (!t) return;
+      if (kakaoSearchOk()) return new window.kakao.maps.services.Geocoder().addressSearch(t, function (res, st) { if (st === window.kakao.maps.services.Status.OK && res.length) got(+res[0].y, +res[0].x); else next(); });
+      fetch(API + '/api/geocode?q=' + encodeURIComponent(t)).then(function (x) { return x.json(); }).then(function (j) { if (j.ok && j.items.length) got(j.items[0].lat, j.items[0].lng); else next(); }).catch(function () {});
+    };
+    kakaoBoot(next);
+  }
   var HOUSE = DEMO_HOME;
   var CATS = { food: ['맛집', 'food'], cafe: ['카페', 'cup'], study: ['공부·작업', 'book'], gym: ['운동', 'dumbbell'], park: ['공원·산책', 'tree'], life: ['생활 편의', 'cart'], medical: ['병원·약국', 'cross'], transit: ['교통', 'bus'], public: ['공공시설', 'building'], safety: ['안전', 'shield'] };
   // 장소 아이콘: 교통은 종류별로(기차역·지하철역·버스정류장), 나머지는 분류 아이콘. OSM의 '역'은 대부분 지하철역이라 지하철로 본다
@@ -2315,7 +2338,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<section class="card stack"><div class="card-h" style="margin:0"><h2>우리 집 위치</h2><div class="row" style="gap:6px">' +
       (S.home ? '<button type="button" class="btn ghost sm" data-act="resethome">' + (S.demo ? '예시 위치로' : '위치 지우기') + '</button>' : '') +
       (S.home || S.demo ? '<a class="btn ghost sm" data-rv-in="home"' + (kakaoId(h) ? '' : ' data-rv-place="home"') + ' href="' + kakao('rv', h) + '" target="_blank" rel="noopener" aria-label="우리 집 위치 로드뷰 보기 (카카오맵, 새 창)">로드뷰' + ic('out', 'sm') + '</a>' : '') + '</div></div>' +
-      '<div class="row" style="flex-wrap:nowrap"><span class="ptile" style="width:40px;height:40px;border-radius:12px;background:var(--ink);color:var(--surface)">' + ic('home', 'sm') + '</span><div style="min-width:0"><b>' + esc(h.label) + '</b><p class="s12 muted">' + (h.src === 'demo' ? '아직 내 집 위치를 정하지 않았어요' : h.src === 'gps' ? '현재 위치로 정했어요' : '직접 정한 위치예요') + '</p></div></div>' +
+      '<div class="row" style="flex-wrap:nowrap"><span class="ptile" style="width:40px;height:40px;border-radius:12px;background:var(--ink);color:var(--surface)">' + ic('home', 'sm') + '</span><div style="min-width:0"><b>' + esc(h.label) + '</b><p class="s12 muted">' + (h.src === 'demo' || h.src === 'region' ? '아직 내 집 위치를 정하지 않았어요' : h.src === 'gps' ? '현재 위치로 정했어요' : '직접 정한 위치예요') + '</p></div></div>' +
       '<form class="ask" data-form="geo"><input class="inp" aria-label="주소 또는 건물 이름" placeholder="예: 관악구 신림동, 서원동 주민센터" maxlength="80" value="' + esc(GEO.q || '') + '"><button class="btn" type="submit">찾기</button></form>' + res +
       '<div class="row"><button type="button" class="btn ghost sm" data-act="gps">' + ic('pin', 'sm') + '현재 위치로</button>' + (S.onboarded ? '<button type="button" class="btn ghost sm" data-act="pickhome" aria-pressed="' + !!S.pickHome + '">' + (S.pickHome ? '지도를 눌러 주세요…' : '지도에서 직접 고르기') + '</button>' : '') + '</div>' +
       '<p class="s12 muted">번지까지 안 나오면 동이나 길을 고른 뒤 지도에서 집 자리를 한 번 눌러 주세요. 주변 장소를 찾을 때 위치를 약 100m 단위로 흐려서 보내고, 서버에 저장하지 않아요. 주소 검색은 <span data-geo-note>' + geoNote() + '</span>을 써요. 장소를 고르면 걷는 길을 찾으려고 집 위치를 약 10m 단위로 보내요(저장하지 않아요).</p></section>';
@@ -2587,7 +2610,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     ph.appendChild(KMAP.el);
     if (!KMAP.map) {   // 크기가 잡힌 뒤에 만든다
-      KMAP.map = new k.Map(KMAP.el, { center: at(h), level: 4, scrollwheel: true });   // 지도 위에서 마우스 휠로 확대·축소
+      KMAP.map = new k.Map(KMAP.el, { center: at(h), level: h.wide === 2 ? 10 : h.wide ? 7 : 4, scrollwheel: true });   // 지도 위에서 마우스 휠로 확대·축소
       KMAP.map.addControl(new k.ZoomControl(), k.ControlPosition.RIGHT);
       k.event.addListener(KMAP.map, 'click', function (e) { if (S.pickHome) setHome(e.latLng.getLat(), e.latLng.getLng(), '지도에서 고른 위치', 'pick'); });
       // 사용자가 직접 끌거나 확대·축소하면 그 위치를 새 가운데로 삼는다
@@ -2598,7 +2621,7 @@ document.addEventListener('DOMContentLoaded', function () {
     KMAP.el.classList.toggle('picking', !!S.pickHome);
     KMAP.el.setAttribute('data-mt', mapTheme());
     KMAP.map.relayout();
-    if (KMAP.center !== ck) { KMAP.map.setLevel(4); KMAP.want = at(h); KMAP.center = ck; KMAP.before = null; }
+    if (KMAP.center !== ck) { KMAP.map.setLevel(h.wide === 2 ? 10 : h.wide ? 7 : 4); KMAP.want = at(h); KMAP.center = ck; KMAP.before = null; }
     KMAP.map.setCenter(KMAP.want);   // 화면을 다시 그려도(분류 바꾸기 등) 가운데는 그대로
     KMAP.objs.forEach(function (o) { o.setMap(null); }); KMAP.objs = [];
     var add = function (o) { KMAP.objs.push(o); return o; };
@@ -2686,7 +2709,7 @@ document.addEventListener('DOMContentLoaded', function () {
     LM.el.setAttribute('data-mt', mapTheme());
     LM.map.invalidateSize();
     var h = home(), ck = h.lat + ',' + h.lng;
-    if (LM.center !== ck) { LM.want = L.latLng(h.lat, h.lng); LM.map.setView(LM.want, 16, { animate: false }); LM.center = ck; LM.before = null; }
+    if (LM.center !== ck) { LM.want = L.latLng(h.lat, h.lng); LM.map.setView(LM.want, h.wide === 2 ? 9 : h.wide ? 12 : 16, { animate: false }); LM.center = ck; LM.before = null; }
     else if (LM.want) LM.map.setView(LM.want, LM.map.getZoom(), { animate: false });   // 다시 그려도 가운데는 그대로
     LM.layer.clearLayers();
     // 카카오 지도와 같게 장소 마커는 올리지 않고, 집은 직접 정했을 때만 표시한다
