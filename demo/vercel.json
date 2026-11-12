@@ -15,6 +15,10 @@
     {
       "source": "/cal.ics",
       "destination": "/api/calendar"
+    },
+    {
+      "source": "/api/:fn(support|welfare|lh|holidays|period)",
+      "destination": "/api/public?fn=:fn"
     }
   ],
   "headers": [
@@ -75,25 +79,13 @@
     "api/rules.js": {
       "maxDuration": 10
     },
-    "api/support.js": {
-      "maxDuration": 30
-    },
-    "api/welfare.js": {
-      "maxDuration": 30
-    },
-    "api/lh.js": {
-      "maxDuration": 30
-    },
-    "api/holidays.js": {
-      "maxDuration": 15
-    },
-    "api/period.js": {
-      "maxDuration": 30
-    },
     "api/route.js": {
       "maxDuration": 15
     },
     "api/bus-stops.js": {
+      "maxDuration": 30
+    },
+    "api/public.js": {
       "maxDuration": 30
     }
   }

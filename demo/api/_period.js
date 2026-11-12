@@ -6,7 +6,7 @@
 
 const O = require('./_open.js');
 const S = require('../support-core.js');
-const support = require('./support.js');
+const support = require('./_support.js');
 
 async function readOne(it) {
   const urls = (it.notices || []).slice(0, 2);
