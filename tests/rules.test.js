@@ -245,3 +245,12 @@ test('내장 AI 코치·봇: 무주택·중복 수혜를 안 답한 지원은 "�
   const m = AS.answer({ q: '생활비 줄이는 방법 알려줘', bot: 'money', cards, facts, repairs: SEED.repairs });
   assert.ok(m.text.includes('답하면 판정') || JSON.stringify(m.blocks).includes('답하면 판정'));
 });
+
+test('내장 AI 코치: 앱이 신고 대상 여부를 판정하지 못한 지역(서울 밖)은 "대상 아님"이라고 단정하지 않는다', () => {
+  const { cards, facts } = coachSetup();
+  const f = Object.assign({}, facts, { reportRequired: null, reportReason: '서울 밖 지역은 따로 확인이 필요해요' });
+  const a = C.answer({ q: '전월세 신고 해야 해?', cards, facts: f });
+  assert.ok(!a.text.includes('신고 대상이 아니에요'));
+  assert.ok(a.text.includes('판정하지 못했어요'));
+  assert.ok(a.text.includes(f.reportDue));
+});
