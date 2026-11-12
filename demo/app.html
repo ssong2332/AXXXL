@@ -819,6 +819,16 @@ body.ob .shell { display: block }
 /* ===== /mo:T-09 ===== */
 
 /* ===== mo:T-10 #result ===== */
+.mo-result .badge.brand { background: var(--brand-tint); padding: 0 8px }
+.mo-result .mo-result-sum-main { font-size: 17px; font-weight: 700; color: var(--ink) }
+.mo-result .mo-result-sum-main b { color: var(--brand-text); font-variant-numeric: tabular-nums }
+.mo-result .mo-result-fold { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 8px 0; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer }
+.mo-result .mo-result-fold:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px }
+.mo-result .mo-result-fold svg { flex: none; transform: rotate(0deg) }
+.mo-result .mo-result-fold[aria-expanded="true"] svg { transform: rotate(90deg) }
+@media (prefers-reduced-motion: no-preference) {
+  .mo-result .mo-result-fold svg { transition: transform var(--mo-short) var(--mo-ease-io) }
+}
 /* ===== /mo:T-10 ===== */
 
 /* ===== mo:T-11 #timeline ===== */
@@ -2445,35 +2455,52 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 자격 판정 (필수 ①) ----------
+  // T-10: 결과 요약(F-08 ①) — 숫자는 아래 목록과 같은 판정 글자(judge)로 센다. screens-core가 없으면 요약 없이 목록만
+  var RESULT_V = [['확인 필요', 'due'], ['답하면 판정', ''], ['해당 안 됨', 'no'], ['마감', 'no']];
+  function resultSummaryCard(R) {
+    if (!JS || !JS.resultSummary) return '';
+    var s = JS.resultSummary({ reportRequired: R.report.required, verdicts: R.programs.map(function (x) { return judge(x)[1]; }) });
+    var chips = RESULT_V.filter(function (v) { return s.byVerdict[v[0]]; }).map(function (v) { return '<span class="badge ' + v[1] + '">' + v[0] + ' ' + s.byVerdict[v[0]] + '개</span>'; });
+    if (s.taskUnsure) chips.unshift('<span class="badge due">전월세 신고 확인 필요</span>');
+    return '<section class="card stack mo-result-sum' + moStep(0) + '" aria-label="결과 요약"><p class="mo-result-sum-main">할 일 <b>' + moNum('result:sum:tasks', s.tasks) + '</b>개 · 지원 <b>' + moNum('result:sum:ok', s.ok) + '</b>개 해당 가능</p>' +
+      (chips.length ? '<div class="row">' + chips.join('') + '</div>' : '') + '</section>';
+  }
   function viewResult() {
+    moBegin('result');
     var err = JE.validate(S);
-    if (Object.keys(err).length) return '<div class="page-head"><div><h1>자격 판정</h1></div></div><section class="card stack"><p>조건에 고칠 칸이 있어 판정할 수 없어요.</p><a class="btn" href="#input">조건 입력으로</a></section>';
+    if (Object.keys(err).length) return moRoot('result', '<div class="page-head"><div><h1>자격 판정</h1></div></div><section class="card stack"><p>조건에 고칠 칸이 있어 판정할 수 없어요.</p><a class="btn" href="#input">조건 입력으로</a></section>');
     var R = evaluate(), rp = R.report;
     var src = function (name, url, basis) { return '<p class="s12 muted">근거 <a href="' + url + '" target="_blank" rel="noopener">' + name + '</a> · ' + basis + ' 기준</p>'; };
     var mark = function (ok) { return ok === true ? '<span class="badge brand">충족</span>' : ok === false ? '<span class="badge no">안 맞음</span>' : '<span class="badge due">확인 필요</span>'; };
     var repBadge = rp.required === true ? '<span class="badge due">신고 대상</span>' : rp.required === false ? '<span class="badge">대상 아님</span>' : '<span class="badge due">확인 필요</span>';
-    var reports = '<section class="card c6 stack"><div class="split"><h2 style="font-size:17px">전월세 신고</h2>' + repBadge + '</div><p>' + esc(rp.reason) + '</p>' +
+    var reports = '<section class="card c6 stack' + moStep(1) + '"><div class="split"><h2 style="font-size:17px">전월세 신고</h2>' + repBadge + '</div><p>' + esc(rp.reason) + '</p>' +
       (rp.required === true ? '<p><b>' + ymd(rp.due) + '</b>까지 (' + dday(rp.due) + ') · 계약일부터 30일</p>' + (rp.early ? '<div class="banner due">' + ic('info') + '<span>입주보다 기한이 먼저 와요. 전입신고와 합치지 말고 따로 신고하세요.</span></div>' : '<p class="s13 sub">입주 후 전입신고 때 계약서를 함께 내면 신고와 확정일자가 한 번에 끝나요.</p>') : rp.required === false ? '<p class="s13 sub">신고 대상은 아니지만 전입신고 때 확정일자를 받아 두면 보증금을 지키는 데 도움이 돼요.</p>' : '') +
       src(rp.src, rp.url, rp.basis) + '</section>' +
-      '<section class="card c6 stack"><div class="split"><h2 style="font-size:17px">전입신고</h2><span class="badge due">모두 해당</span></div><p>입주한 날부터 14일 안에 해야 해요.</p><p><b>' + ymd(R.movein.due) + '</b>까지 (' + dday(R.movein.due) + ') · 보증금을 지키려면 입주 당일(' + md(R.M) + ') 권장</p>' + src(R.movein.src, R.movein.url, R.movein.basis) + '</section>';
+      '<section class="card c6 stack' + moStep(2) + '"><div class="split"><h2 style="font-size:17px">전입신고</h2><span class="badge brand">모두 해당</span></div><p>입주한 날부터 14일 안에 해야 해요.</p><p><b>' + ymd(R.movein.due) + '</b>까지 (' + dday(R.movein.due) + ') · 보증금을 지키려면 입주 당일(' + md(R.M) + ') 권장</p>' + src(R.movein.src, R.movein.url, R.movein.basis) + '</section>';
     // 무주택·중복 수혜를 아직 답하지 않은 조건 (모른다고 답한 것과 구분)
     var notAsked = function (r) { return (r.type === 'homeless' || r.type === 'dup') && r.ok === null && !r.asked; };
     var VB = { '해당 안 됨': 'no', '확인 필요': 'due', '답하면 판정': '', '해당 가능': 'brand' };
-    var progs = R.programs.map(function (x) {
+    var progs = R.programs.map(function (x, i) {
       var p = x.p, v = JE.verdict(x), j = x.closed ? judge(x) : [VB[v], v];
-      return '<section class="card c6 stack"><div><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:18px;font-weight:800">' + esc(p.name) + '</h2></div>' +
+      var rows = x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + (notAsked(r) ? '아직 안 답함 <a class="badge" href="#input">답하면 판정</a>' : esc(r.mine) + ' ' + mark(r.ok)) + '</span></div>'; }).join('');
+      // 조건이 모두 충족이면 접힌 채, 하나라도 충족이 아니면 펼친 채 시작 (F-08 ③)
+      var met = !!(JS && JS.allMet(x.res)), open = moOpen('result:cond:' + p.id, !(JS && JS.allMet(x.res)));
+      var left = x.res.filter(function (r) { return r.ok !== true; }).length;
+      var cond = !x.res.length ? '' : '<div>' + moToggle('result:cond:' + p.id, open, '<span>조건 ' + x.res.length + '개 ' + (met ? '모두 충족' : '중 확인할 조건 ' + left + '개') + '</span>' + ic('chev', 'sm'), 'mo-result-fold') + moPanel('result:cond:' + p.id, open, rows) + '</div>';
+      return '<section class="card c6 stack' + moStep(3 + i) + '"><div><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:18px;font-weight:800">' + esc(p.name) + '</h2></div>' +
         '<div class="row"><span class="badge ' + j[0] + '">' + j[1] + '</span><span class="badge ' + p.statusCls + '">' + p.status + '</span><span class="badge">' + esc(p.select) + '</span></div>' +
-        '<div>' + x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + (notAsked(r) ? '아직 안 답함 <a class="badge" href="#input">답하면 판정</a>' : esc(r.mine) + ' ' + mark(r.ok)) + '</span></div>'; }).join('') + '</div>' +
+        cond +
         (v === '답하면 판정' && !x.closed ? '<p class="s13 sub"><a href="#input">조건 입력</a>에서 무주택·중복 수혜를 답하면 바로 판정해요.</p>' : '') +
         '<p class="s13 sub">지원 내용: ' + esc(p.amountText) + '</p>' +
         '<p class="s12 muted">원문 <a href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">' + esc(p.channel) + '</a> · ' + progBasis(p) + (p.demo ? ' · 시연용 예시 공고' : '') + '</p></section>';
     }).join('');
-    var none = R.eligible.length ? '' : '<section class="card c12"><p>지금 조건으로 해당되는 지원이 없어요. 꼭 해야 하는 신고는 위에서 확인하세요.</p></section>';
-    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · ' + ageText() + ' · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>자격 판정</h1></div><a class="btn line" href="#input">조건 바꾸기</a></div>' +
-      '<h2 class="s13 muted" style="margin:4px 0 8px">꼭 해야 하는 신고</h2><div class="grid">' + reports + '</div>' +
+    var none = R.eligible.length ? '' : '<section class="card c12' + moStep(3 + R.programs.length) + '"><p>지금 조건으로 해당되는 지원이 없어요. 꼭 해야 하는 신고는 위에서 확인하세요.</p></section>';
+    return moRoot('result', '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · ' + ageText() + ' · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>자격 판정</h1></div><a class="btn line" href="#input">조건 바꾸기</a></div>' +
+      resultSummaryCard(R) +
+      '<h2 class="s13 muted" style="margin:20px 0 8px">꼭 해야 하는 신고</h2><div class="grid">' + reports + '</div>' +
       '<h2 class="s13 muted" style="margin:20px 0 8px">신청해 볼 수 있는 지원 · 금액은 지원마다 따로예요</h2><div class="grid">' + progs + none + '</div>' +
       '<p class="s12 muted" style="margin-top:16px">이 결과는 승인된 규칙으로만 계산했어요. 법률 자문이나 권리분석을 대신하지 않아요. 계약 위험 진단은 <a href="https://www.khug.or.kr" target="_blank" rel="noopener">안심전세 앱</a>에서 받을 수 있어요.</p>' +
-      '<a class="btn" style="margin-top:12px" href="#timeline">내 타임라인 보기' + ic('chev', 'sm') + '</a>';
+      '<a class="btn" style="margin-top:12px" href="#timeline">내 타임라인 보기' + ic('chev', 'sm') + '</a>');
   }
 
   // ===== mo:T-09 =====
