@@ -76,10 +76,24 @@
   var AREA_ALL = ['서울특별시', '인천광역시', '부산광역시', '대구광역시', '대전광역시', '울산광역시', '경기도', '세종특별자치시', '제주특별자치도'];
   var AREA_DO = ['충청북도', '충청남도', '경상북도', '경상남도'];
   var AREA_UNSURE = ['강원특별자치도', '전북특별자치도', '전남광주통합특별시'];
+  // 일반 도·강원·전북·전남광주의 시·군·구 이름 표 (DECISIONS #23, ADR-0004) — demo/data/regions.js와 같은지 테스트가 검사한다
+  var AREA_SGG = {
+    '충청북도': ['청주시 상당구', '청주시 서원구', '청주시 흥덕구', '청주시 청원구', '충주시', '제천시', '보은군', '옥천군', '영동군', '증평군', '진천군', '괴산군', '음성군', '단양군'],
+    '충청남도': ['천안시', '천안시 동남구', '천안시 서북구', '공주시', '보령시', '아산시', '서산시', '논산시', '계룡시', '당진시', '금산군', '부여군', '서천군', '청양군', '홍성군', '예산군', '태안군'],
+    '경상북도': ['포항시 남구', '포항시 북구', '경주시', '김천시', '안동시', '구미시', '영주시', '영천시', '상주시', '문경시', '경산시', '의성군', '청송군', '영양군', '영덕군', '청도군', '고령군', '성주군', '칠곡군', '예천군', '봉화군', '울진군', '울릉군'],
+    '경상남도': ['창원시 의창구', '창원시 성산구', '창원시 마산합포구', '창원시 마산회원구', '창원시 진해구', '진주시', '통영시', '사천시', '김해시', '밀양시', '거제시', '양산시', '의령군', '함안군', '창녕군', '고성군', '남해군', '하동군', '산청군', '함양군', '거창군', '합천군'],
+    '강원특별자치도': ['춘천시', '원주시', '강릉시', '동해시', '태백시', '속초시', '삼척시', '홍천군', '횡성군', '영월군', '평창군', '정선군', '철원군', '화천군', '양구군', '인제군', '고성군', '양양군'],
+    '전북특별자치도': ['전주시 완산구', '전주시 덕진구', '군산시', '익산시', '정읍시', '남원시', '김제시', '완주군', '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'],
+    '전남광주통합특별시': ['목포시', '여수시', '순천시', '나주시', '광양시', '동구', '서구', '남구', '북구', '광산구', '담양군', '곡성군', '구례군', '고흥군', '보성군', '화순군', '장흥군', '강진군', '해남군', '영암군', '무안군', '함평군', '영광군', '장성군', '완도군', '진도군', '신안군']
+  };
   function reportArea(sido, gu) {
     var s = typeof sido === 'string' ? sido.trim() : '', g = typeof gu === 'string' ? gu.trim() : '', isGun = /군$/.test(g);
     if (!s) return LAW.seoulGu.indexOf(g) >= 0 ? { inArea: true, reason: '' } : { inArea: null, reason: g ? '앱이 판정하지 않는 지역' : '지역을 아직 고르지 않음' };
     if (AREA_ALL.indexOf(s) >= 0) return { inArea: true, reason: '' };
+    if (AREA_SGG[s]) {
+      if (!g) return { inArea: null, reason: '시·군·구를 아직 고르지 않음' };
+      if (AREA_SGG[s].indexOf(g) < 0) return { inArea: null, reason: '시·도와 시·군·구가 맞지 않음' };
+    }
     if (AREA_DO.indexOf(s) >= 0) return isGun ? { inArea: false, reason: '신고 대상 지역이 아닌 도의 군(' + s + ' ' + g + ') 소재' } : { inArea: true, reason: '' };
     if (AREA_UNSURE.indexOf(s) >= 0) return isGun ? { inArea: null, reason: s + ' ' + g + ' — 신고 대상 지역인지 법령 해석이 갈림' } : { inArea: true, reason: '' };
     return { inArea: null, reason: '앱이 판정하지 않는 지역' };
@@ -140,5 +154,5 @@
     return { total: items.length, ready: items.filter(function (x) { return x.ready; }).length, items: items };
   }
 
-  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, reportArea: reportArea, toUser: toUser, verdict: verdict, docSlot: docSlot, docReadiness: docReadiness };
+  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, reportArea: reportArea, reportAreaSgg: AREA_SGG, toUser: toUser, verdict: verdict, docSlot: docSlot, docReadiness: docReadiness };
 });
