@@ -1,6 +1,6 @@
 // GET /api/geocode?q=관악구 신림동      주소·장소 이름 → 좌표 (최대 5개)
 // GET /api/geocode?lat=37.48&lng=126.92  좌표 → 대략적인 주소 (현재 위치 표시용)
-//  - KAKAO_REST_KEY 환경변수가 있으면 카카오 로컬 API, 없으면 OpenStreetMap Nominatim
+//  - KAKAOREST_API_KEY(또는 KAKAO_REST_KEY) 환경변수가 있으면 카카오 로컬 API, 없으면 OpenStreetMap Nominatim
 // 검색어와 좌표는 저장하지 않는다.
 'use strict';
 
@@ -38,7 +38,7 @@ function shortLabel(n) {
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  const key = process.env.KAKAO_REST_KEY;
+  const key = process.env.KAKAOREST_API_KEY || process.env.KAKAO_REST_KEY;   // 도보 경로(api/route.js)와 같은 키 이름도 받는다
   try {
     if (req.query.lat && req.query.lng) {
       const lat = +(+req.query.lat).toFixed(4), lng = +(+req.query.lng).toFixed(4);
