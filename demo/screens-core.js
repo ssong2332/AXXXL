@@ -76,6 +76,24 @@
   // ===== /T-09 =====
 
   // ===== T-10 =====
+  // 자격 판정 요약(F-08 ①): 할 일 = 전입신고(모두) + 전월세 신고(대상일 때). 대상을 모르면 taskUnsure 1.
+  // byVerdict는 화면 목록에 보이는 판정 글자('해당 가능'·'확인 필요'·'답하면 판정'·'해당 안 됨'·'마감')별 개수
+  api.resultSummary = function (o) {
+    var src = o && typeof o === 'object' ? o : {};
+    var list = Array.isArray(src.verdicts) ? src.verdicts : [];
+    var by = {};
+    list.forEach(function (v) { if (typeof v === 'string' && v) by[v] = (by[v] || 0) + 1; });
+    return {
+      tasks: 1 + (src.reportRequired === true ? 1 : 0),
+      taskUnsure: src.reportRequired === null ? 1 : 0,
+      byVerdict: by,
+      ok: by['해당 가능'] || 0
+    };
+  };
+  // 조건이 1개 이상이고 모두 ok === true일 때만 참 — 접힌 채 시작(F-08 ③)
+  api.allMet = function (res) {
+    return Array.isArray(res) && res.length > 0 && res.every(function (r) { return !!r && r.ok === true; });
+  };
   // ===== /T-10 =====
 
   // ===== T-11 =====
