@@ -71,11 +71,25 @@
   }
 
   // ---------- 신고 의무·기한 (필수 ① 신고, 필수 ② 기한) ----------
+  // 전월세 신고 대상 지역 (시행령 제4조의3: 특별자치시·특별자치도·시·군(광역시·경기도의 군만)·구) — DECISIONS T-18 판정표
+  // inArea: true 대상 지역 / false 대상 지역 아님 / null 앱이 판정하지 않음(확인 필요)
+  var AREA_ALL = ['서울특별시', '인천광역시', '부산광역시', '대구광역시', '대전광역시', '울산광역시', '경기도', '세종특별자치시', '제주특별자치도'];
+  var AREA_DO = ['충청북도', '충청남도', '경상북도', '경상남도'];
+  var AREA_UNSURE = ['강원특별자치도', '전북특별자치도', '전남광주통합특별시'];
+  function reportArea(sido, gu) {
+    var s = typeof sido === 'string' ? sido.trim() : '', g = typeof gu === 'string' ? gu.trim() : '', isGun = /군$/.test(g);
+    if (!s) return LAW.seoulGu.indexOf(g) >= 0 ? { inArea: true, reason: '' } : { inArea: null, reason: g ? '앱이 판정하지 않는 지역' : '지역을 아직 고르지 않음' };
+    if (AREA_ALL.indexOf(s) >= 0) return { inArea: true, reason: '' };
+    if (AREA_DO.indexOf(s) >= 0) return isGun ? { inArea: false, reason: '신고 대상 지역이 아닌 도의 군(' + s + ' ' + g + ') 소재' } : { inArea: true, reason: '' };
+    if (AREA_UNSURE.indexOf(s) >= 0) return isGun ? { inArea: null, reason: s + ' ' + g + ' — 신고 대상 지역인지 법령 해석이 갈림' } : { inArea: true, reason: '' };
+    return { inArea: null, reason: '앱이 판정하지 않는 지역' };
+  }
+
   function deadlines(S) {
     var C = parseDate(S.contract), M = parseDate(S.move), end = contractEnd(M, S.term);
-    var rp = LAW.report, inSeoul = LAW.seoulGu.indexOf(S.gu) >= 0;
-    var required = inSeoul ? (+S.deposit > rp.depositOver || +S.rent > rp.rentOver) : null;
-    var reason = !inSeoul ? '서울 밖 지역은 따로 확인이 필요해요' : +S.rent > rp.rentOver ? '월세 30만 원 초과' : +S.deposit > rp.depositOver ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하';
+    var rp = LAW.report, A = reportArea(S.sido, S.gu);
+    var required = A.inArea === true ? (+S.deposit > rp.depositOver || +S.rent > rp.rentOver) : A.inArea;
+    var reason = A.inArea !== true ? A.reason : +S.rent > rp.rentOver ? '월세 30만 원 초과' : +S.deposit > rp.depositOver ? '보증금 6천만 원 초과' : '보증금 6천만 원 이하, 월세 30만 원 이하';
     var due = addDays(C, rp.days);
     return {
       C: C, M: M, end: end,
@@ -126,5 +140,5 @@
     return { total: items.length, ready: items.filter(function (x) { return x.ready; }).length, items: items };
   }
 
-  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, toUser: toUser, verdict: verdict, docSlot: docSlot, docReadiness: docReadiness };
+  return { LAW: LAW, parseDate: parseDate, addDays: addDays, addMonths: addMonths, iso: iso, contractEnd: contractEnd, age: age, validate: validate, deadlines: deadlines, reportArea: reportArea, toUser: toUser, verdict: verdict, docSlot: docSlot, docReadiness: docReadiness };
 });

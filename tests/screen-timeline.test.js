@@ -127,5 +127,6 @@ test('CSS T-11: 체크 그리기 keyframes mo-timeline-draw를 짧게(--mo-short
 // ---------- F-09 ⑧ 기한 계산 불변 ----------
 test('기한 계산(buildTimeline~openTasks) 텍스트가 T-11 전과 같다 (F-09 ⑧, N-05)', () => {
   const block = fnText('  function buildTimeline(R) {', '  // ---------- 캘린더 계산 ----------');
-  assert.equal(crypto.createHash('sha256').update(block).digest('hex'), '448c9a4c5a4d13a6e8ea2f65e34859ee68a0d4a36be94a33d8ea8c22f3ee678d');
+  // T-18(2026-11-12)이 '신고 대상인지 모름(null)' 할 일을 의도적으로 추가해 기준값을 갱신했다 — 이전 448c9a4c…678d. 리뷰 권고 #1 esc 추가로 한 번 더 갱신 — 직전 c34c6ca6…ef71
+  assert.equal(crypto.createHash('sha256').update(block).digest('hex'), '873ab0d4927b62a839403ba89ff8d11a1d30b83579e62fec8e246a4524bc54f9');
 });

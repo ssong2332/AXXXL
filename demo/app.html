@@ -1283,6 +1283,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var rt = [];
     if (rep.required) rt.push({ id: 'rp', title: '전월세 신고', urgent: true, due: rep.due, where: '부동산거래관리시스템 · 행정복지센터', docs: '임대차계약서, 신분증', act: ['부동산거래관리시스템', 'https://rtms.molit.go.kr'], src: '부동산거래신고법 제6조의2·제6조의5',
       desc: rep.reason + '라 신고 대상이에요. ' + (early ? '입주보다 기한이 먼저 와서 전입신고와 합칠 수 없어요. 기한 안에 따로 신고하세요.' : '전입신고 때 계약서를 함께 냈다면 이미 신고한 것으로 봐요. 따로 한다면 온라인으로 할 수 있고, 접수되면 확정일자도 함께 받아요.') });
+    else if (rep.required === null) rt.push({ id: 'rp', title: '전월세 신고 대상인지 확인', desc: '이 지역은 앱이 신고 대상 지역인지 판정하지 못했어요(' + esc(rep.reason) + '). 행정복지센터에 물어보고, 대상이면 ' + md(rep.due) + '까지 신고하세요. 신고하면 확정일자도 함께 받아요.', due: rep.due, where: '행정복지센터 · 부동산거래관리시스템', docs: '임대차계약서, 신분증', act: ['부동산거래관리시스템', 'https://rtms.molit.go.kr'], src: rep.src });
     else rt.push({ id: 'rp', title: '확정일자 받기', desc: '신고 대상은 아니지만, 전입신고 때 확정일자를 함께 받아 두면 보증금을 지키는 데 도움이 돼요.', due: M, where: '행정복지센터 · 인터넷등기소', src: '주택임대차보호법 제3조의6' });
     rt.push({ id: 'r1', title: '세대주로 등록됐는지 확인', desc: '주민등록등본에서 확인해요. 월세 세액공제와 일부 청년 지원의 조건이에요.', due: R.movein.due, act: ['정부24 등본', 'https://www.gov.kr'], src: '조세특례제한법 제95조의2' });
     rt.push({ id: 'r2', title: '은행·카드 주소 한 번에 바꾸기', desc: '전입신고할 때 정부24 ‘주소변경 서비스’를 함께 신청하면 금융기관 주소가 한 번에 바뀌어요.', due: R.movein.due, src: '정부24 주소변경 서비스' });
@@ -3153,9 +3154,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!p) return dateBlk(d);
     return '<span class="mv-chip' + (+d === +today ? ' today' : '') + '" aria-label="' + p.label + '"><span aria-hidden="true">' + p.month + '</span><b aria-hidden="true">' + p.day + '</b><span aria-hidden="true">' + p.wd + '</span></span>';
   }
-  // 갱신 통지 마감(o1)은 날짜를 '중요한 날짜'에만 두고 '나가기 전 할 일'은 문구만 (F-10 ①, OQ #8) — taskItem은 그대로, 복사본만 넘긴다
+  // 갱신 통지 마감(o1)·집 상태 점검(o2, T-19)은 날짜를 '중요한 날짜'에만 두고 '나가기 전 할 일'은 문구만 (F-10 ①, OQ #8) — taskItem은 그대로, 복사본만 넘긴다
   function moveoutTasks(tasks) {
-    return JS ? JS.hideDue(tasks, ['o1']) : tasks.map(function (t) { return t.id === 'o1' ? Object.assign({}, t, { due: null }) : t; });
+    return JS ? JS.hideDue(tasks, ['o1', 'o2']) : tasks.map(function (t) { return ['o1', 'o2'].indexOf(t.id) >= 0 ? Object.assign({}, t, { due: null }) : t; });
   }
   function viewMoveout() {
     moBegin('moveout');
@@ -3375,7 +3376,7 @@ document.addEventListener('DOMContentLoaded', function () {
       (pd(S.move) < pd(S.contract) ? '<div class="banner due">' + ic('info') + '<span>입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.</span></div>' : '');
     else if (st === 2) body = '<h1>보증금과 월세는 얼마예요?</h1><p class="sub">전월세 신고 대상인지, 매달 나갈 돈이 얼마인지 계산해요.</p><div class="form-grid">' +
       f('보증금', num('deposit', '만 원', '예: 500')) + f('월세 (관리비 빼고)', num('rent', '만 원', '예: 50')) + f('관리비 (없으면 0)', num('fee', '만 원', '예: 7')) + '</div>' +
-      ((S.deposit || S.rent) ? '<div class="banner">' + ic('info') + '<span>' + (R.report.required ? '<b>전월세 신고 대상이에요</b> (' + R.report.reason + '). 기한은 ' + md(R.report.due) + '까지예요.' : '전월세 신고 대상은 아니에요. 확정일자는 따로 받아 두는 게 좋아요.') + '</span></div>' : '');
+      ((S.deposit || S.rent) ? '<div class="banner">' + ic('info') + '<span>' + (R.report.required === null ? '전월세 신고 대상 지역인지 확인이 필요해요(' + esc(R.report.reason) + '). 대상이면 ' + md(R.report.due) + '까지 신고해야 해요.' : R.report.required ? '<b>전월세 신고 대상이에요</b> (' + R.report.reason + '). 기한은 ' + md(R.report.due) + '까지예요.' : '전월세 신고 대상은 아니에요. 확정일자는 따로 받아 두는 게 좋아요.') + '</span></div>' : '');
     else if (st === 3) body = '<h1>집은 어디예요?</h1><p class="sub">가까운 행정복지센터·마트·병원을 찾고 지도에 집을 표시해요. 나중에 정해도 돼요.</p>' + homeCard() +
       '<div class="form-grid">' + f('집 별칭 (화면에 보일 이름)', '<input class="inp" data-field="addr" maxlength="20" placeholder="예: 봉천동 원룸" value="' + esc(S.addr || '') + '">') + regionFields() + '</div>';
     else body = '<h1>지원 자격도 미리 볼까요?</h1><p class="sub">청년 주거 지원을 신청해 볼 수 있는지 따져 볼게요. 몰라도 괜찮아요.</p><div class="form-grid">' +
@@ -3454,7 +3455,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var mark = function (ok) { return ok === true ? '<span class="badge brand">충족</span>' : ok === false ? '<span class="badge no">안 맞음</span>' : '<span class="badge due">확인 필요</span>'; };
     var repBadge = rp.required === true ? '<span class="badge due">신고 대상</span>' : rp.required === false ? '<span class="badge">대상 아님</span>' : '<span class="badge due">확인 필요</span>';
     var reports = '<section class="card c6 stack' + moStep(1) + '"><div class="split"><h2 style="font-size:17px">전월세 신고</h2>' + repBadge + '</div><p>' + esc(rp.reason) + '</p>' +
-      (rp.required === true ? '<p><b>' + ymd(rp.due) + '</b>까지 (' + dday(rp.due) + ') · 계약일부터 30일</p>' + (rp.early ? '<div class="banner due">' + ic('info') + '<span>입주보다 기한이 먼저 와요. 전입신고와 합치지 말고 따로 신고하세요.</span></div>' : '<p class="s13 sub">입주 후 전입신고 때 계약서를 함께 내면 신고와 확정일자가 한 번에 끝나요.</p>') : rp.required === false ? '<p class="s13 sub">신고 대상은 아니지만 전입신고 때 확정일자를 받아 두면 보증금을 지키는 데 도움이 돼요.</p>' : '') +
+      (rp.required === true ? '<p><b>' + ymd(rp.due) + '</b>까지 (' + dday(rp.due) + ') · 계약일부터 30일</p>' + (rp.early ? '<div class="banner due">' + ic('info') + '<span>입주보다 기한이 먼저 와요. 전입신고와 합치지 말고 따로 신고하세요.</span></div>' : '<p class="s13 sub">입주 후 전입신고 때 계약서를 함께 내면 신고와 확정일자가 한 번에 끝나요.</p>') : rp.required === null ? '<p class="s13 sub">신고 대상 지역인지 행정복지센터에 확인하세요. 대상이면 <b>' + ymd(rp.due) + '</b>까지 (' + dday(rp.due) + ') 신고해야 해요.</p>' : rp.required === false ? '<p class="s13 sub">신고 대상은 아니지만 전입신고 때 확정일자를 받아 두면 보증금을 지키는 데 도움이 돼요.</p>' : '') +
       src(rp.src, rp.url, rp.basis) + '</section>' +
       '<section class="card c6 stack' + moStep(2) + '"><div class="split"><h2 style="font-size:17px">전입신고</h2><span class="badge brand">모두 해당</span></div><p>입주한 날부터 14일 안에 해야 해요.</p><p><b>' + ymd(R.movein.due) + '</b>까지 (' + dday(R.movein.due) + ') · 보증금을 지키려면 입주 당일(' + md(R.M) + ') 권장</p>' + src(R.movein.src, R.movein.url, R.movein.basis) + '</section>';
     // 무주택·중복 수혜를 아직 답하지 않은 조건 (모른다고 답한 것과 구분)
