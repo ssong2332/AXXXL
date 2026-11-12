@@ -822,6 +822,18 @@ body.ob .shell { display: block }
 /* ===== /mo:T-10 ===== */
 
 /* ===== mo:T-11 #timeline ===== */
+.mo-timeline .stage { scroll-margin-top: 16px }
+.mo-timeline .mo-tl-h { font-size: 17px; font-weight: 700 }
+.mo-timeline .mo-tl-tog { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 32px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.mo-timeline .mo-tl-name { flex: 1 1 auto; min-width: 0 }
+.mo-timeline .mo-tl-tog .i { flex: 0 0 auto; color: var(--ink-3) }
+.mo-timeline .mo-tl-tog[aria-expanded="true"] .i { transform: rotate(90deg) }
+.mo-timeline .mo-tl-body { padding-top: 10px }
+@keyframes mo-timeline-draw { from { clip-path: inset(0 100% 0 0) } }
+@media (max-width: 899px) { .mo-timeline .stage { scroll-margin-top: calc(68px + env(safe-area-inset-top, 0px)) } }
+@media (prefers-reduced-motion: no-preference) {
+  .mo-timeline .chk.mo-tl-draw:checked::after { animation: mo-timeline-draw var(--mo-short) var(--mo-ease) both }
+}
 /* ===== /mo:T-11 ===== */
 
 /* ===== mo:T-12 #moveout #docs ===== */
@@ -1190,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var meta = !c && (t.docs || t.where) ? '<div class="meta">' + (t.docs ? '<span class="pill"><b>준비물</b>' + t.docs + '</span>' : '') + (t.where ? '<span class="pill"><b>어디서</b>' + t.where + '</span>' : '') + '</div>' : '';
     var act = t.act && !c ? '<a class="btn ghost sm" href="' + t.act[1] + '"' + ext(t.act[1]) + '>' + t.act[0] + (t.act[1].charAt(0) === '#' ? '' : ic('out', 'sm')) + '</a>' : '';
     return '<div class="task' + (c ? ' done' : '') + '">' + (o.num ? '<span class="num" aria-hidden="true">' + o.num + '</span>' : '') +
-      '<input class="chk" type="checkbox" id="' + id + '" data-act="task" data-id="' + t.id + '"' + (c ? ' checked' : '') + '>' +
+      '<input class="chk' + (o.chkCls ? ' ' + o.chkCls : '') + '" type="checkbox" id="' + id + '" data-act="task" data-id="' + t.id + '"' + (c ? ' checked' : '') + '>' +
       '<div class="body"><div class="t"><label for="' + id + '">' + t.title + '</label>' + badge(dueTag(t)) + '</div><p class="d">' + t.desc + '</p>' + lateNote(t, c) + meta +
       '<div class="act">' + act + srcLink(t.src) + '</div></div></div>';
   }
@@ -1201,17 +1213,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- parts / screens (kept) ----------
   function viewTimeline() {
+    // T-11: 다 끝난 단계 접기(F-09 ①⑥), 방금 체크한 할 일만 체크 그리기(⑤). 체크로 단계가 다 끝나도 이번 방문 동안은 열린 채 유지(moOpen)
+    function tlStage(s, cls) {
+      var open = moOpen('timeline:stage:' + s.key, cls !== 'done'), fk = 'timeline:stage:' + s.key;
+      var n = s.tasks.filter(function (t) { return S.done[t.id]; }).length;
+      var label = '<span class="mo-tl-name">' + s.name + '</span>' + (cls === 'now' ? '<span class="badge solid">지금</span>' : '<span class="badge">' + n + ' / ' + s.tasks.length + '</span>') + ic('chev', 'sm');
+      var items = s.tasks.map(function (t) { return taskItem(t, moChanged('timeline:task:' + t.id, !!S.done[t.id]) === false ? { chkCls: 'mo-tl-draw' } : undefined); }).join('');
+      return '<section class="stage ' + cls + '" id="st-' + s.key + '"><div class="stage-when"><b>' + s.name + '</b><span>' + s.when + '</span></div><span class="node" aria-hidden="true"></span>' +
+        '<div class="card"><h2 class="mo-tl-h">' + moToggle(fk, open, label, 'mo-tl-tog') + '</h2>' + moPanel(fk, open, '<div class="mo-tl-body">' + items + '</div>') + '</div></section>';
+    }
+    var enter = moBegin('timeline');
     var R = evaluate(), T = buildTimeline(R), P = phase(R), nk = nowKey(R, T, P), total = 0, done = 0;
     T.forEach(function (s) { s.tasks.forEach(function (t) { total++; if (S.done[t.id]) done++; }); });
     var pct = Math.round(done / total * 100);
-    var stages = T.map(function (s) {
-      var all = s.tasks.every(function (t) { return S.done[t.id]; }), cls = s.key === nk ? 'now' : all ? 'done' : '';
-      return '<section class="stage ' + cls + '" id="st-' + s.key + '"><div class="stage-when"><b>' + s.name + '</b><span>' + s.when + '</span></div><span class="node" aria-hidden="true"></span>' +
-        '<div class="card"><div class="card-h"><h2>' + s.name + '</h2>' + (cls === 'now' ? '<span class="badge solid">지금</span>' : '<span class="badge">' + s.tasks.filter(function (t) { return S.done[t.id]; }).length + ' / ' + s.tasks.length + '</span>') + '</div>' + s.tasks.map(function (t) { return taskItem(t); }).join('') + '</div></section>';
-    }).join('');
-    return '<div class="page-head"><div><p class="eyebrow">' + md(R.C) + ' 계약 · ' + md(R.M) + ' 입주 · ' + ymd(contractEnd()) + ' 만료</p><h1>내 자취 타임라인</h1></div><button type="button" class="btn line" data-act="ics">' + ic('bell') + '캘린더 앱에 기한 넣기</button></div>' +
-      '<section class="card" style="margin-bottom:20px"><div class="split" style="margin-bottom:10px"><b>' + done + ' / ' + total + ' 완료</b><span class="muted s13">' + pct + '%</span></div><div class="progress-line"><span style="width:' + pct + '%"></span></div></section>' +
-      '<div class="rail">' + stages + '</div><p class="s12 muted" style="margin-top:20px">기한은 첫날을 빼고 셌어요(민법 제157조). 전입신고 14일은 주민등록법, 전월세 신고 30일은 부동산거래신고법, 지원 일정은 각 공고 기준이에요.</p>';
+    var marks = T.map(function (s) { return { key: s.key, done: s.tasks.every(function (t) { return S.done[t.id]; }) }; });
+    var stages = T.map(function (s, i) { return tlStage(s, s.key === nk ? 'now' : marks[i].done ? 'done' : ''); }).join('');
+    // '지금' 단계 이동: 다른 화면에서 들어올 때만, 즉시 스크롤 (F-09 ②, OQ #4, DECISIONS #15)
+    var go = enter && JS ? JS.scrollTarget(marks, nk) : null;
+    if (go) moAfter(function (root) { var el = root.querySelector('#st-' + go); if (el) el.scrollIntoView({ block: 'start', behavior: 'auto' }); });
+    // 막대 0→현재·완료 수 카운트는 등장 때만 (F-09 ④, F-07 ②) — 체크로 다시 그릴 때는 체크 그리기만
+    return moRoot('timeline', '<div class="page-head"><div><p class="eyebrow">' + md(R.C) + ' 계약 · ' + md(R.M) + ' 입주 · ' + ymd(contractEnd()) + ' 만료</p><h1>내 자취 타임라인</h1></div><button type="button" class="btn line" data-act="ics">' + ic('bell') + '캘린더 앱에 기한 넣기</button></div>' +
+      '<section class="card" style="margin-bottom:20px"><div class="split" style="margin-bottom:10px"><b>' + (enter ? moNum('timeline:done', done) : done) + ' / ' + total + ' 완료</b><span class="muted s13">' + pct + '%</span></div><div class="progress-line"><span class="mo-fill" style="width:' + pct + '%"></span></div></section>' +
+      '<div class="rail">' + stages + '</div><p class="s12 muted" style="margin-top:20px">기한은 첫날을 빼고 셌어요(민법 제157조). 전입신고 14일은 주민등록법, 전월세 신고 30일은 부동산거래신고법, 지원 일정은 각 공고 기준이에요.</p>');
   }
 
   function calBase() { if (S.calM) { var p = S.calM.split('-'); return new Date(+p[0], +p[1] - 1, 1); } return new Date(today.getFullYear(), today.getMonth(), 1); }
