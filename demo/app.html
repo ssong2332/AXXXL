@@ -949,6 +949,8 @@ details.fold[open] > summary { margin-bottom: 10px }
   .mo[data-mo-enter] .mo-in.mo-s5 { animation-delay: calc(var(--mo-step) * 5) }
   .mo[data-mo-enter] .mo-in.mo-s6 { animation-delay: calc(var(--mo-step) * 6) }
   .mo[data-mo-enter] .mo-fill { animation: mo-fill var(--mo-long) var(--mo-ease) both }
+  /* .mo-grow·.mo-pop은 같은 화면에서 값이 바뀐 render(true) 피드백용이라 [data-mo-enter]를 걸지 않는다.
+     재생 조건은 JS가 정한다: moChanged(key, value)가 등장 렌더·첫 기록·같은 값이면 undefined → 클래스를 붙이지 않음. */
   .mo .mo-grow { animation: mo-grow var(--mo-long) var(--mo-ease) both }
   .mo .mo-pop { animation: mo-pop var(--mo-short) var(--mo-ease) both }
   .mo .mo-fold { transition: grid-template-rows var(--mo-base) var(--mo-ease-io) }
