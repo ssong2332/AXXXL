@@ -366,6 +366,15 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 .leaflet-tooltip.ltip { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-size: 12px; box-shadow: none }
 /* 카카오 지도 */
 .kmap.picking, .kmap.picking * { cursor: crosshair !important }
+/* 화면 안 로드뷰 창 (카카오 지도가 켜졌을 때만) */
+.rv-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 24px }
+.rv-box { background: var(--surface); color: var(--ink); border-radius: 18px; width: min(960px, 100%); height: min(640px, 100%); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.35) }
+.rv-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 16px; border-bottom: 1px solid var(--line) }
+.rv-head b { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.rv-view { position: relative; flex: 1 1 auto; background: #111 }
+.rv-view > .rv-pano { position: absolute; inset: 0 }
+.rv-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; color: #eee; font-size: 14px }
+@media (max-width: 640px) { .rv-modal { padding: 0 } .rv-box { border-radius: 0; width: 100%; height: 100% } }
 /* 카카오 지도 타일 묶음(카카오 로고·확대 버튼 이미지는 제외)도 OpenStreetMap 지도와 같은 톤으로.
    타일마다 걸면 이음매가 비쳐서, 타일만 담은 묶음(div)에 한 번에 건다 */
 .kmap div:has(> img:not([src*="/mapjsapi/"])) { filter: saturate(.55) contrast(.95) brightness(1.03) }
@@ -1978,7 +1987,7 @@ document.addEventListener('DOMContentLoaded', function () {
       : GEO.status === 'empty' ? '<p class="s13 muted">‘' + esc(GEO.q) + '’로 찾은 곳이 없어요. 동 이름이나 큰 건물 이름으로 찾거나 지도에서 직접 골라 주세요.</p>' : GEO.status === 'error' ? '<p class="s13" style="color:var(--due-text)">' + esc(GEO.err || '주소 검색에 실패했어요.') + '</p>' : '';
     return '<section class="card stack"><div class="card-h" style="margin:0"><h2>우리 집 위치</h2><div class="row" style="gap:6px">' +
       (S.home ? '<button type="button" class="btn ghost sm" data-act="resethome">' + (S.demo ? '예시 위치로' : '위치 지우기') + '</button>' : '') +
-      (S.home || S.demo ? '<a class="btn ghost sm"' + (kakaoId(h) ? '' : ' data-rv-place="home"') + ' href="' + kakao('rv', h) + '" target="_blank" rel="noopener" aria-label="우리 집 위치 로드뷰 보기 (카카오맵, 새 창)">로드뷰' + ic('out', 'sm') + '</a>' : '') + '</div></div>' +
+      (S.home || S.demo ? '<a class="btn ghost sm" data-rv-in="home"' + (kakaoId(h) ? '' : ' data-rv-place="home"') + ' href="' + kakao('rv', h) + '" target="_blank" rel="noopener" aria-label="우리 집 위치 로드뷰 보기 (카카오맵, 새 창)">로드뷰' + ic('out', 'sm') + '</a>' : '') + '</div></div>' +
       '<div class="row" style="flex-wrap:nowrap"><span class="ptile" style="width:40px;height:40px;border-radius:12px;background:var(--ink);color:var(--surface)">' + ic('home', 'sm') + '</span><div style="min-width:0"><b>' + esc(h.label) + '</b><p class="s12 muted">' + (h.src === 'demo' ? '아직 내 집 위치를 정하지 않았어요' : h.src === 'gps' ? '현재 위치로 정했어요' : '직접 정한 위치예요') + '</p></div></div>' +
       '<form class="ask" data-form="geo"><input class="inp" aria-label="주소 또는 건물 이름" placeholder="예: 관악구 신림동, 서원동 주민센터" maxlength="80" value="' + esc(GEO.q || '') + '"><button class="btn" type="submit">찾기</button></form>' + res +
       '<div class="row"><button type="button" class="btn ghost sm" data-act="gps">' + ic('pin', 'sm') + '현재 위치로</button>' + (S.onboarded ? '<button type="button" class="btn ghost sm" data-act="pickhome" aria-pressed="' + !!S.pickHome + '">' + (S.pickHome ? '지도를 눌러 주세요…' : '지도에서 직접 고르기') + '</button>' : '') + '</div>' +
@@ -2101,6 +2110,64 @@ document.addEventListener('DOMContentLoaded', function () {
       placeRoadview(p, keep, isHome);
     });
   }
+  // ---------- 화면 안 로드뷰 ----------
+  // 카카오 지도가 켜져 있으면 로드뷰 버튼(data-rv-in)을 눌렀을 때 새 창 대신 화면 안 창에 띄운다(kakao.maps.Roadview).
+  // 사진은 새 창용과 같은 규칙(placeRoadview: 가까운 사진 중 가장 최근 것, 장소 쪽을 바라보게)으로 고른다.
+  // 카카오 지도가 꺼져 있으면(키 없음·도메인 미등록) 지금처럼 카카오맵 새 창으로 연다.
+  var RVM = null;   // { el, rv, key }
+  function closeRoadview() {
+    if (!RVM) return;
+    var back = RVM.back; RVM.el.remove(); RVM = null;
+    document.removeEventListener('keydown', rvEsc, true);
+    if (back && document.contains(back)) back.focus({ preventScroll: true });
+  }
+  function rvEsc(e) { if (e.key === 'Escape') { e.preventDefault(); closeRoadview(); } }
+  function openRoadview(id, from) {
+    var p = rvTarget(id), isHome = id === 'home';
+    if (!p) return false;
+    closeRoadview();
+    var name = isHome ? '우리 집 위치' : short(p.name);
+    var el = document.createElement('div');
+    el.className = 'rv-modal';
+    el.innerHTML = '<div class="rv-box" role="dialog" aria-modal="true" aria-label="' + esc(name) + ' 로드뷰"><div class="rv-head"><b>' + esc(name) + ' 로드뷰</b>' +
+      '<a class="btn ghost sm" href="' + kakao('rv', p) + '" target="_blank" rel="noopener" data-rv-out>카카오맵에서 열기' + ic('out', 'sm') + '</a>' +
+      '<button type="button" class="icon-btn" style="width:36px;height:36px" data-rv-close aria-label="로드뷰 닫기">' + ic('x', 'sm') + '</button></div>' +
+      '<div class="rv-view"><div class="rv-pano"></div><div class="rv-msg">가까운 로드뷰 사진을 찾고 있어요…</div></div></div>';
+    document.body.appendChild(el);
+    var key = rvKey(p);
+    RVM = { el: el, rv: null, key: key, back: from || null };
+    el.addEventListener('click', function (e) { if (e.target === el || e.target.closest('[data-rv-close]')) closeRoadview(); });
+    document.addEventListener('keydown', rvEsc, true);
+    el.querySelector('[data-rv-close]').focus({ preventScroll: true });
+    var k = window.kakao.maps, msg = el.querySelector('.rv-msg');
+    var none = function () { if (RVM && RVM.key === key) msg.innerHTML = '이 근처에는 로드뷰 사진이 없어요.<br>위쪽 \'카카오맵에서 열기\'로 주변을 둘러볼 수 있어요.'; };
+    var show = function (pano, pan) {
+      if (!RVM || RVM.key !== key) return;
+      var rv = RVM.rv = new k.Roadview(el.querySelector('.rv-pano'));
+      k.event.addListener(rv, 'init', function () {
+        if (pan !== null && !isNaN(pan)) rv.setViewpoint({ pan: pan, tilt: 0, zoom: 0 });
+        msg.remove();
+      });
+      rv.setPanoId(+pano, new k.LatLng(+p.lat, +p.lng));
+    };
+    var fromUrl = function (u) {
+      if (!RVM || RVM.key !== key) return;
+      var a = el.querySelector('[data-rv-out]'); if (a && u) a.href = u;
+      var m = /panoid=(\d+)/.exec(u || ''), pm = /[?&]pan=([\d.]+)/.exec(u || '');
+      if (m) return show(m[1], pm ? +pm[1] : null);
+      // 고른 사진이 없으면(시간 초과 등) 장소에서 가장 가까운 사진이라도 찾는다
+      new k.RoadviewClient().getNearestPanoId(new k.LatLng(+p.lat, +p.lng), 100, function (pid) { if (pid) show(pid, null); else none(); });
+    };
+    if (isHome && homeRvFresh(p)) fromUrl(p.rvUrl);
+    else placeRoadview(p, fromUrl, isHome);
+    return true;
+  }
+  // 버튼을 누르면: 카카오 지도가 켜져 있으면 화면 안 창, 아니면 링크 그대로(새 창). 캡처 단계에서 받아 새 창을 미리 여는 처리보다 먼저 막는다
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[data-rv-in]');
+    if (!a || KM.st !== 'ok' || !window.kakao || !window.kakao.maps.Roadview || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (openRoadview(a.getAttribute('data-rv-in'), a)) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
   function icoSvg(name, x, y, s) { return '<svg class="ico" x="' + x + '" y="' + y + '" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + ICON[name] + '</svg>'; }
 
   // 지도에 올릴 장소: 전체 보기에서는 분류마다 가까운 몇 곳만 (너무 빽빽하지 않게)
@@ -2114,7 +2181,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="ptile">' + ic(placeIc(sel)) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(sel.name) + '</b><p class="s12 muted">' + esc(sel.sub) + ' · ' + (function () { var w = WALK[walkKey(home(), sel)]; return w && w.st === 'ok' ? '집에서 걸어서 ' + walkMin(w.time) + '분 · ' + meters(w.dist) : '걸어서 약 ' + sel.min + '분 · ' + sel.m + 'm'; })() + '</p></div><button type="button" class="icon-btn" style="width:32px;height:32px;background:transparent" data-act="place" data-v="" aria-label="닫기">' + ic('x', 'sm') + '</button></div>' +
       (sel.desc ? '<p class="s13 sub" style="margin-top:8px">' + esc(sel.desc) + '</p>' : '') + (sel.hours ? '<p class="s12 muted">영업시간(OSM): ' + esc(sel.hours) + '</p>' : '') +
       (sel.url ? '<p class="s12"><a href="' + esc(sel.url) + '" target="_blank" rel="noopener">카카오맵에서 영업시간·리뷰 보기</a></p>' : '') +
-      '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + walkLink(home(), sel) + '" target="_blank" rel="noopener" aria-label="우리 집에서 ' + esc(sel.name) + '까지 걸어가는 길 (카카오맵, 새 창)">길찾기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '"' + (kakaoId(sel) ? '' : ' data-rv-place="' + esc(sel.id) + '"') + ' target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>';
+      '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + walkLink(home(), sel) + '" target="_blank" rel="noopener" aria-label="우리 집에서 ' + esc(sel.name) + '까지 걸어가는 길 (카카오맵, 새 창)">길찾기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '" data-rv-in="' + esc(sel.id) + '"' + (kakaoId(sel) ? '' : ' data-rv-place="' + esc(sel.id) + '"') + ' target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>';
   }
   // 지도 색: auto(앱 테마를 따름) | light | dark — 지도에만 적용, 이 브라우저에 저장
   function mapTheme() { return S.mapTheme === 'light' || S.mapTheme === 'dark' ? S.mapTheme : 'auto'; }
