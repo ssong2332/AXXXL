@@ -828,6 +828,33 @@ body.ob .shell { display: block }
 /* ===== /mo:T-12 ===== */
 
 /* ===== mo:T-13 #input #contract ===== */
+.mo-contract .mo-contract-zone + .mo-contract-zone { margin-top: 28px }
+.mo-contract .mo-contract-h { font-size: 14px; font-weight: 700; color: var(--ink-3); margin: 0 0 10px }
+.mo-contract .mo-contract-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px }
+.mo-contract h3 { font-size: 16px; font-weight: 700 }
+.mo-contract .mo-contract-sub { margin-top: 8px }
+.mo-contract .mo-contract-facts { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; padding: 14px 16px; border-radius: var(--r-in); background: var(--fill); font-size: 14px }
+.mo-contract .mo-contract-facts dt { color: var(--ink-3) }
+.mo-contract .mo-contract-facts dd { margin: 0; font-weight: 600; text-align: right }
+.mo-contract .mo-contract-facts dd.mo-contract-miss { color: var(--due-text) }
+@media (max-width: 1099px) {
+  .mo-input .mo-input-grid { display: block }
+  .mo-input .mo-input-grid > .card { margin-bottom: 12px }
+  .mo-input .mo-input-go { position: sticky; bottom: 16px; z-index: 5 }
+  .mo-input .mo-input-go .card { flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, .14) }
+  .mo-input .mo-input-go h2 { display: none }
+  .mo-input .mo-input-go p { flex: 1 1 auto; min-width: 0 }
+  .mo-input .mo-input-go .btn { flex: 0 0 auto }
+}
+@media (max-width: 899px) {
+  .mo-input .mo-input-go { bottom: calc(72px + env(safe-area-inset-bottom, 0px)) }
+}
+@media (max-width: 640px) {
+  .mo-input .form-grid, .mo-contract .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px }
+  .mo-input .mo-input-wide, .mo-contract .mo-contract-wide { grid-column: 1 / -1 }
+  .mo-input .card, .mo-contract .card { padding: 18px 16px }
+  .mo-input input[type="date"] { padding: 0 8px }
+}
 /* ===== /mo:T-13 ===== */
 </style>
 </head>
@@ -2353,26 +2380,33 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 내 계약 ----------
+  // 조건 입력 값은 여기서 확인만 한다 (F-11 ③, OQ #3). screens-core.js를 못 불러오면 저장값을 그대로 보여 준다
+  function contractFactsHtml() {
+    var rows = JS && JS.contractFacts ? JS.contractFacts(S) : [['deposit', '보증금'], ['rent', '월세'], ['term', '계약 기간'], ['contract', '계약일'], ['move', '입주일'], ['birth', '출생연월'], ['income', '가구 소득']].map(function (x) { var v = S[x[0]]; return { key: x[0], label: x[1], value: v === undefined || v === null || v === '' ? '아직 안 넣음' : String(v), missing: v === undefined || v === null || v === '' }; });
+    return '<dl class="mo-contract-facts">' + rows.map(function (r) { return '<dt>' + esc(r.label) + '</dt><dd' + (r.missing ? ' class="mo-contract-miss"' : '') + '>' + esc(r.value) + '</dd>'; }).join('') + '</dl>';
+  }
   function viewContract() {
+    moBegin('contract');
     var R = evaluate(), T = buildTimeline(R), P = phase(R), end = contractEnd();
-    var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
+    var f = function (lab, inner, wide) { return '<label class="field' + (wide ? ' mo-contract-wide' : '') + '"><span>' + lab + '</span>' + inner + '</label>'; };
     var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + S[k] + '"><em>' + unit + '</em></div>'; };
     var GU = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
     var big = P.dm < 0 ? 'D-' + (-P.dm) : P.dm === 0 ? 'D-day' : (P.dm + 1) + '<small>일째</small>';
-    return '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · 바꾸면 모든 화면이 다시 계산돼요</p><h1>내 계약</h1></div><button type="button" class="btn line sm" data-act="reset">' + (S.demo ? '예시 처음 상태로' : '처음부터 다시 입력') + '</button></div>' +
-      '<div class="grid"><section class="card dday c4"><div class="split" style="position:relative;z-index:1"><span class="lbl">' + (P.dm <= 0 ? '입주까지' : '자취') + '</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">' + P.badge + '</span></div><div class="big" style="position:relative;z-index:1">' + big + '</div>' +
+    return moRoot('contract', '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · 계약 값은 조건 입력에서 고쳐요</p><h1>내 계약</h1></div><button type="button" class="btn line sm" data-act="reset">' + (S.demo ? '예시 처음 상태로' : '처음부터 다시 입력') + '</button></div>' +
+      '<section class="mo-contract-zone" aria-labelledby="mo-contract-info-h"><h2 class="mo-contract-h" id="mo-contract-info-h">계약 정보</h2>' +
+      '<div class="grid"><section class="card dday c4' + moStep(0) + '"><div class="split" style="position:relative;z-index:1"><span class="lbl">' + (P.dm <= 0 ? '입주까지' : '자취') + '</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">' + P.badge + '</span></div><div class="big" style="position:relative;z-index:1">' + big + '</div>' +
       '<dl><dt>집</dt><dd>' + esc(S.addr || '내 자취방') + ' · ' + esc(S.gu) + '</dd><dt>계약일</dt><dd>' + ymd(R.C) + '</dd><dt>입주일</dt><dd>' + ymd(R.M) + '</dd><dt>만료</dt><dd>' + ymd(end) + '</dd><dt>전월세 신고</dt><dd>' + (R.report.required ? md(R.report.due) + '까지' : '대상 아님') + '</dd><dt>전입신고 기한</dt><dd>' + md(R.movein.due) + '</dd></dl></section>' +
-      '<section class="card c8 stack"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
-      f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + regionFields() +
-      f('보증금', num('deposit', '만 원')) + f('월세', num('rent', '만 원')) + f('관리비', num('fee', '만 원')) + f('계약 기간', '<select class="inp" data-field="term">' + [1, 2].map(function (n) { return '<option value="' + n + '"' + (+S.term === n ? ' selected' : '') + '>' + n + '년</option>'; }).join('') + '</select>') +
-      f('계약일 (계약서 쓴 날)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">') + f('입주일 (잔금·이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">') + '</div>' +
+      '<section class="card c8 stack' + moStep(1) + '"><div class="mo-contract-head"><h3>조건 입력에서 넣은 값</h3><a class="btn line sm" href="#input">' + ic('doc', 'sm') + '조건 입력에서 고치기</a></div>' +
+      contractFactsHtml() +
       (pd(S.move) < pd(S.contract) ? '<div class="banner due">' + ic('info') + '<span>입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.</span></div>' : R.report.required && R.report.due < R.M ? '<div class="banner due">' + ic('info') + '<span>전월세 신고 기한(' + md(R.report.due) + ')이 입주보다 먼저 와요. 전입신고와 합칠 수 없어요.</span></div>' : '') +
-      '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' + f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">') +
-      f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + '</div>' +
+      '<h3 class="mo-contract-sub">이 화면에서 정하는 칸</h3><div class="form-grid">' +
+      f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + f('관리비', num('fee', '만 원')) + regionFields() +
+      f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">', true) + '</div>' +
       (!S.demo ? '' : '<label class="field"><span>시연용 날짜 (발표용)</span><select class="inp" data-sim>' + [['', '실제 오늘'], ['-1', '입주 전날'], ['0', '입주 당일'], ['10', '입주 10일 후'], ['40', '입주 40일 후']].map(function (o) { var sv = S.sim === null || S.sim === undefined ? '' : String(S.sim); return '<option value="' + o[0] + '"' + (sv === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>') +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div>' +
-      '<div class="row"><button type="button" class="btn ghost sm" data-act="backup">' + ic('down', 'sm') + '내 기록 파일로 저장</button><label class="btn ghost sm addfile">' + ic('plus', 'sm') + '파일에서 불러오기<input type="file" accept="application/json,.json" data-act="restore"></label></div><p class="s12 muted">브라우저 데이터를 지우거나 폰을 바꾸기 전에 저장해 두세요. 서류·사진 파일은 들어 있지 않아요.</p></section>' +
-      '<div class="c6">' + homeCard() + '</div><div class="c6 stack">' + deviceCards() + '</div></div>';
+      '<div class="row"><button type="button" class="btn ghost sm" data-act="backup">' + ic('down', 'sm') + '내 기록 파일로 저장</button><label class="btn ghost sm addfile">' + ic('plus', 'sm') + '파일에서 불러오기<input type="file" accept="application/json,.json" data-act="restore"></label></div><p class="s12 muted">브라우저 데이터를 지우거나 폰을 바꾸기 전에 저장해 두세요. 서류·사진 파일은 들어 있지 않아요.</p></section></div></section>' +
+      '<section class="mo-contract-zone" aria-labelledby="mo-contract-other-h"><h2 class="mo-contract-h" id="mo-contract-other-h">집 위치 · 휴대폰 연결</h2>' +
+      '<div class="grid"><div class="c6' + moStep(2) + '">' + homeCard() + '</div><div class="c6 stack' + moStep(3) + '">' + deviceCards() + '</div></div></section>');
   }
 
   // ---------- 처음 시작하기 (온보딩) ----------
@@ -2418,16 +2452,19 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 조건 입력 (필수 ①) ----------
+  // 휴대폰에서 한 줄을 다 쓰는 칸(긴 질문·긴 선택지). 나머지는 두 칸씩 나란히 (F-11 ②)
+  var INPUT_WIDE = { income: 1, homeless: 1, dup: 1, birth: 1 };
   function viewInput() {
+    moBegin('input');
     var err = JE.validate(S);
-    var f = function (lab, inner, k, hint) { return '<label class="field"><span>' + lab + '</span>' + inner + (err[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">' + err[k] + '</em>' : hint ? '<em class="s12 muted" style="font-style:normal">' + hint + '</em>' : '') + '</label>'; };
+    var f = function (lab, inner, k, hint) { return '<label class="field' + (INPUT_WIDE[k] ? ' mo-input-wide' : '') + '"><span>' + lab + '</span>' + inner + (err[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">' + err[k] + '</em>' : hint ? '<em class="s12 muted" style="font-style:normal">' + hint + '</em>' : '') + '</label>'; };
     var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + esc(S[k]) + '"' + (err[k] ? ' aria-invalid="true"' : '') + '><em>' + unit + '</em></div>'; };
     var sel = function (k, opts) { return '<select class="inp" data-field="' + k + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(S[k] == null ? '' : S[k]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; };
     // '아직 안 정함'(값 없음)과 '잘 모르겠어요'(모른다고 답함)는 다르다. 값이 없을 때 '예'가 골라진 것처럼 보이지 않게 맨 앞에 둔다
     var yn = [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']];
     var bad = Object.keys(err).length;
-    return '<div class="page-head"><div><p class="eyebrow">필수 ① · 한 번 넣으면 모든 화면이 다시 계산돼요</p><h1>조건 입력</h1></div><button type="button" class="btn line sm" data-act="reset">예시 값으로 되돌리기</button></div>' +
-      '<div class="grid"><section class="card c8 stack"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
+    return moRoot('input', '<div class="page-head"><div><p class="eyebrow">필수 ① · 한 번 넣으면 모든 화면이 다시 계산돼요</p><h1>조건 입력</h1></div><button type="button" class="btn line sm" data-act="reset">예시 값으로 되돌리기</button></div>' +
+      '<div class="grid mo-input-grid"><section class="card c8 stack' + moStep(0) + '"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
       f('시·군·구 (서울)', sel('gu', JE.LAW.seoulGu.map(function (g) { return [g, g]; })), 'gu') +
       f('계약 기간', sel('term', [['1', '1년'], ['2', '2년']]), 'term') +
       f('보증금', num('deposit', '만 원'), 'deposit') + f('월세 (관리비 제외)', num('rent', '만 원'), 'rent') +
@@ -2439,9 +2476,9 @@ document.addEventListener('DOMContentLoaded', function () {
       f('무주택인가요?', sel('homeless', yn), 'homeless', '본인과 세대원 모두 집이 없으면 예') +
       f('비슷한 주거 지원을 지금 받고 있나요?', sel('dup', yn), 'dup', '예: 국토교통부 청년월세 특별지원') + '</div>' +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div></section>' +
-      '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">다 넣었나요?</h2>' +
+      '<aside class="c4 stack mo-input-go' + moStep(1) + '" aria-label="판정 보기"><section class="card stack"><h2 style="font-size:16px">다 넣었나요?</h2>' +
       (bad ? '<p class="s13" style="color:var(--no)">고칠 칸이 ' + bad + '개 있어요.</p>' : '<p class="s13 sub">모름으로 둔 항목은 판정에서 "확인 필요"로 보여드려요.</p>') +
-      '<a class="btn" href="#result"' + (bad ? ' aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.5"' : '') + '>판정 보기' + ic('chev', 'sm') + '</a></section></aside></div>';
+      '<a class="btn" href="#result"' + (bad ? ' aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.5"' : '') + '>판정 보기' + ic('chev', 'sm') + '</a></section></aside></div>');
   }
 
   // ---------- 자격 판정 (필수 ①) ----------

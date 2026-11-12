@@ -85,6 +85,46 @@
   // ===== /T-12 =====
 
   // ===== T-13 =====
+  // 내 계약 화면의 '조건 입력 값 확인' 행 (F-11 ③). 입력은 plain 값, 고치기는 조건 입력에서만 한다.
+  // 빈 값은 '아직 안 넣음', 형식이 틀린 값은 '확인 필요' — 둘 다 missing: true. 예외를 던지지 않는다.
+  var INCOME_LABEL = { '100': '100% 이하', '150': '100% 초과 ~ 150% 이하', over: '150% 초과', unknown: '잘 모르겠어요' };
+  function factsEmpty(x) { return x === undefined || x === null || x === ''; }
+  function factsMoney(x) {
+    var n = typeof x === 'number' ? x : /^\s*\d+(\.\d+)?\s*$/.test(String(x)) ? Number(x) : NaN;
+    if (!isFinite(n) || n < 0) return null;
+    return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '만 원';
+  }
+  function factsDate(x) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(x));
+    if (!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    if (d.getFullYear() !== +m[1] || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]) return null;
+    return m[1] + '.' + m[2] + '.' + m[3];
+  }
+  function factsMonth(x) {
+    var m = /^(\d{4})-(\d{2})$/.exec(String(x));
+    if (!m || +m[2] < 1 || +m[2] > 12) return null;
+    return m[1] + '년 ' + (+m[2]) + '월';
+  }
+  function contractFacts(v) {
+    v = v || {};
+    var spec = [
+      ['deposit', '보증금', factsMoney],
+      ['rent', '월세', factsMoney],
+      ['term', '계약 기간', function (x) { return String(x) === '1' || String(x) === '2' ? String(x) + '년' : null; }],
+      ['contract', '계약일', factsDate],
+      ['move', '입주일', factsDate],
+      ['birth', '출생연월', factsMonth],
+      ['income', '가구 소득', function (x) { return Object.prototype.hasOwnProperty.call(INCOME_LABEL, String(x)) ? INCOME_LABEL[String(x)] : null; }]
+    ];
+    return spec.map(function (s) {
+      var raw = v[s[0]];
+      if (factsEmpty(raw)) return { key: s[0], label: s[1], value: '아직 안 넣음', missing: true };
+      var out = s[2](raw);
+      return { key: s[0], label: s[1], value: out === null ? '확인 필요' : out, missing: out === null };
+    });
+  }
+  api.contractFacts = contractFacts;
   // ===== /T-13 =====
 
   return api;
