@@ -940,7 +940,7 @@ details.fold[open] > summary { margin-bottom: 10px }
 }
 
 /* ===== mo:T-09 내 화면 6개 모션 (계약·신고 전용) ===== */
-.mo { --mo-short: 200ms; --mo-base: 300ms; --mo-long: 400ms; --mo-step: 50ms; --mo-shift: 8px; --mo-ease: cubic-bezier(0.2, 0, 0, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
+.mo { --mo-short: 250ms; --mo-base: 450ms; --mo-long: 600ms; --mo-step: 80ms; --mo-shift: 20px; --mo-ease: cubic-bezier(0.3, 0.7, 0.4, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
 .mo .mo-fold { display: grid; grid-template-rows: 0fr }
 .mo .mo-fold.open { grid-template-rows: 1fr }
 .mo .mo-fold-in { min-height: 0; overflow: hidden }
@@ -967,16 +967,91 @@ details.fold[open] > summary { margin-bottom: 10px }
 /* ===== /mo:T-09 ===== */
 
 /* ===== mo:T-10 #result ===== */
+.mo-result .badge.brand { background: var(--brand-tint); padding: 0 8px }
+.mo-result .mo-result-sum-main { font-size: 17px; font-weight: 700; color: var(--ink) }
+.mo-result .mo-result-sum-main b { color: var(--brand-text); font-variant-numeric: tabular-nums }
+.mo-result .mo-result-fold { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 8px 0; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer }
+.mo-result .mo-result-fold:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px }
+.mo-result .mo-result-fold svg { flex: none; transform: rotate(0deg) }
+.mo-result .mo-result-fold[aria-expanded="true"] svg { transform: rotate(90deg) }
+@media (prefers-reduced-motion: no-preference) {
+  .mo-result .mo-result-fold svg { transition: transform var(--mo-short) var(--mo-ease-io) }
+}
 /* ===== /mo:T-10 ===== */
 
 /* ===== mo:T-11 #timeline ===== */
+.mo-timeline .stage { scroll-margin-top: 16px }
+.mo-timeline .mo-tl-h { font-size: 17px; font-weight: 700 }
+.mo-timeline .mo-tl-tog { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 32px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.mo-timeline .mo-tl-name { flex: 1 1 auto; min-width: 0 }
+.mo-timeline .mo-tl-tog .i { flex: 0 0 auto; color: var(--ink-3) }
+.mo-timeline .mo-tl-tog[aria-expanded="true"] .i { transform: rotate(90deg) }
+.mo-timeline .mo-tl-body { padding-top: 10px }
+@keyframes mo-timeline-draw { from { clip-path: inset(0 100% 0 0) } }
+@media (max-width: 899px) { .mo-timeline .stage { scroll-margin-top: calc(68px + env(safe-area-inset-top, 0px)) } }
+@media (prefers-reduced-motion: no-preference) {
+  .mo-timeline .chk.mo-tl-draw:checked::after { animation: mo-timeline-draw var(--mo-short) var(--mo-ease) both }
+}
 /* ===== /mo:T-11 ===== */
 
 /* ===== mo:T-12 #moveout #docs ===== */
+.mo-moveout .mv-chip { flex: 0 0 52px; min-height: 58px; padding: 5px 0; border-radius: 12px; background: var(--fill); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15 }
+.mo-moveout .mv-chip b { font-size: 17px; font-weight: 800 }
+.mo-moveout .mv-chip span { font-size: 11px; color: var(--ink-3) }
+.mo-moveout .mv-chip.today { background: var(--brand); color: var(--brand-ink) }
+.mo-moveout .mv-chip.today span { color: var(--brand-ink); opacity: .85 }
+.mo-docs .progress-line { margin: 2px 0 4px }
+.mo-docs .dq { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 9px 0; border-top: 1px solid var(--hair) }
+.mo-docs .dq-t { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.mo-docs .dq .badge { justify-self: end }
 /* ===== /mo:T-12 ===== */
 
 /* ===== mo:T-13 #input #contract ===== */
+.mo-contract .mo-contract-zone + .mo-contract-zone { margin-top: 28px }
+.mo-contract .mo-contract-h { font-size: 14px; font-weight: 700; color: var(--ink-3); margin: 0 0 10px }
+.mo-contract .mo-contract-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px }
+.mo-contract h3 { font-size: 16px; font-weight: 700 }
+.mo-contract .mo-contract-sub { margin-top: 8px }
+.mo-contract .mo-contract-facts { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; padding: 14px 16px; border-radius: var(--r-in); background: var(--fill); font-size: 14px }
+.mo-contract .mo-contract-facts dt { color: var(--ink-3) }
+.mo-contract .mo-contract-facts dd { margin: 0; font-weight: 600; text-align: right }
+.mo-contract .mo-contract-facts dd.mo-contract-miss { color: var(--due-text) }
+@media (max-width: 1099px) {
+  .mo-input .mo-input-grid { display: block }
+  .mo-input .mo-input-grid > .card { margin-bottom: 12px }
+  .mo-input .mo-input-go { position: sticky; bottom: 16px; z-index: 5 }
+  .mo-input .mo-input-go .card { flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, .14) }
+  .mo-input .mo-input-go h2 { display: none }
+  .mo-input .mo-input-go p { flex: 1 1 auto; min-width: 0 }
+  .mo-input .mo-input-go .btn { flex: 0 0 auto }
+}
+@media (max-width: 899px) {
+  .mo-input .mo-input-go { bottom: calc(72px + env(safe-area-inset-bottom, 0px)) }
+}
+@media (max-width: 640px) {
+  .mo-input .form-grid, .mo-contract .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px }
+  .mo-input .mo-input-wide, .mo-contract .mo-contract-wide { grid-column: 1 / -1 }
+  .mo-input .card, .mo-contract .card { padding: 18px 16px }
+  .mo-input input[type="date"] { padding: 0 8px }
+}
 /* ===== /mo:T-13 ===== */
+
+/* ===== mo:T-16 #start ===== */
+/* 첫 실행 길잡이: 들어올 때와 '다음'·'이전'으로 단계가 바뀔 때만([data-mo-enter]) 카드 안 직계 자식이 차례로 오르고, 현재 칸 막대가 왼쪽부터 찬다.
+   마크업·공용 .ob-steps 규칙은 그대로. 마지막 끝 시각 ≤ step×6 + base (T.total). */
+.mo-start .ob-steps li.now::before { transform-origin: left center }
+@keyframes mo-start-fill { from { transform: scaleX(0) } }
+@media (prefers-reduced-motion: no-preference) {
+  .mo-start[data-mo-enter] .ob-steps li.now::before { animation: mo-start-fill var(--mo-long) var(--mo-ease) both }
+  .mo-start[data-mo-enter] .ob-card > * { animation: mo-in var(--mo-base) var(--mo-ease) both }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(2) { animation-delay: calc(var(--mo-step) * 1) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(3) { animation-delay: calc(var(--mo-step) * 2) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(4) { animation-delay: calc(var(--mo-step) * 3) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(5) { animation-delay: calc(var(--mo-step) * 4) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(6) { animation-delay: calc(var(--mo-step) * 5) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(n+7) { animation-delay: calc(var(--mo-step) * 6) }
+}
+/* ===== /mo:T-16 ===== */
 </style>
 </head>
 <body>
@@ -1422,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var meta = !c && (t.docs || t.where) ? '<div class="meta">' + (t.docs ? '<span class="pill"><b>준비물</b>' + t.docs + '</span>' : '') + (t.where ? '<span class="pill"><b>어디서</b>' + t.where + '</span>' : '') + '</div>' : '';
     var act = t.act && !c ? '<a class="btn ghost sm" href="' + t.act[1] + '"' + ext(t.act[1]) + '>' + t.act[0] + (t.act[1].charAt(0) === '#' ? '' : ic('out', 'sm')) + '</a>' : '';
     return '<div class="task' + (c ? ' done' : '') + '">' + (o.num ? '<span class="num" aria-hidden="true">' + o.num + '</span>' : '') +
-      '<input class="chk" type="checkbox" id="' + id + '" data-act="task" data-id="' + t.id + '"' + (c ? ' checked' : '') + '>' +
+      '<input class="chk' + (o.chkCls ? ' ' + o.chkCls : '') + '" type="checkbox" id="' + id + '" data-act="task" data-id="' + t.id + '"' + (c ? ' checked' : '') + '>' +
       '<div class="body"><div class="t"><label for="' + id + '">' + t.title + '</label>' + badge(dueTag(t)) + '</div><p class="d">' + t.desc + '</p>' + lateNote(t, c) + meta +
       '<div class="act">' + act + srcLink(t.src) + '</div></div></div>';
   }
@@ -1433,17 +1508,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- parts / screens (kept) ----------
   function viewTimeline() {
+    // T-11: 다 끝난 단계 접기(F-09 ①⑥), 방금 체크한 할 일만 체크 그리기(⑤). 체크로 단계가 다 끝나도 이번 방문 동안은 열린 채 유지(moOpen)
+    function tlStage(s, cls) {
+      var open = moOpen('timeline:stage:' + s.key, cls !== 'done'), fk = 'timeline:stage:' + s.key;
+      var n = s.tasks.filter(function (t) { return S.done[t.id]; }).length;
+      var label = '<span class="mo-tl-name">' + s.name + '</span>' + (cls === 'now' ? '<span class="badge solid">지금</span>' : '<span class="badge">' + n + ' / ' + s.tasks.length + '</span>') + ic('chev', 'sm');
+      var items = s.tasks.map(function (t) { return taskItem(t, moChanged('timeline:task:' + t.id, !!S.done[t.id]) === false ? { chkCls: 'mo-tl-draw' } : undefined); }).join('');
+      return '<section class="stage ' + cls + '" id="st-' + s.key + '"><div class="stage-when"><b>' + s.name + '</b><span>' + s.when + '</span></div><span class="node" aria-hidden="true"></span>' +
+        '<div class="card"><h2 class="mo-tl-h">' + moToggle(fk, open, label, 'mo-tl-tog') + '</h2>' + moPanel(fk, open, '<div class="mo-tl-body">' + items + '</div>') + '</div></section>';
+    }
+    var enter = moBegin('timeline');
     var R = evaluate(), T = buildTimeline(R), P = phase(R), nk = nowKey(R, T, P), total = 0, done = 0;
     T.forEach(function (s) { s.tasks.forEach(function (t) { total++; if (S.done[t.id]) done++; }); });
     var pct = Math.round(done / total * 100);
-    var stages = T.map(function (s) {
-      var all = s.tasks.every(function (t) { return S.done[t.id]; }), cls = s.key === nk ? 'now' : all ? 'done' : '';
-      return '<section class="stage ' + cls + '" id="st-' + s.key + '"><div class="stage-when"><b>' + s.name + '</b><span>' + s.when + '</span></div><span class="node" aria-hidden="true"></span>' +
-        '<div class="card"><div class="card-h"><h2>' + s.name + '</h2>' + (cls === 'now' ? '<span class="badge solid">지금</span>' : '<span class="badge">' + s.tasks.filter(function (t) { return S.done[t.id]; }).length + ' / ' + s.tasks.length + '</span>') + '</div>' + s.tasks.map(function (t) { return taskItem(t); }).join('') + '</div></section>';
-    }).join('');
-    return '<div class="page-head"><div><p class="eyebrow">' + md(R.C) + ' 계약 · ' + md(R.M) + ' 입주 · ' + ymd(contractEnd()) + ' 만료</p><h1>내 자취 타임라인</h1></div><button type="button" class="btn line" data-act="ics">' + ic('bell') + '캘린더 앱에 기한 넣기</button></div>' +
-      '<section class="card" style="margin-bottom:20px"><div class="split" style="margin-bottom:10px"><b>' + done + ' / ' + total + ' 완료</b><span class="muted s13">' + pct + '%</span></div><div class="progress-line"><span style="width:' + pct + '%"></span></div></section>' +
-      '<div class="rail">' + stages + '</div><p class="s12 muted" style="margin-top:20px">기한은 첫날을 빼고 셌어요(민법 제157조). 전입신고 14일은 주민등록법, 전월세 신고 30일은 부동산거래신고법, 지원 일정은 각 공고 기준이에요.</p>';
+    var marks = T.map(function (s) { return { key: s.key, done: s.tasks.every(function (t) { return S.done[t.id]; }) }; });
+    var stages = T.map(function (s, i) { return tlStage(s, s.key === nk ? 'now' : marks[i].done ? 'done' : ''); }).join('');
+    // '지금' 단계 이동: 다른 화면에서 들어올 때만, 즉시 스크롤 (F-09 ②, OQ #4, DECISIONS #15)
+    var go = enter && JS ? JS.scrollTarget(marks, nk) : null;
+    if (go) moAfter(function (root) { var el = root.querySelector('#st-' + go); if (el) el.scrollIntoView({ block: 'start', behavior: 'auto' }); });
+    // 막대 0→현재·완료 수 카운트는 등장 때만 (F-09 ④, F-07 ②) — 체크로 다시 그릴 때는 체크 그리기만
+    return moRoot('timeline', '<div class="page-head"><div><p class="eyebrow">' + md(R.C) + ' 계약 · ' + md(R.M) + ' 입주 · ' + ymd(contractEnd()) + ' 만료</p><h1>내 자취 타임라인</h1></div><button type="button" class="btn line" data-act="ics">' + ic('bell') + '캘린더 앱에 기한 넣기</button></div>' +
+      '<section class="card" style="margin-bottom:20px"><div class="split" style="margin-bottom:10px"><b>' + (enter ? moNum('timeline:done', done) : done) + ' / ' + total + ' 완료</b><span class="muted s13">' + pct + '%</span></div><div class="progress-line"><span class="mo-fill" style="width:' + pct + '%"></span></div></section>' +
+      '<div class="rail">' + stages + '</div><p class="s12 muted" style="margin-top:20px">기한은 첫날을 빼고 셌어요(민법 제157조). 전입신고 14일은 주민등록법, 전월세 신고 30일은 부동산거래신고법, 지원 일정은 각 공고 기준이에요.</p>');
   }
 
   function calBase() { if (S.calM) { var p = S.calM.split('-'); return new Date(+p[0], +p[1] - 1, 1); } return new Date(today.getFullYear(), today.getMonth(), 1); }
@@ -1925,22 +2011,44 @@ document.addEventListener('DOMContentLoaded', function () {
     ['bank', '본인 명의 통장 사본', '지원금을 받을 계좌.', true],
     ['etc', '기타', '영수증, 특약·수리 요청 문자 캡처 등.', false]
   ];
+  // 서류 준비 상태 배지 (F-10 ④): 회색 글자 대신 배경 있는 배지 + 아이콘. 칸 안내는 이름 아래 줄로 (F-10 ③ PC 칸 깨짐)
+  function docsState(it, slotName) {
+    if (it.ready) return { cls: 'brand', icon: 'check', label: '있음', hint: '' };
+    if (it.slot) return { cls: '', icon: 'plus', label: '올리기 전', hint: esc(slotName[it.slot]) + ' 칸에 올리기' };
+    return { cls: '', icon: 'doc', label: '발급 받기', hint: '서류함 칸 없음 · 발급처에서 받기' };
+  }
+  // 준비 막대 (F-10 ⑤): 들어올 때 0→현재(mo-fill), 같은 화면에서 바뀌면 직전→현재(mo-grow)
+  function docsBar(key, ready, total) {
+    var pct = JS ? JS.readyPct(ready, total) : (total > 0 ? Math.round(ready / total * 100) : 0);
+    var prev = moChanged(key, pct);
+    var cls = prev !== undefined ? ' class="mo-grow" style="--mo-from:' + prev + '%;width:' + pct + '%"' : ' class="mo-fill" style="width:' + pct + '%"';
+    return '<div class="progress-line" role="img" aria-label="' + ready + ' / ' + total + ' 준비"><span' + cls + '></span></div>';
+  }
   function viewDocs() {
+    moBegin('docs');
     var have = DOC_SLOTS.filter(function (d) { return filesIn(d[0]).length; }).length;
     // 지원별 준비 현황 (F-06): 승인된 공고의 제출 서류 ↔ 이 기기 서류함 칸
     var counts = {}; DOC_SLOTS.forEach(function (d) { counts[d[0]] = filesIn(d[0]).length; });
     var slotName = {}; DOC_SLOTS.forEach(function (d) { slotName[d[0]] = d[1]; });
     var progs = []; try { progs = evaluate().programs.filter(function (x) { return x.p.docs && x.p.docs.length; }); } catch (e) { progs = []; }
-    var prep = progs.map(function (x) {
+    var prep = progs.map(function (x, pi) {
       var r = JE.docReadiness(x.p.docs, counts);
-      return '<div class="card stack"><div class="split"><h2 style="font-size:15px">' + esc(x.p.name) + '</h2><span class="badge ' + (r.ready === r.total ? 'brand' : '') + '">' + r.ready + ' / ' + r.total + ' 준비</span></div>' +
-        r.items.map(function (it) { return '<div class="kv"><span class="s13">' + esc(it.name) + '</span><span class="s12">' + (it.ready ? '<span class="badge brand">있음</span>' : it.slot ? '<span class="muted">' + esc(slotName[it.slot]) + ' 칸에 올리기</span>' : '<span class="muted">서류함 칸 없음 · 발급처에서 받기</span>') + '</span></div>'; }).join('') +
+      return '<div class="card stack' + moStep(pi + 1) + '"><div class="split"><h2 style="font-size:15px">' + esc(x.p.name) + '</h2><span class="badge ' + (r.ready === r.total ? 'brand' : '') + '">' + moNum('docs:ready:' + x.p.id, r.ready) + ' / ' + r.total + ' 준비</span></div>' +
+        docsBar('docs:pct:' + x.p.id, r.ready, r.total) +
+        '<div class="dq-list">' + r.items.map(function (it, ii) {
+          var st = docsState(it, slotName), was = moChanged('docs:item:' + x.p.id + ':' + ii, !!it.ready);
+          return '<div class="dq"><div class="dq-t"><span class="s13">' + esc(it.name) + '</span>' + (st.hint ? '<span class="s12 muted">' + st.hint + '</span>' : '') + '</div>' +
+            '<span class="badge ' + st.cls + (was === false && it.ready ? ' mo-pop' : '') + '">' + ic(st.icon, 'sm') + st.label + '</span></div>';
+        }).join('') + '</div>' +
         '<a class="s12" href="#support">지원 상세 보기</a></div>';
     }).join('');
-    var rows = DOC_SLOTS.map(function (d) { var n = filesIn(d[0]).length; return '<div class="slot"><div style="min-width:0" class="stack"><div><div class="row"><b>' + d[1] + '</b>' + (n ? '<span class="badge brand">' + n + '개</span>' : '<span class="s12 muted">아직 없음</span>') + (d[3] ? '<span class="s12 muted">· 지원 신청에 필요</span>' : '') + '</div><p class="s13 muted">' + d[2] + '</p></div>' + thumbs(d[0], d[1]) + '</div><div>' + addBtn(d[0], '올리기') + '</div></div>'; }).join('');
-    return '<div class="page-head"><div><p class="eyebrow">지원 신청·연말정산·퇴거 때 쓰는 서류</p><h1>서류함</h1></div><span class="s13 muted">' + have + ' / ' + DOC_SLOTS.length + '종 준비</span></div>' +
+    var rows = DOC_SLOTS.map(function (d) {
+      var n = filesIn(d[0]).length, was = moChanged('docs:slot:' + d[0], n);
+      return '<div class="slot"><div style="min-width:0" class="stack"><div><div class="row"><b>' + d[1] + '</b>' + (n ? '<span class="badge brand' + (was !== undefined && n > was ? ' mo-pop' : '') + '">' + ic('check', 'sm') + n + '개</span>' : '<span class="badge">아직 없음</span>') + (d[3] ? '<span class="s12 muted">· 지원 신청에 필요</span>' : '') + '</div><p class="s13 muted">' + d[2] + '</p></div>' + thumbs(d[0], d[1]) + '</div><div>' + addBtn(d[0], '올리기') + '</div></div>';
+    }).join('');
+    return moRoot('docs', '<div class="page-head' + moStep(0) + '"><div><p class="eyebrow">지원 신청·연말정산·퇴거 때 쓰는 서류</p><h1>서류함</h1></div><span class="s13 muted">' + moNum('docs:have', have) + ' / ' + DOC_SLOTS.length + '종 준비</span></div>' +
       (FILES_OK ? '' : '<div class="banner due" style="margin-bottom:16px">' + ic('info') + '<span>이 브라우저에서는 파일을 저장할 수 없어요(사생활 보호 모드 등). 일반 창에서 열어 주세요.</span></div>') +
-      '<div class="grid"><section class="card c8">' + rows + '</section><aside class="c4 stack">' + (prep ? '<h2 class="s13 muted">지원 신청에 낼 서류</h2>' + prep : '') + '<div class="card stack"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">이 브라우저 안(IndexedDB)에만 저장하고 서버로 보내지 않아요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 원본은 따로 보관하세요.</p><p class="s12 muted">사진은 용량을 줄여(긴 변 1600px) 저장해요. 서류 내용 확인(OCR·AI)은 아직 없어요.</p></div></aside></div>';
+      '<div class="grid"><section class="card c7' + moStep(0) + '">' + rows + '</section><aside class="c5 stack">' + (prep ? '<h2 class="s13 muted">지원 신청에 낼 서류</h2>' + prep : '') + '<div class="card stack' + moStep(progs.length + 1) + '"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">이 브라우저 안(IndexedDB)에만 저장하고 서버로 보내지 않아요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 원본은 따로 보관하세요.</p><p class="s12 muted">사진은 용량을 줄여(긴 변 1600px) 저장해요. 서류 내용 확인(OCR·AI)은 아직 없어요.</p></div></aside></div>');
   }
 
   // ---------- 우리 동네: 실제 데이터 ----------
@@ -2995,18 +3103,29 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 퇴거 준비 ----------
+  // 중요한 날짜 칩 (F-10 ②): '9월 / 11 / 월요일' 세 줄 — 요일을 한 글자로 쓰지 않아 '9월 월'처럼 달과 헷갈리지 않는다. screens-core가 없으면 공용 칩
+  function moveoutChip(d) {
+    var p = JS && JS.dateChipParts(d);
+    if (!p) return dateBlk(d);
+    return '<span class="mv-chip' + (+d === +today ? ' today' : '') + '" aria-label="' + p.label + '"><span aria-hidden="true">' + p.month + '</span><b aria-hidden="true">' + p.day + '</b><span aria-hidden="true">' + p.wd + '</span></span>';
+  }
+  // 갱신 통지 마감(o1)은 날짜를 '중요한 날짜'에만 두고 '나가기 전 할 일'은 문구만 (F-10 ①, OQ #8) — taskItem은 그대로, 복사본만 넘긴다
+  function moveoutTasks(tasks) {
+    return JS ? JS.hideDue(tasks, ['o1']) : tasks.map(function (t) { return t.id === 'o1' ? Object.assign({}, t, { due: null }) : t; });
+  }
   function viewMoveout() {
+    moBegin('moveout');
     var R = evaluate(), T = buildTimeline(R), end = contractEnd(), left = Math.round((end - today) / 86400000);
     var keyDates = [[R.renewDue, '갱신 여부 알리기 마감', '나갈지 더 살지 집주인에게 문자로 남겨 두세요.'], [add(end, -30), '새 집·이사 날짜 정하기', '새 집 계약일과 지금 집 보증금 받는 날을 맞춰요.'], [add(end, -7), '집 상태 점검', '입주 때 기록과 같은 자리를 다시 찍어요.'], [end, '계약 만료 · 보증금 돌려받기', '보증금을 받은 뒤에 전출(새 집 전입신고)해요.']];
     var extra = [{ id: 'x1', title: '관리비·공과금 정산 요청', desc: '마지막 달 사용량을 계량기 사진으로 남기고 정산 금액을 확인해요.', due: add(end, -1), src: BASE_SRC }, { id: 'x2', title: '원상복구 범위 집주인과 맞추기', desc: '살면서 생긴 자연스러운 낡음은 원상복구 대상이 아니에요. 입주 때 사진과 비교해 이야기해요.', due: add(end, -14), act: ['집 상태 기록', '#condition'], src: BASE_SRC }];
-    var tasks = T.filter(function (s) { return s.key === 'out'; })[0].tasks.concat(extra).sort(function (a, b) { return a.due - b.due; });
-    return '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · ' + ymd(end) + ' 만료</p><h1>퇴거 준비</h1></div><span class="badge ' + (left <= 90 ? 'due' : '') + '">만료까지 ' + (left >= 0 ? left + '일' : '지남') + '</span></div>' +
-      '<div class="grid"><section class="card c7"><div class="card-h"><h2>중요한 날짜</h2></div>' + keyDates.map(function (k) { return '<div class="date-line">' + dateBlk(k[0]) + '<div style="flex:1 1 auto;min-width:0"><b>' + k[1] + '</b><p class="s13 muted">' + k[2] + '</p></div><span class="badge ' + (k[0] < today ? '' : 'brand') + '">' + dday(k[0]) + '</span></div>'; }).join('') + '</section>' +
-      '<section class="card c5 stack"><div class="card-h" style="margin:0"><h2>알아 두면 좋은 규칙</h2></div>' +
+    var tasks = moveoutTasks(T.filter(function (s) { return s.key === 'out'; })[0].tasks.concat(extra).sort(function (a, b) { return a.due - b.due; }));
+    return moRoot('moveout', '<div class="page-head' + moStep(0) + '"><div><p class="eyebrow">내 주거 관리 · ' + ymd(end) + ' 만료</p><h1>퇴거 준비</h1></div><span class="badge ' + (left <= 90 ? 'due' : '') + '">만료까지 ' + (left >= 0 ? left + '일' : '지남') + '</span></div>' +
+      '<div class="grid"><section class="card c7' + moStep(1) + '"><div class="card-h"><h2>중요한 날짜</h2></div>' + keyDates.map(function (k) { return '<div class="date-line">' + moveoutChip(k[0]) + '<div style="flex:1 1 auto;min-width:0"><b>' + k[1] + '</b><p class="s13 muted">' + k[2] + '</p></div><span class="badge ' + (k[0] < today ? '' : 'brand') + '">' + dday(k[0]) + '</span></div>'; }).join('') + '</section>' +
+      '<section class="card c5 stack' + moStep(2) + '"><div class="card-h" style="margin:0"><h2>알아 두면 좋은 규칙</h2></div>' +
       '<div class="kv" style="display:block"><b>묵시적 갱신</b><p class="s13 sub">둘 다 만료 2개월 전까지 아무 말 없으면 같은 조건으로 계약이 이어져요. 이때 세입자는 언제든 나간다고 알릴 수 있고, 3개월 뒤에 끝나요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제6조·제6조의2</a></div>' +
       '<div class="kv" style="display:block"><b>계약갱신요구권</b><p class="s13 sub">세입자는 한 번, 2년 더 살겠다고 요구할 수 있어요. 이때 월세·보증금 인상은 5% 안에서만 돼요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제6조의3·제7조</a></div>' +
       '<div class="kv" style="display:block"><b>보증금을 못 받았다면</b><p class="s13 sub">이사 가야 한다면 먼저 임차권등기명령을 신청해요. 등기가 되면 이사해도 보증금을 지키는 힘이 남아요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제3조의3</a></div></section>' +
-      '<section class="card c12"><div class="card-h"><h2>나가기 전 할 일</h2><a class="more" href="#condition">입주 기록과 비교' + ic('chev', 'sm') + '</a></div>' + tasks.map(function (t) { return taskItem(t); }).join('') + '</section></div>';
+      '<section class="card c12' + moStep(3) + '"><div class="card-h"><h2>나가기 전 할 일</h2><a class="more" href="#condition">입주 기록과 비교' + ic('chev', 'sm') + '</a></div>' + tasks.map(function (t) { return taskItem(t); }).join('') + '</section></div>');
   }
 
   // ---------- AI 자취 코치 ----------
@@ -3155,32 +3274,54 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 내 계약 ----------
+  // 조건 입력 값은 여기서 확인만 한다 (F-11 ③, OQ #3). screens-core.js를 못 불러오면 저장값을 그대로 보여 준다
+  function contractFactsHtml() {
+    var rows = JS && JS.contractFacts ? JS.contractFacts(S) : [['deposit', '보증금'], ['rent', '월세'], ['term', '계약 기간'], ['contract', '계약일'], ['move', '입주일'], ['birth', '출생연월'], ['income', '가구 소득']].map(function (x) { var v = S[x[0]]; return { key: x[0], label: x[1], value: v === undefined || v === null || v === '' ? '아직 안 넣음' : String(v), missing: v === undefined || v === null || v === '' }; });
+    return '<dl class="mo-contract-facts">' + rows.map(function (r) { return '<dt>' + esc(r.label) + '</dt><dd' + (r.missing ? ' class="mo-contract-miss"' : '') + '>' + esc(r.value) + '</dd>'; }).join('') + '</dl>';
+  }
   function viewContract() {
+    moBegin('contract');
     var R = evaluate(), T = buildTimeline(R), P = phase(R), end = contractEnd();
-    var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
+    var f = function (lab, inner, wide) { return '<label class="field' + (wide ? ' mo-contract-wide' : '') + '"><span>' + lab + '</span>' + inner + '</label>'; };
     var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + S[k] + '"><em>' + unit + '</em></div>'; };
     var GU = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
     var big = P.dm < 0 ? 'D-' + (-P.dm) : P.dm === 0 ? 'D-day' : (P.dm + 1) + '<small>일째</small>';
-    return '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · 바꾸면 모든 화면이 다시 계산돼요</p><h1>내 계약</h1></div><button type="button" class="btn line sm" data-act="reset">' + (S.demo ? '예시 처음 상태로' : '처음부터 다시 입력') + '</button></div>' +
-      '<div class="grid"><section class="card dday c4"><div class="split" style="position:relative;z-index:1"><span class="lbl">' + (P.dm <= 0 ? '입주까지' : '자취') + '</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">' + P.badge + '</span></div><div class="big" style="position:relative;z-index:1">' + big + '</div>' +
+    return moRoot('contract', '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · 계약 값은 조건 입력에서 고쳐요</p><h1>내 계약</h1></div><button type="button" class="btn line sm" data-act="reset">' + (S.demo ? '예시 처음 상태로' : '처음부터 다시 입력') + '</button></div>' +
+      '<section class="mo-contract-zone" aria-labelledby="mo-contract-info-h"><h2 class="mo-contract-h" id="mo-contract-info-h">계약 정보</h2>' +
+      '<div class="grid"><section class="card dday c4' + moStep(0) + '"><div class="split" style="position:relative;z-index:1"><span class="lbl">' + (P.dm <= 0 ? '입주까지' : '자취') + '</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">' + P.badge + '</span></div><div class="big" style="position:relative;z-index:1">' + big + '</div>' +
       '<dl><dt>집</dt><dd>' + esc(S.addr || '내 자취방') + ' · ' + esc(S.gu) + '</dd><dt>계약일</dt><dd>' + ymd(R.C) + '</dd><dt>입주일</dt><dd>' + ymd(R.M) + '</dd><dt>만료</dt><dd>' + ymd(end) + '</dd><dt>전월세 신고</dt><dd>' + (R.report.required ? md(R.report.due) + '까지' : '대상 아님') + '</dd><dt>전입신고 기한</dt><dd>' + md(R.movein.due) + '</dd></dl></section>' +
-      '<section class="card c8 stack"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
-      f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + regionFields() +
-      f('보증금', num('deposit', '만 원')) + f('월세', num('rent', '만 원')) + f('관리비', num('fee', '만 원')) + f('계약 기간', '<select class="inp" data-field="term">' + [1, 2].map(function (n) { return '<option value="' + n + '"' + (+S.term === n ? ' selected' : '') + '>' + n + '년</option>'; }).join('') + '</select>') +
-      f('계약일 (계약서 쓴 날)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">') + f('입주일 (잔금·이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">') + '</div>' +
+      '<section class="card c8 stack' + moStep(1) + '"><div class="mo-contract-head"><h3>조건 입력에서 넣은 값</h3><a class="btn line sm" href="#input">' + ic('doc', 'sm') + '조건 입력에서 고치기</a></div>' +
+      contractFactsHtml() +
       (pd(S.move) < pd(S.contract) ? '<div class="banner due">' + ic('info') + '<span>입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.</span></div>' : R.report.required && R.report.due < R.M ? '<div class="banner due">' + ic('info') + '<span>전월세 신고 기한(' + md(R.report.due) + ')이 입주보다 먼저 와요. 전입신고와 합칠 수 없어요.</span></div>' : '') +
-      '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' + f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">') +
-      f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + '</div>' +
+      '<h3 class="mo-contract-sub">이 화면에서 정하는 칸</h3><div class="form-grid">' +
+      f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + f('관리비', num('fee', '만 원')) + regionFields() +
+      f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">', true) + '</div>' +
       (!S.demo ? '' : '<label class="field"><span>시연용 날짜 (발표용)</span><select class="inp" data-sim>' + [['', '실제 오늘'], ['-1', '입주 전날'], ['0', '입주 당일'], ['10', '입주 10일 후'], ['40', '입주 40일 후']].map(function (o) { var sv = S.sim === null || S.sim === undefined ? '' : String(S.sim); return '<option value="' + o[0] + '"' + (sv === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>') +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div>' +
-      '<div class="row"><button type="button" class="btn ghost sm" data-act="backup">' + ic('down', 'sm') + '내 기록 파일로 저장</button><label class="btn ghost sm addfile">' + ic('plus', 'sm') + '파일에서 불러오기<input type="file" accept="application/json,.json" data-act="restore"></label></div><p class="s12 muted">브라우저 데이터를 지우거나 폰을 바꾸기 전에 저장해 두세요. 서류·사진 파일은 들어 있지 않아요.</p></section>' +
-      '<div class="c6">' + homeCard() + '</div><div class="c6 stack">' + deviceCards() + '</div></div>';
+      '<div class="row"><button type="button" class="btn ghost sm" data-act="backup">' + ic('down', 'sm') + '내 기록 파일로 저장</button><label class="btn ghost sm addfile">' + ic('plus', 'sm') + '파일에서 불러오기<input type="file" accept="application/json,.json" data-act="restore"></label></div><p class="s12 muted">브라우저 데이터를 지우거나 폰을 바꾸기 전에 저장해 두세요. 서류·사진 파일은 들어 있지 않아요.</p></section></div></section>' +
+      '<section class="mo-contract-zone" aria-labelledby="mo-contract-other-h"><h2 class="mo-contract-h" id="mo-contract-other-h">집 위치 · 휴대폰 연결</h2>' +
+      '<div class="grid"><div class="c6' + moStep(2) + '">' + homeCard() + '</div><div class="c6 stack' + moStep(3) + '">' + deviceCards() + '</div></div></section>');
   }
+
+  // ===== mo:T-16 =====
+  // 첫 실행 길잡이 #start 단계 등장 (DECISIONS #20, ADR-0003). '다음'·'이전'은 화면이 계속 start라 moBegin만으로는 등장이 아니므로
+  // 등장 판정 키를 화면 + 단계로 넓힌다. moSubKey는 메모리 변수(저장소 아님), last는 읽기만 한다.
+  var moSubKey = '';
+  function moBeginStep(screen, step) {
+    var key = screen + ':' + step, prev = moSubKey;
+    moBegin(screen);
+    var on = JS ? JS.stepEnter(last, prev, screen, key) : (last !== screen || prev !== key);
+    MO.enter[screen] = on;
+    moSubKey = key;
+    return on;
+  }
+  // ===== /mo:T-16 =====
 
   // ---------- 처음 시작하기 (온보딩) ----------
   var GU_LIST = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
   function viewStart() {
     var st = +S.obStep || 1, R = evaluate();
+    moBeginStep('start', st);
     var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
     var num = function (k, unit, ph) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + (S[k] || '') + '" placeholder="' + (ph || '0') + '"><em>' + unit + '</em></div>'; };
     var steps = ['날짜', '금액', '집 위치', '나에 대해'], body = '';
@@ -3198,11 +3339,11 @@ document.addEventListener('DOMContentLoaded', function () {
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + '</div>';
     var btns = '<div class="row" style="justify-content:space-between;margin-top:8px">' + (st > 1 ? '<button type="button" class="btn ghost" data-act="obprev">이전</button>' : '<span></span>') +
       (st < 4 ? '<button type="button" class="btn" data-act="obnext">' + (st === 3 && !S.home ? '나중에 정하고 다음' : '다음') + '</button>' : '<button type="button" class="btn" data-act="obdone">내 자취 시작하기</button>') + '</div>';
-    return '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark">' + ic('home') + '</span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
+    return moRoot('start', '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark">' + ic('home') + '</span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
       '<ol class="ob-steps" aria-label="입력 단계">' + steps.map(function (x, i) { return '<li class="' + (i + 1 < st ? 'done' : i + 1 === st ? 'now' : '') + '"' + (i + 1 === st ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + x + '</li>'; }).join('') + '</ol>' +
       '<section class="card stack ob-card">' + body + btns + '</section>' +
       '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
-      '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 정보는 서버에 저장하지 않고 이 기기 브라우저에만 남아요.</span></div></div>';
+      '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 정보는 서버에 저장하지 않고 이 기기 브라우저에만 남아요.</span></div></div>');
   }
   function backupJson() {
     var o = clone(S); delete o.sim; delete o.chat; delete o.rooms;
@@ -3220,16 +3361,19 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 조건 입력 (필수 ①) ----------
+  // 휴대폰에서 한 줄을 다 쓰는 칸(긴 질문·긴 선택지). 나머지는 두 칸씩 나란히 (F-11 ②)
+  var INPUT_WIDE = { income: 1, homeless: 1, dup: 1, birth: 1 };
   function viewInput() {
+    moBegin('input');
     var err = JE.validate(S);
-    var f = function (lab, inner, k, hint) { return '<label class="field"><span>' + lab + '</span>' + inner + (err[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">' + err[k] + '</em>' : hint ? '<em class="s12 muted" style="font-style:normal">' + hint + '</em>' : '') + '</label>'; };
+    var f = function (lab, inner, k, hint) { return '<label class="field' + (INPUT_WIDE[k] ? ' mo-input-wide' : '') + '"><span>' + lab + '</span>' + inner + (err[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">' + err[k] + '</em>' : hint ? '<em class="s12 muted" style="font-style:normal">' + hint + '</em>' : '') + '</label>'; };
     var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + esc(S[k]) + '"' + (err[k] ? ' aria-invalid="true"' : '') + '><em>' + unit + '</em></div>'; };
     var sel = function (k, opts) { return '<select class="inp" data-field="' + k + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(S[k] == null ? '' : S[k]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; };
     // '아직 안 정함'(값 없음)과 '잘 모르겠어요'(모른다고 답함)는 다르다. 값이 없을 때 '예'가 골라진 것처럼 보이지 않게 맨 앞에 둔다
     var yn = [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']];
     var bad = Object.keys(err).length;
-    return '<div class="page-head"><div><p class="eyebrow">필수 ① · 한 번 넣으면 모든 화면이 다시 계산돼요</p><h1>조건 입력</h1></div><button type="button" class="btn line sm" data-act="reset">예시 값으로 되돌리기</button></div>' +
-      '<div class="grid"><section class="card c8 stack"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
+    return moRoot('input', '<div class="page-head"><div><p class="eyebrow">필수 ① · 한 번 넣으면 모든 화면이 다시 계산돼요</p><h1>조건 입력</h1></div><button type="button" class="btn line sm" data-act="reset">예시 값으로 되돌리기</button></div>' +
+      '<div class="grid mo-input-grid"><section class="card c8 stack' + moStep(0) + '"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
       f('시·군·구 (서울)', sel('gu', JE.LAW.seoulGu.map(function (g) { return [g, g]; })), 'gu') +
       f('계약 기간', sel('term', [['1', '1년'], ['2', '2년']]), 'term') +
       f('보증금', num('deposit', '만 원'), 'deposit') + f('월세 (관리비 제외)', num('rent', '만 원'), 'rent') +
@@ -3241,41 +3385,58 @@ document.addEventListener('DOMContentLoaded', function () {
       f('무주택인가요?', sel('homeless', yn), 'homeless', '본인과 세대원 모두 집이 없으면 예') +
       f('비슷한 주거 지원을 지금 받고 있나요?', sel('dup', yn), 'dup', '예: 국토교통부 청년월세 특별지원') + '</div>' +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.</span></div></section>' +
-      '<aside class="c4 stack"><section class="card stack"><h2 style="font-size:16px">다 넣었나요?</h2>' +
+      '<aside class="c4 stack mo-input-go' + moStep(1) + '" aria-label="판정 보기"><section class="card stack"><h2 style="font-size:16px">다 넣었나요?</h2>' +
       (bad ? '<p class="s13" style="color:var(--no)">고칠 칸이 ' + bad + '개 있어요.</p>' : '<p class="s13 sub">모름으로 둔 항목은 판정에서 "확인 필요"로 보여드려요.</p>') +
-      '<a class="btn" href="#result"' + (bad ? ' aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.5"' : '') + '>판정 보기' + ic('chev', 'sm') + '</a></section></aside></div>';
+      '<a class="btn" href="#result"' + (bad ? ' aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.5"' : '') + '>판정 보기' + ic('chev', 'sm') + '</a></section></aside></div>');
   }
 
   // ---------- 자격 판정 (필수 ①) ----------
+  // T-10: 결과 요약(F-08 ①) — 숫자는 아래 목록과 같은 판정 글자(judge)로 센다. screens-core가 없으면 요약 없이 목록만
+  var RESULT_V = [['확인 필요', 'due'], ['답하면 판정', ''], ['해당 안 됨', 'no'], ['마감', 'no']];
+  function resultSummaryCard(R) {
+    if (!JS || !JS.resultSummary) return '';
+    var s = JS.resultSummary({ reportRequired: R.report.required, verdicts: R.programs.map(function (x) { return judge(x)[1]; }) });
+    var chips = RESULT_V.filter(function (v) { return s.byVerdict[v[0]]; }).map(function (v) { return '<span class="badge ' + v[1] + '">' + v[0] + ' ' + s.byVerdict[v[0]] + '개</span>'; });
+    if (s.taskUnsure) chips.unshift('<span class="badge due">전월세 신고 확인 필요</span>');
+    return '<section class="card stack mo-result-sum' + moStep(0) + '" aria-label="결과 요약"><p class="mo-result-sum-main">할 일 <b>' + moNum('result:sum:tasks', s.tasks) + '</b>개 · 지원 <b>' + moNum('result:sum:ok', s.ok) + '</b>개 해당 가능</p>' +
+      (chips.length ? '<div class="row">' + chips.join('') + '</div>' : '') + '</section>';
+  }
   function viewResult() {
+    moBegin('result');
     var err = JE.validate(S);
-    if (Object.keys(err).length) return '<div class="page-head"><div><h1>자격 판정</h1></div></div><section class="card stack"><p>조건에 고칠 칸이 있어 판정할 수 없어요.</p><a class="btn" href="#input">조건 입력으로</a></section>';
+    if (Object.keys(err).length) return moRoot('result', '<div class="page-head"><div><h1>자격 판정</h1></div></div><section class="card stack"><p>조건에 고칠 칸이 있어 판정할 수 없어요.</p><a class="btn" href="#input">조건 입력으로</a></section>');
     var R = evaluate(), rp = R.report;
     var src = function (name, url, basis) { return '<p class="s12 muted">근거 <a href="' + url + '" target="_blank" rel="noopener">' + name + '</a> · ' + basis + ' 기준</p>'; };
     var mark = function (ok) { return ok === true ? '<span class="badge brand">충족</span>' : ok === false ? '<span class="badge no">안 맞음</span>' : '<span class="badge due">확인 필요</span>'; };
     var repBadge = rp.required === true ? '<span class="badge due">신고 대상</span>' : rp.required === false ? '<span class="badge">대상 아님</span>' : '<span class="badge due">확인 필요</span>';
-    var reports = '<section class="card c6 stack"><div class="split"><h2 style="font-size:17px">전월세 신고</h2>' + repBadge + '</div><p>' + esc(rp.reason) + '</p>' +
+    var reports = '<section class="card c6 stack' + moStep(1) + '"><div class="split"><h2 style="font-size:17px">전월세 신고</h2>' + repBadge + '</div><p>' + esc(rp.reason) + '</p>' +
       (rp.required === true ? '<p><b>' + ymd(rp.due) + '</b>까지 (' + dday(rp.due) + ') · 계약일부터 30일</p>' + (rp.early ? '<div class="banner due">' + ic('info') + '<span>입주보다 기한이 먼저 와요. 전입신고와 합치지 말고 따로 신고하세요.</span></div>' : '<p class="s13 sub">입주 후 전입신고 때 계약서를 함께 내면 신고와 확정일자가 한 번에 끝나요.</p>') : rp.required === false ? '<p class="s13 sub">신고 대상은 아니지만 전입신고 때 확정일자를 받아 두면 보증금을 지키는 데 도움이 돼요.</p>' : '') +
       src(rp.src, rp.url, rp.basis) + '</section>' +
-      '<section class="card c6 stack"><div class="split"><h2 style="font-size:17px">전입신고</h2><span class="badge due">모두 해당</span></div><p>입주한 날부터 14일 안에 해야 해요.</p><p><b>' + ymd(R.movein.due) + '</b>까지 (' + dday(R.movein.due) + ') · 보증금을 지키려면 입주 당일(' + md(R.M) + ') 권장</p>' + src(R.movein.src, R.movein.url, R.movein.basis) + '</section>';
+      '<section class="card c6 stack' + moStep(2) + '"><div class="split"><h2 style="font-size:17px">전입신고</h2><span class="badge brand">모두 해당</span></div><p>입주한 날부터 14일 안에 해야 해요.</p><p><b>' + ymd(R.movein.due) + '</b>까지 (' + dday(R.movein.due) + ') · 보증금을 지키려면 입주 당일(' + md(R.M) + ') 권장</p>' + src(R.movein.src, R.movein.url, R.movein.basis) + '</section>';
     // 무주택·중복 수혜를 아직 답하지 않은 조건 (모른다고 답한 것과 구분)
     var notAsked = function (r) { return (r.type === 'homeless' || r.type === 'dup') && r.ok === null && !r.asked; };
     var VB = { '해당 안 됨': 'no', '확인 필요': 'due', '답하면 판정': '', '해당 가능': 'brand' };
-    var progs = R.programs.map(function (x) {
+    var progs = R.programs.map(function (x, i) {
       var p = x.p, v = JE.verdict(x), j = x.closed ? judge(x) : [VB[v], v];
-      return '<section class="card c6 stack"><div><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:18px;font-weight:800">' + esc(p.name) + '</h2></div>' +
+      var rows = x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + (notAsked(r) ? '아직 안 답함 <a class="badge" href="#input">답하면 판정</a>' : esc(r.mine) + ' ' + mark(r.ok)) + '</span></div>'; }).join('');
+      // 조건이 모두 충족이면 접힌 채, 하나라도 충족이 아니면 펼친 채 시작 (F-08 ③)
+      var met = !!(JS && JS.allMet(x.res)), open = moOpen('result:cond:' + p.id, !(JS && JS.allMet(x.res)));
+      var left = x.res.filter(function (r) { return r.ok !== true; }).length;
+      var cond = !x.res.length ? '' : '<div>' + moToggle('result:cond:' + p.id, open, '<span>조건 ' + x.res.length + '개 ' + (met ? '모두 충족' : '중 확인할 조건 ' + left + '개') + '</span>' + ic('chev', 'sm'), 'mo-result-fold') + moPanel('result:cond:' + p.id, open, rows) + '</div>';
+      return '<section class="card c6 stack' + moStep(3 + i) + '"><div><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:18px;font-weight:800">' + esc(p.name) + '</h2></div>' +
         '<div class="row"><span class="badge ' + j[0] + '">' + j[1] + '</span><span class="badge ' + p.statusCls + '">' + p.status + '</span><span class="badge">' + esc(p.select) + '</span></div>' +
-        '<div>' + x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + (notAsked(r) ? '아직 안 답함 <a class="badge" href="#input">답하면 판정</a>' : esc(r.mine) + ' ' + mark(r.ok)) + '</span></div>'; }).join('') + '</div>' +
+        cond +
         (v === '답하면 판정' && !x.closed ? '<p class="s13 sub"><a href="#input">조건 입력</a>에서 무주택·중복 수혜를 답하면 바로 판정해요.</p>' : '') +
         '<p class="s13 sub">지원 내용: ' + esc(p.amountText) + '</p>' +
         '<p class="s12 muted">원문 <a href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">' + esc(p.channel) + '</a> · ' + progBasis(p) + (p.demo ? ' · 시연용 예시 공고' : '') + '</p></section>';
     }).join('');
-    var none = R.eligible.length ? '' : '<section class="card c12"><p>지금 조건으로 해당되는 지원이 없어요. 꼭 해야 하는 신고는 위에서 확인하세요.</p></section>';
-    return '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · ' + ageText() + ' · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>자격 판정</h1></div><a class="btn line" href="#input">조건 바꾸기</a></div>' +
-      '<h2 class="s13 muted" style="margin:4px 0 8px">꼭 해야 하는 신고</h2><div class="grid">' + reports + '</div>' +
+    var none = R.eligible.length ? '' : '<section class="card c12' + moStep(3 + R.programs.length) + '"><p>지금 조건으로 해당되는 지원이 없어요. 꼭 해야 하는 신고는 위에서 확인하세요.</p></section>';
+    return moRoot('result', '<div class="page-head"><div><p class="eyebrow">' + esc(S.gu) + ' · ' + ageText() + ' · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>자격 판정</h1></div><a class="btn line" href="#input">조건 바꾸기</a></div>' +
+      resultSummaryCard(R) +
+      '<h2 class="s13 muted" style="margin:20px 0 8px">꼭 해야 하는 신고</h2><div class="grid">' + reports + '</div>' +
       '<h2 class="s13 muted" style="margin:20px 0 8px">신청해 볼 수 있는 지원 · 금액은 지원마다 따로예요</h2><div class="grid">' + progs + none + '</div>' +
       '<p class="s12 muted" style="margin-top:16px">이 결과는 승인된 규칙으로만 계산했어요. 법률 자문이나 권리분석을 대신하지 않아요. 계약 위험 진단은 <a href="https://www.khug.or.kr" target="_blank" rel="noopener">안심전세 앱</a>에서 받을 수 있어요.</p>' +
-      '<a class="btn" style="margin-top:12px" href="#timeline">내 타임라인 보기' + ic('chev', 'sm') + '</a>';
+      '<a class="btn" style="margin-top:12px" href="#timeline">내 타임라인 보기' + ic('chev', 'sm') + '</a>');
   }
 
   // ===== mo:T-09 =====

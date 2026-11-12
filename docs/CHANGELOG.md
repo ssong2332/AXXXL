@@ -5,6 +5,8 @@
 ## [Unreleased]
 
 ### Added
+- 2026-11-12 첫 실행 길잡이(`app.html#start`) 단계 등장 모션 (T-16, PRD F-12, DECISIONS #20, ADR-0003 제안 상태) — 담당 편입 후 `viewStart()` 단계 카드가 차례로 등장, `tests/screen-start.test.js`
+- 2026-11-12 계약·신고 화면 디자인 개선과 모션 (T-10~T-13) — 자격 판정(요약·판정 배지·조건 접기), 타임라인(끝난 단계 접기·'지금' 이동·진행 막대·체크 그리기), 퇴거 준비·서류함, 조건 입력·내 계약 화면, `tests/result-screen.test.js`·`screen-timeline.test.js`·`screen-moveout-docs.test.js`·`screen-input-contract.test.js`
 - 2026-11-12 계약·신고 6개 화면 모션 기반 (T-09) — 모션 토큰 `JachwiScreens.T`와 순수 함수 `demo/screens-core.js`, `demo/app.html`의 T-09 CSS·JS 구역과 T-10~T-13 구역 마커, `tests/screens-core.test.js`·`tests/screens-zones.test.js` (화면에 보이는 변화는 아직 없음 — 모션 적용은 T-10~T-13)
 - 2026-11-12 내 화면 디자인 개선·모션 설계 — PRD F-07~F-11, Architecture, ADR-0001/0002, Tasks T-09~T-14
 - 2026-11-11 서류함 지원별 준비 현황 — 승인된 공고의 제출 서류를 서류함 칸과 이어 "청년월세 3 / 5 준비"처럼 표시 (`engine.js` `docSlot`·`docReadiness`, `tests/docs.test.js`)
@@ -29,6 +31,9 @@
 - {{DATE}} 프로젝트 초기화 (start_coding 템플릿)
 
 ### Changed
+- 2026-11-12 모션 강도 조정 (T-15, DECISIONS #19, 사용자 답 "더 눈에 띄게") — 이동 8px→20px, 기본 300ms→450ms, 차례 간격 80ms(최대 6단), 전체 상한 930ms. 대상은 `JachwiScreens.T`와 `demo/app.html` CSS
+- 2026-11-12 README "현재 상태"를 "소스 코드 없음"에서 실제 데모 구현 상태로 고치고 단위 테스트 명령 추가
+- 2026-11-12 테스트 256/256 통과 (`.artifacts/verification/T-14/` main 병합 후 실행)
 - 2026-11-12 Architecture R3 문구 정리, Tasks T-09 완료 전환
 - 2026-11-11 서류함을 `app.html#docs` 한 곳으로 통합 — `index.html#docs`는 서류함으로 가는 안내만 남김
 - 2026-11-11 README 주요 기능의 타임라인을 실제 화면대로 7단계로 고침 (DECISIONS #8)

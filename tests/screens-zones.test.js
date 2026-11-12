@@ -14,9 +14,11 @@ const CSS_MARKS = [
   ['/* ===== mo:T-10 #result ===== */', '/* ===== /mo:T-10 ===== */'],
   ['/* ===== mo:T-11 #timeline ===== */', '/* ===== /mo:T-11 ===== */'],
   ['/* ===== mo:T-12 #moveout #docs ===== */', '/* ===== /mo:T-12 ===== */'],
-  ['/* ===== mo:T-13 #input #contract ===== */', '/* ===== /mo:T-13 ===== */']
+  ['/* ===== mo:T-13 #input #contract ===== */', '/* ===== /mo:T-13 ===== */'],
+  ['/* ===== mo:T-16 #start ===== */', '/* ===== /mo:T-16 ===== */']
 ];
 const JS_MARKS = ['// ===== mo:T-09 =====', '// ===== /mo:T-09 ====='];
+const JS_MARKS_T16 = ['// ===== mo:T-16 =====', '// ===== /mo:T-16 ====='];
 const REDUCE_RULE = '@media (prefers-reduced-motion: reduce) { * { transition: none !important } }';
 const NO_PREF = /^@media\s*\(\s*prefers-reduced-motion\s*:\s*no-preference\s*\)$/;
 
@@ -24,17 +26,23 @@ const count = (s, sub) => s.split(sub).length - 1;
 const lineIndex = (text) => LINES.findIndex((l) => l.trim() === text);
 const nextNonBlank = (i) => { let j = i + 1; while (j < LINES.length && !LINES[j].trim()) j++; return LINES[j] === undefined ? '' : LINES[j].trim(); };
 
-// 모든 CSS 구역(T-09 시작 ~ T-13 끝) 텍스트, 주석 제거
+// 모든 CSS 구역(T-09 시작 ~ T-16 끝) 텍스트, 주석 제거
 function zoneCss() {
   const a = HTML.indexOf(CSS_MARKS[0][0]);
-  const b = HTML.indexOf(CSS_MARKS[4][1]);
+  const b = HTML.indexOf(CSS_MARKS[CSS_MARKS.length - 1][1]);
   assert.ok(a >= 0 && b > a, 'CSS 구역 없음');
-  return HTML.slice(a, b + CSS_MARKS[4][1].length).replace(/\/\*[\s\S]*?\*\//g, ' ');
+  return HTML.slice(a, b + CSS_MARKS[CSS_MARKS.length - 1][1].length).replace(/\/\*[\s\S]*?\*\//g, ' ');
 }
 function jsBlock() {
   const a = HTML.indexOf(JS_MARKS[0]);
   const b = HTML.indexOf(JS_MARKS[1]);
   assert.ok(a >= 0 && b > a, 'JS T-09 블록 없음');
+  return HTML.slice(a, b);
+}
+function jsBlockT16() {
+  const a = HTML.indexOf(JS_MARKS_T16[0]);
+  const b = HTML.indexOf(JS_MARKS_T16[1]);
+  assert.ok(a >= 0 && b > a, 'JS T-16 블록 없음');
   return HTML.slice(a, b);
 }
 
@@ -57,14 +65,14 @@ const isMotion = (d) => /^(animation|transition)(-|$)/.test(prop(d));
 const inKeyframes = (st) => st.some((p) => /^@(-webkit-)?keyframes\b/.test(p));
 const TOKEN_LINE = (l) => /^\s*\.mo\s*\{\s*--mo-short\s*:/.test(l);
 
-test('Z1: CSS 구역 마커 T-09~T-13과 JS 마커 T-09가 각 1번, 순서대로', () => {
+test('Z1: CSS 구역 마커 T-09~T-13·T-16과 JS 마커 T-09·T-16이 각 1번, 순서대로', () => {
   let at = -1;
   for (const pair of CSS_MARKS) for (const m of pair) {
     assert.equal(count(HTML, m), 1, m + ' 개수');
     const i = HTML.indexOf(m); assert.ok(i > at, m + ' 순서'); at = i;
   }
-  assert.equal(nextNonBlank(lineIndex(CSS_MARKS[4][1])), '</style>', '마지막 CSS 구역 다음은 </style>');
-  for (let k = 0; k < 4; k++) {
+  assert.equal(nextNonBlank(lineIndex(CSS_MARKS[CSS_MARKS.length - 1][1])), '</style>', '마지막 CSS 구역 다음은 </style>');
+  for (let k = 0; k < CSS_MARKS.length - 1; k++) {
     const end = lineIndex(CSS_MARKS[k][1]);
     assert.equal(LINES[end + 1].trim(), '', CSS_MARKS[k][1] + ' 다음 빈 줄 1개');
     assert.equal(LINES[end + 2].trim(), CSS_MARKS[k + 1][0], CSS_MARKS[k + 1][0] + ' 위치');
@@ -73,6 +81,10 @@ test('Z1: CSS 구역 마커 T-09~T-13과 JS 마커 T-09가 각 1번, 순서대�
   assert.ok(HTML.indexOf(JS_MARKS[0]) < HTML.indexOf(JS_MARKS[1]));
   assert.equal(nextNonBlank(lineIndex(JS_MARKS[1])), '// ---------- 메뉴 구조 ----------', 'JS 블록 다음은 메뉴 구조');
   assert.ok(HTML.indexOf(JS_MARKS[0]) > HTML.indexOf('</style>'), 'JS 블록은 script 안');
+  for (const m of JS_MARKS_T16) assert.equal(count(HTML, m), 1, m + ' 개수');
+  assert.ok(HTML.indexOf(JS_MARKS_T16[0]) < HTML.indexOf(JS_MARKS_T16[1]), 'T-16 JS 시작 < 끝');
+  assert.ok(HTML.indexOf(JS_MARKS_T16[0]) > HTML.indexOf('</style>'), 'T-16 JS 블록은 script 안');
+  assert.equal(nextNonBlank(lineIndex(JS_MARKS_T16[1])), '// ---------- 처음 시작하기 (온보딩) ----------', 'T-16 JS 블록 다음은 온보딩');
 });
 
 test('Z2: screens-core.js 태그가 1번, engine.js 태그 바로 다음 줄', () => {
@@ -110,7 +122,7 @@ test('Z5: 구역 안 선택자는 .mo로 시작, keyframes 이름은 mo- 접두�
 
 test('Z6: 시간 값은 토큰 줄에만, 토큰 CSS 값 = JachwiScreens.T', () => {
   const zoneStart = HTML.indexOf(CSS_MARKS[0][0]);
-  const zoneEnd = HTML.indexOf(CSS_MARKS[4][1]);
+  const zoneEnd = HTML.indexOf(CSS_MARKS[CSS_MARKS.length - 1][1]);
   const zoneLines = HTML.slice(zoneStart, zoneEnd).split('\n').map((l) => l.replace(/\/\*[\s\S]*?\*\//g, ''));
   const tokenLines = zoneLines.filter(TOKEN_LINE);
   assert.equal(tokenLines.length, 1, '토큰 줄 1개');
@@ -142,6 +154,7 @@ test('Z7: 반복 모션 0개 (infinite·animation-iteration-count 없음)', () =
   assert.equal(count(css, 'infinite'), 0);
   assert.equal(count(css, 'animation-iteration-count'), 0);
   assert.doesNotMatch(jsBlock(), /iterations\s*:\s*(Infinity|[2-9]|\d{2,})/);
+  assert.doesNotMatch(jsBlockT16(), /iterations\s*:\s*(Infinity|[2-9]|\d{2,})/);
 });
 
 test('JS T-09 블록: 인터페이스 헬퍼를 모두 정의', () => {
