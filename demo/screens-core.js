@@ -14,10 +14,10 @@
   // ===== T-09 =====
   // CSS 사용자 정의 속성(app.html mo:T-09 블록의 .mo 토큰 줄)과 같은 값 — tests/screens-zones.test.js Z6이 대조한다
   var T = Object.freeze({
-    short: 200, base: 300, long: 400,
-    step: 50, maxStep: 6, total: 600,
-    shift: 8,
-    ease: 'cubic-bezier(0.2, 0, 0, 1)', easeIO: 'cubic-bezier(0.4, 0, 0.2, 1)'
+    short: 250, base: 450, long: 600,
+    step: 80, maxStep: 6, total: 930,
+    shift: 20,
+    ease: 'cubic-bezier(0.3, 0.7, 0.4, 1)', easeIO: 'cubic-bezier(0.4, 0, 0.2, 1)'
   });
 
   function num(v) { var n = typeof v === 'number' ? v : (typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN); return n; }

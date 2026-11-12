@@ -8,16 +8,16 @@ const JS = require('../demo/screens-core.js');
 // ---------- 토큰 ----------
 test('토큰: 9개 값이 Architecture 토큰 표와 같다', () => {
   assert.deepEqual(JS.T, {
-    short: 200, base: 300, long: 400, step: 50, maxStep: 6, total: 600, shift: 8,
-    ease: 'cubic-bezier(0.2, 0, 0, 1)', easeIO: 'cubic-bezier(0.4, 0, 0.2, 1)'
+    short: 250, base: 450, long: 600, step: 80, maxStep: 6, total: 930, shift: 20,
+    ease: 'cubic-bezier(0.3, 0.7, 0.4, 1)', easeIO: 'cubic-bezier(0.4, 0, 0.2, 1)'
   });
 });
-test('토큰: 모션 하나 길이는 0.2~0.4초 안 (N-04)', () => {
-  for (const k of ['short', 'base', 'long']) assert.ok(JS.T[k] >= 200 && JS.T[k] <= 400, k);
+test('토큰: 모션 하나 길이는 0.25~0.6초 안 (N-04, T-15)', () => {
+  for (const k of ['short', 'base', 'long']) assert.ok(JS.T[k] >= 250 && JS.T[k] <= 600, k);
 });
-test('토큰: 마지막 차례 지연 + 기본 길이 = 전체 상한 600ms 이하 (F-07 ③)', () => {
+test('토큰: 마지막 차례 지연 + 기본 길이 = 전체 상한 930ms 이하 (F-07 ③, T-15)', () => {
   assert.equal(JS.T.step * JS.T.maxStep + JS.T.base, JS.T.total);
-  assert.ok(JS.T.total <= 600);
+  assert.ok(JS.T.total <= 930);
 });
 test('토큰: 바꿀 수 없다 (단일 원본)', () => {
   assert.ok(Object.isFrozen(JS.T));
@@ -70,10 +70,10 @@ test('stepIndex: 소수는 내림, 숫자 문자열은 숫자로', () => {
   assert.equal(JS.stepIndex(2.9), 2);
   assert.equal(JS.stepIndex('4'), 4);
 });
-test('stepDelay: 차례 × 50ms, 최대 300ms', () => {
+test('stepDelay: 차례 × 80ms, 최대 480ms (T-15)', () => {
   assert.equal(JS.stepDelay(0), 0);
-  assert.equal(JS.stepDelay(2), 100);
-  assert.equal(JS.stepDelay(99), 300);
+  assert.equal(JS.stepDelay(2), 160);
+  assert.equal(JS.stepDelay(99), 480);
   assert.equal(JS.stepDelay(-5), 0);
   assert.ok(JS.stepDelay(99) + JS.T.base <= JS.T.total);
 });

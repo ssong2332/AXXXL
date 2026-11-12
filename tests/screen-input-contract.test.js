@@ -105,10 +105,10 @@ test('F-11 ⑦: 두 view가 moBegin으로 시작하고 moRoot로 감싼다', () 
   assert.match(CONTRACT, /return moRoot\('contract',/);
 });
 
-test('F-11 ⑦: 차례 등장은 moStep(0~3)만 — 전체 0.6초 이하', () => {
+test('F-11 ⑦: 차례 등장은 moStep(0~3)만 — 전체 상한(JS.T.total) 이하', () => {
   const steps = [...(INPUT + CONTRACT).matchAll(/moStep\((\d+)\)/g)].map((m) => +m[1]);
   assert.ok(steps.length > 0, '등장 모션 없음');
-  for (const s of steps) assert.ok(JS.stepDelay(s) + JS.T.base <= JS.T.total, 'moStep(' + s + ') 0.6초 초과');
+  for (const s of steps) assert.ok(JS.stepDelay(s) + JS.T.base <= JS.T.total, 'moStep(' + s + ') 전체 상한(' + JS.T.total + 'ms) 초과');
 });
 
 // ---------- 순수 함수 contractFacts ----------
