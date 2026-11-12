@@ -986,6 +986,15 @@ details.fold[open] > summary { margin-bottom: 10px }
 /* ===== /mo:T-11 ===== */
 
 /* ===== mo:T-12 #moveout #docs ===== */
+.mo-moveout .mv-chip { flex: 0 0 52px; min-height: 58px; padding: 5px 0; border-radius: 12px; background: var(--fill); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15 }
+.mo-moveout .mv-chip b { font-size: 17px; font-weight: 800 }
+.mo-moveout .mv-chip span { font-size: 11px; color: var(--ink-3) }
+.mo-moveout .mv-chip.today { background: var(--brand); color: var(--brand-ink) }
+.mo-moveout .mv-chip.today span { color: var(--brand-ink); opacity: .85 }
+.mo-docs .progress-line { margin: 2px 0 4px }
+.mo-docs .dq { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 9px 0; border-top: 1px solid var(--hair) }
+.mo-docs .dq-t { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.mo-docs .dq .badge { justify-self: end }
 /* ===== /mo:T-12 ===== */
 
 /* ===== mo:T-13 #input #contract ===== */
@@ -1949,22 +1958,44 @@ document.addEventListener('DOMContentLoaded', function () {
     ['bank', '본인 명의 통장 사본', '지원금을 받을 계좌.', true],
     ['etc', '기타', '영수증, 특약·수리 요청 문자 캡처 등.', false]
   ];
+  // 서류 준비 상태 배지 (F-10 ④): 회색 글자 대신 배경 있는 배지 + 아이콘. 칸 안내는 이름 아래 줄로 (F-10 ③ PC 칸 깨짐)
+  function docsState(it, slotName) {
+    if (it.ready) return { cls: 'brand', icon: 'check', label: '있음', hint: '' };
+    if (it.slot) return { cls: '', icon: 'plus', label: '올리기 전', hint: esc(slotName[it.slot]) + ' 칸에 올리기' };
+    return { cls: '', icon: 'doc', label: '발급 받기', hint: '서류함 칸 없음 · 발급처에서 받기' };
+  }
+  // 준비 막대 (F-10 ⑤): 들어올 때 0→현재(mo-fill), 같은 화면에서 바뀌면 직전→현재(mo-grow)
+  function docsBar(key, ready, total) {
+    var pct = JS ? JS.readyPct(ready, total) : (total > 0 ? Math.round(ready / total * 100) : 0);
+    var prev = moChanged(key, pct);
+    var cls = prev !== undefined ? ' class="mo-grow" style="--mo-from:' + prev + '%;width:' + pct + '%"' : ' class="mo-fill" style="width:' + pct + '%"';
+    return '<div class="progress-line" role="img" aria-label="' + ready + ' / ' + total + ' 준비"><span' + cls + '></span></div>';
+  }
   function viewDocs() {
+    moBegin('docs');
     var have = DOC_SLOTS.filter(function (d) { return filesIn(d[0]).length; }).length;
     // 지원별 준비 현황 (F-06): 승인된 공고의 제출 서류 ↔ 이 기기 서류함 칸
     var counts = {}; DOC_SLOTS.forEach(function (d) { counts[d[0]] = filesIn(d[0]).length; });
     var slotName = {}; DOC_SLOTS.forEach(function (d) { slotName[d[0]] = d[1]; });
     var progs = []; try { progs = evaluate().programs.filter(function (x) { return x.p.docs && x.p.docs.length; }); } catch (e) { progs = []; }
-    var prep = progs.map(function (x) {
+    var prep = progs.map(function (x, pi) {
       var r = JE.docReadiness(x.p.docs, counts);
-      return '<div class="card stack"><div class="split"><h2 style="font-size:15px">' + esc(x.p.name) + '</h2><span class="badge ' + (r.ready === r.total ? 'brand' : '') + '">' + r.ready + ' / ' + r.total + ' 준비</span></div>' +
-        r.items.map(function (it) { return '<div class="kv"><span class="s13">' + esc(it.name) + '</span><span class="s12">' + (it.ready ? '<span class="badge brand">있음</span>' : it.slot ? '<span class="muted">' + esc(slotName[it.slot]) + ' 칸에 올리기</span>' : '<span class="muted">서류함 칸 없음 · 발급처에서 받기</span>') + '</span></div>'; }).join('') +
+      return '<div class="card stack' + moStep(pi + 1) + '"><div class="split"><h2 style="font-size:15px">' + esc(x.p.name) + '</h2><span class="badge ' + (r.ready === r.total ? 'brand' : '') + '">' + moNum('docs:ready:' + x.p.id, r.ready) + ' / ' + r.total + ' 준비</span></div>' +
+        docsBar('docs:pct:' + x.p.id, r.ready, r.total) +
+        '<div class="dq-list">' + r.items.map(function (it, ii) {
+          var st = docsState(it, slotName), was = moChanged('docs:item:' + x.p.id + ':' + ii, !!it.ready);
+          return '<div class="dq"><div class="dq-t"><span class="s13">' + esc(it.name) + '</span>' + (st.hint ? '<span class="s12 muted">' + st.hint + '</span>' : '') + '</div>' +
+            '<span class="badge ' + st.cls + (was === false && it.ready ? ' mo-pop' : '') + '">' + ic(st.icon, 'sm') + st.label + '</span></div>';
+        }).join('') + '</div>' +
         '<a class="s12" href="#support">지원 상세 보기</a></div>';
     }).join('');
-    var rows = DOC_SLOTS.map(function (d) { var n = filesIn(d[0]).length; return '<div class="slot"><div style="min-width:0" class="stack"><div><div class="row"><b>' + d[1] + '</b>' + (n ? '<span class="badge brand">' + n + '개</span>' : '<span class="s12 muted">아직 없음</span>') + (d[3] ? '<span class="s12 muted">· 지원 신청에 필요</span>' : '') + '</div><p class="s13 muted">' + d[2] + '</p></div>' + thumbs(d[0], d[1]) + '</div><div>' + addBtn(d[0], '올리기') + '</div></div>'; }).join('');
-    return '<div class="page-head"><div><p class="eyebrow">지원 신청·연말정산·퇴거 때 쓰는 서류</p><h1>서류함</h1></div><span class="s13 muted">' + have + ' / ' + DOC_SLOTS.length + '종 준비</span></div>' +
+    var rows = DOC_SLOTS.map(function (d) {
+      var n = filesIn(d[0]).length, was = moChanged('docs:slot:' + d[0], n);
+      return '<div class="slot"><div style="min-width:0" class="stack"><div><div class="row"><b>' + d[1] + '</b>' + (n ? '<span class="badge brand' + (was !== undefined && n > was ? ' mo-pop' : '') + '">' + ic('check', 'sm') + n + '개</span>' : '<span class="badge">아직 없음</span>') + (d[3] ? '<span class="s12 muted">· 지원 신청에 필요</span>' : '') + '</div><p class="s13 muted">' + d[2] + '</p></div>' + thumbs(d[0], d[1]) + '</div><div>' + addBtn(d[0], '올리기') + '</div></div>';
+    }).join('');
+    return moRoot('docs', '<div class="page-head' + moStep(0) + '"><div><p class="eyebrow">지원 신청·연말정산·퇴거 때 쓰는 서류</p><h1>서류함</h1></div><span class="s13 muted">' + moNum('docs:have', have) + ' / ' + DOC_SLOTS.length + '종 준비</span></div>' +
       (FILES_OK ? '' : '<div class="banner due" style="margin-bottom:16px">' + ic('info') + '<span>이 브라우저에서는 파일을 저장할 수 없어요(사생활 보호 모드 등). 일반 창에서 열어 주세요.</span></div>') +
-      '<div class="grid"><section class="card c8">' + rows + '</section><aside class="c4 stack">' + (prep ? '<h2 class="s13 muted">지원 신청에 낼 서류</h2>' + prep : '') + '<div class="card stack"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">이 브라우저 안(IndexedDB)에만 저장하고 서버로 보내지 않아요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 원본은 따로 보관하세요.</p><p class="s12 muted">사진은 용량을 줄여(긴 변 1600px) 저장해요. 서류 내용 확인(OCR·AI)은 아직 없어요.</p></div></aside></div>';
+      '<div class="grid"><section class="card c7' + moStep(0) + '">' + rows + '</section><aside class="c5 stack">' + (prep ? '<h2 class="s13 muted">지원 신청에 낼 서류</h2>' + prep : '') + '<div class="card stack' + moStep(progs.length + 1) + '"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">이 브라우저 안(IndexedDB)에만 저장하고 서버로 보내지 않아요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 원본은 따로 보관하세요.</p><p class="s12 muted">사진은 용량을 줄여(긴 변 1600px) 저장해요. 서류 내용 확인(OCR·AI)은 아직 없어요.</p></div></aside></div>');
   }
 
   // ---------- 우리 동네: 실제 데이터 ----------
@@ -2961,18 +2992,29 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 퇴거 준비 ----------
+  // 중요한 날짜 칩 (F-10 ②): '9월 / 11 / 월요일' 세 줄 — 요일을 한 글자로 쓰지 않아 '9월 월'처럼 달과 헷갈리지 않는다. screens-core가 없으면 공용 칩
+  function moveoutChip(d) {
+    var p = JS && JS.dateChipParts(d);
+    if (!p) return dateBlk(d);
+    return '<span class="mv-chip' + (+d === +today ? ' today' : '') + '" aria-label="' + p.label + '"><span aria-hidden="true">' + p.month + '</span><b aria-hidden="true">' + p.day + '</b><span aria-hidden="true">' + p.wd + '</span></span>';
+  }
+  // 갱신 통지 마감(o1)은 날짜를 '중요한 날짜'에만 두고 '나가기 전 할 일'은 문구만 (F-10 ①, OQ #8) — taskItem은 그대로, 복사본만 넘긴다
+  function moveoutTasks(tasks) {
+    return JS ? JS.hideDue(tasks, ['o1']) : tasks.map(function (t) { return t.id === 'o1' ? Object.assign({}, t, { due: null }) : t; });
+  }
   function viewMoveout() {
+    moBegin('moveout');
     var R = evaluate(), T = buildTimeline(R), end = contractEnd(), left = Math.round((end - today) / 86400000);
     var keyDates = [[R.renewDue, '갱신 여부 알리기 마감', '나갈지 더 살지 집주인에게 문자로 남겨 두세요.'], [add(end, -30), '새 집·이사 날짜 정하기', '새 집 계약일과 지금 집 보증금 받는 날을 맞춰요.'], [add(end, -7), '집 상태 점검', '입주 때 기록과 같은 자리를 다시 찍어요.'], [end, '계약 만료 · 보증금 돌려받기', '보증금을 받은 뒤에 전출(새 집 전입신고)해요.']];
     var extra = [{ id: 'x1', title: '관리비·공과금 정산 요청', desc: '마지막 달 사용량을 계량기 사진으로 남기고 정산 금액을 확인해요.', due: add(end, -1), src: BASE_SRC }, { id: 'x2', title: '원상복구 범위 집주인과 맞추기', desc: '살면서 생긴 자연스러운 낡음은 원상복구 대상이 아니에요. 입주 때 사진과 비교해 이야기해요.', due: add(end, -14), act: ['집 상태 기록', '#condition'], src: BASE_SRC }];
-    var tasks = T.filter(function (s) { return s.key === 'out'; })[0].tasks.concat(extra).sort(function (a, b) { return a.due - b.due; });
-    return '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · ' + ymd(end) + ' 만료</p><h1>퇴거 준비</h1></div><span class="badge ' + (left <= 90 ? 'due' : '') + '">만료까지 ' + (left >= 0 ? left + '일' : '지남') + '</span></div>' +
-      '<div class="grid"><section class="card c7"><div class="card-h"><h2>중요한 날짜</h2></div>' + keyDates.map(function (k) { return '<div class="date-line">' + dateBlk(k[0]) + '<div style="flex:1 1 auto;min-width:0"><b>' + k[1] + '</b><p class="s13 muted">' + k[2] + '</p></div><span class="badge ' + (k[0] < today ? '' : 'brand') + '">' + dday(k[0]) + '</span></div>'; }).join('') + '</section>' +
-      '<section class="card c5 stack"><div class="card-h" style="margin:0"><h2>알아 두면 좋은 규칙</h2></div>' +
+    var tasks = moveoutTasks(T.filter(function (s) { return s.key === 'out'; })[0].tasks.concat(extra).sort(function (a, b) { return a.due - b.due; }));
+    return moRoot('moveout', '<div class="page-head' + moStep(0) + '"><div><p class="eyebrow">내 주거 관리 · ' + ymd(end) + ' 만료</p><h1>퇴거 준비</h1></div><span class="badge ' + (left <= 90 ? 'due' : '') + '">만료까지 ' + (left >= 0 ? left + '일' : '지남') + '</span></div>' +
+      '<div class="grid"><section class="card c7' + moStep(1) + '"><div class="card-h"><h2>중요한 날짜</h2></div>' + keyDates.map(function (k) { return '<div class="date-line">' + moveoutChip(k[0]) + '<div style="flex:1 1 auto;min-width:0"><b>' + k[1] + '</b><p class="s13 muted">' + k[2] + '</p></div><span class="badge ' + (k[0] < today ? '' : 'brand') + '">' + dday(k[0]) + '</span></div>'; }).join('') + '</section>' +
+      '<section class="card c5 stack' + moStep(2) + '"><div class="card-h" style="margin:0"><h2>알아 두면 좋은 규칙</h2></div>' +
       '<div class="kv" style="display:block"><b>묵시적 갱신</b><p class="s13 sub">둘 다 만료 2개월 전까지 아무 말 없으면 같은 조건으로 계약이 이어져요. 이때 세입자는 언제든 나간다고 알릴 수 있고, 3개월 뒤에 끝나요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제6조·제6조의2</a></div>' +
       '<div class="kv" style="display:block"><b>계약갱신요구권</b><p class="s13 sub">세입자는 한 번, 2년 더 살겠다고 요구할 수 있어요. 이때 월세·보증금 인상은 5% 안에서만 돼요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제6조의3·제7조</a></div>' +
       '<div class="kv" style="display:block"><b>보증금을 못 받았다면</b><p class="s13 sub">이사 가야 한다면 먼저 임차권등기명령을 신청해요. 등기가 되면 이사해도 보증금을 지키는 힘이 남아요.</p><a class="src" href="' + LAW + '" target="_blank" rel="noopener">주택임대차보호법 제3조의3</a></div></section>' +
-      '<section class="card c12"><div class="card-h"><h2>나가기 전 할 일</h2><a class="more" href="#condition">입주 기록과 비교' + ic('chev', 'sm') + '</a></div>' + tasks.map(function (t) { return taskItem(t); }).join('') + '</section></div>';
+      '<section class="card c12' + moStep(3) + '"><div class="card-h"><h2>나가기 전 할 일</h2><a class="more" href="#condition">입주 기록과 비교' + ic('chev', 'sm') + '</a></div>' + tasks.map(function (t) { return taskItem(t); }).join('') + '</section></div>');
   }
 
   // ---------- AI 자취 코치 ----------

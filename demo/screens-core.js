@@ -110,6 +110,32 @@
   // ===== /T-11 =====
 
   // ===== T-12 =====
+  // 퇴거 준비·서류함 (F-10). 날짜는 인자로 받는다.
+  var WD_FULL = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+  function isDate(d) { return Object.prototype.toString.call(d) === '[object Date]' && !isNaN(d.getTime()); }
+
+  // 날짜 칩 세 줄: '9월' / '11' / '월요일' — 요일을 한 글자로 써서 '9월 월'처럼 달과 헷갈리는 표기를 막는다 (F-10 ②)
+  api.dateChipParts = function (d) {
+    if (!isDate(d)) return null;
+    var m = d.getMonth() + 1, day = d.getDate(), wd = WD_FULL[d.getDay()];
+    return { month: m + '월', day: String(day), wd: wd, label: m + '월 ' + day + '일 ' + wd };
+  };
+
+  // 지정한 할 일의 날짜만 지운 복사본 — 갱신 통지 마감은 '중요한 날짜'에만 날짜를 둔다 (F-10 ①, OQ #8). 원본은 바꾸지 않는다
+  api.hideDue = function (tasks, ids) {
+    if (!Array.isArray(tasks)) return [];
+    var hide = Array.isArray(ids) ? ids : [];
+    return tasks.map(function (t) {
+      return t && hide.indexOf(t.id) >= 0 ? Object.assign({}, t, { due: null }) : t;
+    });
+  };
+
+  // 준비 막대 비율(정수 %) — 전체 0·숫자 아님은 0, 0..100으로 자름 (F-10 ⑤)
+  api.readyPct = function (ready, total) {
+    var r = num(ready), t = num(total);
+    if (!isFinite(r) || !isFinite(t) || t <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round(r / t * 100)));
+  };
   // ===== /T-12 =====
 
   // ===== T-13 =====
