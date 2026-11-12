@@ -39,7 +39,9 @@ http.createServer(async (req, res) => {
   if (p === '/admin') p = '/admin.html';
   if (p === '/cal.ics') p = '/api/calendar';
   if (p.startsWith('/api/')) {
-    const name = p.slice(5).replace(/\.js$/, '');
+    let name = p.slice(5).replace(/\.js$/, '');
+    // vercel.json rewrites 와 같게: 공공데이터 5개는 api/public.js 하나가 받는다
+    if (['support', 'welfare', 'lh', 'holidays', 'period'].includes(name)) { u.searchParams.set('fn', name); name = 'public'; }
     const file = path.join(ROOT, 'api', name + '.js');
     if (!/^[a-z0-9-]+$/i.test(name) || !fs.existsSync(file)) { res.writeHead(404); return res.end('not found'); }
     req.query = Object.fromEntries(u.searchParams.entries());
