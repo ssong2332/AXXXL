@@ -3308,13 +3308,15 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="hbar-r">' + simSel + themeBtn() + bellBtn() + '</div></div>';
   }
   function render(keep) {
+    pendRender = false;
     if (!S.demo) S.sim = null;
     today = S.sim === null || S.sim === undefined || S.sim === '' ? realToday() : add(pd(S.move), +S.sim);
     var r = route();
     if (!S.onboarded && !(r === 'calendar' && PHONE_D)) r = 'start';
     if (S.onboarded && r === 'start') r = 'home';
     document.body.classList.toggle('ob', r === 'start');
-    var g = groupOf(r) || GROUPS[0], y = window.scrollY, act = document.activeElement && document.activeElement.dataset && (document.activeElement.dataset.field || document.activeElement.dataset.cond);
+    var g = groupOf(r) || GROUPS[0], y = window.scrollY, ae = document.activeElement, act = ae && ae.dataset && (ae.dataset.field || ae.dataset.cond), sel = null;
+    try { if (act && typeof ae.selectionStart === 'number') sel = [ae.selectionStart, ae.selectionEnd]; } catch (x) {}
     var R = evaluate(), T = buildTimeline(R), n = openTasks(R, T).dueNow.length;
     var cnt = function (k) { return k === 'timeline' && n ? '<span class="cnt" aria-label="밀린 할 일 ' + n + '개">' + n + '</span>' : ''; };
     document.getElementById('side-nav').innerHTML = GROUPS.map(function (gr) {
@@ -3333,7 +3335,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (app.querySelector('a[data-rv-place]')) kakaoBoot(fixPlaceRoadview);
     // 이 기능 전에 지도에서 골라 둔 집은 이름이 '지도에서 고른 위치'로 남아 있어서 한 번 주소로 바꾼다
     if (!homeAddress.tried && S.home && S.home.src === 'pick' && !S.home.named && S.home.label === '지도에서 고른 위치') { homeAddress.tried = true; homeAddress(); }
-    if (keep) { window.scrollTo(0, y); if (act) { var el = app.querySelector('[data-field="' + act + '"],[data-cond="' + act + '"]'); if (el) el.focus({ preventScroll: true }); } }
+    if (keep) { window.scrollTo(0, y); if (act) { var el = app.querySelector('[data-field="' + act + '"],[data-cond="' + act + '"]'); if (el) { el.focus({ preventScroll: true }); try { if (sel && el.setSelectionRange) el.setSelectionRange(sel[0], sel[1]); } catch (x) {} } } }
     else if (r !== last) window.scrollTo(0, 0);
     last = r;
   }
@@ -3456,15 +3458,22 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (d.act === 'billon') { var bo = findBill(d.v); if (bo) bo.on = t.checked; save(); render(true); }
     else if (d.act === 'addfile' && t.files && t.files.length) { addFiles(d.v, t.files); t.value = ''; }
     else if (d.act === 'restore' && t.files && t.files[0]) { restoreJson(t.files[0]); t.value = ''; }
-    else if (d.cond) { var tc = S.condTab === 'out' ? 'out' : 'in'; S.cond[tc][d.cond] = Object.assign(S.cond[tc][d.cond] || {}, { memo: t.value.slice(0, 60) }); save(); render(true); }
+    else if (d.cond) { var tc = S.condTab === 'out' ? 'out' : 'in'; S.cond[tc][d.cond] = Object.assign(S.cond[tc][d.cond] || {}, { memo: t.value.slice(0, 60) }); save(); pendRender = true; if (!ptrDown) setTimeout(flushRender, 0); }
     else if (d.bill) {
       var bb = findBill(d.bill), k = d.k, v = t.type === 'checkbox' ? t.checked : t.value; if (!bb) return;
       if (k === 'amount' || k === 'count' || k === 'day' || k === 'every') { v = parseInt(String(v).replace(/[^0-9]/g, ''), 10); if (isNaN(v)) v = k === 'every' ? 1 : 0; }
       if (k === 'name') v = String(v).trim().slice(0, 20) || bb.name;
-      bb[k] = v; save(); render(true);
+      bb[k] = v; save(); if (t.type === 'checkbox') render(true); else { pendRender = true; if (!ptrDown) setTimeout(flushRender, 0); }
     }
-    else if (d.field) { setField(t); render(true); }
+    else if (d.field) { setField(t); pendRender = true; if (!ptrDown) setTimeout(flushRender, 0); }
   });
+  // 입력칸을 고친 뒤 다른 칸·버튼을 누르면 change 가 먼저 와서, 바로 다시 그리면 방금 누른 칸·버튼이 사라진다
+  // (커서가 날아가 다음 칸에 입력이 안 되고, 버튼 클릭이 씹힘). 그래서 누르기가 끝나고 커서가 옮겨 간 뒤에 다시 그린다.
+  var pendRender = false, ptrDown = false;
+  function flushRender() { if (pendRender && !ptrDown) render(true); }
+  document.addEventListener('pointerdown', function () { ptrDown = true; }, true);
+  document.addEventListener('pointerup', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
+  document.addEventListener('pointercancel', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
   document.addEventListener('input', function (e) { var t = e.target; if (t.id === 'q') updateSearch(t.value); else if (t.dataset.field && t.hasAttribute('data-num')) setField(t); });
   function setField(t) {
     var k = t.dataset.field, v = t.value;
