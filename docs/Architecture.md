@@ -165,7 +165,7 @@ tests/
 | `JS.shouldAnimate(reduce: boolean, entering: boolean) → boolean` | `!reduce && entering` | T-09 블록 |
 | T-09 연결 헬퍼 (app.html) | `moBegin(screen)→boolean`, `moRoot(screen, html)→string`, `moStep(i)→' mo-in mo-s{n}'`, `moNum(key, value)→string`, `moChanged(key, value)→prev|undefined`, `moOpen(key, def)→boolean`, `moToggle(...)`, `moPanel(...)`, `moAfter(fn)`, `moReduce()→boolean` | 내 view 6개만 |
 | CSS 클래스 (T-09) | `.mo-in`+`.mo-s0`~`.mo-s6`(등장, `[data-mo-enter]` 아래서만), `.mo-fill`(막대 0→현재, 등장 때만), `.mo-grow`+`--mo-from`(막대 직전→현재), `.mo-pop`(배지·체크 나타나기), `.mo-fold`/`.mo-fold-in`/`.open`, `.mo-num` | 내 view 6개 |
-| 화면 순수 함수 (T-10~T-13, screens-core 각 구역) — 권장 시그니처, 입력은 plain 값(DOM·`S`·전역 `today` 접근 금지, 날짜는 인자로) | T-10 `resultSummary({ reportRequired, verdicts: string[] }) → { tasks, byVerdict }`, `allMet(res: [{ok}]) → boolean`. T-11 `scrollTarget(stages: [{key, done}], nowKey) → key|null`(OQ #4: 지금 단계 있으면 그 키, 없고 모두 완료면 마지막 키, 그 외 null). T-12 `dateChipParts(date) → {...}`, 갱신 통지 중복 제거 규칙. T-13 필요 시만 | 각 화면 view, 각 화면 테스트 |
+| 화면 순수 함수 (T-10~T-13, screens-core 각 구역) — 권장 시그니처, 입력은 plain 값(DOM·`S`·전역 `today` 접근 금지, 날짜는 인자로) | T-10 `resultSummary({ reportRequired, verdicts: string[] }) → { tasks, byVerdict }`, `allMet(res: [{ok}]) → boolean`. T-11 `scrollTarget(stages: [{key, done}], nowKey) → key|null`(OQ #4, 판정 순서대로: ① 모든 단계 완료 → 마지막 단계 키(`nowKey`가 있어도) ② `nowKey`가 없거나 첫 단계(계약 전) → null(이동 없이 맨 위) ③ 그 외 → `nowKey`. PRD OQ #4는 '계약 전'과 '모두 완료'를 "'지금' 단계 없음"으로 본다). T-12 `dateChipParts(date) → {...}`, 갱신 통지 중복 제거 규칙. T-13 필요 시만 | 각 화면 view, 각 화면 테스트 |
 
 ### 계층 규칙 (DB·외부 API가 있는 프로젝트만 — 없으면 "해당 없음" 기재)
 
