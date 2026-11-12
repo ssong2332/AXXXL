@@ -111,6 +111,7 @@ tests/
 
 - CSS: T-09·T-10~T-13 구역의 모든 `animation`·`transition` 선언은 `@media (prefers-reduced-motion: no-preference) { … }` 안에만 둔다. 줄이기가 켜지면 선언 자체가 없으므로 최종 상태가 바로 보인다. `!important` 불필요, 공용 466줄은 그대로.
 - JS: 숫자 카운트·스크롤 등 JS 모션은 `moReduce()`가 참이면 실행하지 않는다(값은 처음부터 최종값으로 그려져 있음). 스크롤은 모션이 아니라 위치 이동이므로 줄이기와 무관하게 수행한다(아래 5).
+- `data-mo-enter`: `moRoot`는 `JS.shouldAnimate(moReduce(), MO.enter[screen])`가 참일 때만 붙인다 — 줄이기 환경(또는 `screens-core.js` 미로드)에서는 등장 렌더여도 붙이지 않는다.
 - `screens-core.js`를 못 불러온 경우(오프라인 캐시 누락 등) `moReduce()`가 참을 반환해 모션 없이 동작한다.
 
 ### 4. 등장은 화면 이동 때만 (DECISIONS #10)
@@ -136,7 +137,8 @@ tests/
 `innerHTML` 재생성은 새 요소를 만들므로 "방금 바뀐 것"만 움직이려면 직전 값을 기억해야 한다.
 
 - `moChanged(key, value)`: 같은 화면에서 직전 렌더의 값과 다르면 직전 값을 반환, 아니면 `undefined`. 등장 렌더에서는 기록만 하고 `undefined`. `MO.prev`에 저장(메모리, 저장소 아님).
-- 용도: 체크 그리기(`key='task:'+id`, 값 `!!S.done[id]`, `false→true`일 때만 `.mo-pop` 계열 클래스), 업로드 배지(칸별 파일 수 증가), 준비 수·막대(직전 값에서 새 값으로 — 막대는 `style="--mo-from:{직전%}"` + `.mo-grow`, 숫자는 `moNum`이 직전 값부터 카운트).
+- key는 `MO` 규격대로 `'{screen}:{종류}:{id}'` — `moScreenOf(key)`가 첫 `:` 앞을 화면 이름으로 읽어 `MO.enter[화면]`(등장 여부)을 찾으므로, 화면 접두사가 없으면 등장 렌더에서도 직전 값을 반환한다.
+- 용도: 체크 그리기(`key='{screen}:task:'+id` — 예: 타임라인 `'timeline:task:'+id`, 값 `!!S.done[id]`, `false→true`일 때만 `.mo-pop` 계열 클래스), 업로드 배지(칸별 파일 수 증가), 준비 수·막대(직전 값에서 새 값으로 — 막대는 `style="--mo-from:{직전%}"` + `.mo-grow`, 숫자는 `moNum`이 직전 값부터 카운트).
 
 ### 7. 접기·펼치기 (F-08 ③, F-09 ①·⑥, DECISIONS #14)
 
