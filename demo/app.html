@@ -2983,9 +2983,30 @@ document.addEventListener('DOMContentLoaded', function () {
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
     var inst = standalone ? '<p class="s13 sub">이미 앱으로 설치돼 있어요.</p>' : INSTALL ? '<button type="button" class="btn block" data-act="install">' + ic('down', 'sm') + '홈 화면에 앱 설치</button>'
       : IS_IOS ? '<p class="s13 sub">Safari 아래쪽 <b>공유</b> 버튼 → <b>홈 화면에 추가</b>를 누르면 앱처럼 열려요.</p>' : '<p class="s13 sub">휴대폰 브라우저 메뉴에서 <b>홈 화면에 추가</b>(또는 <b>앱 설치</b>)를 누르면 앱처럼 열려요.</p>';
-    var d = IS_PHONE ? '' : encoded('state', exportObj()), url = d ? ORIGIN + '/app.html#import=' + d : '', qr = url ? qrSvg(url) : '';
+    var d = IS_PHONE ? '' : devQr(exportObj()), qr = devQrHtml(d);
     return '<section class="card stack"><h2 style="font-size:16px">' + ic('home', 'sm') + ' 앱처럼 설치</h2>' + inst + '<p class="s12 muted">설치하면 인터넷이 잠깐 끊겨도 화면이 열려요.</p></section>' +
-      (IS_PHONE ? '' : '<section class="card stack"><h2 style="font-size:16px">휴대폰으로 이어서 보기</h2>' + (qr ? '<div class="qr-box" style="margin:0"><div class="qr">' + qr + '</div><p class="s13"><b>휴대폰 카메라로 찍으면</b><br><span class="muted">지금 계약 정보·일정·집 위치가 휴대폰으로 옮겨 가요.</span></p></div>' : '<p class="s13 muted">QR을 만드는 중…</p>') + '<p class="s12 muted">정보는 QR 주소의 # 뒤에만 담겨 서버로 보내지지 않아요.</p></section>');
+      (IS_PHONE ? '' : '<section class="card stack"><h2 style="font-size:16px">휴대폰으로 이어서 보기</h2>' + (qr || '<p class="s13 muted" data-dev-qr>QR을 만드는 중…</p>') + '<p class="s12 muted">정보는 QR 주소의 # 뒤에만 담겨 서버로 보내지지 않아요.</p></section>');
+  }
+  // 내 계약 QR (T-17): 압축이 끝나면 화면 전체를 다시 그리지 않고 QR 자리만 바꾼다 — 다시 그리면 진행 중인 등장 모션이 끊긴다.
+  // 공용 encoded()는 캘린더 폰 연동도 쓰므로 그대로 두고, 같은 압축 함수(encodePayload)만 재사용한다.
+  var DEV_QR = {};
+  function devQrHtml(d) {
+    var qr = d ? qrSvg(ORIGIN + '/app.html#import=' + d) : '';
+    return qr ? '<div class="qr-box" style="margin:0"><div class="qr">' + qr + '</div><p class="s13"><b>휴대폰 카메라로 찍으면</b><br><span class="muted">지금 계약 정보·일정·집 위치가 휴대폰으로 옮겨 가요.</span></p></div>' : '';
+  }
+  function devQr(obj) {
+    var key = JSON.stringify(obj);
+    if (DEV_QR.key === key) return DEV_QR.d;
+    if (DEV_QR.pending !== key) {
+      DEV_QR.pending = key;
+      encodePayload(obj).then(function (d) {
+        if (DEV_QR.pending !== key) return;   // 더 새 데이터로 다시 압축 중이면 늦게 끝난 옛 결과는 버린다
+        DEV_QR.key = key; DEV_QR.d = d;
+        var slot = app.querySelector('[data-dev-qr]'), html = devQrHtml(d);
+        if (slot && html && JSON.stringify(exportObj()) === key) slot.outerHTML = html;
+      }).catch(function () { if (DEV_QR.pending === key) DEV_QR.pending = ''; });   // 실패하면 다음 렌더에서 다시 시도
+    }
+    return '';
   }
 
   // ---------- 생활 관리 ----------

@@ -55,5 +55,8 @@
 - 2026-10-27 AGENTS.md "고정 첫 작업"(T-01): 웹 UI 프로젝트면 Architecture가 정한 E2E 러너 설정과 E2E 스모크 테스트 1개 포함
 - 2026-10-27 implementer·QA 역할 원본 4단계와 보고 표에 E2E 회귀 확인 추가
 
+### Fixed
+- 2026-11-12 내 계약 첫 진입 시 QR 압축 완료 후 화면 전체가 다시 그려져 등장 모션이 끊기던 문제 수정 (T-17) — QR 자리만 교체, 공용 encoded·캘린더 폰 연동은 미수정. 테스트 263/263 (`.artifacts/verification/T-17/`), 커밋 82987f7
+
 ### Removed
 - 2026-10-27 `scripts/pipeline.ps1`, `scripts/orchestrator.ps1`, `.agents/role-map.yaml` 삭제(자동 오케스트레이션 폐기, Claude 중심 + CLI 위임 방식으로 전환). 위임 CLI 명령은 docs/CodingRules.md로 이전
