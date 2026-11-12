@@ -44,7 +44,8 @@ button, input, select, textarea { font: inherit; color: inherit }
 .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh }
 .side { position: sticky; top: 0; height: 100vh; padding: 18px 12px; border-right: 1px solid var(--hair); background: var(--surface); display: flex; flex-direction: column; gap: 4px }
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 14px; font-weight: 800; letter-spacing: -0.03em }
-.brand i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--surface); font-style: normal; font-size: 13px }
+.brand i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--surface); font-style: normal; font-size: 13px; overflow: hidden }
+.brand i img { width: 100%; height: 100%; display: block }
 .brand small { display: block; font-size: 11px; font-weight: 600; color: var(--ink-3) }
 .nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-radius: 9px; color: var(--ink-2); text-decoration: none; font-weight: 600 }
 .nav:hover { background: var(--fill) }
@@ -219,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var R = route(), nd = drafts().filter(function (d) { return d.status !== 'rejected'; }).length, nm = A.st ? A.st.unanswered.items.length : 0, nn = Object.keys(notices()).length, nc = A.st ? A.st.published.cards.length : 0;
     var nav = [['queue', '검수함', nd, true], ['new', '새 공고 추출'], ['published', '승인된 공고', nn], ['cards', '코치 지식', nc], ['missed', '답 못 한 질문', nm, true], ['quality', '품질 평가'], ['prompts', '시스템 프롬프트'], ['log', '변경 기록']];
     var cur = { review: 'queue', notice: 'published' }[R.r] || R.r;
-    return '<div class="shell"><nav class="side" aria-label="운영자 메뉴"><div class="brand"><i>내비</i><div>운영자 콘솔<small>공고 검수 · AI 코치</small></div></div>' +
+    return '<div class="shell"><nav class="side" aria-label="운영자 메뉴"><div class="brand"><i class="logo"><img src="icons/logo-mark.png" alt="" width="34" height="34"></i><div>운영자 콘솔<small>공고 검수 · AI 코치</small></div></div>' +
       nav.map(function (n) { return '<a class="nav" href="#' + n[0] + '"' + (cur === n[0] ? ' aria-current="page"' : '') + '><span>' + n[1] + '</span>' + (n[2] !== undefined ? '<span class="n' + (n[3] && n[2] ? '' : ' z') + '">' + n[2] + '</span>' : '') + '</a>'; }).join('') +
       '<div class="foot">' + modeBadge() + (A.ai ? '<span class="badge ok">Claude 연결됨 · 내장 AI 대기</span>' : '<span class="badge ok" title="외부 API 없이 이 기기 안에서 동작해요">내장 AI로 동작 중</span>') +
       '<label class="field">검수자 이름<input class="inp" data-name value="' + esc(A.name) + '" placeholder="예: 이성준" maxlength="20"></label>' +
@@ -230,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- 로그인 ----------
   function viewLogin() {
-    return '<div class="login stack"><div class="brand"><i>내비</i><div>운영자 콘솔<small>자취 계약 내비</small></div></div><div class="card stack"><h2>운영자 코드</h2><p class="s13 muted">공유 저장소의 공고를 승인·발행하려면 운영자 코드가 필요해요. 코드는 이 탭에만 보관되고 닫으면 지워져요.</p>' +
+    return '<div class="login stack"><div class="brand"><i class="logo"><img src="icons/logo-mark.png" alt="" width="34" height="34"></i><div>운영자 콘솔<small>자취 계약 내비</small></div></div><div class="card stack"><h2>운영자 코드</h2><p class="s13 muted">공유 저장소의 공고를 승인·발행하려면 운영자 코드가 필요해요. 코드는 이 탭에만 보관되고 닫으면 지워져요.</p>' +
       (A.err ? '<div class="banner bad">' + esc(A.err) + '</div>' : '') +
       '<form data-form="login" class="stack"><input class="inp" type="password" autocomplete="current-password" name="t" placeholder="운영자 코드" required><input class="inp" name="n" placeholder="검수자 이름 (기록에 남아요)" value="' + esc(A.name) + '" maxlength="20"><button class="btn">들어가기</button></form>' +
       '<button class="btn ghost" data-act="practice">코드 없이 연습 모드로 둘러보기</button><p class="s12 muted">연습 모드는 이 브라우저에만 저장돼요. 같은 브라우저의 이용자 화면에서 결과를 바로 확인할 수 있어요.</p></div></div>';

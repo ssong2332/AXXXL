@@ -22,7 +22,7 @@
 <script src="coach-core.js" defer></script>
 <script src="assistant-core.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#5B4CDB">
+<meta name="theme-color" content="#10111A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="자취내비">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -645,7 +645,8 @@ body { letter-spacing: -0.008em }
 .card { box-shadow: none }
 .page-head h1, .hero-banner h1 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.18 }
 .card-h h2 { font-size: 16px; font-weight: 750; letter-spacing: -0.03em }
-.brand-mark { background: var(--ink); color: var(--surface); border-radius: 9px }
+.brand-mark { background: var(--ink); color: var(--surface); border-radius: 9px; overflow: hidden }
+.brand-mark img { width: 100%; height: 100%; display: block }
 .g-label { background: none; color: var(--ink-3); padding: 0; margin: 18px 0 6px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em }
 .nav[aria-current="page"] { background: var(--fill); color: var(--ink) }
 .nav[aria-current="page"] svg { color: var(--brand-text) }
@@ -1064,7 +1065,7 @@ details.fold[open] > summary { margin-bottom: 10px }
 <body>
 <div class="shell">
   <aside class="side" aria-label="주요 메뉴">
-    <a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></a>
+    <a class="brand" href="#home"><span class="brand-mark"><img src="icons/logo-mark.png" alt="" width="34" height="34"></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></a>
     <nav id="side-nav" style="display:flex;flex-direction:column;gap:2px"></nav>
     <div class="side-foot">
       <div class="privacy"><span data-icon="lock"></span><span>로그인 없이 쓰고, 입력한 정보는 이 기기에만 저장돼요.</span></div>
@@ -1072,7 +1073,7 @@ details.fold[open] > summary { margin-bottom: 10px }
     </div>
   </aside>
   <div>
-    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><b>자취 계약 내비</b></a><span class="row" id="top-acts" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
+    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark"><img src="icons/logo-mark.png" alt="" width="34" height="34"></span><b>자취 계약 내비</b></a><span class="row" id="top-acts" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
     <main class="main" id="app" tabindex="-1"></main>
   </div>
   <nav class="tabbar" id="tab-nav" aria-label="주요 메뉴"></nav>
@@ -3392,7 +3393,7 @@ document.addEventListener('DOMContentLoaded', function () {
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + '</div>';
     var btns = '<div class="row" style="justify-content:space-between;margin-top:8px">' + (st > 1 ? '<button type="button" class="btn ghost" data-act="obprev">이전</button>' : '<span></span>') +
       (st < 4 ? '<button type="button" class="btn" data-act="obnext">' + (st === 3 && !S.home ? '나중에 정하고 다음' : '다음') + '</button>' : '<button type="button" class="btn" data-act="obdone">내 자취 시작하기</button>') + '</div>';
-    return moRoot('start', '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark">' + ic('home') + '</span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
+    return moRoot('start', '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark"><img src="icons/logo-mark.png" alt="" width="34" height="34"></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
       '<ol class="ob-steps" aria-label="입력 단계">' + steps.map(function (x, i) { return '<li class="' + (i + 1 < st ? 'done' : i + 1 === st ? 'now' : '') + '"' + (i + 1 === st ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + x + '</li>'; }).join('') + '</ol>' +
       '<section class="card stack ob-card">' + body + btns + '</section>' +
       '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
