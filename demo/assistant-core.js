@@ -79,7 +79,12 @@
     var head = r.who === 'safety' ? '**' + josa(r.label, '이가') + '** 나면 수리보다 **안전이 먼저**예요. 아래 순서대로 바로 움직이세요.'
       : '**' + josa(r.word || r.label, '은는') + '** ' + (r.who === 'landlord' ? '보통 **집주인이 고쳐야 해요.**' : r.who === 'tenant' ? '보통 **세입자가 해결해요.**' : '**원인에 따라** 누가 고칠지 달라요.');
     var now = r.now.slice();
-    if (r.who === 'landlord' || r.who === 'depends') now.push('고칠 일이 생기면 바로 집주인에게 알려야 해요. 늦게 알려 피해가 커지면 세입자 책임이 될 수 있어요 (민법 제634조)');
+    if (r.who === 'landlord' || r.who === 'depends') {
+      // 이미 '집주인에게 알려요' 단계가 있으면 같은 말을 또 넣지 않고 그 단계에 이유(민법 제634조)만 붙인다
+      var told = -1; now.forEach(function (x, k) { if (told < 0 && /집주인에게.{0,20}(알려|알리|연락|요청)/.test(x)) told = k; });
+      if (told >= 0) now[told] = now[told].replace(/\s*\([^)]*\)\s*$/, '').replace(/[.。]?\s*$/, '') + ' — 늦게 알려 피해가 커지면 세입자 책임이 될 수 있어요 (민법 제634조)';
+      else now.push('고칠 일이 생기면 바로 집주인에게 알려야 해요. 늦게 알려 피해가 커지면 세입자 책임이 될 수 있어요 (민법 제634조)');
+    }
     var blocks = [{ type: 'verdict', label: w[0], tone: w[1], text: r.why }, { type: 'steps', title: '지금 할 일', items: now }];
     if (r.who === 'landlord' || r.who === 'depends') blocks.push({ type: 'note', text: '집주인이 고쳐 주지 않아 내가 먼저 고쳤다면, 영수증으로 집주인에게 수리비를 청구할 수 있어요 (민법 제626조, 필요비).' });
     var cites = (r.cite || [['민법 제623조 (임대인의 수선 의무)', 'https://www.law.go.kr'], ['민법 제634조·제626조', 'https://www.law.go.kr']]).map(function (x, i) { return { id: 'repair-' + r.id + '-' + i, title: x[0], src: [x] }; });
