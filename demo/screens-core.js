@@ -97,6 +97,16 @@
   // ===== /T-10 =====
 
   // ===== T-11 =====
+  // 타임라인 '지금' 단계 이동 대상 (F-09 ②, OQ #4). stages: [{ key, done }] 화면 순서대로, nowKey: '지금' 단계 키
+  // 모든 단계 완료 → 마지막 단계 / '지금'이 첫 단계(계약 전)거나 없음 → null(이동 없이 맨 위) / 그 외 → '지금' 단계
+  api.scrollTarget = function (stages, nowKey) {
+    if (!Array.isArray(stages) || !stages.length) return null;
+    var allDone = stages.every(function (s) { return s && s.done; });
+    if (allDone) return stages[stages.length - 1].key;
+    if (nowKey == null) return null;
+    for (var i = 0; i < stages.length; i++) if (stages[i] && stages[i].key === nowKey) return i === 0 ? null : nowKey;
+    return null;
+  };
   // ===== /T-11 =====
 
   // ===== T-12 =====
