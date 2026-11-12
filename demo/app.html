@@ -1026,6 +1026,23 @@ details.fold[open] > summary { margin-bottom: 10px }
   .mo-input input[type="date"] { padding: 0 8px }
 }
 /* ===== /mo:T-13 ===== */
+
+/* ===== mo:T-16 #start ===== */
+/* 첫 실행 길잡이: 들어올 때와 '다음'·'이전'으로 단계가 바뀔 때만([data-mo-enter]) 카드 안 직계 자식이 차례로 오르고, 현재 칸 막대가 왼쪽부터 찬다.
+   마크업·공용 .ob-steps 규칙은 그대로. 마지막 끝 시각 ≤ step×6 + base (T.total). */
+.mo-start .ob-steps li.now::before { transform-origin: left center }
+@keyframes mo-start-fill { from { transform: scaleX(0) } }
+@media (prefers-reduced-motion: no-preference) {
+  .mo-start[data-mo-enter] .ob-steps li.now::before { animation: mo-start-fill var(--mo-long) var(--mo-ease) both }
+  .mo-start[data-mo-enter] .ob-card > * { animation: mo-in var(--mo-base) var(--mo-ease) both }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(2) { animation-delay: calc(var(--mo-step) * 1) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(3) { animation-delay: calc(var(--mo-step) * 2) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(4) { animation-delay: calc(var(--mo-step) * 3) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(5) { animation-delay: calc(var(--mo-step) * 4) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(6) { animation-delay: calc(var(--mo-step) * 5) }
+  .mo-start[data-mo-enter] .ob-card > :nth-child(n+7) { animation-delay: calc(var(--mo-step) * 6) }
+}
+/* ===== /mo:T-16 ===== */
 </style>
 </head>
 <body>
@@ -3219,10 +3236,25 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="grid"><div class="c6' + moStep(2) + '">' + homeCard() + '</div><div class="c6 stack' + moStep(3) + '">' + deviceCards() + '</div></div></section>');
   }
 
+  // ===== mo:T-16 =====
+  // 첫 실행 길잡이 #start 단계 등장 (DECISIONS #20, ADR-0003). '다음'·'이전'은 화면이 계속 start라 moBegin만으로는 등장이 아니므로
+  // 등장 판정 키를 화면 + 단계로 넓힌다. moSubKey는 메모리 변수(저장소 아님), last는 읽기만 한다.
+  var moSubKey = '';
+  function moBeginStep(screen, step) {
+    var key = screen + ':' + step, prev = moSubKey;
+    moBegin(screen);
+    var on = JS ? JS.stepEnter(last, prev, screen, key) : (last !== screen || prev !== key);
+    MO.enter[screen] = on;
+    moSubKey = key;
+    return on;
+  }
+  // ===== /mo:T-16 =====
+
   // ---------- 처음 시작하기 (온보딩) ----------
   var GU_LIST = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
   function viewStart() {
     var st = +S.obStep || 1, R = evaluate();
+    moBeginStep('start', st);
     var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
     var num = function (k, unit, ph) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + (S[k] || '') + '" placeholder="' + (ph || '0') + '"><em>' + unit + '</em></div>'; };
     var steps = ['날짜', '금액', '집 위치', '나에 대해'], body = '';
@@ -3240,11 +3272,11 @@ document.addEventListener('DOMContentLoaded', function () {
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + '</div>';
     var btns = '<div class="row" style="justify-content:space-between;margin-top:8px">' + (st > 1 ? '<button type="button" class="btn ghost" data-act="obprev">이전</button>' : '<span></span>') +
       (st < 4 ? '<button type="button" class="btn" data-act="obnext">' + (st === 3 && !S.home ? '나중에 정하고 다음' : '다음') + '</button>' : '<button type="button" class="btn" data-act="obdone">내 자취 시작하기</button>') + '</div>';
-    return '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark">' + ic('home') + '</span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
+    return moRoot('start', '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark">' + ic('home') + '</span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
       '<ol class="ob-steps" aria-label="입력 단계">' + steps.map(function (x, i) { return '<li class="' + (i + 1 < st ? 'done' : i + 1 === st ? 'now' : '') + '"' + (i + 1 === st ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + x + '</li>'; }).join('') + '</ol>' +
       '<section class="card stack ob-card">' + body + btns + '</section>' +
       '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
-      '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 정보는 서버에 저장하지 않고 이 기기 브라우저에만 남아요.</span></div></div>';
+      '<div class="privacy">' + ic('lock', 'sm') + '<span>로그인이 없어요. 입력한 정보는 서버에 저장하지 않고 이 기기 브라우저에만 남아요.</span></div></div>');
   }
   function backupJson() {
     var o = clone(S); delete o.sim; delete o.chat; delete o.rooms;

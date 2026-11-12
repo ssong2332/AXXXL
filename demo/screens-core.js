@@ -181,5 +181,13 @@
   api.contractFacts = contractFacts;
   // ===== /T-13 =====
 
+  // ===== T-16 =====
+  // 첫 실행 길잡이 #start 단계 등장 판정 (F-12 ②③, DECISIONS #20): 화면 이동이거나 단계 키가 직전 렌더와 다르면 등장.
+  // 앞·뒤 방향 구분 없음('이전'도 등장). prevKey가 null·undefined면 빈 값으로 본다. 던지지 않는다.
+  api.stepEnter = function (last, prevKey, screen, key) {
+    return isEnter(last, screen) || (prevKey == null ? '' : String(prevKey)) !== String(key);
+  };
+  // ===== /T-16 =====
+
   return api;
 });
