@@ -4,7 +4,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
 const JS = require('../demo/screens-core.js');
 
 const HTML = fs.readFileSync(path.join(__dirname, '../demo/app.html'), 'utf8').replace(/\r\n/g, '\n');
@@ -141,11 +140,15 @@ test('키 규격: 두 화면의 moNum·moChanged·moOpen 키는 화면 접두사
   }
 });
 
-test('공용 함수 불변: dateBlk 줄과 taskItem 본문이 T-12 전과 같다', () => {
+test('공용 함수 불변: dateBlk 줄은 그대로, 퇴거 준비는 taskItem을 o 없이 복사본으로만 부른다', () => {
   const blk = "  function dateBlk(d) { return '<span class=\"date-blk' + (+d === +today ? ' today' : '') + '\"><b>' + d.getDate() + '</b><span>' + (d.getMonth() + 1) + '월 ' + WD[d.getDay()] + '</span></span>'; }";
   assert.equal(HTML.split(blk).length - 1, 1);
-  const ti = fnText('taskItem(t, o) {');
-  assert.equal(crypto.createHash('sha256').update(ti).digest('hex'), '7d1af2716055ea32cc62c2b112b808bba873d4e2c408445f6556ff6d2982eaba');
+  // taskItem 본문은 T-11이 선택 인자 o에 새 속성을 더할 수 있다(Architecture 수정 구역 표) — 본문 고정 대신 T-12 쪽 호출 방식만 검사
+  const v = fnText('viewMoveout() {');
+  const calls = [...v.matchAll(/taskItem\(([^)]*)\)/g)].map((m) => m[1].trim());
+  assert.deepEqual(calls, ['t'], '퇴거 준비는 taskItem(t)만 부른다(o 없음)');
+  // 날짜 숨김은 복사본으로만 — helper가 원본 할 일 객체의 due를 직접 바꾸지 않는다 (원본 불변은 hideDue 단위 테스트가 단언)
+  assert.doesNotMatch(fnText('moveoutTasks(tasks) {'), /\.due\s*=(?!=)/);
 });
 
 test('T-12 CSS 구역: 비어 있지 않고 선택자는 .mo-moveout/.mo-docs, keyframes는 mo-moveout-/mo-docs- 접두사', () => {
