@@ -1,22 +1,22 @@
 # Architecture — 자취 계약 내비 (계약·신고 영역)
 
-> 소유자: architect | 상태: 승인 | 최종 수정: 2026-11-11
+> 소유자: architect | 상태: 승인 | 최종 수정: 2026-11-12 (T-15 모션 토큰 값만 변경 — DECISIONS #19 / T-16 온보딩 `#start` 편입 — DECISIONS #20, ADR-0003 / T-18 신고 대상 지역 `reportArea` — DECISIONS #21: 금지 #7, 구조 개요, 모듈 경계, 데이터 모델. 바뀐 절: 머리글 범위, 구조 개요, 모듈 경계, 화면 메커니즘 2·3·4·8, 데이터 모델, 수정 구역, 정적 검사, 실측 절차, 주요 결정 / T-21 PR #37 리뷰 반영 — DECISIONS #23, ADR-0004(승인 2026-11-12, 사용자 답 "승인 (Recommended)"): 바뀐 절은 금지 #1·#7, 구조 개요 engine.js 줄, 모듈 경계 engine.js 행, 데이터 모델 `reportArea` 행, 수정 구역 T-21 4행·tests 행, 테스트 전략 커버 범위, 주요 결정)
 > 승인 (2026-11-11, 사용자 답 "둘 다 승인 (Recommended)" — 메인 세션이 사용자 지시로 머리글 변경)
 > 상태는 초안/승인 두 가지. "승인"으로 바꾸는 것은 사용자만 한다 — 승인 전 구현 착수 금지 (AGENTS.md 파이프라인 규칙).
-> 범위: 박수홍 담당 계약·신고 6개 화면(app.html `#input` `#result` `#timeline` `#contract` `#moveout` `#docs`)의 현재 시연판 구조와, PRD F-07~F-11·N-04·N-05(Tasks T-09~T-14) 구현에 필요한 설계만 다룬다. 다른 팀원 영역(지원사업·코치·캘린더·지출·집 상태·주변 탐색)과 공용 화면 틀은 설계 대상이 아니다.
+> 범위: 박수홍 담당 계약·신고 6개 화면(app.html `#input` `#result` `#timeline` `#contract` `#moveout` `#docs`)과 2026-11-12 편입한 첫 실행 길잡이(온보딩 `#start`, T-16) — 합계 7개 — 의 현재 시연판 구조와, PRD F-07~F-11·N-04·N-05(Tasks T-09~T-14)·온보딩 모션(Tasks T-16, PRD F-12) 구현에 필요한 설계만 다룬다. 다른 팀원 영역(지원사업·코치·캘린더·지출·집 상태·주변 탐색)과 공용 화면 틀은 설계 대상이 아니다.
 > 줄 번호는 2026-11-11 브랜치 `parkSuHong-docs` 기준이다. 구현은 PR #22 병합 뒤 최신 main에서 시작하므로 줄 번호가 달라질 수 있다 — 구역은 **함수 이름과 마커 주석**으로 찾는다.
 
 ## 금지 (구현자 공통 — 이 문서의 다른 절보다 우선)
 
 | # | 금지 | 이유 |
 |---|---|---|
-| 1 | 공용 `render()`·`route()`·`headerBar()`·`GROUPS`/`ROUTES`·`boot()`·공용 `click`/`change`/`input`/`submit` 리스너 수정 | PRD 범위 제외(화면 전환 방식·헤더·탭 불변), F-07 ④ |
+| 1 | 공용 `render()`·`route()`·`headerBar()`·`GROUPS`/`ROUTES`·`boot()`·공용 `click`/`change`/`input`/`submit` 리스너 수정. 예외: T-21은 지역 선택 `change` 리스너(`data-sp-sel`)의 `S.gu` 대입 한 줄만 허용(아래 "수정 구역" T-21 리스너 행) | PRD 범위 제외(화면 전환 방식·헤더·탭 불변), F-07 ④ |
 | 2 | app.html 466줄 `@media (prefers-reduced-motion: reduce) { * { transition: none !important } }` 수정 | PRD OQ #6 확정 — 공용 확대는 팀 합의 뒤 |
 | 3 | `.mo` 범위 밖에 걸리는 CSS 선택자 추가, 기존 CSS 규칙(T-09 블록 밖) 수정 | 다른 팀원 화면 불변 (F-07 ④) |
 | 4 | `@media (prefers-reduced-motion: no-preference)` 밖에 `animation`·`transition` 선언 | F-07 ① |
 | 5 | 모션 길이·지연을 숫자로 직접 쓰기 — 토큰(`var(--mo-*)`, `JachwiScreens.T`)만 사용 | N-04, CodingRules "설정 및 상수" |
 | 6 | `setTimeout` 체이닝으로 모션 순서 제어 | CodingRules 금지 3 |
-| 7 | 계산 함수(`demo/engine.js`, `rules-core.js`, `buildTimeline`·`phase`·`nowKey`·`dueTag`·`openTasks`·`evaluate`·`judge`) 수정 | N-05, F-08 ⑥·F-09 ⑧·F-10 ⑦ |
+| 7 | 계산 함수(`demo/engine.js`, `rules-core.js`, `buildTimeline`·`phase`·`nowKey`·`dueTag`·`openTasks`·`evaluate`·`judge`) 수정. 예외: T-18은 `engine.js`에 `reportArea` 추가와 `deadlines`의 지역 판정 교체만 허용(DECISIONS #21). T-21은 `engine.js`의 `reportArea` 본문 보완, 그 바로 위 시·군·구 이름 표 상수 추가, 맨 끝 `return { … }` 객체에 그 표를 내보내는 속성 1개(`reportAreaSgg`) 추가만 허용(DECISIONS #23, ADR-0004) — `reportArea`·`deadlines` 시그니처·반환 형식, `deadlines` 본문, 그 밖의 함수 수정 금지 | N-05, F-08 ⑥·F-09 ⑧·F-10 ⑦ |
 | 8 | 자기 구역 밖 수정(아래 "수정 구역" 표). 필요하면 화면 작업에서 고치지 말고 T-09 보완으로 되돌린다 | 4개 worktree 동시 작업 충돌 방지 (Tasks 착수 조건) |
 | 9 | 반복해서 계속 도는 모션(`infinite`·반복 횟수 2 이상) | N-04 |
 
@@ -49,27 +49,29 @@
 demo/
   app.html            화면 전체(공용 틀 + 모든 팀원 화면). 이번 작업은 아래 구역만 수정
     <head> script 태그     T-09가 screens-core.js 태그 1줄 추가
-    <style> 끝            T-09 모션 기반 블록 + T-10~T-13 빈 구역 마커
-    <script> 안           T-09 연결 블록(MO 상태·헬퍼·접기 리스너) + 각 화면 view 함수
-  engine.js           신고·기한·나이·입력 검사·서류 준비(순수 함수) — 이번 작업에서 수정하지 않음
+    <style> 끝            T-09 모션 기반 블록 + T-10~T-13 빈 구역 마커 + T-16 구역(#start)
+    <script> 안           T-09 연결 블록(MO 상태·헬퍼·접기 리스너) + T-16 연결 블록(단계 등장) + 각 화면 view 함수
+  engine.js           신고·기한·나이·입력 검사·서류 준비(순수 함수) — T-18의 `reportArea` 추가·`deadlines` 지역 판정 교체, T-21의 `reportArea` 본문 보완·시·군·구 이름 표 외에는 수정하지 않음
   rules-core.js       지원 자격 판정(이성준) — 수정하지 않음
   screens-core.js     (새 파일, T-09) 계약·신고 6개 화면 전용 순수 함수: 모션 토큰·등장 판정·차례 지연·카운트 값
-                      + T-10~T-13 화면 순수 함수 구역(마커로 나눔). DOM·S·today 접근 금지
+                      + T-10~T-13·T-16 화면 순수 함수 구역(마커로 나눔). DOM·S·today 접근 금지
 tests/
   screens-core.test.js     T-09: 토큰·순수 함수 단위 테스트
   screens-zones.test.js    T-09: app.html 정적 검사(구역 마커·.mo 범위·reduce·토큰 사용)
   screen-result.test.js    T-10 / screen-timeline.test.js T-11 / screen-moveout-docs.test.js T-12 / screen-input-contract.test.js T-13
+  screen-start.test.js     T-16: stepEnter 단위 테스트 + T-16 JS 블록 정적 검사
 ```
 
 ## 모듈 경계와 책임
 
 | 모듈 | 책임 | 의존 대상 |
 |---|---|---|
-| `demo/engine.js` (JachwiEngine, `JE`) | 신고 의무·기한, 전입 기한, 만료·갱신 통지일, 만 나이, 입력 검사, 서류 준비 판정 | 없음 |
+| `demo/engine.js` (JachwiEngine, `JE`) | 신고 대상 지역 판정(`reportArea`, T-18 — DECISIONS #21, T-21 보완 — DECISIONS #23: 일반 도·강원·전북·전남광주의 시·군·구 소속 판단용 이름 표를 안에 둠, `demo/data/regions.js`를 읽지 않음), 신고 의무·기한, 전입 기한, 만료·갱신 통지일, 만 나이, 입력 검사, 서류 준비 판정 | 없음 |
 | `demo/rules-core.js` | 승인 공고로 지원 자격 판정 | 없음 |
-| `demo/screens-core.js` (JachwiScreens, `JS`) — 새 파일 | 내 6개 화면의 모션 토큰과 모션·화면 순수 함수(입력은 plain 값, 출력은 값) | 없음 |
+| `demo/screens-core.js` (JachwiScreens, `JS`) — 새 파일 | 내 7개 화면(6개 + `#start`)의 모션 토큰과 모션·화면 순수 함수(입력은 plain 값, 출력은 값) | 없음 |
 | app.html T-09 연결 블록 | 등장 여부 판정(`last` 읽기), 움직임 줄이기 확인, 화면 루트 감싸기, 렌더 뒤 작업 실행(카운트·스크롤), 접기 토글, 변화 감지 | screens-core.js(없으면 모션 없이 최종 상태), app.html 클로저 변수 `last`·`app` |
-| app.html view 함수 6개 | 화면 HTML 문자열 생성. 모션은 T-09 헬퍼로만 붙임 | engine.js, rules-core.js, screens-core.js, T-09 연결 블록 |
+| app.html T-16 연결 블록 | 온보딩 단계 이동을 등장으로 판정(`moBeginStep`) — `moBegin`을 부른 뒤 등장 여부만 단계 키로 넓힌다 | T-09 연결 블록(`moBegin`·`MO`), screens-core.js(`stepEnter`), 클로저 변수 `last`(읽기만) |
+| app.html view 함수 7개 (6개 + `viewStart`) | 화면 HTML 문자열 생성. 모션은 T-09 헬퍼(`viewStart`는 T-16 `moBeginStep` 포함)로만 붙임 | engine.js, rules-core.js, screens-core.js, T-09·T-16 연결 블록 |
 | app.html 공용 `render(keep)` | 화면 전체 `innerHTML` 재생성, 스크롤 복원 — 이번 작업에서 0줄 수정 | 각 view 함수 |
 
 ## 데이터 흐름
@@ -82,20 +84,20 @@ tests/
 
 ## 화면 메커니즘 — 내 6개 화면 모션 (F-07, N-04)
 
-### 1. 모션 토큰 (DECISIONS #12)
+### 1. 모션 토큰 (DECISIONS #12 → 값은 #19로 대체, 2026-11-12 T-15)
 
 값의 단일 원본은 `demo/screens-core.js`의 `JachwiScreens.T`이고, CSS는 같은 값을 T-09 블록의 `.mo { … }` 한 줄에 사용자 정의 속성으로 둔다. `tests/screens-zones.test.js`가 두 값이 같은지 검사한다.
 
 | 토큰 | JS `T.` | CSS | 값 | 쓰임 |
 |---|---|---|---|---|
-| 짧게 | `short` | `--mo-short` | 200ms | 배지 나타나기(pop), 체크 그리기 |
-| 기본 | `base` | `--mo-base` | 300ms | 카드 등장, 접기·펼치기 높이 |
-| 길게 | `long` | `--mo-long` | 400ms | 막대 채우기, 숫자 카운트 |
-| 차례 간격 | `step` | `--mo-step` | 50ms | 차례 등장 지연 단위 |
+| 짧게 | `short` | `--mo-short` | 250ms | 배지 나타나기(pop), 체크 그리기 |
+| 기본 | `base` | `--mo-base` | 450ms | 카드 등장, 접기·펼치기 높이 |
+| 길게 | `long` | `--mo-long` | 600ms | 막대 채우기, 숫자 카운트 |
+| 차례 간격 | `step` | `--mo-step` | 80ms | 차례 등장 지연 단위 |
 | 최대 차례 | `maxStep` | (클래스 `.mo-s0`~`.mo-s6`) | 6 | 7번째 이후는 6번과 같이 나타남 |
-| 전체 상한 | `total` | — | 600ms | 검사용: `step × maxStep + base = 600` |
-| 이동 거리 | `shift` | `--mo-shift` | 8px | 카드 등장 시 아래→제자리 |
-| 감속 곡선 | `ease` | `--mo-ease` | `cubic-bezier(0.2, 0, 0, 1)` | 등장·채우기·카운트 |
+| 전체 상한 | `total` | — | 930ms | 검사용: `step × maxStep + base = 930` |
+| 이동 거리 | `shift` | `--mo-shift` | 20px | 카드 등장 시 아래→제자리 |
+| 감속 곡선 | `ease` | `--mo-ease` | `cubic-bezier(0.3, 0.7, 0.4, 1)` | 등장·채우기·카운트 |
 | 양방향 곡선 | `easeIO` | `--mo-ease-io` | `cubic-bezier(0.4, 0, 0.2, 1)` | 접기·펼치기 |
 
 - 막대 채우기·숫자 카운트는 지연 0으로 시작한다(차례 등장 묶음에 넣지 않는다).
@@ -103,13 +105,13 @@ tests/
 
 ### 2. 범위 한정 (DECISIONS #9)
 
-- 내 6개 view는 반환 HTML 전체를 `moRoot(screen, html)`로 감싼다(조기 반환 경로 포함). `screen` 값: `input` `result` `timeline` `contract` `moveout` `docs`.
+- 내 7개 view는 반환 HTML 전체를 `moRoot(screen, html)`로 감싼다(조기 반환 경로 포함). `screen` 값: `input` `result` `timeline` `contract` `moveout` `docs` `start`(T-16 추가 — 기존 6개 규칙·검사는 그대로).
 - 모든 새 CSS 선택자는 `.mo` 또는 `.mo-{화면}`으로 시작한다. 새 `@keyframes` 이름은 `mo-` 접두사.
 - `#app`에는 속성·클래스를 붙이지 않는다(공용 요소라 다른 화면으로 나갈 때 남는다). 확인 근거: app.html에 `#app >`·`.main >` 자식 선택자 0건(grep) — 감싸는 div가 기존 레이아웃을 바꾸지 않는다.
 
 ### 3. 움직임 줄이기 (DECISIONS #11)
 
-- CSS: T-09·T-10~T-13 구역의 모든 `animation`·`transition` 선언은 `@media (prefers-reduced-motion: no-preference) { … }` 안에만 둔다. 줄이기가 켜지면 선언 자체가 없으므로 최종 상태가 바로 보인다. `!important` 불필요, 공용 466줄은 그대로.
+- CSS: T-09·T-10~T-13·T-16 구역의 모든 `animation`·`transition` 선언은 `@media (prefers-reduced-motion: no-preference) { … }` 안에만 둔다. 줄이기가 켜지면 선언 자체가 없으므로 최종 상태가 바로 보인다. `!important` 불필요, 공용 466줄은 그대로.
 - JS: 숫자 카운트·스크롤 등 JS 모션은 `moReduce()`가 참이면 실행하지 않는다(값은 처음부터 최종값으로 그려져 있음). 스크롤은 모션이 아니라 위치 이동이므로 줄이기와 무관하게 수행한다(아래 5).
 - `data-mo-enter`: `moRoot`는 `JS.shouldAnimate(moReduce(), MO.enter[screen])`가 참일 때만 붙인다 — 줄이기 환경(또는 `screens-core.js` 미로드)에서는 등장 렌더여도 붙이지 않는다.
 - `screens-core.js`를 못 불러온 경우(오프라인 캐시 누락 등) `moReduce()`가 참을 반환해 모션 없이 동작한다.
@@ -122,9 +124,11 @@ tests/
 | 첫 로드 `boot()` → `render(false)` | `last === ''` → 다름 | 1회 재생 | 동일 |
 | 입력·체크·파일·비동기 데이터 도착 → `render(true)` | 같음 | 재생 안 함 | F-07 ② |
 | 같은 화면에서 `render(false)`(백업 불러오기 등) | 같음 | 재생 안 함 | PRD "다른 화면에서 들어옴"만 등장 |
+| (`#start`만, T-16) 온보딩 '다음'(`obnext`)·'이전'(`obprev`) → `render(false)`로 `S.obStep`이 바뀜 | 같음(`start`) — 단계 키 `'start:'+단계`가 직전 렌더와 다름 | 1회 재생 | 아래 8, DECISIONS #20, ADR-0003 |
+| (`#start`만) 같은 단계 안 입력 변경 → `render(true)`, 또는 같은 단계에서 `render(false)` | 같음 — 단계 키도 같음 | 재생 안 함 | F-07 ② 규칙을 단계 단위로 적용 |
 
 - `render()` 수정 0줄. view 함수는 `render()`와 같은 클로저 안에 있어 `var last`(2450줄)를 읽을 수 있다.
-- 알려진 한계: 페이지 첫 로드 직후 비동기 `render(true)`(`loadFiles` 2608줄, `loadRules` 945줄, `loadPlaces` 1743줄)가 0.6초 안에 오면 등장 모션이 중간에 끊기고 최종 상태가 보인다. 재생 안 함 규칙과 일치하므로 허용. 등장 검증은 해시 이동으로 한다(첫 로드로 하지 않는다).
+- 알려진 한계: 페이지 첫 로드 직후 비동기 `render(true)`(`loadFiles` 2608줄, `loadRules` 945줄, `loadPlaces` 1743줄)가 0.93초(`T.total`) 안에 오면 등장 모션이 중간에 끊기고 최종 상태가 보인다. 재생 안 함 규칙과 일치하므로 허용. 등장 검증은 해시 이동으로 한다(첫 로드로 하지 않는다).
 
 ### 5. 렌더 뒤 작업 (숫자 카운트·스크롤)
 
@@ -151,6 +155,24 @@ tests/
 | 기본값 결정 | 등장 때 한 번 정한 값을 그 방문 동안 유지한다 — 체크로 단계가 다 끝나도 `render(true)`에서 갑자기 접히지 않는다. 다음 등장 때 다시 접힌 채 시작 |
 | 리스너 | T-09 블록의 `document.addEventListener('click', …)` 1개가 `[data-mo-toggle]`만 처리(공용 리스너는 `data-act`만 보므로 겹치지 않음). `render` 호출 없음 |
 
+### 8. 첫 실행 길잡이 `#start` (T-16, DECISIONS #20, ADR-0003)
+
+`render()`는 `r === 'start'`일 때 머리·탭 없이 `viewStart()`만 넣는다(수정 0줄). 단계 '다음'·'이전'은 라우트가 계속 `start`라 `last === 'start'`이므로 T-09 `moBegin`만으로는 등장이 아니다. 그래서 등장 판정 키를 **화면 + 단계**로 넓힌다.
+
+| 항목 | 규격 |
+|---|---|
+| 등장 판정 | 순수 함수 `JS.stepEnter(last, prevKey, screen, key)` = `isEnter(last, screen) \|\| (prevKey == null ? '' : String(prevKey)) !== String(key)`. 화면 이동(기존 #10)이거나 단계 키가 직전 렌더와 다르면 등장. 앞·뒤 방향 구분 없음('이전'도 등장) |
+| 단계 키 | `'start:' + st` — `st`는 `viewStart` 첫 줄의 `+S.obStep \|\| 1` 값 그대로(새로 계산하지 않는다) |
+| 연결 헬퍼 | T-16 JS 블록의 `moBeginStep(screen, step) → boolean`. 순서: ① `key = screen + ':' + step`, `prev = moSubKey` ② `moBegin(screen)` 호출(MO.jobs 비움·등장 시 `screen:` 접기 키 정리 — T-09 동작 그대로) ③ `on = JS ? JS.stepEnter(last, prev, screen, key) : (last !== screen \|\| prev !== key)` ④ `MO.enter[screen] = on` ⑤ `moSubKey = key` ⑥ `return on`. `moSubKey`는 T-16 블록의 메모리 변수(초기값 `''`, 저장소 아님). `last`는 읽기만 |
+| 재생 없음 | 같은 단계 `render(true)`·`render(false)`는 키가 같아 `MO.enter.start === false` → `moRoot`가 `data-mo-enter`를 붙이지 않음 → `.mo-in`·진행 칸 모션 0개 |
+| 움직임 줄이기 | 변경 없음 — `moRoot`가 `JS.shouldAnimate(moReduce(), MO.enter.start)`로 판정하고, T-16 CSS 모션은 `no-preference` 안에만 있으므로 0개 |
+| 카드 안 차례 등장 (F-12 ②③) | 마크업·클래스 변경 없이 T-16 CSS가 `section.card.ob-card`의 **직계 자식**을 차례로 올린다. `ob-card` 자체에는 `moStep`을 붙이지 않는다. keyframes는 T-09 `mo-in` 재사용. no-preference 안: `.mo-start[data-mo-enter] .ob-card > * { animation: mo-in var(--mo-base) var(--mo-ease) both }`(1번째는 지연 0), `.mo-start[data-mo-enter] .ob-card > :nth-child(2)`~`:nth-child(6)` 각각 `animation-delay: calc(var(--mo-step) * 1)`~`* 5`(숫자 리터럴로 — Z6 형식 `calc(var(--mo-step) * [0-6])`), `.mo-start[data-mo-enter] .ob-card > :nth-child(n+7) { animation-delay: calc(var(--mo-step) * 6) }`. 지연 규칙이 `> *`보다 우선순위가 높아(속성·의사 클래스 1개 더) 축약형이 지연을 덮지 않는다. 마지막 끝 시각 ≤ 80×6+450 = 930ms(`T.total`). 브랜드 줄·4칸 표시·'예시 데이터로 보기'·개인정보 안내는 정적 |
+| `ob-card` 직계 자식 (app.html 3229~3245줄 확인) | 1단계: `h1` · `p.sub` · `div.form-grid` · (입주일 < 계약일일 때만) `div.banner.due` · `div.row`(버튼 줄) → 4~5개. 2단계: `h1` · `p.sub` · `div.form-grid` · (보증금·월세 입력 시) `div.banner` · `div.row` → 4~5개. 3단계: `h1` · `p.sub` · `homeCard()`의 `section.card`(1개, 2289~2295줄) · `div.form-grid` · `div.row` → 5개. 4단계: `h1` · `p.sub` · `div.form-grid` · `div.row` → 4개. 현재 최대 5개 → 마지막 지연 `* 4`, 끝 320+450 = 770ms. `:nth-child(6)`·`(n+7)`은 자식이 늘 때 대비 |
+| 같은 단계 안내 띠 | 2단계 `div.banner`처럼 입력 뒤 `render(true)`로 새로 생기는 자식은 `data-mo-enter`가 없어 움직이지 않는다(재생 없음 규칙 그대로) |
+| 4칸 진행 표시 현재 칸 채우기 | `.ob-steps li.now::before`(공용 CSS 692~695줄의 4px 막대)를 T-16 구역의 새 keyframes `mo-start-fill { from { transform: scaleX(0) } }`로 채운다. 레이아웃 줄(no-preference 밖): `.mo-start .ob-steps li.now::before { transform-origin: left center }`. 모션 줄(no-preference 안): `.mo-start[data-mo-enter] .ob-steps li.now::before { animation: mo-start-fill var(--mo-long) var(--mo-ease) both }`. 지연 0. `done` 칸은 움직이지 않는다 |
+| T-09 `mo-fill` 재사용 안 하는 이유 | ① `.mo-fill`은 요소에 클래스를 붙여야 하는데 막대가 `::before` 가상 요소라 클래스를 붙일 수 없다 ② `mo-fill`은 `width: 0 → 지정 폭`인데 이 막대는 폭이 `auto`(flex 늘이기)라 보간되지 않는다. 공용 `.ob-steps` 마크업·규칙은 바꾸지 않는다 |
+| 실측 | 가상 요소 애니메이션도 `document.getAnimations()`에 나오고 `effect.target`이 `li`(`pseudoElement: '::before'`)라 M1 스니펫이 그대로 잰다(추정 — 확인 방법: 단계 이동 직후 M1 결과에 `mo-start-fill` 행이 있는지) |
+
 ## 데이터 모델과 인터페이스
 
 | 엔티티/인터페이스 | 규격 (필드·타입·제약) | 사용 모듈 |
@@ -158,13 +180,17 @@ tests/
 | `S` (기존) | localStorage에 저장되는 앱 상태. 이번 작업은 **새 필드를 추가하지 않는다**(모션 상태는 저장하지 않음) | app.html 전체 |
 | `MO` (새, 메모리) | `{ prev: {[key]: any}, open: {[key]: boolean}, enter: {[screen]: boolean}, jobs: Function[] }`. key 형식 `'{screen}:{종류}:{id}'`. 새로고침 시 사라짐 | T-09 연결 블록 |
 | `JachwiScreens.T` | 위 토큰 표의 9개 값. 숫자는 ms 정수 | screens-core, T-09 블록, 테스트 |
+| `JE.reportArea(sido: string\|undefined, gu: string\|undefined) → { inArea: true\|false\|null, reason: string }` (T-18) | 판정표는 DECISIONS #21. 순수 함수 — `S`·DOM·`today` 접근 금지, 던지지 않는다. `deadlines(S)`가 이 결과로 `report.required`(대상이면 기존 금액 기준, `false`면 false, `null`이면 null)·`report.reason`을 만든다. 금액 기준·기한 계산·반환 형식은 그대로. (T-21, DECISIONS #23·ADR-0004) 입력·반환 규격은 바뀌지 않는다. 충청북도·충청남도·경상북도·경상남도·강원특별자치도·전북특별자치도·전남광주통합특별시에서는 판정 순서 ① `gu`가 비었거나 공백뿐 → `{ inArea: null, reason: '시·군·구를 아직 고르지 않음' }` ② engine.js 안 이름 표(`시·도 → 시·군·구 이름[]`, 7개 시·도 136개, `demo/data/regions.js`와 같은 이름 그대로)에 없음 → `{ inArea: null, reason: '시·도와 시·군·구가 맞지 않음' }` ③ 있음 → #21 ②③ 그대로. 표는 `JE.reportAreaSgg`(`{ [시·도]: string[] }`, 읽기 전용 용도 — 테스트의 regions.js 일치 검사용)로도 내보낸다. 이름 비교는 `trim()` 뒤 완전 일치(부분 일치·형태 규칙 금지 — 전남광주의 `광산구` 등 단독 `~구`, 경남·강원 양쪽의 `고성군` 때문) | engine `deadlines`, 테스트 |
 | `JS.isEnter(last: string, screen: string) → boolean` | `last !== screen` | T-09 블록 |
 | `JS.stepIndex(i: number) → 0..6` | 음수·NaN → 0, 6 초과 → 6 | view(`moStep`) |
 | `JS.stepDelay(i) → ms` | `stepIndex(i) * T.step` | 테스트 |
 | `JS.countAt(from, to, p) → 정수` | `p`를 0..1로 자름, 감속 곡선 적용, `p=1`이면 정확히 `to` | 카운트 |
 | `JS.shouldAnimate(reduce: boolean, entering: boolean) → boolean` | `!reduce && entering` | T-09 블록 |
+| `JS.stepEnter(last: string, prevKey: string\|null\|undefined, screen: string, key: string) → boolean` (T-16, screens-core `// ===== T-16 =====` 구역) | `isEnter(last, screen) \|\| norm(prevKey) !== String(key)`, `norm(null/undefined) = ''`. 던지지 않는다 | T-16 블록 |
+| T-16 연결 헬퍼 (app.html) | `moBeginStep(screen: string, step: number) → boolean` + 메모리 변수 `moSubKey: string`(초기 `''`). 규격은 화면 메커니즘 8 | `viewStart`만 |
 | T-09 연결 헬퍼 (app.html) | `moBegin(screen)→boolean`, `moRoot(screen, html)→string`, `moStep(i)→' mo-in mo-s{n}'`, `moNum(key, value)→string`, `moChanged(key, value)→prev|undefined`, `moOpen(key, def)→boolean`, `moToggle(...)`, `moPanel(...)`, `moAfter(fn)`, `moReduce()→boolean` | 내 view 6개만 |
-| CSS 클래스 (T-09) | `.mo-in`+`.mo-s0`~`.mo-s6`(등장, `[data-mo-enter]` 아래서만), `.mo-fill`(막대 0→현재, 등장 때만), `.mo-grow`+`--mo-from`(막대 직전→현재), `.mo-pop`(배지·체크 나타나기), `.mo-fold`/`.mo-fold-in`/`.open`, `.mo-num` | 내 view 6개 |
+| CSS 클래스 (T-09) | `.mo-in`+`.mo-s0`~`.mo-s6`(등장, `[data-mo-enter]` 아래서만), `.mo-fill`(막대 0→현재, 등장 때만), `.mo-grow`+`--mo-from`(막대 직전→현재), `.mo-pop`(배지·체크 나타나기), `.mo-fold`/`.mo-fold-in`/`.open`, `.mo-num` | 내 view 7개 |
+| CSS (T-16) | 새 클래스 없음. keyframes `mo-start-fill`(scaleX 0→1), 대상 `.mo-start .ob-steps li.now::before`. 카드 안 차례 등장은 T-09 `mo-in`을 `.mo-start[data-mo-enter] .ob-card > *`·`> :nth-child(2~6, n+7)`에 적용 | `viewStart` |
 | 화면 순수 함수 (T-10~T-13, screens-core 각 구역) — 권장 시그니처, 입력은 plain 값(DOM·`S`·전역 `today` 접근 금지, 날짜는 인자로) | T-10 `resultSummary({ reportRequired, verdicts: string[] }) → { tasks, byVerdict }`, `allMet(res: [{ok}]) → boolean`. T-11 `scrollTarget(stages: [{key, done}], nowKey) → key|null`(OQ #4, 판정 순서대로: ① 모든 단계 완료 → 마지막 단계 키(`nowKey`가 있어도) ② `nowKey`가 없거나 첫 단계(계약 전) → null(이동 없이 맨 위) ③ 그 외 → `nowKey`. PRD OQ #4는 '계약 전'과 '모두 완료'를 "'지금' 단계 없음"으로 본다). T-12 `dateChipParts(date) → {...}`, 갱신 통지 중복 제거 규칙. T-13 필요 시만 | 각 화면 view, 각 화면 테스트 |
 
 ### 계층 규칙 (DB·외부 API가 있는 프로젝트만 — 없으면 "해당 없음" 기재)
@@ -193,7 +219,15 @@ T-09가 main에 먼저 병합되며, 그때 **빈 구역 마커**를 미리 만�
 | T-11 | `taskItem` 함수(1148~1157줄) + `viewTimeline` 함수(1164~1176줄) | T-11 | `viewTimeline` 본문·그 바로 위 새 helper. `taskItem`은 **선택 인자 `o`에 새 속성만 추가**하고, 그 속성이 없을 때 출력이 지금과 같아야 한다(퇴거 준비도 같은 함수 사용) |
 | T-12 | `viewDocs` 함수(1652~1668줄), `// ---------- 퇴거 준비 ----------`부터 `viewMoveout` 끝까지 | T-12 | 두 view 본문·각 view 바로 위 새 helper. 날짜 칩은 새 helper로 만들고 공용 위치의 `dateBlk`(1161줄)는 고치지 않는다. 갱신 통지 할 일의 날짜 숨김은 `taskItem`을 고치지 말고 넘기는 객체 복사본으로 처리(예: `Object.assign({}, t, { due: null })` — `dueTag`는 `t.due`가 없으면 빈 배지, 1040줄) |
 | T-13 | `// ---------- 내 계약 ----------`부터 `viewContract` 끝, `// ---------- 조건 입력 (필수 ①) ----------`부터 `viewInput` 끝 | T-13 | 두 view 본문·각 view 바로 위 새 helper. `homeCard()`·`deviceCards()`·`regionFields()`는 호출만 |
-| tests/ | 위 "구조 개요"의 파일 이름 | 각 T | 자기 테스트 파일만 새로 만든다. 남의 테스트 파일·`answer-key.json` 수정 금지 |
+| T-16 CSS 구역 | `/* ===== /mo:T-13 ===== */` 다음 빈 줄 1개 뒤 `/* ===== mo:T-16 #start ===== */` ~ `/* ===== /mo:T-16 ===== */`, 끝 마커 다음 첫 비공백 줄이 `</style>` | T-16 | 화면 메커니즘 8의 레이아웃 1줄·keyframes `mo-start-fill`·no-preference 블록(진행 칸 채우기 + `.ob-card > *` 차례 등장 7줄). 선택자는 `.mo-start`로 시작, 시간은 `var(--mo-base)`·`var(--mo-long)`·`calc(var(--mo-step) * 1~6)`만 |
+| T-16 JS 블록 | `// ---------- 처음 시작하기 (온보딩) ----------` **바로 앞**, `// ===== mo:T-16 =====` ~ `// ===== /mo:T-16 =====`, 끝 마커 다음 첫 비공백 줄이 `// ---------- 처음 시작하기 (온보딩) ----------`. T-09 블록 뒤(`// ---------- 메뉴 구조 ----------` 앞)에는 두지 않는다 — Z1이 T-09 끝 다음 줄을 메뉴 구조로 고정하므로 | T-16 | `var moSubKey = '';`와 `function moBeginStep(screen, step)`만. `render(`·`setTimeout`·`setInterval`·`save(`·`localStorage`·`addEventListener(`·`last =` 쓰기 금지 |
+| T-16 screens-core | `// ===== /T-13 =====` 다음 빈 줄 1개 뒤 `// ===== T-16 =====` ~ `// ===== /T-16 =====`, 그 뒤 `return api;` | T-16 | `api.stepEnter = function …`만. 기존 `isEnter`는 T-09 구역의 지역 함수라 T-16 구역에서 호출 가능(같은 UMD 함수 안) — T-09 구역 수정 금지 |
+| T-16 view | `// ---------- 처음 시작하기 (온보딩) ----------`부터 `viewStart` 끝 `}`까지 | T-16 | **호출 추가만**: ① `var st = +S.obStep \|\| 1, R = evaluate();` 바로 다음 줄에 `moBeginStep('start', st);` ② `return` 식 전체를 `moRoot('start', …)`로 감싸기 — 이 2가지만. `ob-card`·그 자식에 `moStep` 등 클래스 추가 금지(차례 등장은 T-16 CSS가 담당). 문구·단계 수·버튼·`data-act`·`GU_LIST`·`.ob-steps` 마크업·흐름 변경 금지. `homeCard()`·`regionFields()`는 호출만 |
+| T-21 리스너 (2026-11-12, 지원사업 코드 위치 — 소유 메모 아래) | `document.addEventListener('change', function (e) { var t = e.target, w = t.dataset && t.dataset.spSel; …` 리스너 안, `else { … }`(시·군·구 분기) 다음 줄의 `if (S.zip) S.gu = S.sgg;` 한 줄(2026-11-12 `parkSuHong-report-region` 기준 1959행 — 줄 번호가 아니라 이 텍스트로 찾는다. `if (w === 'sido')` 줄(1957행)이 아니다) | T-21 | 그 한 줄을 `S.gu = S.zip ? S.sgg : '';`로 바꾸는 것만. `if (w === 'sido')`·`else` 분기, `REGIONS` 조회, `u.sel = ''; u.more = 0; save(); render(true);` 줄, `regionFields()`·`regionOf()` 수정 금지. 시·군·구 분기에서는 `S.zip`이 항상 채워져 동작이 지금과 같다 |
+| T-21 qaAnswer (2026-11-12, 물어보기 코드 위치 — 소유 메모 아래) | `function qaAnswer(q, R)`의 `RULES` 배열 안 `[/확정일자/, function () { … }]` 원소와 `[/전월세\|임대차 ?신고/, function () { … }]` 원소의 함수 본문 | T-21 | ① 확정일자: `rep.required ? … : …` 식을 true / false / `rep.required === null` 세 갈래로(null은 '대상이 아니라서'라고 단정하지 않음) ② 전월세: `if (!rep.required) return …` 한 줄을 `rep.required === null` 분기와 false 분기로 나누고, false 문구의 이유는 `esc(rep.reason)`(고정 금액 문구 금지). true 쪽(`late`·기한 안내) 문구, 두 원소의 정규식·`src`, `RULES` 순서, 다른 원소, `rep`·`early`·`late` 계산 줄 수정 금지 |
+| T-21 내 계약 신고 칸 (2026-11-12) | `viewContract` 안 `'<dt>전월세 신고</dt><dd>' + ( … ) + '</dd>'`의 괄호 안 식 한 개 | T-21 | 식을 `R.report.required === null ? '확인 필요' : R.report.required ? md(R.report.due) + '까지' : '대상 아님'`로 바꾸는 것만. 같은 줄의 다른 `<dt>`/`<dd>`·`viewContract` 나머지 수정 금지(T-13 구역이지만 T-20이 같은 함수 근처를 고치므로 범위를 이 식으로 좁힘) |
+| T-21 소유 메모 | 위 리스너는 지원사업(주연서) 코드, `qaAnswer()`는 물어보기(다른 팀원) 코드 위치다. PR #37 리뷰어가 병합 조건으로 요구했고 사용자가 리뷰를 그대로 전달해 이번에만 위 범위를 허용한다(메인 세션 전달, 인용). 그 이전 사용자 원문: "내 작업이면 하고 아니면 하지마"(인용) — 이 범위 밖의 지원사업·물어보기 동작은 계속 범위 밖 | — | 허용 수정 없음(기록 행) |
+| tests/ | 위 "구조 개요"의 파일 이름 | 각 T | 자기 테스트 파일만 새로 만든다. 남의 테스트 파일·`answer-key.json` 수정 금지. **예외(T-16)**: `tests/screens-zones.test.js`는 아래 "정적 검사 — T-16 확장" 표의 변경만 허용(기존 단언 삭제·완화 금지). **예외(T-21)**: `tests/report-area.test.js`(T-18 파일)에 T-21 테스트 추가만 허용 — 기존 단언 삭제·완화 금지 |
 | 모든 화면 작업 금지 구역 | 위 "금지" 표 + T-09 구역들 + 마커 줄 자체 + 다른 T 구역 + `sw.js`·`index.html`·`admin.html` | — | 수정 필요 시 멈추고 메인 세션에 보고 → T-09 보완(재작업 태스크) |
 
 새 이벤트 처리가 필요하면 화면 작업이 `document.addEventListener`를 추가하지 않는다. 현재 필요한 상호작용(접기=T-09 리스너, 체크=기존 `data-act="task"`, 파일=기존 `addfile`, '조건 입력에서 고치기'=`href="#input"` 링크, '판정 보기'=`href="#result"` 링크)은 모두 기존·T-09 처리로 충분하다.
@@ -231,8 +265,41 @@ T-09가 main에 먼저 병합되며, 그때 **빈 구역 마커**를 미리 만�
 | Z3 | 466줄 규칙 문자열 `@media (prefers-reduced-motion: reduce) { * { transition: none !important } }`가 정확히 1번 그대로 있다 | 공용 규칙 변경(F-07 ④·OQ #6) |
 | Z4 | CSS 구역 안의 모든 `animation`·`transition` 선언이 `@media (prefers-reduced-motion: no-preference)` 블록 안에 있다(중괄호 깊이 스캔) | F-07 ① |
 | Z5 | CSS 구역 안의 모든 선택자가 `.mo`로 시작한다(@-규칙, keyframes 단계 `from`/`to`/`%` 제외). keyframes 이름은 `mo-` 접두사 | 범위 이탈(F-07 ④) |
-| Z6 | CSS 구역 안 시간 리터럴(`\d+ms`, `\d*\.?\d+s`)은 T-09 토큰 선언 줄에만 있고, 그 값이 `JachwiScreens.T`와 같다. 나머지는 `var(--mo-short|base|long)`와 `calc(var(--mo-step) * n)`(n ≤ 6)만 | N-04 길이·0.6초 상한 |
+| Z6 | CSS 구역 안 시간 리터럴(`\d+ms`, `\d*\.?\d+s`)은 T-09 토큰 선언 줄에만 있고, 그 값이 `JachwiScreens.T`와 같다. 나머지는 `var(--mo-short|base|long)`와 `calc(var(--mo-step) * n)`(n ≤ 6)만 | N-04 길이·0.93초 상한(`T.total`) |
 | Z7 | `infinite` 0건, `animation-iteration-count` 0건 | N-04 반복 모션 0개 |
+
+### 정적 검사 — T-16 확장 (T-16이 Red-First로 고침, 2026-11-12)
+
+Z1~Z7의 "CSS 구역"은 T-16부터 **T-09 시작 ~ T-16 끝**이다. T-16 구현은 `tests/screens-zones.test.js`를 아래만 바꾼다(기존 단언 삭제·완화 금지). 마커를 먼저 테스트에 넣어 Red(마커 없음)를 확인한 뒤 app.html을 고친다.
+
+| # | 변경 | 결과 |
+|---|---|---|
+| E1 | `CSS_MARKS` 배열 끝에 `['/* ===== mo:T-16 #start ===== */', '/* ===== /mo:T-16 ===== */']` 추가(6쌍) | Z1이 T-16 마커 1번·순서 검사 |
+| E2 | 끝 마커 참조 `CSS_MARKS[4][1]`(Z1 `</style>` 검사, `zoneCss()`, Z6 `zoneEnd`) 3곳을 `CSS_MARKS[CSS_MARKS.length - 1][1]`로 | Z4·Z5·Z6·Z7이 T-16 구역까지 스캔 |
+| E3 | Z1의 구역 사이 빈 줄 반복 `k < 4`를 `k < CSS_MARKS.length - 1`로 | T-13 끝 → 빈 줄 1개 → T-16 시작 검사 |
+| E4 | `JS_MARKS_T16 = ['// ===== mo:T-16 =====', '// ===== /mo:T-16 =====']` 추가, Z1에 단언 추가: 각 1번, 시작 < 끝, `</style>` 뒤, 끝 마커 다음 첫 비공백 줄이 `// ---------- 처음 시작하기 (온보딩) ----------`. 기존 `JS_MARKS`(T-09) 단언은 그대로 | T-16 JS 블록 위치 고정 |
+| E5 | Z7에 T-16 JS 블록도 `iterations` 반복 없음 단언 추가 | N-04 |
+| 테스트 이름 | Z1 제목의 "T-09~T-13"은 "T-09~T-13·T-16"으로 바꿔도 된다(문구만) | — |
+
+`tests/screen-start.test.js`(T-16 새 파일)에 둘 것:
+
+| 대상 | 케이스 (tdd-practitioner: 정상 1 + 경계 2 + 예외 2 이상) |
+|---|---|
+| `JS.stepEnter` | 정상: `('start', 'start:2', 'start', 'start:2') → false`(같은 단계 재그리기). 단계 이동: `('start','start:1','start','start:2') → true`, '이전' `('start','start:3','start','start:2') → true`. 화면 이동: `('home','start:2','start','start:2') → true`. 경계: 첫 로드 `('', '', 'start', 'start:1') → true`, `prevKey` `undefined`·`null` → true. 타입: `'start:'+2`와 `'start:2'` 같음 → false |
+| T-16 JS 블록 텍스트 | `function moBeginStep(` 정의, `moBegin(` 호출 포함, `render(`·`setTimeout`·`setInterval`·`save(`·`localStorage`·`addEventListener(` 0건, `last` 쓰기(`/\blast\s*=[^=]/`) 0건 |
+| `viewStart` 텍스트 | `moBeginStep('start'`·`moRoot('start'`가 각 1번, `viewStart` 본문에 `moStep(` 0건 |
+| T-16 CSS 구역 텍스트 | `@keyframes mo-start-fill`, `li.now::before`의 `animation`이 `[data-mo-enter]` 아래·no-preference 안. `.mo-start[data-mo-enter] .ob-card > *`에 `animation: mo-in var(--mo-base) var(--mo-ease) both`가 no-preference 안. `> :nth-child(k)`(k=2..6)마다 `animation-delay: calc(var(--mo-step) * (k-1))`(리터럴 1..5), `> :nth-child(n+7)`에 `* 6` — 각 1번 |
+
+### T-21 `reportArea` 보완 테스트 (`tests/report-area.test.js`에 추가, 2026-11-12, DECISIONS #23·ADR-0004)
+
+| 대상 | 케이스 (tdd-practitioner: 정상 1 + 경계 2 + 예외 2 이상) |
+|---|---|
+| 빈 값 | 7개 시·도 각각 `''`·`undefined`·공백 → null, reason에 '시·군·구' |
+| 섞인 값 | 서울 구 이름(`경상북도 + 관악구`) → null / 다른 시·도의 정상 이름(`경상북도 + 보은군`, `경상북도 + 천안시`, `강원특별자치도 + 청송군`) → null, reason에 '맞지 않' |
+| 회귀(형태 규칙을 쓰지 않는 이유) | `전남광주통합특별시 + 광산구`·`+ 동구` → true, `경상남도 + 고성군` → false, `강원특별자치도 + 고성군` → null |
+| 기존 판정 유지 | T-18 테스트 전부, `부산광역시 + ''`·`부산광역시 + 관악구` → true, 시도 없음 + `마포구` → true |
+| 표 일치 | engine.js 이름 표의 7개 시·도 각각이 `require('../demo/data/regions.js')`의 같은 시·도 이름 목록과 같은 집합(개수 포함) — 엔진은 regions.js를 읽지 않고 테스트만 읽는다. 이름 표는 반환 객체 속성 `JE.reportAreaSgg`(`{ [시·도]: string[] }`)로 내보내 테스트가 읽는다(금지 #7 T-21 예외). `reportArea` 시그니처는 바꾸지 않는다 |
+| `deadlines` | 빈 값·섞인 값이면 금액이 커도 `report.required === null` |
 
 ### 실측 절차 (브라우저 — 설치 없음)
 
@@ -240,10 +307,11 @@ T-09가 main에 먼저 병합되며, 그때 **빈 구역 마커**를 미리 만�
 
 | 기준 | 방법 | 통과 |
 |---|---|---|
-| 길이·0.6초 (F-07 ③) | 다른 화면(예: `#home`)에서 해시 이동 직후 스니펫 M1 | 모든 행 `ok: true`, 행 1개 이상 |
+| 길이·0.93초 (F-07 ③) | 다른 화면(예: `#home`)에서 해시 이동 직후 스니펫 M1 | 모든 행 `ok: true`, 행 1개 이상 |
 | `render(true)` 재생 없음 (F-07 ②) | 등장이 끝난 뒤(1초 대기) 입력·체크(예: 시연 모드 헤더 `[data-sim]` 변경, 타임라인 체크) 직후 M1 | `mo-in`·`mo-fill`·`mo-count`(값이 안 바뀐 것) 0개. 체크 그리기·업로드 배지처럼 그 조작이 의도한 것만 있음 |
 | 움직임 줄이기 (F-07 ①) | 줄이기를 켠 상태(아래)에서 `matchMedia('(prefers-reduced-motion: reduce)').matches === true` 확인 후 해시 이동·체크·접기 직후 M1 | 0개, 화면은 최종 상태 |
 | 다른 화면 불변 (F-07 ④) | `#home` `#support` `#coach` `#calendar` `#map`에서 `document.querySelector('.mo') === null` + 콘솔 오류 비교 + `git diff main...HEAD -- demo/app.html`의 모든 hunk가 자기 구역 안 | 모두 참 |
+| 온보딩 단계 등장 (T-16) | 온보딩 미완료 상태(새 브라우저 프로필 또는 `reset`)에서 `#start` 1단계 → 값 입력 → '다음' 직후 M1, '이전' 직후 M1. 같은 단계에서 입력만 바꾼 직후(1초 대기 뒤) M1 | 다음·이전: `mo-in`(`.ob-card` 직계 자식 수만큼, 지연 0·80·160…)·`mo-start-fill` 1개 이상, 모든 행 `ok: true`. 같은 단계 입력: 0개. 줄이기 켬: 다음·이전도 0개 |
 | 높이 (F-09 ③, F-11 ②⑤) | 390×844, 예시 데이터에서 `document.documentElement.scrollHeight` | 기준 6,793 / 1,880 / 3,048px보다 작음 — 측정값을 기준과 나란히 기록 |
 
 움직임 줄이기를 켜는 수단(설치 없음): ① Windows 설정 > 접근성 > 시각 효과 > "애니메이션 효과" 끄기 — Chromium 계열이 `reduce`로 보고한다(추정 — 확인 방법: 위 `matchMedia` 값). 사용자 기기 설정이므로 메인 세션이 사용자에게 요청한다. ② DevTools Rendering 패널 "Emulate CSS media feature prefers-reduced-motion"(사람이 조작). ③ Playwright MCP에 미디어 에뮬레이션 기능이 있으면 사용(미확인).
@@ -257,7 +325,7 @@ T-09가 main에 먼저 병합되며, 그때 **빈 구역 마커**를 미리 만�
   return document.getAnimations()
     .filter(a => a.effect && a.effect.target && root.contains(a.effect.target))
     .filter(a => (a.animationName || '').startsWith('mo-') || (a.id || '').startsWith('mo-') || (a.transitionProperty && a.effect.target.closest('.mo-fold')))
-    .map(a => { const t = a.effect.getComputedTiming(); return { name: a.animationName || a.id || a.transitionProperty, dur: t.duration, delay: t.delay, end: t.delay + t.duration, iter: t.iterations, ok: t.duration >= 200 && t.duration <= 400 && t.delay + t.duration <= 600 && t.iterations === 1 }; });
+    .map(a => { const t = a.effect.getComputedTiming(); return { name: a.animationName || a.id || a.transitionProperty, dur: t.duration, delay: t.delay, end: t.delay + t.duration, iter: t.iterations, ok: t.duration >= 250 && t.duration <= 600 && t.delay + t.duration <= 930 && t.iterations === 1 }; });
 })()
 ```
 
@@ -291,4 +359,4 @@ T-09가 main에 먼저 병합되며, 그때 **빈 구역 마커**를 미리 만�
 
 ## 주요 결정
 
-결정 기록은 [DECISIONS.md](DECISIONS.md)와 [adr/](adr/)에 있다. 이 문서에는 결과만 반영한다. 이번 추가: DECISIONS #9~#18, ADR-0001(모션 구현 방식), ADR-0002(검증 수단).
+결정 기록은 [DECISIONS.md](DECISIONS.md)와 [adr/](adr/)에 있다. 이 문서에는 결과만 반영한다. 이번 추가: DECISIONS #9~#18, ADR-0001(모션 구현 방식), ADR-0002(검증 수단). 2026-11-12 추가: DECISIONS #19(모션 토큰 값 대체, T-15), DECISIONS #20·ADR-0003(온보딩 `#start` 편입·단계 등장 판정, T-16), DECISIONS #21(신고 대상 지역 판정표, T-18), DECISIONS #23·ADR-0004(승인 — 시·군·구 소속 판단, T-21).
