@@ -1,6 +1,6 @@
 # Architecture — 자취 계약 내비 (계약·신고 영역)
 
-> 소유자: architect | 상태: 승인 | 최종 수정: 2026-11-12 (T-15 모션 토큰 값만 변경 — DECISIONS #19 / T-16 온보딩 `#start` 편입 — DECISIONS #20, ADR-0003. 바뀐 절: 머리글 범위, 구조 개요, 모듈 경계, 화면 메커니즘 2·3·4·8, 데이터 모델, 수정 구역, 정적 검사, 실측 절차, 주요 결정)
+> 소유자: architect | 상태: 승인 | 최종 수정: 2026-11-12 (T-15 모션 토큰 값만 변경 — DECISIONS #19 / T-16 온보딩 `#start` 편입 — DECISIONS #20, ADR-0003 / T-18 신고 대상 지역 `reportArea` — DECISIONS #21: 금지 #7, 구조 개요, 모듈 경계, 데이터 모델. 바뀐 절: 머리글 범위, 구조 개요, 모듈 경계, 화면 메커니즘 2·3·4·8, 데이터 모델, 수정 구역, 정적 검사, 실측 절차, 주요 결정)
 > 승인 (2026-11-11, 사용자 답 "둘 다 승인 (Recommended)" — 메인 세션이 사용자 지시로 머리글 변경)
 > 상태는 초안/승인 두 가지. "승인"으로 바꾸는 것은 사용자만 한다 — 승인 전 구현 착수 금지 (AGENTS.md 파이프라인 규칙).
 > 범위: 박수홍 담당 계약·신고 6개 화면(app.html `#input` `#result` `#timeline` `#contract` `#moveout` `#docs`)과 2026-11-12 편입한 첫 실행 길잡이(온보딩 `#start`, T-16) — 합계 7개 — 의 현재 시연판 구조와, PRD F-07~F-11·N-04·N-05(Tasks T-09~T-14)·온보딩 모션(Tasks T-16, PRD F-12) 구현에 필요한 설계만 다룬다. 다른 팀원 영역(지원사업·코치·캘린더·지출·집 상태·주변 탐색)과 공용 화면 틀은 설계 대상이 아니다.
@@ -16,7 +16,7 @@
 | 4 | `@media (prefers-reduced-motion: no-preference)` 밖에 `animation`·`transition` 선언 | F-07 ① |
 | 5 | 모션 길이·지연을 숫자로 직접 쓰기 — 토큰(`var(--mo-*)`, `JachwiScreens.T`)만 사용 | N-04, CodingRules "설정 및 상수" |
 | 6 | `setTimeout` 체이닝으로 모션 순서 제어 | CodingRules 금지 3 |
-| 7 | 계산 함수(`demo/engine.js`, `rules-core.js`, `buildTimeline`·`phase`·`nowKey`·`dueTag`·`openTasks`·`evaluate`·`judge`) 수정 | N-05, F-08 ⑥·F-09 ⑧·F-10 ⑦ |
+| 7 | 계산 함수(`demo/engine.js`, `rules-core.js`, `buildTimeline`·`phase`·`nowKey`·`dueTag`·`openTasks`·`evaluate`·`judge`) 수정. 예외: T-18은 `engine.js`에 `reportArea` 추가와 `deadlines`의 지역 판정 교체만 허용(DECISIONS #21) | N-05, F-08 ⑥·F-09 ⑧·F-10 ⑦ |
 | 8 | 자기 구역 밖 수정(아래 "수정 구역" 표). 필요하면 화면 작업에서 고치지 말고 T-09 보완으로 되돌린다 | 4개 worktree 동시 작업 충돌 방지 (Tasks 착수 조건) |
 | 9 | 반복해서 계속 도는 모션(`infinite`·반복 횟수 2 이상) | N-04 |
 
@@ -51,7 +51,7 @@ demo/
     <head> script 태그     T-09가 screens-core.js 태그 1줄 추가
     <style> 끝            T-09 모션 기반 블록 + T-10~T-13 빈 구역 마커 + T-16 구역(#start)
     <script> 안           T-09 연결 블록(MO 상태·헬퍼·접기 리스너) + T-16 연결 블록(단계 등장) + 각 화면 view 함수
-  engine.js           신고·기한·나이·입력 검사·서류 준비(순수 함수) — 이번 작업에서 수정하지 않음
+  engine.js           신고·기한·나이·입력 검사·서류 준비(순수 함수) — T-18의 `reportArea` 추가·`deadlines` 지역 판정 교체 외에는 수정하지 않음
   rules-core.js       지원 자격 판정(이성준) — 수정하지 않음
   screens-core.js     (새 파일, T-09) 계약·신고 6개 화면 전용 순수 함수: 모션 토큰·등장 판정·차례 지연·카운트 값
                       + T-10~T-13·T-16 화면 순수 함수 구역(마커로 나눔). DOM·S·today 접근 금지
@@ -66,7 +66,7 @@ tests/
 
 | 모듈 | 책임 | 의존 대상 |
 |---|---|---|
-| `demo/engine.js` (JachwiEngine, `JE`) | 신고 의무·기한, 전입 기한, 만료·갱신 통지일, 만 나이, 입력 검사, 서류 준비 판정 | 없음 |
+| `demo/engine.js` (JachwiEngine, `JE`) | 신고 대상 지역 판정(`reportArea`, T-18 — DECISIONS #21), 신고 의무·기한, 전입 기한, 만료·갱신 통지일, 만 나이, 입력 검사, 서류 준비 판정 | 없음 |
 | `demo/rules-core.js` | 승인 공고로 지원 자격 판정 | 없음 |
 | `demo/screens-core.js` (JachwiScreens, `JS`) — 새 파일 | 내 7개 화면(6개 + `#start`)의 모션 토큰과 모션·화면 순수 함수(입력은 plain 값, 출력은 값) | 없음 |
 | app.html T-09 연결 블록 | 등장 여부 판정(`last` 읽기), 움직임 줄이기 확인, 화면 루트 감싸기, 렌더 뒤 작업 실행(카운트·스크롤), 접기 토글, 변화 감지 | screens-core.js(없으면 모션 없이 최종 상태), app.html 클로저 변수 `last`·`app` |
@@ -180,6 +180,7 @@ tests/
 | `S` (기존) | localStorage에 저장되는 앱 상태. 이번 작업은 **새 필드를 추가하지 않는다**(모션 상태는 저장하지 않음) | app.html 전체 |
 | `MO` (새, 메모리) | `{ prev: {[key]: any}, open: {[key]: boolean}, enter: {[screen]: boolean}, jobs: Function[] }`. key 형식 `'{screen}:{종류}:{id}'`. 새로고침 시 사라짐 | T-09 연결 블록 |
 | `JachwiScreens.T` | 위 토큰 표의 9개 값. 숫자는 ms 정수 | screens-core, T-09 블록, 테스트 |
+| `JE.reportArea(sido: string\|undefined, gu: string\|undefined) → { inArea: true\|false\|null, reason: string }` (T-18) | 판정표는 DECISIONS #21. 순수 함수 — `S`·DOM·`today` 접근 금지, 던지지 않는다. `deadlines(S)`가 이 결과로 `report.required`(대상이면 기존 금액 기준, `false`면 false, `null`이면 null)·`report.reason`을 만든다. 금액 기준·기한 계산·반환 형식은 그대로 | engine `deadlines`, 테스트 |
 | `JS.isEnter(last: string, screen: string) → boolean` | `last !== screen` | T-09 블록 |
 | `JS.stepIndex(i: number) → 0..6` | 음수·NaN → 0, 6 초과 → 6 | view(`moStep`) |
 | `JS.stepDelay(i) → ms` | `stepIndex(i) * T.step` | 테스트 |
