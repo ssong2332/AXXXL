@@ -103,6 +103,9 @@ svg.i.sm { width: 16px; height: 16px }
   .tab[aria-current="page"] { color: var(--brand-text) }
   .tab .cnt { position: absolute; top: 4px; left: 54%; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--due); color: #fff; font-size: 10px; display: inline-flex; align-items: center; justify-content: center }
   .main { padding: 20px 16px calc(96px + env(safe-area-inset-bottom, 0px)) }
+  .demo-strip { flex-wrap: nowrap; padding: 6px 6px 6px 12px; margin-bottom: 12px; font-size: 12px; font-weight: 500 }
+  .demo-strip .dm-more { display: none }
+  .demo-strip .btn { flex: 0 0 auto; min-height: 30px }
 }
 
 /* ---------- common ---------- */
@@ -530,6 +533,8 @@ details.how summary { cursor: pointer; list-style: none } details.how summary::-
 .bell { position: relative }
 .bell .cnt { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--due); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center }
 @media (max-width: 640px) { .hbar-r select { display: none } .hbar { margin-bottom: 14px } }
+/* 휴대폰 첫 화면 위쪽 정리: 알림·화면 모드는 위쪽 바(#top-acts)로 옮겼으니 검색 줄은 지도 탐색에서만 */
+@media (max-width: 899px) { .hbar { display: none } .hbar.hbar-msearch { display: flex } .hbar .hbar-r { display: none } .hbar-float + .subnav { margin-right: 0 } }
 .subnav { display: none }
 @media (max-width: 899px) { .subnav { display: flex; gap: 6px; overflow-x: auto; margin: -4px 0 16px; scrollbar-width: none } .subnav::-webkit-scrollbar { display: none } }
 .subnav a { flex: 0 0 auto; min-height: 36px; padding: 0 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: inline-flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink-2); text-decoration: none !important }
@@ -1067,7 +1072,7 @@ details.fold[open] > summary { margin-bottom: 10px }
     </div>
   </aside>
   <div>
-    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><b>자취 계약 내비</b></a><span class="row" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
+    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark" data-icon="home"></span><b>자취 계약 내비</b></a><span class="row" id="top-acts" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
     <main class="main" id="app" tabindex="-1"></main>
   </div>
   <nav class="tabbar" id="tab-nav" aria-label="주요 메뉴"></nav>
@@ -3575,12 +3580,16 @@ document.addEventListener('DOMContentLoaded', function () {
   // BELL_ONLY: 위쪽 줄에 알림만 남기는 화면 (주변 추천·생활 인프라 — 검색창·시연 날짜 없음).
   // 알림은 다른 화면과 같은 자리(오른쪽 위)에 그대로 두고, 줄 높이를 0으로 해서 아래 내용(제목 등)이 위로 올라온다.
   var BELL_ONLY = ['recommend', 'infra'], BELL_N = 0;
+  // 주변 장소 검색창을 보여 줄 화면 (휴대폰은 지도 탐색만 — 첫 화면 위쪽을 비우려고)
+  var SEARCH_ON = ['home', 'map'];
   function bellBtn() { var n = BELL_N; return '<a class="icon-btn bell" href="#timeline" aria-label="할 일 알림' + (n ? ' ' + n + '개' : '') + '">' + ic('bell') + (n ? '<span class="cnt">' + n + '</span>' : '') + '</a>'; }
   function headerBar(n, bellOnly) {
     if (bellOnly) return '<div class="hbar desk hbar-float"><div class="hbar-r">' + themeBtn() + bellBtn() + '</div></div>';
     var simV = S.sim === null || S.sim === undefined ? '' : String(S.sim);
     var simSel = !S.demo ? '' : '<select class="inp" data-sim aria-label="시연용 날짜">' + [['', '시연: 실제 오늘'], ['-1', '시연: 입주 전날'], ['0', '시연: 입주 당일'], ['10', '시연: 입주 10일 후'], ['40', '시연: 입주 40일 후']].map(function (o) { return '<option value="' + o[0] + '"' + (simV === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
-    return '<div class="hbar desk"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div>' +
+    var withSearch = SEARCH_ON.indexOf(route()) >= 0;
+    if (!withSearch) return '<div class="hbar desk"><div class="hbar-r">' + simSel + themeBtn() + bellBtn() + '</div></div>';
+    return '<div class="hbar desk' + (route() === 'map' ? ' hbar-msearch' : '') + '"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div>' +
       '<div class="hbar-r">' + simSel + themeBtn() + bellBtn() + '</div></div>';
   }
   function render(keep) {
@@ -3603,7 +3612,8 @@ document.addEventListener('DOMContentLoaded', function () {
     loadPlaces();
     var listPos = keep ? listScroll() : [];
     BELL_N = n;
-    var demoBar = S.demo ? '<div class="demo-strip"><span>예시 데이터로 둘러보는 중이에요. 체크·입력해도 내 기록이 아니에요.</span><button type="button" class="btn sm" data-act="startreal">내 정보로 시작하기</button></div>' : '';
+    var ta = document.getElementById('top-acts'); if (ta) ta.innerHTML = '<a class="icon-btn" href="#coach" aria-label="AI 자취 코치">' + ic('chat') + '</a>' + bellBtn() + themeBtn();
+    var demoBar = S.demo ? '<div class="demo-strip"><span><b>예시 데이터</b>로 둘러보는 중<span class="dm-more">이에요. 체크·입력해도 내 기록이 아니에요.</span></span><button type="button" class="btn sm" data-act="startreal">내 정보로 시작하기</button></div>' : '';
     app.innerHTML = r === 'start' ? viewStart() : demoBar + headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
     fitLists();
     listScroll(listPos);
