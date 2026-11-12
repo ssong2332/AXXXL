@@ -83,13 +83,15 @@
     },
     'k-report': function (f) {
       if (f.reportRequired === undefined) return '';
+      // null = 앱이 판정하지 못한 지역(예: 서울 밖). 대상이 아니라고 단정하지 않는다
+      if (f.reportRequired === null) return '내 지역은 앱이 전월세 신고 대상인지 판정하지 못했어요(' + (f.reportReason || '지역 확인 필요') + '). 신고 대상 지역이면 위 금액 기준에 따라 **' + f.reportDue + '**까지 신고해야 하니, 주민센터에 꼭 확인하세요.';
       if (!f.reportRequired) return '내 계약은 ' + f.reportReason + '라 전월세 신고 대상이 아니에요. 확정일자는 따로 받아 두세요.';
       if (f.reportDone) return '내 할 일 목록에는 전월세 신고를 이미 했다고 표시돼 있어요.';
       if (f.today > f.reportDue) return '내 계약의 신고 기한(' + f.reportDue + ')이 지났어요. **지금 바로** 신고하세요.';
       if (f.reportEarly) return '내 계약은 신고 대상이고 기한이 **' + f.reportDue + '**로 입주보다 먼저 와요. 전입신고와 합치지 말고 따로 신고하세요.';
       return '내 계약은 ' + f.reportReason + '라 신고 대상이고, 기한은 **' + f.reportDue + '**까지예요. 입주 날 전입신고하면서 계약서를 같이 내면 한 번에 끝나요.';
     },
-    'k-fixed': function (f) { return f.reportRequired === undefined ? '' : f.reportRequired ? '내 계약은 전월세 신고 대상이라, 신고가 접수되면 확정일자도 같이 받아요.' : '내 계약은 전월세 신고 대상이 아니라서 확정일자를 따로 받아야 해요.'; },
+    'k-fixed': function (f) { return f.reportRequired === undefined ? '' : f.reportRequired === null ? '내 지역은 앱이 전월세 신고 대상인지 판정하지 못해서, 확정일자는 따로 받아 두는 게 안전해요.' : f.reportRequired ? '내 계약은 전월세 신고 대상이라, 신고가 접수되면 확정일자도 같이 받아요.' : '내 계약은 전월세 신고 대상이 아니라서 확정일자를 따로 받아야 해요.'; },
     'k-broker': function (f) { return f.brokerCap ? '지금 조건(보증금 ' + won(f.deposit) + '만·월세 ' + won(f.rent) + '만)이면 거래 금액은 약 ' + won(f.brokerBase / 10000) + '만 원, 중개보수 **상한은 약 ' + won(f.brokerCap) + '원**(부가세 별도)이에요.' : ''; },
     'k-moveout': function (f) { return f.end ? '내 계약은 ' + f.end + '에 끝나요. 나갈 거라면 **' + f.noticeBy + '**까지 집주인에게 알리세요.' : ''; },
     'k-raise': function (f, q) {
