@@ -423,7 +423,7 @@ details.why summary::-webkit-details-marker { display: none }
 .rooms { border-right: 1px solid var(--hair); display: flex; flex-direction: column; gap: 12px; padding: 18px 12px 14px; background: var(--surface) }
 .rooms-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 2px 8px 12px; border-bottom: 1px solid var(--hair) }
 .rooms-h h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.035em; margin: 0 } .rooms-h p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-3) }
-.room-p.is-empty { color: var(--ink-3); opacity: .8 } .room-new { font-style: normal; font-size: 11px; font-weight: 700; color: var(--brand-text) }
+.room-p.is-empty { color: var(--ink-3) } .room-new { font-style: normal; font-size: 11px; font-weight: 700; color: var(--brand-text) }
 .rooms .asst-h { padding: 0 6px 6px } .rooms .asst-h h2 { font-size: 17px } .rooms .asst-av { width: 46px; height: 46px; border-radius: 14px }
 .room-list { display: flex; flex-direction: column; gap: 2px }
 .room-r { display: flex; align-items: center; gap: 10px; padding: 10px; border: 0; border-radius: 12px; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; min-width: 0 }
@@ -624,7 +624,7 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
    ============================================================ */
 :root {
   --bg: #F7F7F4; --surface: #FFFFFF; --fill: #F0F0EB; --fill-2: #E5E5DF;
-  --ink: #17171A; --ink-2: #44444A; --ink-3: #74747B;
+  --ink: #17171A; --ink-2: #44444A; --ink-3: #66666D;
   --line: #E2E2DC; --hair: rgba(23,23,26,0.08);
   --brand: #17171A; --brand-ink: #FFFFFF; --brand-tint: #E6F1EC; --brand-text: #0D6650; --brand-deep: #0D6650;
   --due: #C2410C; --due-tint: #FCEFE6; --due-text: #A6380B;
@@ -688,7 +688,7 @@ body { letter-spacing: -0.008em }
 .mk .b { stroke: var(--ink-3) } .mk .ico * { stroke: var(--ink-2) } .mk.on .b { fill: var(--ink) }
 .dot.my { background: var(--brand-text) }
 .day[aria-pressed="true"] { background: var(--fill-2); box-shadow: inset 0 0 0 1.5px var(--ink) }
-.day.today .n { background: var(--brand-text); color: #fff }
+.day.today .n { background: var(--brand-text); color: var(--brand-ink) }
 .stage.done .node { background: var(--brand-text); border-color: var(--brand-text) }
 .stage.now .node { border-color: var(--ink); box-shadow: 0 0 0 4px var(--fill-2) }
 .sw:checked { background: var(--brand-text) }
@@ -722,10 +722,12 @@ body.ob .shell { display: block }
 .thumb .x svg { width: 12px; height: 12px }
 
 /* ===== 생활 관리(구민정): 캘린더 일정 이름 · 카테고리 · 납부 상태 ===== */
-:root { --move: #7C5CE0; --ok: #1F8A52; --ok-tint: #E4F5EA; --late: #D93036; --late-tint: #FDEBEC; --sat: #2F6FD8 }
+:root { --move: #7C5CE0; --ok: #187444; --ok-tint: #E4F5EA; --late: #D93036; --late-tint: #FDEBEC; --sat: #245EC0 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ok: #4CC38A; --ok-tint: #16301F; --late: #FF7A7E; --late-tint: #3A1C1E; --sat: #7AA7FF } }
 :root[data-theme="dark"] { --ok: #4CC38A; --ok-tint: #16301F; --late: #FF7A7E; --late-tint: #3A1C1E; --sat: #7AA7FF }
 .wd .sat, .day.sat .n { color: var(--sat) }
+/* 흐린 설명 문장 안의 링크는 색만으로 구분되지 않아(WCAG 1.4.1) 밑줄을 그린다 */
+.muted a:not(.btn):not(.chip):not(.act), .sub a:not(.btn):not(.chip):not(.act) { text-decoration: underline; text-underline-offset: 2px }
 .wd .sun { color: var(--due-text) }
 .day .evs { display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 0 }
 .ev { display: block; max-width: 100%; padding: 1px 5px; border-radius: 5px; border-left: 3px solid var(--ink-3); background: var(--fill-2); color: var(--ink-2); font-size: 11px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
