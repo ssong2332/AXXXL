@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>/* 화면 테마(자동·밝게·어둡게)를 그리기 전에 먼저 적용해서 처음 열 때 깜빡이지 않게 한다 */ try { var t0 = localStorage.getItem('jachwi-theme'); if (t0 === 'light' || t0 === 'dark') document.documentElement.setAttribute('data-theme', t0); } catch (e) {}</script>
 <title>자취 계약 내비</title>
 <meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 (시연판)">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -220,8 +221,14 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 .chip[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-tint); color: var(--brand-text) }
 .bubble-q { align-self: flex-end; max-width: 88%; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: var(--brand); color: var(--brand-ink); font-weight: 600 }
 .bubble-a { align-self: flex-start; max-width: 100%; padding: 14px 16px; border-radius: 16px 16px 16px 4px; background: var(--fill); display: flex; flex-direction: column; gap: 8px }
-.ask { display: flex; gap: 8px }
+.ask { display: flex; gap: 8px; align-items: stretch }
 .ask .inp { flex: 1 1 auto }
+/* 입력칸 옆 버튼(찾기 등)은 입력칸과 같은 높이·모서리·테두리 두께로 — 테두리는 버튼 색과 같게 해서 크기만 맞춘다 */
+.ask .inp, .ask .btn { height: 46px; min-height: 46px }
+.ask .btn { flex: 0 0 auto; border-radius: 12px; border: 1px solid var(--brand) }
+/* 입력칸 배경이 카드 배경과 같으면 옅은 테두리만 보여서 밝은 버튼보다 작아 보인다 → 칸 안을 채워 같은 크기로 보이게 */
+.ask .inp { background: var(--fill); border-color: var(--fill-2) }
+.ask .inp:focus { background: var(--surface); border-color: var(--brand) }
 .doc-li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--hair); font-size: 14px }
 .doc-li:first-child { border-top: 0; padding-top: 0 }
 .demo-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 6px }
@@ -357,6 +364,28 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 .lmk.on { background: var(--brand); color: #fff; transform: scale(1.18) }
 .lhome { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--surface); box-shadow: 0 0 0 5px rgba(91,76,219,.25) }
 .leaflet-tooltip.ltip { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-size: 12px; box-shadow: none }
+/* 카카오 지도 */
+.kmap.picking, .kmap.picking * { cursor: crosshair !important }
+/* 카카오 지도 타일 묶음(카카오 로고·확대 버튼 이미지는 제외)도 OpenStreetMap 지도와 같은 톤으로.
+   타일마다 걸면 이음매가 비쳐서, 타일만 담은 묶음(div)에 한 번에 건다 */
+.kmap div:has(> img:not([src*="/mapjsapi/"])) { filter: saturate(.55) contrast(.95) brightness(1.03) }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .kmap div:has(> img:not([src*="/mapjsapi/"])) { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9) } }
+:root[data-theme="dark"] .kmap div:has(> img:not([src*="/mapjsapi/"])) { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9) }
+/* 지도 색 직접 고르기: 지도 왼쪽 위 '자동·밝게·어둡게' (자동 = 앱 테마를 따름). 위 규칙보다 우선하도록 선택자를 더 구체적으로 */
+:root .lmap.kmap[data-mt="light"] div:has(> img:not([src*="/mapjsapi/"])) { filter: saturate(.55) contrast(.95) brightness(1.03) }
+:root .lmap.kmap[data-mt="dark"] div:has(> img:not([src*="/mapjsapi/"])) { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9) }
+:root .lmap.leaflet-container[data-mt="light"] .leaflet-tile-pane { filter: saturate(.55) contrast(.95) brightness(1.03) }
+:root .lmap.leaflet-container[data-mt="dark"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9) }
+/* 지도 탐색: 넓은 화면에서는 지도가 오른쪽 칸(집 위치·로드뷰·목록) 높이만큼 늘어나 두 칸 아래가 맞는다 (최소 480px) */
+@media (min-width: 1100px) {
+  .map-main { display: flex; flex-direction: column }
+  .map-main > .map-box { flex: 1 1 auto; display: flex; flex-direction: column }
+  .map-main > .map-box > [data-lmap] { flex: 1 1 auto; min-height: 480px }
+}
+.map-theme { position: absolute; top: 10px; left: 10px; z-index: 600; display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.15) }
+.map-theme button { min-height: 28px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: var(--ink-2); font: inherit; font-size: 12px; font-weight: 650; cursor: pointer }
+.map-theme button[aria-pressed="true"] { background: var(--ink); color: var(--surface) }
+.map-theme button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px }
 .pop.pop-fix { left: 12px; bottom: 12px; top: auto; transform: none !important; width: 300px; z-index: 500 }
 @media (max-width: 640px) { .pop.pop-fix { position: static; width: auto } }
 .qr-box { display: flex; gap: 14px; align-items: center; margin-top: 14px; padding: 12px; border-radius: 16px; background: var(--fill) }
@@ -483,6 +512,10 @@ details.how summary { cursor: pointer; list-style: none } details.how summary::-
 .q-item:hover, .q-item:focus-visible { background: var(--fill) }
 .q-item .ptile { width: 36px; height: 36px; border-radius: 10px }
 .hbar-r { margin-left: auto; display: flex; gap: 8px; align-items: center }
+/* 알림만 있는 위쪽 줄(주변 추천·생활 인프라): 줄 높이 0 → 아래 내용이 위로 올라오고, 알림은 원래 자리(46px 줄 가운데 = 위에서 3px)에 떠 있는다 */
+.hbar.hbar-float { height: 0; margin-bottom: 0; align-items: flex-start }
+.hbar.hbar-float .hbar-r { position: relative; z-index: 2; margin-top: 3px }
+.hbar-float + .subnav { margin-right: 100px }   /* 좁은 화면: 하위 탭 줄이 테마·알림 버튼 아래로 들어가지 않게 */
 .hbar-r select { min-height: 40px; width: auto; font-size: 13px; padding: 0 10px; border-radius: 12px }
 .bell { position: relative }
 .bell .cnt { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--due); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center }
@@ -500,7 +533,9 @@ details.how summary { cursor: pointer; list-style: none } details.how summary::-
 .minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px }
 .minis .c4 { grid-column: auto }
 @media (max-width: 899px) { .minis { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; scrollbar-width: none } .minis::-webkit-scrollbar { display: none } .minis .mini { scroll-snap-align: start } }
-.scroll-list { max-height: 520px; overflow-y: auto; margin-right: -8px; padding-right: 8px }
+.scroll-list { max-height: 520px; overflow-y: auto; margin-right: -8px; padding-right: 18px }   /* 오른쪽 시간·거리와 스크롤바 사이 간격 */
+/* 장소 목록은 이름·주소를 한 줄로(넘치면 …) — 줄 높이가 같아야 5개 높이가 분류마다 같고 지도 크기가 흔들리지 않는다 */
+.scroll-list .place .what b, .scroll-list .place .what .s12 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 @media (max-width: 1099px) { .scroll-list { max-height: none } }
 .mini { display: flex; flex-direction: column; gap: 6px; color: var(--ink); text-decoration: none !important; min-width: 0 }
 .mini:hover { border-color: var(--brand) }
@@ -510,6 +545,8 @@ details.how summary { cursor: pointer; list-style: none } details.how summary::-
 
 .cats { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none }
 .cats::-webkit-scrollbar { display: none }
+/* 넓은 화면은 분류 버튼을 여러 줄로 다 보여 준다(마우스로는 가로로 밀 수 없어서). 휴대폰은 한 줄로 두고 손가락으로 민다 */
+@media (min-width: 721px) { .cats { flex-wrap: wrap; overflow-x: visible } }
 .cat { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer }
 .cat[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff }
 .map-box { position: relative; border-radius: 16px; overflow: visible; background: var(--map-bg) }
@@ -925,6 +962,9 @@ document.addEventListener('DOMContentLoaded', function () {
     lock: '<rect x="5" y="11" width="14" height="9.5" rx="2.2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>',
     chev: '<path d="m9.5 6 6 6-6 6"/>', back: '<path d="m14.5 6-6 6 6 6"/>',
     bell: '<path d="M6.5 16v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14Z"/><path d="M10 21h4"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+    moon: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/>',
+    contrast: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" style="fill:currentColor"/>',
     doc: '<path d="M7 3.5h7l4.5 4.5v12.5H7Z"/><path d="M14 3.5V8h4.5"/><path d="M10 13h5.5"/><path d="M10 16.5h3.5"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8v.01"/>',
     chat: '<path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4 3.5V16h0A2 2 0 0 1 5 14Z"/>',
@@ -944,7 +984,10 @@ document.addEventListener('DOMContentLoaded', function () {
     tree: '<path d="M12 21v-6"/><path d="M12 3.5 6.5 11h3L6 15.5h12L14.5 11h3Z"/>',
     cart: '<path d="M3.5 4.5h2l2 10.5h10l2-7.5H7"/><circle cx="9" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
     cross: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/>',
-    bus: '<rect x="5" y="3.5" width="14" height="14" rx="3"/><path d="M5 11h14"/><path d="M8 20.5v-3M16 20.5v-3"/><path d="M8.5 14.5h.01M15.5 14.5h.01"/>',
+    // 교통: 버스(앞모습·사이드미러) · 지하철(앞모습·비스듬한 선로) · 기차(옆모습 고속열차·선로)
+    bus: '<rect x="5" y="3.5" width="14" height="14" rx="2.5"/><path d="M5 11h14"/><path d="M9 6.5h6"/><path d="M3.5 7v3M20.5 7v3"/><path d="M8 20.5v-3M16 20.5v-3"/><path d="M8.5 14.3h.01M15.5 14.3h.01"/>',
+    subway: '<path d="M8 3.5h8a3.5 3.5 0 0 1 3.5 3.5v7a3.5 3.5 0 0 1-3.5 3.5H8A3.5 3.5 0 0 1 4.5 14V7A3.5 3.5 0 0 1 8 3.5Z"/><path d="M4.5 10h15"/><path d="M12 3.5V10"/><path d="M8.5 13.8h.01M15.5 13.8h.01"/><path d="m8.5 17.5-2.5 3M15.5 17.5l2.5 3"/>',
+    train: '<path d="M3 7.5h10.2a5 5 0 0 1 4.1 2.1l3 4.2a1.7 1.7 0 0 1-1.4 2.7H3"/><path d="M5.5 11h2.5M10.5 11h2.5"/><path d="M15.2 10.2l1.6 2.3"/><path d="M3 20h18"/>',
     building: '<path d="M4.5 20.5V6l7.5-2.5V20.5"/><path d="M12 9h7.5v11.5"/><path d="M3 20.5h18"/><path d="M8 9h.01M8 12.5h.01M8 16h.01M15.5 12.5h.01M15.5 16h.01"/>',
     shield: '<path d="M12 3.5 19 6v5.5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6Z"/><path d="m9 12 2 2 4-4"/>',
     bookmark: '<path d="M6.5 4h11v16.5L12 16.5l-5.5 4Z"/>',
@@ -959,6 +1002,20 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICON[n] + '</svg>'; }
   document.querySelectorAll('[data-icon]').forEach(function (el) { el.innerHTML = ic(el.dataset.icon); });
+
+  // ---------- 화면 테마 (자동 · 밝게 · 어둡게) ----------
+  // 자동 = 기기 설정(prefers-color-scheme)을 따른다. 밝게·어둡게는 <html data-theme>로 강제하고 CSS 색 변수가 그 값을 따른다.
+  // 이 브라우저에만 저장하고, '예시 값으로 되돌리기'와는 상관없다. <head> 맨 위 스크립트가 같은 값을 먼저 적용한다.
+  var THEME_LS = 'jachwi-theme', THEMES = { auto: ['자동', 'contrast'], light: ['밝게', 'sun'], dark: ['어둡게', 'moon'] }, THEME_NEXT = { auto: 'light', light: 'dark', dark: 'auto' };
+  function getTheme() { try { var t = localStorage.getItem(THEME_LS); return THEMES[t] ? t : 'auto'; } catch (e) { return 'auto'; } }
+  function setTheme(t) {
+    try { if (t === 'auto') localStorage.removeItem(THEME_LS); else localStorage.setItem(THEME_LS, t); } catch (e) {}
+    if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+  }
+  function themeBtn() {
+    var t = getTheme(), lab = '화면 테마: ' + THEMES[t][0];
+    return '<button type="button" class="icon-btn" data-act="theme" aria-label="' + lab + ' (누르면 ' + THEMES[THEME_NEXT[t]][0] + ')" title="' + lab + '">' + ic(THEMES[t][1]) + '</button>';
+  }
 
   // ---------- dates ----------
   var WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1837,7 +1894,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ---------- 우리 동네: 실제 데이터 ----------
-  // 지도: OpenStreetMap 데이터 기반 CARTO 지도(Leaflet). 장소: /api/places (OpenStreetMap + 키가 있으면 공공데이터포털 상가정보).
+  // 지도: 카카오 지도(/api/config 에 JavaScript 키가 있고 카카오 콘솔에 이 도메인이 등록돼 있을 때). 아니면 OpenStreetMap 지도(Leaflet).
+  // 장소: 카카오 지도가 켜져 있으면 카카오 장소 검색(loadKakaoPlaces). 아니면 /api/places (OpenStreetMap + 키가 있으면 공공데이터포털 상가정보).
   // 데이터를 못 불러오면(오프라인·파일로 열기 실패 등) 아래 예시 데이터로 대신 보여 주고 화면에 그렇게 표시한다.
   var API = (function () { try { var o = new URLSearchParams(location.search).get('api'); if (o && /^https:\/\/[\w.-]+$/.test(o)) return o; } catch (e) {} return /^https?:$/.test(location.protocol) ? '' : 'https://jachwi-navi.vercel.app'; })();
   var ORIGIN = API || location.origin;
@@ -1845,6 +1903,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function home() { return S.home && S.home.lat ? S.home : DEMO_HOME; }
   var HOUSE = DEMO_HOME;
   var CATS = { food: ['맛집', 'food'], cafe: ['카페', 'cup'], study: ['공부·작업', 'book'], gym: ['운동', 'dumbbell'], park: ['공원·산책', 'tree'], life: ['생활 편의', 'cart'], medical: ['병원·약국', 'cross'], transit: ['교통', 'bus'], public: ['공공시설', 'building'], safety: ['안전', 'shield'] };
+  // 장소 아이콘: 교통은 종류별로(기차역·지하철역·버스정류장), 나머지는 분류 아이콘. OSM의 '역'은 대부분 지하철역이라 지하철로 본다
+  function placeIc(p) {
+    if (p.cat !== 'transit') return CATS[p.cat][1];
+    var s = p.sub || '';
+    return /기차|철도/.test(s) ? 'train' : /지하철|^역$/.test(s) ? 'subway' : /버스/.test(s) ? 'bus' : CATS.transit[1];
+  }
   function place(id, cat, name, dx, dy, tags, desc, pub, sub) { var p = { id: id, cat: cat, name: name, sub: sub || name.replace(/ \(.*\)$/, ''), lat: HOUSE.lat + dy / 111000, lng: HOUSE.lng + dx / 88200, tags: tags, desc: desc, pub: !!pub, ex: true }; return p; }
   var EXAMPLE = [
     place('conv', 'life', '편의점', -44, 28, ['24시간', '택배'], '밤늦게도 열고 택배를 맡기고 찾을 수 있어요.'),
@@ -1864,8 +1928,10 @@ document.addEventListener('DOMContentLoaded', function () {
     place('library', 'study', '구립 도서관', -360, 150, ['열람실'], '열람실이 있는 구립 도서관이에요.', true, '도서관')
   ];
   function distM(a, b) { var R = 6371000, t = Math.PI / 180, dLat = (b.lat - a.lat) * t, dLng = (b.lng - a.lng) * t, h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * t) * Math.cos(b.lat * t) * Math.sin(dLng / 2) * Math.sin(dLng / 2); return Math.round(2 * R * Math.asin(Math.sqrt(h))); }
-  var PUB_SUB = /행정복지센터|관공서|주민 시설|우체국|도서관|경찰|공원|체육시설|수영장/;
+  var PUB_SUB = /행정복지센터|관공서|주민 시설|우체국|도서관|경찰|지구대|치안센터|파출소|공원|체육시설|수영장/;
   var DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }, PC = { k: '', list: [] };
+  // 장소 설명에 쓰는 자료 출처 이름 (주소·정류장 번호가 없을 때만 보인다). 버스정류장은 TAGO·서울시 공공데이터
+  var SRC_NAME = { sbiz: '공공데이터포털 상가정보', kakao: '카카오맵', tago: '국토교통부 TAGO 버스정보', seoul: '서울시 버스정보' };
   function placeKey(h) { return h.lat.toFixed(3) + ',' + h.lng.toFixed(3); }
   function isReal() { return DATA.status === 'ok' && DATA.items.length > 0; }
   function places() {
@@ -1875,20 +1941,98 @@ document.addEventListener('DOMContentLoaded', function () {
     var list = src.map(function (it) {
       var m = distM(h, it), p = Object.assign({}, it);
       p.m = m; p.min = Math.max(1, Math.ceil(m / 67)); p.dx = (it.lng - h.lng) * 111320 * Math.cos(h.lat * Math.PI / 180); p.dy = (it.lat - h.lat) * 110540;
-      if (!p.ex) { p.tags = [it.sub].concat(it.hours ? ['영업시간 정보 있음'] : []); p.desc = it.addr ? it.addr : it.sub + ' · ' + (it.src === 'sbiz' ? '공공데이터포털 상가정보' : 'OpenStreetMap') + ' 기준'; p.pub = PUB_SUB.test(it.sub); }
+      if (!p.ex) { p.tags = [it.sub].concat(it.hours ? ['영업시간 정보 있음'] : []); p.desc = it.addr ? it.addr : it.sub + ' · ' + (SRC_NAME[it.src] || 'OpenStreetMap') + ' 기준'; p.pub = PUB_SUB.test(it.sub); }
       return p;
     }).sort(function (a, b) { return a.m - b.m; });
     PC = { k: k, list: list };
     return list;
   }
   function findPlace(id) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
-  function nearest(cat, re) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].cat === cat && (!re || re.test(l[i].sub) || re.test(l[i].name))) return l[i]; return null; }
+  // 종류 맞추기: 카카오 장소는 분류가 정확해서 분류(sub)로만, 다른 데이터는 이름도 함께 본다 (예: '○○시장점' 빨래방이 시장으로 잡히지 않게)
+  // (카카오·TAGO·서울시 데이터는 분류가 정확해서 분류로만 — 예: 이름이 '대전역'인 버스정류장이 지하철·기차역으로 잡히지 않게)
+  function kindOk(p, re) { return !re || re.test(p.sub) || (!/^(kakao|tago|seoul)$/.test(p.src) && re.test(p.name)); }
+  function nearest(cat, re) { var l = places(); for (var i = 0; i < l.length; i++) if (l[i].cat === cat && kindOk(l[i], re)) return l[i]; return null; }
+  // 주변 장소 캐시: v2부터 장소 이름을 한글(지도에 등록된 원래 이름)로 받는다. 영어 이름이 섞였던 옛 캐시는 지운다.
+  var PLACES_LS = 'jachwi-places-v2';
+  try { localStorage.removeItem('jachwi-places'); } catch (e) {}
+  // 카카오 장소 검색: 분류 코드 검색 + 키워드 검색으로 주변 1km를 모은다 (가까운 순, 15개씩)
+  // [분류 코드 또는 검색어, 화면 분류, 쪽 수, 이름표(문자열 | 숫자 = 카카오 분류의 몇 번째 단계, -1 = 마지막), 카카오 분류 이름 거르기, 장소 이름 거르기]
+  // 카카오 장소 검색에는 버스정류장이 없어서 busStops()(TAGO·서울시)로 따로 받는다.
+  var KQ = [
+    ['FD6', 'food', 2, 1], ['CE7', 'cafe', 2, '카페'], ['CS2', 'life', 1, '편의점'], ['MT1', 'life', 1, '마트'],
+    ['HP8', 'medical', 1, -1], ['PM9', 'medical', 1, '약국'], ['SW8', 'transit', 1, '지하철역'], ['PO3', 'public', 1, -1],
+    ['기차역', 'transit', 1, '기차역', /기차역/, /역$/], ['스터디카페', 'study', 1, '스터디카페', /스터디|독서실/], ['도서관', 'study', 1, '도서관', /도서관/],
+    ['헬스장', 'gym', 1, '헬스장', /헬스|피트니스|체육관|수영/], ['공원', 'park', 1, '공원', /공원/], ['빨래방', 'life', 1, '빨래방·세탁소', /빨래|세탁/], ['시장', 'life', 1, '시장', /전통시장|> 시장/]
+  ];
+  var KAKAO_SRC = { name: '카카오맵 장소 검색', url: 'https://map.kakao.com', license: '카카오 지도 API' };
+  // v7: 기차역을 검색어 '역' 대신 '기차역'으로 찾음 — '역'으로는 가까운 15곳이 '○○역점' 가게·출구로 차서 수원역(KTX) 같은 기차역이 빠졌다
+  var KPLACES_LS = 'jachwi-places-kakao-v8';   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리, v8: 버스정류장을 못 받은 결과는 저장하지 않음(v7에 남은 것 버림)
+  try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
+  function kakaoItem(d, q) {
+    var seg = String(d.category_name || '').split(' > '), cat = q[1], sub = typeof q[3] === 'number' ? (q[3] < 0 ? seg[seg.length - 1] : seg[q[3]] || seg[seg.length - 1]) : q[3];
+    if (cat === 'public' && /경찰/.test(d.category_name)) cat = 'safety';   // 공공기관 중 지구대·치안센터는 '안전'
+    var url = /^https?:\/\/place\.map\.kakao\.com\/\d+$/.test(d.place_url || '') ? d.place_url : '';
+    return { id: 'kakao-' + d.id, src: 'kakao', cat: cat, sub: sub || '', name: String(d.place_name).slice(0, 40), lat: +(+d.y).toFixed(6), lng: +(+d.x).toFixed(6), addr: String(d.road_address_name || d.address_name || '').slice(0, 60), hours: '', url: url };
+  }
+  function kakaoPlaces(c, done) {
+    var sv = window.kakao.maps.services, ps = new sv.Places(), loc = new window.kakao.maps.LatLng(c.lat, c.lng), out = [], seen = {}, left = KQ.length, failed = 0;
+    KQ.forEach(function (q) {
+      var cb = function (res, st, pg) {
+        // q[5]: 이름 거르기 (기차역은 '…역'으로 끝나는 것만 — 카카오가 '대전역 유실물센터' 같은 역 안 시설도 기차역으로 분류해서)
+        if (st === sv.Status.OK) res.forEach(function (d) { if (seen[d.id] || (q[4] && !q[4].test(d.category_name || '')) || (q[5] && !q[5].test(d.place_name || ''))) return; seen[d.id] = 1; out.push(kakaoItem(d, q)); });
+        else if (st !== sv.Status.ZERO_RESULT) failed++;
+        if (st === sv.Status.OK && pg && pg.hasNextPage && pg.current < q[2]) return pg.nextPage();
+        if (--left === 0) done(out, failed);
+      };
+      var opt = { location: loc, radius: 1000, sort: sv.SortBy.DISTANCE };
+      if (/^[A-Z]{2}\d$/.test(q[0])) ps.categorySearch(q[0], cb, opt); else ps.keywordSearch(q[0], cb, opt);
+    });
+  }
   function loadPlaces(force) {
     if (!S.home && !S.demo) { if (DATA.status !== 'nohome') { DATA = { key: 'nohome', status: 'nohome', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; PC.k = ''; } return; }
     var h = home(), key = placeKey(h), c = { lat: +h.lat.toFixed(3), lng: +h.lng.toFixed(3) };
     if (!force && DATA.key === key && DATA.status !== 'idle') return; // 실패했으면 '다시 시도'를 눌렀을 때만 다시 부른다
     DATA = { key: key, status: 'loading', items: [], sources: [], fetchedAt: '', notes: [], error: '' };
-    if (!force) { try { var cc = JSON.parse(localStorage.getItem('jachwi-places') || 'null'); if (cc && cc.key === key && Date.now() - cc.at < (cc.partial ? 6e5 : 3 * 864e5)) { applyData(cc.data); return; } } catch (e) {} }
+    var sync = true;
+    // 카카오 지도가 준비되면 카카오 장소 검색, 못 쓰면(키 없음 등) 예전처럼 OpenStreetMap
+    kakaoBoot(function () { if (DATA.key === key) (kakaoSearchOk() ? loadKakaoPlaces : loadOsmPlaces)(key, c, force, sync); });
+    sync = false;
+  }
+  // 버스정류장: 카카오 장소 검색에 없어서 서버(/api/bus-stops → TAGO, 서울은 서울시 API)에서 반경 약 500m를 받아 '교통'에 넣는다
+  var BUS_SRC = { tago: { name: '공공데이터포털 TAGO 버스정류소정보', url: 'https://www.data.go.kr/data/15098534/openapi.do', license: '공공데이터' }, seoul: { name: '공공데이터포털 서울시 정류소정보조회', url: 'https://www.data.go.kr/data/15000303/openapi.do', license: '공공데이터' } };
+  function busStops(c) {
+    // v=5: 미정차·번호 0 처리 이후 결과 (배포 서버 캐시 구분용)
+    return fetch(API + '/api/bus-stops?lat=' + c.lat + '&lng=' + c.lng + '&v=5').then(function (r) { return r.json(); }).then(function (j) {
+      return { ok: !!(j && j.ok), sources: (j && j.sources) || [], items: ((j && j.items) || []).map(function (x) {
+        return { id: 'bus-' + x.id, src: x.src, cat: 'transit', sub: '버스정류장', name: String(x.name).slice(0, 40), lat: +x.lat, lng: +x.lng, addr: x.no ? '정류장 번호 ' + x.no : '', hours: '' };
+      }) };
+    }).catch(function () { return { ok: false, sources: [], items: [] }; });
+  }
+  function loadKakaoPlaces(key, c, force, sync) {
+    if (!force) { try { var cc = JSON.parse(localStorage.getItem(KPLACES_LS) || 'null'); if (cc && cc.key === key && Date.now() - cc.at < (cc.partial ? 6e5 : 864e5)) { applyData(cc.data); if (!sync) render(true); return; } } catch (e) {} }
+    var busP = busStops(c);   // 카카오 검색과 동시에 묻는다
+    kakaoPlaces(c, function (items, failed) {
+      busP.then(function (bus) {
+        if (DATA.key !== key) return;
+        if (!items.length && !bus.items.length) { DATA.status = 'error'; DATA.error = '주변 장소를 불러오지 못했어요.'; render(true); return; }
+        keepKakaoData(key, c, items, failed, bus);
+        // 버스정류장(공공데이터 TAGO)은 가끔 응답이 늦어 실패한다 → 잠시 뒤 한 번 더 묻고, 오면 목록에 더한다
+        if (!bus.ok) setTimeout(function () {
+          if (DATA.key === key) busStops(c).then(function (b2) { if (DATA.key === key && b2.ok) keepKakaoData(key, c, items, failed, b2); });
+        }, 1500);
+      });
+    });
+  }
+  function keepKakaoData(key, c, items, failed, bus) {
+    var all = items.concat(bus.items), srcs = [KAKAO_SRC].concat(bus.sources.map(function (s) { return BUS_SRC[s]; }).filter(Boolean));
+    var PL = window.JachwiPlaces, data = { items: PL ? PL.finish(all, c, 1000) : all, sources: srcs, fetchedAt: new Date().toISOString(), notes: [], busFail: !bus.ok };
+    applyData(data);
+    // 버스정류장을 못 받은 결과는 저장하지 않는다(다음에 열 때 다시 묻게). 카카오 검색 일부만 실패했으면 10분만 쓴다
+    if (bus.ok) try { localStorage.setItem(KPLACES_LS, JSON.stringify({ key: key, at: Date.now(), partial: failed > 0, data: data })); } catch (e) {}
+    render(true);
+  }
+  function loadOsmPlaces(key, c, force, sync) {
+    if (!force) { try { var cc = JSON.parse(localStorage.getItem(PLACES_LS) || 'null'); if (cc && cc.key === key && Date.now() - cc.at < (cc.partial ? 6e5 : 3 * 864e5)) { applyData(cc.data); if (!sync) render(true); return; } } catch (e) {} }
     var PL = window.JachwiPlaces;
     // 서버가 못 받은 묶음은 이 브라우저가 Photon(OpenStreetMap)에 직접 물어본다 (한 번에 하나씩)
     function direct(idxs) {
@@ -1908,19 +2052,21 @@ document.addEventListener('DOMContentLoaded', function () {
       var data = { items: PL ? PL.finish(all, c, 1000) : all, sources: srcs, fetchedAt: new Date().toISOString(), notes: (server && server.notes) || [] };
       var partial = !!(extra && extra.failed.length) || !!(server && server.ok && !extra && (server.failedGroups || []).length);
       applyData(data);
-      try { localStorage.setItem('jachwi-places', JSON.stringify({ key: key, at: Date.now(), partial: partial, data: data })); } catch (e) {}
+      try { localStorage.setItem(PLACES_LS, JSON.stringify({ key: key, at: Date.now(), partial: partial, data: data })); } catch (e) {}
       render(true);
     }
-    fetch(API + '/api/places?lat=' + c.lat + '&lng=' + c.lng + '&r=1000').then(function (r) { return r.json().catch(function () { return { ok: false }; }); }, function () { return { ok: false }; }).then(function (j) {
+    // v=2: 장소 이름을 한글로 받게 바뀐 뒤의 결과 (서버 캐시 구분용)
+    fetch(API + '/api/places?lat=' + c.lat + '&lng=' + c.lng + '&r=1000&v=2').then(function (r) { return r.json().catch(function () { return { ok: false }; }); }, function () { return { ok: false }; }).then(function (j) {
       if (DATA.key !== key) return;
       var miss = j.ok ? (j.failedGroups || []) : (PL ? PL.GROUPS.map(function (g, i) { return i; }) : []);
       if (!miss.length) return finishLoad(j, null);
       return direct(miss).then(function (extra) { finishLoad(j, extra); });
     });
   }
-  function applyData(j) { DATA.status = 'ok'; DATA.items = j.items || []; DATA.sources = j.sources || []; DATA.fetchedAt = j.fetchedAt || ''; DATA.notes = j.notes || []; PC.k = ''; }
+  function applyData(j) { DATA.status = 'ok'; DATA.items = j.items || []; DATA.sources = j.sources || []; DATA.fetchedAt = j.fetchedAt || ''; DATA.notes = j.notes || []; DATA.busFail = !!j.busFail; PC.k = ''; }
   function dataBadge() {
-    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="s12 muted" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : 'OpenStreetMap'; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>'; }
+    if (isReal()) { var t = DATA.fetchedAt ? new Date(DATA.fetchedAt) : null; return '<span class="s12 muted" title="' + DATA.sources.map(function (s) { return s.name; }).join(', ') + '">' + DATA.sources.map(function (s) { return /공공데이터/.test(s.name) ? '공공데이터포털' : /카카오/.test(s.name) ? '카카오맵' : 'OpenStreetMap'; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' + ') + (t ? ' · ' + (t.getMonth() + 1) + '.' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') + ' 기준' : '') + '</span>' +
+      (DATA.busFail ? ' <span class="badge due">버스정류장 못 불러옴</span> <button type="button" class="btn ghost sm" data-act="reload">다시 시도</button>' : ''); }
     if (DATA.status === 'nohome') return '<span class="s12 muted">집 위치를 정하면 주변 장소가 보여요</span>';
     if (DATA.status === 'loading') return '<span class="badge">주변 데이터 불러오는 중…</span>';
     if (DATA.status === 'error') return '<span class="badge due">실제 데이터를 못 불러왔어요' + (S.home ? '' : ' · 예시로 보여줘요') + '</span> <button type="button" class="btn ghost sm" data-act="reload">다시 시도</button>';
@@ -1931,19 +2077,69 @@ document.addEventListener('DOMContentLoaded', function () {
     return isReal() ? '<p class="s12 muted">장소 정보: ' + DATA.sources.map(function (s) { return '<a href="' + s.url + '" target="_blank" rel="noopener">' + s.name + '</a> (' + s.license + ')'; }).join(', ') + '. 걸리는 시간은 직선거리 ÷ 분당 67m라서 실제로는 조금 더 걸릴 수 있어요. 가게 정보는 바뀌었을 수 있으니 방문 전 확인하세요.</p>'
       : '<p class="s12 muted">지금은 시연용 예시 데이터예요. 실제 가게 정보가 아니에요.</p>';
   }
-  function setHome(lat, lng, label, src) {
+  function setHome(lat, lng, label, src, kid) {
     S.home = { lat: +(+lat).toFixed(6), lng: +(+lng).toFixed(6), label: String(label || '내가 고른 위치').slice(0, 60), src: src || 'pick' };
+    if (kid && /^\d+$/.test(kid)) S.home.kid = String(kid);   // 카카오 장소 번호 (로드뷰·길찾기 링크용)
+    homeAddress();   // 현재 위치·지도에서 고른 위치는 실제 주소로 이름을 바꾼다
     var gm = String(label || '').match(/([가-힣]+구)(?:\s|$)/); if (gm && /서울/.test(label)) S.gu = gm[1];
     if (regionFromLabel(label)) S.gu = S.sgg;
     if (!S.addr) { var dm = String(label || '').match(/([가-힣0-9]+동)(?:\s|$)/); if (dm) S.addr = dm[1] + ' 자취방'; }
     S.mapSel = ''; S.pickHome = false; save(); loadPlaces(); render(true); toast('집 위치를 정했어요. 주변 장소를 찾고 있어요.');
   }
   var GEO = { items: [], status: '', q: '' };
+  // 카카오 지도 검색(브라우저에서 바로 카카오에 물음): 주소로 먼저 찾고, 없으면 장소 이름으로 찾는다. 최대 5개.
+  function kakaoSearch(q, done) {
+    var sv = window.kakao.maps.services, OK = sv.Status.OK, ZERO = sv.Status.ZERO_RESULT;
+    new sv.Geocoder().addressSearch(q, function (res, st) {
+      if (st === OK && res.length) return done(null, res.slice(0, 5).map(function (a) { return { label: (a.road_address && a.road_address.address_name) || a.address_name, lat: +a.y, lng: +a.x }; }));
+      if (st !== ZERO) return done('error');
+      new sv.Places().keywordSearch(q, function (res2, st2) {
+        if (st2 === OK) return done(null, res2.slice(0, 5).map(function (p) { return { label: p.place_name + ' · ' + (p.road_address_name || p.address_name), lat: +p.y, lng: +p.x, kid: String(p.id) }; }));
+        done(st2 === ZERO ? null : 'error', []);
+      }, { size: 5 });
+    }, { size: 5 });
+  }
+  function kakaoSearchOk() { return KM.st === 'ok' && window.kakao && window.kakao.maps.services; }
+  function geoNote() { return kakaoSearchOk() ? '카카오 지도 검색' : 'OpenStreetMap(Nominatim)'; }
   function geoSearch(q) {
     GEO = { items: [], status: 'loading', q: q }; render(true);
-    fetch(API + '/api/geocode?q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (j) {
-      GEO = { items: j.ok ? j.items : [], status: j.ok ? (j.items.length ? 'ok' : 'empty') : 'error', q: q, err: j.error || '', src: j.source }; render(true);
-    }).catch(function () { GEO = { items: [], status: 'error', q: q }; render(true); });
+    kakaoBoot(function () {
+      if (GEO.q !== q) return;   // 그 사이 다른 걸 찾았으면 버린다
+      if (kakaoSearchOk()) return kakaoSearch(q, function (err, items) {
+        if (GEO.q !== q) return;
+        GEO = { items: items || [], status: err ? 'error' : items.length ? 'ok' : 'empty', q: q, src: 'kakao' }; render(true);
+      });
+      // 카카오 지도를 못 쓰면 서버 함수(/api/geocode: 카카오 REST 키가 있으면 카카오, 없으면 OpenStreetMap)
+      fetch(API + '/api/geocode?q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (j) {
+        GEO = { items: j.ok ? j.items : [], status: j.ok ? (j.items.length ? 'ok' : 'empty') : 'error', q: q, err: j.error || '', src: j.source }; render(true);
+      }).catch(function () { GEO = { items: [], status: 'error', q: q }; render(true); });
+    });
+  }
+  // 좌표로 정한 집(현재 위치·지도에서 고르기)의 이름을 실제 주소로 바꾼다. 카카오 지도가 켜져 있으면 카카오(좌표 → 주소), 아니면 /api/geocode.
+  // 건물 이름이 있으면 '건물 · 주소'(검색 결과와 같은 모양). 그 사이 집을 또 바꿨으면 버린다.
+  // 좌표 → 주소 결과는 '서울특별시 관악구…'처럼 길게 와서, 검색 결과('서울 관악구…')와 같은 모양으로 줄인다
+  var REGION_SHORT = { '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구', '인천광역시': '인천', '광주광역시': '광주', '대전광역시': '대전', '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기', '강원특별자치도': '강원', '강원도': '강원', '충청북도': '충북', '충청남도': '충남', '전북특별자치도': '전북', '전라북도': '전북', '전라남도': '전남', '경상북도': '경북', '경상남도': '경남', '제주특별자치도': '제주' };
+  function shortRegion(t) { return String(t).replace(/(^|· )(\S+)/g, function (m, pre, w) { return pre + (REGION_SHORT[w] || w); }); }
+  function homeAddress() {
+    var h = S.home; if (!h || (h.src !== 'pick' && h.src !== 'gps')) return;
+    var lat = h.lat, lng = h.lng, src = h.src;
+    var put = function (t) {
+      var now = S.home; if (!t || !now || now.lat !== lat || now.lng !== lng || now.src !== src) return;
+      t = shortRegion(t);
+      now.label = String(src === 'gps' ? '현재 위치 · ' + t : t).slice(0, 60); now.named = 1;
+      if (regionFromLabel(t)) S.gu = S.sgg;   // 현재 위치·지도에서 고른 집은 주소가 이제 나오므로 지원사업 지역도 이 주소로 맞춘다
+      save(); render(true);
+    };
+    kakaoBoot(function () {
+      if (kakaoSearchOk()) {
+        var sv = window.kakao.maps.services;
+        return new sv.Geocoder().coord2Address(lng, lat, function (res, st) {
+          var r = st === sv.Status.OK && res[0], road = r && r.road_address, a = road || (r && r.address);
+          put(a && ((road && road.building_name ? road.building_name + ' · ' : '') + a.address_name));
+        });
+      }
+      fetch(API + '/api/geocode?lat=' + lat.toFixed(4) + '&lng=' + lng.toFixed(4)).then(function (r) { return r.json(); }).then(function (j) { put(j.ok && j.label); }).catch(function () {});
+    });
   }
   function useGps() {
     if (!navigator.geolocation) { toast('이 브라우저는 현재 위치를 지원하지 않아요.'); return; }
@@ -1951,23 +2147,138 @@ document.addEventListener('DOMContentLoaded', function () {
     navigator.geolocation.getCurrentPosition(function (pos) {
       var la = pos.coords.latitude, ln = pos.coords.longitude;
       if (!(la > 33 && la < 39 && ln > 124 && ln < 132)) { toast('대한민국 안에서만 쓸 수 있어요.'); return; }
-      setHome(la, ln, '현재 위치', 'gps');
-      fetch(API + '/api/geocode?lat=' + la.toFixed(4) + '&lng=' + ln.toFixed(4)).then(function (r) { return r.json(); }).then(function (j) { if (j.ok && j.label && S.home && S.home.src === 'gps') { S.home.label = '현재 위치 · ' + j.label; save(); render(true); } }).catch(function () {});
+      setHome(la, ln, '현재 위치', 'gps');   // 주소는 setHome → homeAddress 가 채운다
     }, function (err) { toast(err.code === 1 ? '위치 권한을 허용해야 현재 위치를 쓸 수 있어요.' : '현재 위치를 찾지 못했어요.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
   }
   function homeCard() {
     var h = home();
     var res = GEO.status === 'loading' ? '<p class="s13 muted">찾는 중…</p>' : GEO.status === 'ok' ? '<div>' + GEO.items.map(function (g, i) { return '<button type="button" class="place" data-act="sethome" data-i="' + i + '"><span class="ptile" style="width:36px;height:36px;border-radius:10px">' + ic('pin', 'sm') + '</span><span class="what"><b style="font-weight:600">' + esc(g.label) + '</b></span>' + ic('chev', 'sm') + '</button>'; }).join('') + '</div>'
       : GEO.status === 'empty' ? '<p class="s13 muted">‘' + esc(GEO.q) + '’로 찾은 곳이 없어요. 동 이름이나 큰 건물 이름으로 찾거나 지도에서 직접 골라 주세요.</p>' : GEO.status === 'error' ? '<p class="s13" style="color:var(--due-text)">' + esc(GEO.err || '주소 검색에 실패했어요.') + '</p>' : '';
-    return '<section class="card stack"><div class="card-h" style="margin:0"><h2>우리 집 위치</h2>' + (S.home ? '<button type="button" class="btn ghost sm" data-act="resethome">' + (S.demo ? '예시 위치로' : '위치 지우기') + '</button>' : '') + '</div>' +
+    return '<section class="card stack"><div class="card-h" style="margin:0"><h2>우리 집 위치</h2><div class="row" style="gap:6px">' +
+      (S.home ? '<button type="button" class="btn ghost sm" data-act="resethome">' + (S.demo ? '예시 위치로' : '위치 지우기') + '</button>' : '') +
+      (S.home || S.demo ? '<a class="btn ghost sm"' + (kakaoId(h) ? '' : ' data-rv-place="home"') + ' href="' + kakao('rv', h) + '" target="_blank" rel="noopener" aria-label="우리 집 위치 로드뷰 보기 (카카오맵, 새 창)">로드뷰' + ic('out', 'sm') + '</a>' : '') + '</div></div>' +
       '<div class="row" style="flex-wrap:nowrap"><span class="ptile" style="width:40px;height:40px;border-radius:12px;background:var(--ink);color:var(--surface)">' + ic('home', 'sm') + '</span><div style="min-width:0"><b>' + esc(h.label) + '</b><p class="s12 muted">' + (h.src === 'demo' ? '아직 내 집 위치를 정하지 않았어요' : h.src === 'gps' ? '현재 위치로 정했어요' : '직접 정한 위치예요') + '</p></div></div>' +
       '<form class="ask" data-form="geo"><input class="inp" aria-label="주소 또는 건물 이름" placeholder="예: 관악구 신림동, 서원동 주민센터" maxlength="80" value="' + esc(GEO.q || '') + '"><button class="btn" type="submit">찾기</button></form>' + res +
       '<div class="row"><button type="button" class="btn ghost sm" data-act="gps">' + ic('pin', 'sm') + '현재 위치로</button>' + (S.onboarded ? '<button type="button" class="btn ghost sm" data-act="pickhome" aria-pressed="' + !!S.pickHome + '">' + (S.pickHome ? '지도를 눌러 주세요…' : '지도에서 직접 고르기') + '</button>' : '') + '</div>' +
-      '<p class="s12 muted">번지까지 안 나오면 동이나 길을 고른 뒤 지도에서 집 자리를 한 번 눌러 주세요. 주변 장소를 찾을 때 위치를 약 100m 단위로 흐려서 보내고, 서버에 저장하지 않아요.</p></section>';
+      '<p class="s12 muted">번지까지 안 나오면 동이나 길을 고른 뒤 지도에서 집 자리를 한 번 눌러 주세요. 주변 장소를 찾을 때 위치를 약 100m 단위로 흐려서 보내고, 서버에 저장하지 않아요. 주소 검색은 <span data-geo-note>' + geoNote() + '</span>을 써요. 장소를 고르면 걷는 길을 찾으려고 집 위치를 약 10m 단위로 보내요(저장하지 않아요).</p></section>';
   }
   function short(n) { return n.replace(/ \(.*\)$/, ''); }
   function josa(w, a, b) { var c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 ? a : b; }
-  function kakao(kind, p) { var ll = (+p.lat).toFixed(5) + ',' + (+p.lng).toFixed(5); return kind === 'rv' ? 'https://map.kakao.com/link/roadview/' + ll : kind === 'to' ? 'https://map.kakao.com/link/to/' + encodeURIComponent(p.name) + ',' + ll : 'https://map.kakao.com/link/map/' + encodeURIComponent(p.name) + ',' + ll; }
+  // 카카오맵 링크. 카카오 장소 번호가 있으면 번호로 연다(로드뷰는 카카오가 그 장소에 맞는 사진을 골라 줌).
+  // 카카오 장소 번호가 없는 곳(정류장·주소로 정한 집)의 로드뷰는 placeRoadview 가 고른 최근 사진을 쓴다. 고르기 전·실패하면 좌표로 연다.
+  function kakaoId(p) { var kid = p.kid || (/^kakao-(\d+)$/.exec(p.id || '') || [])[1]; return kid && /^\d+$/.test(kid) ? kid : ''; }
+  function rvKey(p) { return p.id || 'home@' + p.lat + ',' + p.lng; }
+  function kakao(kind, p) {
+    var kid = kakaoId(p);
+    if (kid) return 'https://map.kakao.com/link/' + (kind === 'rv' ? 'roadview' : kind === 'to' ? 'to' : 'map') + '/' + kid;
+    if (kind === 'rv') { var rs = RVS[rvKey(p)]; if (rs && rs.url) return rs.url; if (p.rvUrl) return p.rvUrl; }
+    var ll = (+p.lat).toFixed(5) + ',' + (+p.lng).toFixed(5);
+    if (kind === 'rv' && p.rv) ll = p.rv[0] + ',' + p.rv[1];   // 예전 방식으로 찾아 둔 집 근처 길 위 지점
+    return kind === 'rv' ? 'https://map.kakao.com/link/roadview/' + ll : kind === 'to' ? 'https://map.kakao.com/link/to/' + encodeURIComponent(p.name || p.label || '우리 집') + ',' + ll : 'https://map.kakao.com/link/map/' + encodeURIComponent(p.name || p.label || '우리 집') + ',' + ll;
+  }
+  // 정류장처럼 카카오 장소 번호가 없는 곳의 로드뷰.
+  // 좌표로 열면 카카오가 가장 가까운 사진을 여는데, 큰길 위 옛 사진이 걸릴 수 있다.
+  // 예) 가천대역.가천대학교(5143): 13m 옆 큰길의 2017년 2월 사진이 열리고 정류장은 울타리 너머로 보임.
+  //     정류장이 있는 옆길의 2026년 8월 사진은 18m 떨어져 있다.
+  // 그래서 30m 안의 로드뷰 사진 중 가장 가까운 사진과 거리가 10m 안쪽인 것들에서 가장 최근 사진을 골라, 그 사진에서 장소 쪽을 바라보게 연다.
+  // 사진 번호가 클수록 최근이다(1071489417 = 2017.02, 1179295247 = 2024.03, 1213800511 = 2026.08 확인).
+  // 주소 형식은 카카오맵 좌표 링크(/link/roadview/위도,경도)가 넘겨 주는 주소와 같다(panoid·pan·urlX·urlY, urlX·urlY = 사진 위치 WCONGNAMUL).
+  // 집(far)은 길에서 멀 수 있어서(단지 안·건물 가운데), 30m 안에 사진이 없으면 25m씩 넓혀 가며(8방향, 300m까지) 사진이 있는 길을 먼저 찾고 그 둘레 30m에서 고른다.
+  var RVS = {};   // rvKey → { url, wait: [콜백] }
+  function placeRoadview(p, cb, far) {
+    var key = rvKey(p), c = RVS[key];
+    if (c && c.url) { if (cb) cb(c.url); return; }
+    if (c) { if (cb) c.wait.push(cb); return; }
+    c = RVS[key] = { url: '', wait: cb ? [cb] : [] };
+    var coord = 'https://map.kakao.com/link/roadview/' + (p.rv ? p.rv[0] + ',' + p.rv[1] : (+p.lat).toFixed(5) + ',' + (+p.lng).toFixed(5));
+    var done = function (u) {
+      if (c.url) return;
+      clearTimeout(timer);
+      c.url = u || coord;
+      c.wait.splice(0).forEach(function (f) { f(c.url); });
+      app.querySelectorAll('a[data-rv-place]').forEach(function (a) { var t = rvTarget(a.getAttribute('data-rv-place')); if (t && rvKey(t) === key) a.href = c.url; });
+    };
+    var timer = setTimeout(function () { done(''); }, far ? 10000 : 5000);
+    var k = window.kakao.maps, rc = new k.RoadviewClient(), cosLat = Math.cos(p.lat * Math.PI / 180);
+    var off = function (o, dN, dE) { return [o[0] + dN / 110540, o[1] + dE / (111320 * cosLat)]; };
+    var ask = function (q, r) { return new Promise(function (ok) { rc.getNearestPanoId(new k.LatLng(q[0], q[1]), r, ok); }); };
+    // o 에서 0·8·16·24m 고리 위 37곳에서 6m 안의 사진을 묻는다 → 약 30m 안의 사진을 다 모은다 (사진 위치는 물어본 곳의 평균)
+    var scan = function (o) {
+      var pts = [o], hits = {};
+      [[8, 8], [16, 12], [24, 16]].forEach(function (r) {
+        for (var i = 0; i < r[1]; i++) { var a = 2 * Math.PI * i / r[1]; pts.push(off(o, r[0] * Math.cos(a), r[0] * Math.sin(a))); }
+      });
+      return Promise.all(pts.map(function (q) { return ask(q, 6).then(function (id) { if (id) (hits[id] = hits[id] || []).push(q); }); })).then(function () { return hits; });
+    };
+    // 집에서 25m씩 넓혀 가며 20m 안에 사진이 있는 지점 찾기 (300m 안에 하나도 없으면 null)
+    var road = function () {
+      var o = [+p.lat, +p.lng];
+      return ask(o, 300).then(function (any) {
+        if (!any) return null;
+        return (function ring(d) {
+          if (d > 300 || c.url) return null;
+          var pts = [0, 1, 2, 3, 4, 5, 6, 7].map(function (a) { return off(o, d * Math.cos(a * Math.PI / 4), d * Math.sin(a * Math.PI / 4)); });
+          return Promise.all(pts.map(function (q) { return ask(q, 20).then(function (id) { return id ? q : null; }); })).then(function (l) { return l.filter(Boolean)[0] || ring(d + 25); });
+        })(25);
+      });
+    };
+    scan([+p.lat, +p.lng]).then(function (hits) {
+      if (Object.keys(hits).length || !far) return hits;
+      return road().then(function (q) { return q ? scan(q) : {}; });
+    }).then(function (hits) {
+      var all = Object.keys(hits).map(function (id) {
+        var l = hits[id], lat = 0, lng = 0;
+        l.forEach(function (q) { lat += q[0] / l.length; lng += q[1] / l.length; });
+        var dN = (p.lat - lat) * 110540, dE = (p.lng - lng) * 111320 * cosLat;
+        return { id: id, lat: lat, lng: lng, dN: dN, dE: dE, d: Math.sqrt(dN * dN + dE * dE) };
+      });
+      if (!all.length) return done('');
+      // 가장 가까운 사진보다 10m 넘게 먼 사진은 다른 길(울타리·건물 너머)일 수 있어서 뺀다
+      // 예) 가천대(5077): 큰길 2024년 사진 8m · 옆길 2026년 사진 30m → 2024년. 가천대역.가천대학교(5143): 큰길 2017년 13m · 옆길 2026년 18m → 2026년
+      var d0 = Math.min.apply(null, all.map(function (x) { return x.d; }));
+      var near = all.filter(function (x) { return x.d <= d0 + 10; });
+      var top = near.reduce(function (a, b) { return +b.id > +a.id ? b : a; });
+      // 같은 날 찍은 사진은 번호가 이어진다(1213800505~517). 가장 최근 사진과 번호가 2만 안쪽인 것 중 장소에서 가장 가까운 것을 쓴다
+      var best = near.filter(function (x) { return +top.id - +x.id < 20000; }).reduce(function (a, b) { return b.d < a.d ? b : a; });
+      var id = best.id, lat = best.lat, lng = best.lng, dN = best.dN, dE = best.dE;
+      // 카카오 로드뷰 pan: 북쪽 0도에서 시계 방향. 사진이 장소 바로 위(4m 안)면 방향을 넣지 않는다
+      var pan = best.d < 4 ? '' : '&pan=' + ((Math.atan2(dE, dN) * 180 / Math.PI + 360) % 360).toFixed(1);
+      var sv = k.services;
+      if (!sv) return done('https://map.kakao.com/link/roadview/' + lat.toFixed(6) + ',' + lng.toFixed(6));
+      new sv.Geocoder().transCoord(lng, lat, function (r, st) {
+        if (st !== sv.Status.OK || !r || !r[0]) return done('https://map.kakao.com/link/roadview/' + lat.toFixed(6) + ',' + lng.toFixed(6));
+        done('https://map.kakao.com/?panoid=' + id + pan + '&zoom=0&map_type=TYPE_MAP&map_attribute=ROADVIEW&urlX=' + Math.round(r[0].x) + '&urlY=' + Math.round(r[0].y));
+      }, { input_coord: sv.Coords.WGS84, output_coord: sv.Coords.WCONGNAMUL });
+    });
+  }
+  function rvTarget(id) { return id === 'home' ? home() : places().filter(function (x) { return x.id === id; })[0]; }
+  // 집에 고른 사진은 이 기기에 저장해 두고 30일이 지나면 다시 고른다(그사이 새로 찍은 사진이 생길 수 있음)
+  var RV_KEEP = 30 * 864e5;
+  function homeRvFresh(h) { return !!h.rvUrl && Date.now() - (h.rvAt || 0) < RV_KEEP; }
+  // 화면의 로드뷰 버튼(data-rv-place)마다 사진을 미리 골라 둔다. 고르기 전에 누르면 새 창을 먼저 열고 다 고르면 그 창을 옮긴다(팝업 차단 방지)
+  function fixPlaceRoadview() {
+    if (KM.st !== 'ok') return;
+    app.querySelectorAll('a[data-rv-place]').forEach(function (a) {
+      var id = a.getAttribute('data-rv-place'), p = rvTarget(id), isHome = id === 'home';
+      if (!p || kakaoId(p) || (isHome && homeRvFresh(p))) return;
+      var key = rvKey(p);
+      var keep = isHome ? function (u) {
+        var h = home();
+        if (S.home !== h || rvKey(h) !== key || !/panoid=/.test(u) || h.rvUrl === u) return;
+        h.rvUrl = u; h.rvAt = Date.now(); save();
+      } : null;
+      if (!a.dataset.rvBound) {
+        a.dataset.rvBound = '1';
+        a.addEventListener('click', function (e) {
+          if (RVS[key] && RVS[key].url) return;
+          e.preventDefault();
+          var w = window.open('about:blank', '_blank');
+          placeRoadview(p, function (u) { if (w && !w.closed) { try { w.opener = null; } catch (x) {} w.location.href = u; } else window.open(u, '_blank', 'noopener'); }, isHome);
+        });
+      }
+      placeRoadview(p, keep, isHome);
+    });
+  }
   function icoSvg(name, x, y, s) { return '<svg class="ico" x="' + x + '" y="' + y + '" width="' + s + '" height="' + s + '" viewBox="0 0 24 24">' + ICON[name] + '</svg>'; }
 
   // 지도에 올릴 장소: 전체 보기에서는 분류마다 가까운 몇 곳만 (너무 빽빽하지 않게)
@@ -1978,13 +2289,22 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function popCard(sel) {
     var saved = !!S.saved[sel.id];
-    return '<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="ptile">' + ic(CATS[sel.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(sel.name) + '</b><p class="s12 muted">' + esc(sel.sub) + ' · 걸어서 약 ' + sel.min + '분 · ' + sel.m + 'm</p></div><button type="button" class="icon-btn" style="width:32px;height:32px;background:transparent" data-act="place" data-v="" aria-label="닫기">' + ic('x', 'sm') + '</button></div>' +
+    return '<div class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="ptile">' + ic(placeIc(sel)) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(sel.name) + '</b><p class="s12 muted">' + esc(sel.sub) + ' · ' + (function () { var w = WALK[walkKey(home(), sel)]; return w && w.st === 'ok' ? '집에서 걸어서 ' + walkMin(w.time) + '분 · ' + meters(w.dist) : '걸어서 약 ' + sel.min + '분 · ' + sel.m + 'm'; })() + '</p></div><button type="button" class="icon-btn" style="width:32px;height:32px;background:transparent" data-act="place" data-v="" aria-label="닫기">' + ic('x', 'sm') + '</button></div>' +
       (sel.desc ? '<p class="s13 sub" style="margin-top:8px">' + esc(sel.desc) + '</p>' : '') + (sel.hours ? '<p class="s12 muted">영업시간(OSM): ' + esc(sel.hours) + '</p>' : '') +
-      '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + kakao('to', sel) + '" target="_blank" rel="noopener">길찾기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '" target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>';
+      (sel.url ? '<p class="s12"><a href="' + esc(sel.url) + '" target="_blank" rel="noopener">카카오맵에서 영업시간·리뷰 보기</a></p>' : '') +
+      '<div class="row" style="margin-top:12px;flex-wrap:nowrap"><a class="btn sm" style="flex:1 1 auto" href="' + walkLink(home(), sel) + '" target="_blank" rel="noopener" aria-label="우리 집에서 ' + esc(sel.name) + '까지 걸어가는 길 (카카오맵, 새 창)">길찾기</a><a class="btn ghost sm" href="' + kakao('rv', sel) + '"' + (kakaoId(sel) ? '' : ' data-rv-place="' + esc(sel.id) + '"') + ' target="_blank" rel="noopener">로드뷰</a><button type="button" class="icon-btn save-btn" style="width:38px;height:38px" data-act="save" data-v="' + sel.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>';
+  }
+  // 지도 색: auto(앱 테마를 따름) | light | dark — 지도에만 적용, 이 브라우저에 저장
+  function mapTheme() { return S.mapTheme === 'light' || S.mapTheme === 'dark' ? S.mapTheme : 'auto'; }
+  function mapThemeCtl() {
+    var cur = mapTheme();
+    return '<div class="map-theme" role="group" aria-label="지도 색">' + [['auto', '자동'], ['light', '밝게'], ['dark', '어둡게']].map(function (o) {
+      return '<button type="button" data-act="maptheme" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '"' + (o[0] === 'auto' ? ' title="앱 화면 테마를 따라가요"' : '') + '>' + o[1] + '</button>';
+    }).join('') + '</div>';
   }
   function placeMap(cat, selId, H, labels) {
     var sel = selId && findPlace(selId);
-    if (window.L) return '<div class="map-box lbox"><div data-lmap data-cat="' + cat + '" data-labels="' + (labels ? 1 : 0) + '" style="height:' + H + 'px"></div>' + (sel ? '<div class="pop pop-fix" role="dialog" aria-label="' + esc(sel.name) + '">' + popCard(sel) + '</div>' : '') + '</div>';
+    if (window.L || KM.st !== 'off') return '<div class="map-box lbox"><div data-lmap data-cat="' + cat + '" data-labels="' + (labels ? 1 : 0) + '" style="height:' + H + 'px"></div>' + mapThemeCtl() + (sel ? '<div class="pop pop-fix" role="dialog" aria-label="' + esc(sel.name) + '">' + popCard(sel) + '</div>' : '') + '</div>';
     return svgMap(cat, selId, H, labels);
   }
   // 실제 지도 (Leaflet) — 화면을 다시 그려도 지도 하나를 계속 옮겨 붙여 쓴다
@@ -1993,35 +2313,183 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!window.L) return null;
     if (LM.map) return LM.map;
     LM.el = document.createElement('div'); LM.el.className = 'lmap';
-    LM.map = L.map(LM.el, { zoomControl: true, scrollWheelZoom: false, tap: false });
+    if (window.ResizeObserver) new ResizeObserver(function () { if (LM.map && LM.el.offsetWidth && LM.el.offsetHeight) { LM.map.invalidateSize({ pan: false }); if (LM.want) LM.map.setView(LM.want, LM.map.getZoom(), { animate: false }); } }).observe(LM.el);
+    LM.map = L.map(LM.el, { zoomControl: false, scrollWheelZoom: true, tap: false });   // 지도 위에서 마우스 휠로 확대·축소
+    L.control.zoom({ position: 'topright' }).addTo(LM.map);   // 왼쪽 위는 '지도 색' 버튼 자리 (카카오 지도처럼 오른쪽)
     // OpenStreetMap 기본 지도 (키 없음, 출처 표시 필수)
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> 기여자' }).addTo(LM.map);
     LM.layer = L.layerGroup().addTo(LM.map);
     LM.map.on('click', function (e) { if (S.pickHome) setHome(e.latlng.lat, e.latlng.lng, '지도에서 고른 위치', 'pick'); });
+    LM.map.on('dragend zoomend', function () { LM.want = LM.map.getCenter(); });   // 사용자가 옮긴 위치를 새 가운데로
     return LM.map;
   }
+  // 카카오 지도: 처음 지도를 그릴 때 한 번만 준비한다. idle → loading → ok(카카오) | off(OpenStreetMap)
+  // 키가 없거나(/api/config 없음·null), SDK가 거절하면(도메인 미등록 등) OpenStreetMap 지도로 보여 준다.
+  // 주의: 이 파일 안에 kakao() 링크 함수가 따로 있어서 SDK는 꼭 window.kakao 로 부른다.
+  var KM = { st: 'idle', why: '', wait: [] };
+  function kakaoSdk() { var w = window.kakao; return w && w.maps && w.maps.load ? w.maps : null; }
+  // 주소 검색 등 지도 없는 화면에서도 쓸 수 있게: cb 는 준비가 끝나면(성공이든 실패든) 불린다
+  function kakaoBoot(cb) {
+    if (cb) { if (KM.st === 'ok' || KM.st === 'off') cb(); else KM.wait.push(cb); }
+    if (KM.st !== 'idle') return;
+    KM.st = 'loading';
+    var settled = false;
+    var end = function (st, why) {
+      if (settled) return; settled = true; clearTimeout(timer); KM.st = st; KM.why = why || '';
+      if (why && why !== 'no-key') console.warn('카카오 지도를 못 불러와서 OpenStreetMap 지도를 써요 (' + why + '). 카카오 콘솔에 ' + location.origin + ' 도메인이 등록돼 있는지 확인하세요.');
+      KM.wait.splice(0).forEach(function (f) { f(); });
+      var gn = app.querySelector('[data-geo-note]'); if (gn) gn.textContent = geoNote();
+      if (st === 'off' && !window.L) render(true); else mountMap();
+    };
+    var timer = setTimeout(function () { end('off', 'timeout'); }, 8000);
+    fetch(API + '/api/config').then(function (r) { return r.ok ? r.json() : {}; }).then(function (c) {
+      var key = c && c.kakaoMapKey;
+      if (!key || !/^[0-9a-f]{32}$/.test(key)) return end('off', 'no-key');
+      // 도메인 등록 전에 받은 거절(401) 응답을 브라우저가 기억할 수 있어서, 실패하면 주소를 바꿔 한 번 더 시도한다
+      var load = function (retry) {
+        var s = document.createElement('script');
+        s.src = 'https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&libraries=services&appkey=' + key + (retry ? '&r=' + Date.now() : '');   // services: 주소·장소 검색
+        var bad = function () { s.remove(); if (retry) end('off', 'sdk'); else load(true); };
+        s.onerror = bad;
+        s.onload = function () {   // 거절 응답이 빈 스크립트로 '로드'되는 경우도 있어서 SDK가 실제로 생겼는지 본다
+          var sdk = kakaoSdk(); if (!sdk) return bad();
+          sdk.load(function () { end('ok'); });
+        };
+        document.head.appendChild(s);
+      };
+      load(false);
+    }).catch(function () { end('off', 'config'); });
+  }
+  var KMAP = { map: null, el: null, objs: [], center: '', sel: '' };
+  function mountKakao(ph) {
+    var k = window.kakao.maps, h = home(), ck = h.lat + ',' + h.lng, at = function (p) { return new k.LatLng(p.lat, p.lng); };
+    if (!KMAP.el) {
+      KMAP.el = document.createElement('div'); KMAP.el.className = 'lmap kmap';
+      // 지도 칸 크기가 바뀌면(창 크기 등) 카카오 지도에 알려 주고, 정해 둔 가운데(KMAP.want)로 다시 맞춘다.
+      // 카카오 지도는 크기가 바뀌면 왼쪽 위를 기준으로 다시 그려서 가운데가 밀린다. 화면에서 떼어 낸 순간(크기 0)은 건너뛴다.
+      if (window.ResizeObserver) new ResizeObserver(function () { if (KMAP.map && KMAP.el.offsetWidth && KMAP.el.offsetHeight) { KMAP.map.relayout(); if (KMAP.want) KMAP.map.setCenter(KMAP.want); } }).observe(KMAP.el);
+    }
+    ph.appendChild(KMAP.el);
+    if (!KMAP.map) {   // 크기가 잡힌 뒤에 만든다
+      KMAP.map = new k.Map(KMAP.el, { center: at(h), level: 4, scrollwheel: true });   // 지도 위에서 마우스 휠로 확대·축소
+      KMAP.map.addControl(new k.ZoomControl(), k.ControlPosition.RIGHT);
+      k.event.addListener(KMAP.map, 'click', function (e) { if (S.pickHome) setHome(e.latLng.getLat(), e.latLng.getLng(), '지도에서 고른 위치', 'pick'); });
+      // 사용자가 직접 끌거나 확대·축소하면 그 위치를 새 가운데로 삼는다
+      k.event.addListener(KMAP.map, 'dragend', function () { KMAP.want = KMAP.map.getCenter(); });
+      k.event.addListener(KMAP.map, 'zoom_changed', function () { KMAP.want = KMAP.map.getCenter(); });
+      KMAP.center = ck; KMAP.want = at(h);
+    }
+    KMAP.el.classList.toggle('picking', !!S.pickHome);
+    KMAP.el.setAttribute('data-mt', mapTheme());
+    KMAP.map.relayout();
+    if (KMAP.center !== ck) { KMAP.map.setLevel(4); KMAP.want = at(h); KMAP.center = ck; KMAP.before = null; }
+    KMAP.map.setCenter(KMAP.want);   // 화면을 다시 그려도(분류 바꾸기 등) 가운데는 그대로
+    KMAP.objs.forEach(function (o) { o.setMap(null); }); KMAP.objs = [];
+    var add = function (o) { KMAP.objs.push(o); return o; };
+    // 장소 마커는 다 올리지 않는다(카카오 지도 자체의 상호 표시와 겹쳐 복잡해서). 고른 장소 하나만 핀으로 표시한다.
+    // 집은 직접 정했을 때(주소 검색·현재 위치·지도에서 고르기)나 장소를 골랐을 때 표시한다.
+    // 장소를 고르면 집과 장소를 선으로 잇고 거리를 보여 준다(이때는 예시 위치여도 집을 표시).
+    var sel = S.mapSel && findPlace(S.mapSel);
+    if (S.home || sel) add(new k.CustomOverlay({ map: KMAP.map, position: at(h), content: homePin(h), xAnchor: 0.5, yAnchor: 0.5, zIndex: 5 }));
+    if (sel) {
+      // 장소를 고르기 전 화면(가운데·확대 정도)을 기억해 두었다가, 장소 카드를 닫으면(X) 그 화면으로 돌아간다
+      if (!KMAP.before) KMAP.before = { c: KMAP.want, lv: KMAP.map.getLevel() };
+      var R = routeLook(h, sel), ll = function (p) { return new k.LatLng(p[0], p[1]); };
+      R.lines.forEach(function (ln) { add(new k.Polyline({ map: KMAP.map, path: ln.pts.map(ll), strokeWeight: ln.dash ? 4 : 6, strokeColor: R.color, strokeOpacity: ln.dash ? 0.8 : 0.95, strokeStyle: ln.dash ? 'shortdash' : 'solid' })); });
+      add(new k.CustomOverlay({ map: KMAP.map, position: at(sel), content: R.pin, xAnchor: 0.5, yAnchor: 0.5, zIndex: 6 }));
+      if (KMAP.fit !== R.fit) {   // 새로 고른 장소(또는 길을 막 찾았을 때)면 집·길·장소가 한 화면에 들어오게 (왼쪽 아래 장소 카드 자리는 비워 둠)
+        var b = new k.LatLngBounds(); R.all.forEach(function (p) { b.extend(ll(p)); });
+        var pd = routePad(KMAP.el);
+        KMAP.map.setBounds(b, pd[0], pd[1], pd[2], pd[3]);
+        if (KMAP.map.getLevel() < 3) KMAP.map.setLevel(3, { anchor: ll(R.mid) });   // 아주 가까우면 너무 확대되지 않게
+        KMAP.want = KMAP.map.getCenter(); KMAP.fit = R.fit;
+      }
+    } else {
+      KMAP.fit = '';
+      if (KMAP.before) { KMAP.map.setLevel(KMAP.before.lv); KMAP.want = KMAP.before.c; KMAP.map.setCenter(KMAP.want); KMAP.before = null; }
+    }
+    KMAP.sel = sel ? sel.id : '';
+  }
+  // 집 → 고른 장소 표시용: 집 아이콘, 장소 핀 (거리·시간은 지도 대신 장소 카드에 보여 준다)
+  function homePin(h) { return '<span class="lhome" role="img" aria-label="우리 집 위치 · ' + esc(h.label) + '" title="' + esc(h.label) + '">' + ic('home', 'sm') + '</span>'; }
+  // 실제 걷는 길: 서버(/api/route → 카카오맵 도보 경로 API)에 물어서 집·장소마다 한 번만 받아 둔다. REST 키는 서버에만 있다.
+  // 길을 못 찾으면(키 없음·실패) 직선으로 그린다. 받아 오면 화면을 다시 그린다.
+  // 찾은 길은 이 브라우저에 하루 동안 저장해서(최근 150개), 다시 열 때 카카오에 또 묻지 않는다
+  var WALK_LS = 'jachwi-walk-v1';
+  var WALK = (function () { try { var c = JSON.parse(localStorage.getItem(WALK_LS) || '{}'), o = {}, now = Date.now(); Object.keys(c).forEach(function (k) { if (c[k] && c[k].st === 'ok' && now - c[k].at < 864e5) o[k] = c[k]; }); return o; } catch (e) { return {}; } })();
+  function walkSave() {
+    try { var keep = {}; Object.keys(WALK).filter(function (k) { return WALK[k].st === 'ok'; }).sort(function (a, b) { return WALK[b].at - WALK[a].at; }).slice(0, 150).forEach(function (k) { keep[k] = WALK[k]; }); localStorage.setItem(WALK_LS, JSON.stringify(keep)); } catch (e) {}
+  }
+  var walkT;
+  function walkKey(h, p) { return (+h.lat).toFixed(4) + ',' + (+h.lng).toFixed(4) + '>' + p.id; }
+  function walkRoute(h, p) {
+    var key = walkKey(h, p), w = WALK[key];
+    if (w) return w;
+    w = WALK[key] = { st: 'loading' };
+    fetch(API + '/api/route?sy=' + (+h.lat).toFixed(4) + '&sx=' + (+h.lng).toFixed(4) + '&ey=' + (+p.lat).toFixed(5) + '&ex=' + (+p.lng).toFixed(5) + '&en=' + encodeURIComponent(String(p.name).slice(0, 40)))
+      .then(function (r) { return r.json(); })
+      .then(function (j) { if (j && j.ok && j.points && j.points.length > 1) { w.st = 'ok'; w.pts = j.points; w.dist = j.distance; w.time = j.time; w.url = j.url; w.at = Date.now(); walkSave(); } else w.st = 'fail'; })
+      .catch(function () { w.st = 'fail'; })
+      .then(function () {   // 고른 장소이거나 생활 인프라 화면이면 다시 그린다 (여러 개가 한꺼번에 오면 한 번만)
+        if (S.mapSel === p.id || route() === 'infra') { clearTimeout(walkT); walkT = setTimeout(function () { render(true); }, 80); }
+      });
+    return w;
+  }
+  function meters(m) { return m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m) + 'm'; }
+  function walkMin(sec) { return Math.max(1, Math.round(sec / 60)); }
+  // 카카오맵 도보 길찾기 (출발 = 우리 집). 도보 경로 API가 준 링크가 있으면 그걸 쓴다.
+  function walkLink(h, p) {
+    var w = WALK[walkKey(h, p)];
+    if (w && w.st === 'ok' && /^https:\/\/map\.kakao\.com\//.test(w.url || '')) return w.url;
+    var nm = function (s) { return encodeURIComponent(String(s).replace(/[,/]/g, ' ')); };
+    return 'https://map.kakao.com/link/by/walk/' + nm('우리 집') + ',' + (+h.lat).toFixed(6) + ',' + (+h.lng).toFixed(6) + '/' + nm(p.name) + ',' + (+p.lat).toFixed(6) + ',' + (+p.lng).toFixed(6);
+  }
+  function routeLook(h, sel) {
+    var w = walkRoute(h, sel), real = w.st === 'ok', H = [h.lat, h.lng], P = [sel.lat, sel.lng];
+    // 실제 길은 실선, 집·장소에서 길까지 잇는 짧은 구간과 직선(길 못 찾음)은 점선
+    var lines = real ? [{ pts: [H, w.pts[0]], dash: true }, { pts: w.pts }, { pts: [w.pts[w.pts.length - 1], P], dash: true }] : [{ pts: [H, P], dash: true }];
+    return {
+      color: getComputedStyle(document.documentElement).getPropertyValue('--brand-text').trim() || '#0D6650',
+      lines: lines,
+      all: real ? [H, P].concat(w.pts) : [H, P],
+      mid: real ? w.pts[Math.floor(w.pts.length / 2)] : [(h.lat + sel.lat) / 2, (h.lng + sel.lng) / 2],
+      fit: sel.id + '|' + w.st,
+      pin: '<span class="lmk on" role="img" aria-label="' + esc(sel.name) + '">' + ic(placeIc(sel), 'sm') + '</span>',
+    };
+  }
+  // 지도 여백 [위, 오른쪽, 아래, 왼쪽]: 넓은 지도에서는 왼쪽 아래에 장소 카드(300px)가 떠 있어서 왼쪽을 더 비운다
+  function routePad(el) { return el.offsetWidth > 640 ? [70, 70, 70, 340] : [60, 50, 60, 50]; }
   function mountMap() {
-    var ph = app.querySelector('[data-lmap]'); if (!ph || !ensureMap()) return;
+    var ph = app.querySelector('[data-lmap]'); if (!ph) return;
+    kakaoBoot();
+    if (KM.st === 'loading') return;   // 준비가 끝나면 kakaoBoot 가 mountMap 을 다시 부른다
+    if (KM.st === 'ok') return mountKakao(ph);
+    if (!ensureMap()) return;
     ph.appendChild(LM.el); LM.el.style.height = '100%';
     LM.el.classList.toggle('picking', !!S.pickHome);
+    LM.el.setAttribute('data-mt', mapTheme());
     LM.map.invalidateSize();
     var h = home(), ck = h.lat + ',' + h.lng;
-    if (LM.center !== ck) { LM.map.setView([h.lat, h.lng], 16); LM.center = ck; }
+    if (LM.center !== ck) { LM.want = L.latLng(h.lat, h.lng); LM.map.setView(LM.want, 16, { animate: false }); LM.center = ck; LM.before = null; }
+    else if (LM.want) LM.map.setView(LM.want, LM.map.getZoom(), { animate: false });   // 다시 그려도 가운데는 그대로
     LM.layer.clearLayers();
-    var brand = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() || '#5B4CDB';
-    L.circle([h.lat, h.lng], { radius: 670, color: brand, weight: 1, dashArray: '4 6', fillOpacity: 0.04, interactive: false }).addTo(LM.layer);
-    L.circle([h.lat, h.lng], { radius: 335, color: brand, weight: 1, dashArray: '4 6', fillOpacity: 0.06, interactive: false }).addTo(LM.layer);
-    L.marker([h.lat, h.lng], { icon: L.divIcon({ className: '', html: '<span class="lhome" aria-hidden="true">' + ic('home', 'sm') + '</span>', iconSize: [36, 36], iconAnchor: [18, 18] }), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(LM.layer);
-    var cat = ph.dataset.cat || 'all', sel = S.mapSel && findPlace(S.mapSel), list = mapList(cat, ph.dataset.labels === '1' ? 12 : 6);
-    if (sel && list.indexOf(sel) < 0) list.push(sel);
-    list.forEach(function (p) {
-      var on = sel && sel.id === p.id;
-      var mk = L.marker([p.lat, p.lng], { title: p.name + ' · ' + p.min + '분', alt: p.name, zIndexOffset: on ? 900 : 0, icon: L.divIcon({ className: '', html: '<span class="lmk' + (on ? ' on' : '') + '">' + ic(CATS[p.cat][1], 'sm') + '</span>', iconSize: [30, 30], iconAnchor: [15, 15] }) });
-      mk.on('click', function () { S.mapSel = p.id; save(); render(true); });
-      if (on) mk.bindTooltip(esc(short(p.name)), { permanent: true, direction: 'top', offset: [0, -16], className: 'ltip' });
-      mk.addTo(LM.layer);
-    });
-    if (sel && LM.sel !== sel.id) { if (!LM.map.getBounds().pad(-0.15).contains([sel.lat, sel.lng])) LM.map.panTo([sel.lat, sel.lng]); }
+    // 카카오 지도와 같게 장소 마커는 올리지 않고, 집은 직접 정했을 때만 표시한다
+    var sel = S.mapSel && findPlace(S.mapSel);
+    if (S.home || sel) L.marker([h.lat, h.lng], { icon: L.divIcon({ className: '', html: homePin(h), iconSize: [36, 36], iconAnchor: [18, 18] }), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(LM.layer);
+    if (sel) {   // 카카오 지도와 같게: 집 → 장소 걷는 길(못 찾으면 직선)과 거리 표시
+      if (!LM.before) LM.before = { c: LM.want || LM.map.getCenter(), z: LM.map.getZoom() };   // 고르기 전 화면 기억
+      var R = routeLook(h, sel);
+      R.lines.forEach(function (ln) { L.polyline(ln.pts, { color: R.color, weight: ln.dash ? 4 : 6, opacity: ln.dash ? 0.8 : 0.95, dashArray: ln.dash ? '6 8' : null, interactive: false }).addTo(LM.layer); });
+      L.marker([sel.lat, sel.lng], { icon: L.divIcon({ className: '', html: R.pin, iconSize: [30, 30], iconAnchor: [15, 15] }), keyboard: false, interactive: false, zIndexOffset: 1100 }).addTo(LM.layer);
+      if (LM.fit !== R.fit) {
+        var pd = routePad(LM.el);
+        LM.map.fitBounds(R.all, { paddingTopLeft: [pd[3], pd[0]], paddingBottomRight: [pd[1], pd[2]], maxZoom: 18, animate: false });
+        LM.want = LM.map.getCenter(); LM.fit = R.fit;
+      }
+    } else {
+      LM.fit = '';
+      if (LM.before) { LM.want = LM.before.c; LM.map.setView(LM.want, LM.before.z, { animate: false }); LM.before = null; }   // 장소 카드를 닫으면 고르기 전 화면으로
+    }
     LM.sel = sel ? sel.id : '';
   }
 
@@ -2046,7 +2514,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var rings = '<circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r10 + '"/><circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + r5 + '"/>';
     var marks = list.map(function (p) {
       var xy = at(p), on = sel && sel.id === p.id, r = on ? 18 : 15, s = on ? 18 : 16;
-      return '<g class="mk' + (on ? ' on' : '') + '" data-act="place" data-v="' + p.id + '" role="button" tabindex="0" aria-label="' + esc(p.name) + ', 걸어서 ' + p.min + '분"><circle class="b" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '"/>' + icoSvg(CATS[p.cat][1], xy[0] - s / 2, xy[1] - s / 2, s) +
+      return '<g class="mk' + (on ? ' on' : '') + '" data-act="place" data-v="' + p.id + '" role="button" tabindex="0" aria-label="' + esc(p.name) + ', 걸어서 ' + p.min + '분"><circle class="b" cx="' + xy[0] + '" cy="' + xy[1] + '" r="' + r + '"/>' + icoSvg(placeIc(p), xy[0] - s / 2, xy[1] - s / 2, s) +
         (labels || on ? '<text x="' + xy[0] + '" y="' + (xy[1] + r + 13) + '">' + esc(short(p.name)) + '</text>' : '') + '</g>';
     }).join('');
     var hm = '<g class="home-mk" aria-hidden="true"><circle class="b2" cx="' + cx + '" cy="' + cy + '" r="20"/><path d="M' + (cx - 8) + ' ' + (cy + 1) + 'l8-7 8 7M' + (cx - 5) + ' ' + cy + 'v8h10v-8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>';
@@ -2056,7 +2524,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<div class="cats" role="group" aria-label="분류">' + ['all'].concat(cats || Object.keys(CATS)).map(function (k) { return '<button type="button" class="cat" data-act="' + act + '" data-v="' + k + '" aria-pressed="' + (cur === k) + '">' + (k === 'all' ? '전체' : ic(CATS[k][1], 'sm') + CATS[k][0]) + '</button>'; }).join('') + '</div>';
   }
   function placeRow(p, go) {
-    return '<button type="button" class="place" data-act="place" data-v="' + p.id + '"' + (go ? ' data-go="map"' : '') + ' aria-pressed="' + (S.mapSel === p.id) + '"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[p.cat][1]) + '</span><span class="what"><b>' + esc(p.name) + '</b><span class="s12 muted">' + esc(p.sub) + (p.addr ? ' · ' + esc(p.addr) : '') + '</span></span><span class="s13" style="text-align:right;white-space:nowrap"><b>' + p.min + '분</b><br><span class="muted s12">' + p.m + 'm</span></span></button>';
+    return '<button type="button" class="place" data-act="place" data-v="' + p.id + '"' + (go ? ' data-go="map"' : '') + ' aria-pressed="' + (S.mapSel === p.id) + '" title="' + esc(p.name + (p.addr ? ' · ' + p.addr : '')) + '"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(placeIc(p)) + '</span><span class="what"><b>' + esc(p.name) + '</b><span class="s12 muted">' + esc(p.sub) + (p.addr ? ' · ' + esc(p.addr) : '') + '</span></span><span class="s13" style="text-align:right;white-space:nowrap"><b>' + p.min + '분</b><br><span class="muted s12">' + p.m + 'm</span></span></button>';
   }
   var ART = '<svg class="art" viewBox="0 0 280 120" aria-hidden="true"><g fill="var(--brand)"><rect x="12" y="46" width="40" height="74" rx="4" opacity=".18"/><rect x="58" y="22" width="48" height="98" rx="4" opacity=".28"/><rect x="112" y="54" width="36" height="66" rx="4" opacity=".18"/><rect x="196" y="34" width="52" height="86" rx="4" opacity=".24"/><rect x="252" y="62" width="24" height="58" rx="4" opacity=".16"/></g>' +
     '<g fill="var(--surface)" opacity=".9"><rect x="66" y="32" width="8" height="8" rx="1.5"/><rect x="80" y="32" width="8" height="8" rx="1.5"/><rect x="66" y="48" width="8" height="8" rx="1.5"/><rect x="94" y="48" width="8" height="8" rx="1.5"/><rect x="204" y="44" width="8" height="8" rx="1.5"/><rect x="218" y="44" width="8" height="8" rx="1.5"/><rect x="232" y="60" width="8" height="8" rx="1.5"/></g>' +
@@ -2101,8 +2569,14 @@ document.addEventListener('DOMContentLoaded', function () {
       : R.report.required && R.report.due < R.M ? '<div class="banner due c12">' + ic('info') + '<span>전월세 신고 기한(<b>' + md(R.report.due) + '</b>)이 입주보다 먼저 와요. 전입신고와 합칠 수 없으니 따로 신고하세요.</span></div>'
       : R.report.required && !S.done.mv && P.dm <= 14 ? '<div class="banner c12">' + ic('info') + '<span><b>전입신고할 때 임대차계약서를 같이 내세요.</b> 전월세 신고와 확정일자까지 한 번에 끝나요. ' + (ctr ? '가까운 <a href="#map" data-act="place" data-v="' + ctr.id + '" data-go="map">' + esc(short(ctr.name)) + '</a>까지 걸어서 약 ' + ctr.min + '분이에요.' : '정부24에서 온라인으로 하거나 새 주소의 행정복지센터에 가면 돼요.') + '</span></div>' : '';
     var mc = S.homeCat || 'all';
+    if (mc !== 'all' && !CATS[mc]) mc = 'all';
+    var homeList = places().filter(function (p) { return mc === 'all' || p.cat === mc; });
     var explore = noHome ? '<div class="c8">' + homeCard() + '</div>' : '<section class="card c8"><div class="split" style="flex-wrap:wrap;margin-bottom:12px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="ptile" style="width:44px;height:44px">' + ic('pin') + '</span><div><h2 style="font-size:19px;font-weight:800">우리 동네 탐색하기</h2><p class="s13 muted">' + esc(home().label) + '</p></div></div><a class="more s13" href="#map" style="font-weight:700">크게 보기' + ic('chev', 'sm') + '</a></div>' +
-      '<div class="split" style="margin-bottom:10px;flex-wrap:wrap">' + catChips(mc, 'homecat', ['food', 'cafe', 'study', 'gym', 'park', 'life', 'medical']) + '</div><div class="row" style="margin-bottom:10px">' + dataBadge() + (S.home ? '' : ' <a class="s13" href="#map">내 집 위치 정하기</a>') + '</div>' + placeMap(mc, S.mapSel, 360, false) + '<div style="margin-top:8px">' + sourceNote() + '</div></section>';
+      '<div style="margin-bottom:10px">' + catChips(mc, 'homecat') + '</div><div class="row" style="margin-bottom:10px">' + dataBadge() + (S.home ? '' : ' <a class="s13" href="#map">내 집 위치 정하기</a>') + '</div>' + placeMap(mc, S.mapSel, 360, false) +
+      // 지도 탐색과 같게: 분류를 고르면 아래 목록이 바뀌고, 장소를 누르면 지도가 그쪽으로 옮겨 가며 카드가 뜬다
+      '<div class="card-h" style="margin:22px 0 14px"><h2>' + (mc === 'all' ? '가까운 순서' : CATS[mc][0]) + '</h2><span class="s12 muted">' + homeList.length + '곳</span></div>' +
+      '<div class="scroll-list" data-rows="5">' + (homeList.length ? homeList.slice(0, 120).map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : '1km 안에서 찾은 곳이 없어요.') + '</p>') + '</div>' +
+      '<div style="margin-top:8px">' + sourceNote() + '</div></section>';
     var near = [nearest('public', /행정복지센터|주민|관공서/), nearest('safety'), nearest('park'), nearest('study', /도서관/)].filter(Boolean);
     var nearCard = '<section class="card c4"><div class="card-h"><h2>가까운 공공시설</h2></div>' + (near.length ? near.map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : noHome ? '집 위치를 정하면 가까운 행정복지센터·지구대·공원을 보여드려요.' : '주변 공공시설을 찾지 못했어요.') + '</p>') + '</section>';
     var week = '<section class="card c8"><div class="card-h"><h2>이번 주에 가 볼 곳</h2><a class="more" href="#recommend">주변 추천' + ic('chev', 'sm') + '</a></div><div class="tiles">' +
@@ -2115,21 +2589,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- 주변 탐색 ----------
   function viewMap() {
-    var cat = S.mapCat || 'all', sel = S.mapSel && findPlace(S.mapSel), h = home();
+    var cat = S.mapCat || 'all';
     var list = places().filter(function (p) { return cat === 'all' || p.cat === cat; });
-    var target = sel || { name: '우리 집 앞', lat: h.lat, lng: h.lng };
+    // 로드뷰는 '우리 집 위치' 카드 오른쪽 위에, 장소별 길찾기·로드뷰는 장소 카드에 있다
     return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · 핵심</p><h1>지도 탐색</h1></div><div class="row">' + dataBadge() + '</div></div>' +
       '<div style="margin-bottom:12px">' + catChips(cat, 'mapcat') + '</div>' +
-      '<div class="grid"><section class="card c8">' + placeMap(cat, S.mapSel, 480, true) + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
-      '<aside class="c4 stack">' + homeCard() + '<div class="street sm"><div class="street-in"><b>' + esc(short(target.name)) + ' 골목 걸어 보기</b><div class="row" style="justify-content:center"><a class="btn sm" href="' + kakao('rv', target) + '" target="_blank" rel="noopener">로드뷰' + ic('out', 'sm') + '</a>' + (sel ? '<a class="btn ghost sm" href="' + kakao('to', sel) + '" target="_blank" rel="noopener">길찾기' + ic('out', 'sm') + '</a>' : '') + '</div></div></div>' +
-      '<section class="card"><div class="card-h"><h2>' + (cat === 'all' ? '가까운 순서' : CATS[cat][0]) + '</h2><span class="s12 muted">' + list.length + '곳</span></div><div class="scroll-list">' + (list.length ? list.slice(0, 120).map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : DATA.status === 'nohome' ? '집 위치를 먼저 정해 주세요.' : '1km 안에서 찾은 곳이 없어요.') + '</p>') + '</div></section></aside></div>';
+      '<div class="grid"><section class="card c8 map-main">' + placeMap(cat, S.mapSel, 480, true) + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
+      '<aside class="c4 stack">' + homeCard() +
+      '<section class="card"><div class="card-h"><h2>' + (cat === 'all' ? '가까운 순서' : CATS[cat][0]) + '</h2><span class="s12 muted">' + list.length + '곳</span></div><div class="scroll-list" data-rows="5">' + (list.length ? list.slice(0, 120).map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : DATA.status === 'nohome' ? '집 위치를 먼저 정해 주세요.' : '1km 안에서 찾은 곳이 없어요.') + '</p>') + '</div></section></aside></div>';
   }
   function viewRecommend() {
     var rc = S.recCat || 'park', saved = savedList();
     var list = rc === 'saved' ? saved : places().filter(function (p) { return p.cat === rc; }).slice(0, 12);
     var cards = list.map(function (p) {
       var on = !!S.saved[p.id];
-      return '<section class="card c6 pcard"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="ptile">' + ic(CATS[p.cat][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(p.name) + '</b><p class="s13 muted">' + esc(p.sub) + ' · 걸어서 약 ' + p.min + '분 · ' + p.m + 'm' + (p.pub ? ' · 공공' : '') + '</p></div><button type="button" class="icon-btn save-btn" data-act="save" data-v="' + p.id + '" aria-pressed="' + on + '" aria-label="' + (on ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>' +
+      return '<section class="card c6 pcard"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="ptile">' + ic(placeIc(p)) + '</span><div style="flex:1 1 auto;min-width:0"><b style="font-size:16px">' + esc(p.name) + '</b><p class="s13 muted">' + esc(p.sub) + ' · 걸어서 약 ' + p.min + '분 · ' + p.m + 'm' + (p.pub ? ' · 공공' : '') + '</p></div><button type="button" class="icon-btn save-btn" data-act="save" data-v="' + p.id + '" aria-pressed="' + on + '" aria-label="' + (on ? '저장 취소' : '저장') + '">' + ic('bookmark', 'sm') + '</button></div>' +
         (p.desc ? '<p class="s13 sub">' + esc(p.desc) + '</p>' : '') + (p.hours ? '<p class="s12 muted">영업시간(OSM): ' + esc(p.hours) + '</p>' : '') + '<div class="row"><button type="button" class="btn ghost sm" data-act="place" data-v="' + p.id + '" data-go="map">지도에서 보기</button><a class="btn ghost sm" href="' + kakao('to', p) + '" target="_blank" rel="noopener">길찾기' + ic('out', 'sm') + '</a></div></section>';
     }).join('') || '<section class="card c12"><p class="muted">' + (rc === 'saved' ? '아직 저장한 곳이 없어요. 마음에 드는 곳의 책갈피를 눌러 보세요.' : DATA.status === 'loading' ? '불러오는 중…' : DATA.status === 'nohome' ? '집 위치를 먼저 정해 주세요.' : '1km 안에서 이 분류의 장소를 찾지 못했어요.') + '</p></section>';
     return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · ' + esc(home().label) + '</p><h1>주변 추천</h1></div><div class="row">' + dataBadge() + '</div></div>' +
@@ -2137,19 +2611,32 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="grid">' + cards + '</div><div style="margin-top:16px">' + sourceNote() + '<p class="s12 muted">가까운 순서로 보여줘요. 별점이나 순위는 매기지 않아요.</p></div>';
   }
   var AREA_CHECK = [['night', '밤 9시 이후에 한 번 더 가 보기', '골목 조명, 사람이 다니는 정도, 집까지 오는 길을 봐요.'], ['noise', '소음 확인', '큰길·술집·공사장이 창문 쪽에 있는지 들어 봐요.'], ['slope', '역까지 오르막·계단', '짐 들고 매일 오가는 길이라 직접 걸어 봐요.'], ['trash', '쓰레기 버리는 곳과 요일', '건물 앞인지, 정해진 요일이 있는지 집주인에게 물어봐요.'], ['parcel', '택배 받을 곳', '무인택배함·현관 보안이 있는지 봐요.'], ['signal', '휴대폰 신호', '방 안, 특히 화장실·창가에서 확인해요.']];
-  var ESS = [['transit', /역$/, '지하철·기차역'], ['transit', /버스/, '버스정류장'], ['life', /편의점/, '편의점'], ['life', /마트|시장/, '마트·시장'], ['medical', /약국/, '약국'], ['medical', /의원|병원/, '병원·의원'], ['safety', null, '경찰'], ['public', /행정복지센터|관공서|주민/, '행정복지센터'], ['park', null, '공원']];
+  var ESS = [['transit', /역$/, '지하철·기차역'], ['transit', /버스/, '버스정류장'], ['life', /편의점/, '편의점'], ['life', /마트|시장/, '마트·시장'], ['medical', /약국/, '약국'], ['medical', /의원|병원|과$/, '병원·의원'], ['safety', null, '경찰'], ['public', /행정복지센터|관공서|주민/, '행정복지센터'], ['park', null, '공원']];
+  // 꼭 필요한 곳: 종류마다 직선으로 가까운 3곳의 실제 걷는 길(카카오 도보 경로)을 물어 가장 빨리 걸어갈 수 있는 곳을 고른다.
+  // 길을 못 찾으면(키 없음·실패) 예전처럼 직선 ÷ 분당 67m. 직선으로 가장 가까운 곳이 걸어서는 더 멀 수 있어서 3곳을 비교한다.
+  var NEAR_M = 300;   // '가까이 몇 곳'은 직선 300m 안 (모든 곳의 길을 묻지 않으려고)
+  function infraPick(e) {
+    var h = home(), cands = places().filter(function (p) { return p.cat === e[0] && kindOk(p, e[1]); }).slice(0, 3);
+    if (!cands.length) return null;
+    var ws = cands.map(function (p) { return { p: p, w: walkRoute(h, p) }; });
+    var ok = ws.filter(function (x) { return x.w.st === 'ok'; }).sort(function (a, b) { return a.w.time - b.w.time; });
+    var loading = ws.some(function (x) { return x.w.st === 'loading'; });
+    if (ok.length) return { p: ok[0].p, real: true, min: walkMin(ok[0].w.time), dist: ok[0].w.dist, loading: loading };
+    return { p: cands[0], real: false, min: cands[0].min, dist: cands[0].m, loading: loading };
+  }
   function infraSummary() {
-    var parts = ESS.map(function (e) { var p = nearest(e[0], e[1]); return p ? e[2] + ' ' + p.min + '분' : null; }).filter(Boolean);
-    var in5 = places().filter(function (p) { return p.min <= 5 && p.cat !== 'transit'; }).length;
+    var parts = ESS.map(function (e) { var k = infraPick(e); return k ? e[2] + ' ' + k.min + '분' : null; }).filter(Boolean);
+    var near = places().filter(function (p) { return p.m <= NEAR_M && p.cat !== 'transit'; }).length;
     if (!parts.length) return '아직 주변 데이터가 없어요.';
-    return '가장 가까운 곳까지 걸어서 ' + parts.join(', ') + '이에요. 걸어서 5분 안에 생활시설이 ' + in5 + '곳 있어요.';
+    return '가장 가까운 곳까지 걸어서 ' + parts.join(', ') + '이에요. 반경 ' + NEAR_M + 'm 안에 생활시설이 ' + near + '곳 있어요.';
   }
   function viewInfra() {
-    var rows = ESS.map(function (e) { var ps = places().filter(function (p) { return p.cat === e[0] && (!e[1] || e[1].test(p.sub) || e[1].test(p.name)); }), n = ps[0], in5 = ps.filter(function (p) { return p.min <= 5; }).length;
-      return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[2] + '</b><p class="s13 muted">' + (n ? '가장 가까운 곳 · ' + esc(n.name) : '1km 안에서 못 찾았어요') + '</p></div><div style="text-align:right">' + (n ? '<b style="font-size:18px">' + n.min + '분</b><p class="s12 muted">5분 안 ' + in5 + '곳</p>' : '<span class="muted">—</span>') + '</div></div>'; }).join('');
+    var rows = ESS.map(function (e) { var ps = places().filter(function (p) { return p.cat === e[0] && kindOk(p, e[1]); }), k = infraPick(e), near = ps.filter(function (p) { return p.m <= NEAR_M; }).length;
+      var how = k ? (k.real ? ' · 걸어서 ' + meters(k.dist) : k.loading ? ' · 길 찾는 중…' : ' · 직선 ' + meters(k.dist)) : '';
+      return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(e[0] === 'transit' ? (k ? placeIc(k.p) : /버스/.test(e[2]) ? 'bus' : 'subway') : CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[2] + '</b><p class="s13 muted">' + (k ? '가장 가까운 곳 · ' + esc(k.p.name) + how : e[2] === '버스정류장' && DATA.sources.some(function (s) { return /카카오/.test(s.name); }) ? (DATA.sources.some(function (s) { return /정류소/.test(s.name); }) ? '반경 500m 안에서 못 찾았어요' : '버스정류장 정보를 불러오지 못했어요') : '1km 안에서 못 찾았어요') + '</p></div><div style="text-align:right">' + (k ? '<b style="font-size:18px">' + (k.real ? '' : '약 ') + k.min + '분</b><p class="s12 muted">' + NEAR_M + 'm 안 ' + near + '곳</p>' : '<span class="muted">—</span>') + '</div></div>'; }).join('');
     var chk = S.areaChk || {}, cdone = AREA_CHECK.filter(function (c) { return chk[c[0]]; }).length;
     return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · ' + esc(home().label) + '</p><h1>생활 인프라</h1></div><div class="row">' + dataBadge() + '</div></div>' +
-      '<div class="grid"><section class="card c7"><div class="card-h"><h2>꼭 필요한 곳까지</h2><span class="s12 muted">도보 = 직선거리 ÷ 분당 67m</span></div>' + rows + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
+      '<div class="grid"><section class="card c7"><div class="card-h"><h2>꼭 필요한 곳까지</h2><span class="s12 muted">걸어서 = 카카오 도보 경로 · “약”은 직선 ÷ 분당 67m</span></div>' + rows + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
       '<aside class="c5 stack"><section class="card stack"><div class="card-h" style="margin:0"><h2>주변 환경 요약</h2><span class="s12 muted">데이터로 만든 요약</span></div><p>' + infraSummary() + '</p><p class="s12 muted">좋은 동네·나쁜 동네처럼 판단하거나 점수를 매기지 않아요. 거리와 시설 수만 알려드려요.</p></section>' +
       '<section class="card"><div class="card-h"><h2>현장에서 꼭 볼 것</h2><span class="badge">' + cdone + ' / ' + AREA_CHECK.length + '</span></div>' + AREA_CHECK.map(function (c) { var on = !!chk[c[0]]; return '<div class="task' + (on ? ' done' : '') + '"><input class="chk" type="checkbox" id="ac-' + c[0] + '" data-act="areachk" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><div class="body"><label for="ac-' + c[0] + '">' + c[1] + '</label><p class="d">' + c[2] + '</p></div></div>'; }).join('') + '</section></aside></div>';
   }
@@ -2695,12 +3182,16 @@ document.addEventListener('DOMContentLoaded', function () {
   function groupOf(r) { return GROUPS.filter(function (g) { return g.items.some(function (i) { return i[0] === r; }); })[0]; }
   var app = document.getElementById('app'), last = '';
   function route() { var h = location.hash.slice(1); return ROUTES[h] ? h : 'home'; }
-  function headerBar(n) {
+  // BELL_ONLY: 위쪽 줄에 알림만 남기는 화면 (주변 추천·생활 인프라 — 검색창·시연 날짜 없음).
+  // 알림은 다른 화면과 같은 자리(오른쪽 위)에 그대로 두고, 줄 높이를 0으로 해서 아래 내용(제목 등)이 위로 올라온다.
+  var BELL_ONLY = ['recommend', 'infra'], BELL_N = 0;
+  function bellBtn() { var n = BELL_N; return '<a class="icon-btn bell" href="#timeline" aria-label="할 일 알림' + (n ? ' ' + n + '개' : '') + '">' + ic('bell') + (n ? '<span class="cnt">' + n + '</span>' : '') + '</a>'; }
+  function headerBar(n, bellOnly) {
+    if (bellOnly) return '<div class="hbar desk hbar-float"><div class="hbar-r">' + themeBtn() + bellBtn() + '</div></div>';
     var simV = S.sim === null || S.sim === undefined ? '' : String(S.sim);
     var simSel = !S.demo ? '' : '<select class="inp" data-sim aria-label="시연용 날짜">' + [['', '시연: 실제 오늘'], ['-1', '시연: 입주 전날'], ['0', '시연: 입주 당일'], ['10', '시연: 입주 10일 후'], ['40', '시연: 입주 40일 후']].map(function (o) { return '<option value="' + o[0] + '"' + (simV === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
     return '<div class="hbar desk"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div>' +
-      '<div class="hbar-r">' + simSel +
-      '<a class="icon-btn bell" href="#timeline" aria-label="할 일 알림' + (n ? ' ' + n + '개' : '') + '">' + ic('bell') + (n ? '<span class="cnt">' + n + '</span>' : '') + '</a></div></div>';
+      '<div class="hbar-r">' + simSel + themeBtn() + bellBtn() + '</div></div>';
   }
   function render(keep) {
     if (!S.demo) S.sim = null;
@@ -2718,9 +3209,16 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('tab-nav').innerHTML = GROUPS.map(function (gr) { return '<a class="tab" href="#' + gr.def + '"' + (gr === g ? ' aria-current="page"' : '') + '>' + ic(gr.tab[1]) + gr.tab[0] + (gr.k === 'house' ? cnt('timeline') : '') + '</a>'; }).join('');
     var sub = g.items.length > 1 ? '<nav class="subnav" aria-label="' + g.label + '">' + g.items.map(function (x) { return '<a href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '';
     loadPlaces();
+    var listPos = keep ? listScroll() : [];
+    BELL_N = n;
     var demoBar = S.demo ? '<div class="demo-strip"><span>예시 데이터로 둘러보는 중이에요. 체크·입력해도 내 기록이 아니에요.</span><button type="button" class="btn sm" data-act="startreal">내 정보로 시작하기</button></div>' : '';
-    app.innerHTML = r === 'start' ? viewStart() : demoBar + headerBar(n) + sub + ROUTES[r]();
-    mountMap();
+    app.innerHTML = r === 'start' ? viewStart() : demoBar + headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
+    fitLists();
+    listScroll(listPos);
+    mountMap();   // 목록 높이를 맞춘 뒤에 붙여야 지도가 최종 크기로 자리를 잡는다(먼저 붙이면 가운데가 어긋남)
+    if (app.querySelector('a[data-rv-place]')) kakaoBoot(fixPlaceRoadview);
+    // 이 기능 전에 지도에서 골라 둔 집은 이름이 '지도에서 고른 위치'로 남아 있어서 한 번 주소로 바꾼다
+    if (!homeAddress.tried && S.home && S.home.src === 'pick' && !S.home.named && S.home.label === '지도에서 고른 위치') { homeAddress.tried = true; homeAddress(); }
     if (keep) { window.scrollTo(0, y); if (act) { var el = app.querySelector('[data-field="' + act + '"],[data-cond="' + act + '"]'); if (el) el.focus({ preventScroll: true }); } }
     else if (r !== last) window.scrollTo(0, 0);
     last = r;
@@ -2729,10 +3227,30 @@ document.addEventListener('DOMContentLoaded', function () {
     var box = document.getElementById('q-res'); if (!box) return;
     q = q.trim(); if (!q) { box.hidden = true; return; }
     var hits = places().filter(function (p) { return (p.name + ' ' + CATS[p.cat][0] + ' ' + p.sub + ' ' + (p.tags || []).join(' ')).indexOf(q) >= 0; }).slice(0, 6);
-    box.innerHTML = hits.map(function (p) { return '<button type="button" class="q-item" data-act="place" data-v="' + p.id + '" data-go="map"><span class="ptile">' + ic(CATS[p.cat][1], 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + esc(p.name) + '</b><span class="s12 muted" style="display:block">' + esc(p.sub) + ' · ' + p.m + 'm</span></span><span class="s13"><b>' + p.min + '분</b></span></button>'; }).join('') || '<p class="s13 muted" style="padding:10px">‘' + esc(q) + '’에 맞는 곳이 없어요. 예: 카페, 약국, 전입신고</p>';
+    box.innerHTML = hits.map(function (p) { return '<button type="button" class="q-item" data-act="place" data-v="' + p.id + '" data-go="map"><span class="ptile">' + ic(placeIc(p), 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + esc(p.name) + '</b><span class="s12 muted" style="display:block">' + esc(p.sub) + ' · ' + p.m + 'm</span></span><span class="s13"><b>' + p.min + '분</b></span></button>'; }).join('') || '<p class="s13 muted" style="padding:10px">‘' + esc(q) + '’에 맞는 곳이 없어요. 예: 카페, 약국, 전입신고</p>';
     box.hidden = false;
   }
   window.addEventListener('hashchange', function () { render(false); });
+  // 장소 목록(data-rows="5")은 위에서 5개까지만 보이게 높이를 맞추고 나머지는 목록 안에서 스크롤한다.
+  // 이름이 두 줄이 되면 줄 높이가 달라져서 CSS 고정 높이 대신 실제 5번째 줄 아래까지로 잰다.
+  // 넓은 화면에서는 목록이 5개보다 적어도 5개 높이를 유지한다. 목록 길이에 따라 오른쪽 칸 → 지도 높이가 바뀌지 않게(분류를 바꿀 때 지도가 출렁이지 않게).
+  function fitLists() {
+    var wide = window.matchMedia && matchMedia('(min-width: 1100px)').matches;
+    app.querySelectorAll('.scroll-list[data-rows]').forEach(function (el) {
+      var n = +el.dataset.rows, kids = el.children;
+      if (kids.length >= n && kids[n - 1].offsetHeight) fitLists.h = Math.ceil(kids[n - 1].getBoundingClientRect().bottom - el.getBoundingClientRect().top + el.scrollTop);
+      el.style.maxHeight = kids.length > n ? fitLists.h + 'px' : 'none';
+      el.style.minHeight = wide ? (fitLists.h || 340) + 'px' : '';
+    });
+  }
+  // 장소를 눌러 화면을 다시 그려도 목록 안 스크롤 위치를 지킨다(같은 목록일 때만 — 분류를 바꾸면 맨 위부터)
+  function listScroll(saved) {
+    var els = app.querySelectorAll('.scroll-list[data-rows]'), sig = function (e) { return e.children.length + '|' + (e.firstElementChild && e.firstElementChild.dataset.v); };
+    if (!saved) return [].map.call(els, function (e) { return [e.scrollTop, sig(e)]; });
+    [].forEach.call(els, function (e, i) { if (saved[i] && saved[i][0] && saved[i][1] === sig(e)) e.scrollTop = saved[i][0]; });
+  }
+  var fitT; window.addEventListener('resize', function () { clearTimeout(fitT); fitT = setTimeout(fitLists, 150); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLists);
   var toastEl = document.getElementById('toast'), toastT;
   function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { toastEl.hidden = true; }, 2800); }
 
@@ -2743,6 +3261,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var a = b.dataset.act, v = b.dataset.v;
     if (a === 'place') { e.preventDefault(); S.mapSel = v; if (v && b.dataset.go) { var pl = findPlace(v); if (S.mapCat && S.mapCat !== 'all' && pl && pl.cat !== S.mapCat) S.mapCat = 'all'; save(); if (location.hash !== '#map') { location.hash = 'map'; return; } } save(); render(true); if (v && b.classList.contains('place')) { var mb = app.querySelector('.map-box'); if (mb && mb.getBoundingClientRect().top < 0) mb.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }
     else if (a === 'save') { S.saved[v] = !S.saved[v]; S.savedP = S.savedP || {}; var spl = findPlace(v) || S.savedP[v]; if (S.saved[v] && spl) S.savedP[v] = { id: spl.id, cat: spl.cat, name: spl.name, sub: spl.sub, lat: spl.lat, lng: spl.lng, addr: spl.addr || '' }; else delete S.savedP[v]; save(); render(true); toast(S.saved[v] ? '저장했어요. 주변 추천 › 저장한 곳에서 볼 수 있어요.' : '저장을 취소했어요.'); }
+    else if (a === 'theme') { var nt = THEME_NEXT[getTheme()]; setTheme(nt); render(true); toast('화면 테마: ' + THEMES[nt][0] + (nt === 'auto' ? ' (기기 설정을 따라가요)' : '')); }
+    else if (a === 'maptheme') { S.mapTheme = v === 'light' || v === 'dark' ? v : 'auto'; save(); render(true); }
     else if (a === 'homecat') { S.homeCat = v; S.mapSel = ''; save(); render(true); }
     else if (a === 'mapcat') { S.mapCat = v; S.mapSel = ''; save(); render(true); }
     else if (a === 'rec') { S.recCat = v; save(); if (location.hash !== '#recommend') location.hash = 'recommend'; else render(true); }
@@ -2776,8 +3296,8 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'billdel') { var bd = findBill(v); if (!bd || !confirm('‘' + bd.name + '’ 항목을 삭제할까요? 직접 추가한 항목이라 되돌릴 수 없어요.')) return; S.bills = S.bills.filter(function (x) { return x.id !== v; }); S.calEdit = ''; save(); render(true); toast('삭제했어요.'); }
     else if (a === 'billoff') { var bf = findBill(v); if (bf) { if (!confirm('‘' + bf.name + '’ 항목을 삭제할까요?')) return; bf.on = false; S.calEdit = ''; save(); render(true); toast(bf.name + ' 항목을 삭제했어요. ‘항목 더 보기’에서 다시 켤 수 있어요.'); } }
     else if (a === 'ics') downloadICS();
-    else if (a === 'reload') { try { localStorage.removeItem('jachwi-places'); } catch (er) {} loadPlaces(true); render(true); }
-    else if (a === 'sethome') { var gi = GEO.items[+b.dataset.i]; if (gi) { GEO = { items: [], status: '', q: '' }; setHome(gi.lat, gi.lng, gi.label, 'search'); if (route() === 'map' && !/\d/.test(gi.label)) { S.pickHome = true; save(); render(true); toast('번지까지는 못 찾았어요. 지도에서 정확한 집 자리를 한 번 눌러 주세요.'); } } }
+    else if (a === 'reload') { try { localStorage.removeItem(PLACES_LS); localStorage.removeItem(KPLACES_LS); } catch (er) {} loadPlaces(true); render(true); }
+    else if (a === 'sethome') { var gi = GEO.items[+b.dataset.i]; if (gi) { GEO = { items: [], status: '', q: '' }; setHome(gi.lat, gi.lng, gi.label, 'search', gi.kid); if (route() === 'map' && !/\d/.test(gi.label)) { S.pickHome = true; save(); render(true); toast('번지까지는 못 찾았어요. 지도에서 정확한 집 자리를 한 번 눌러 주세요.'); } } }
     else if (a === 'gps') useGps();
     else if (a === 'pickhome') { S.pickHome = !S.pickHome; save(); if (S.pickHome && route() !== 'map') { location.hash = 'map'; } else render(true); if (S.pickHome) toast('지도에서 우리 집 자리를 눌러 주세요.'); }
     else if (a === 'resethome') { S.home = null; S.mapSel = ''; save(); loadPlaces(); render(true); toast(S.demo ? '예시 위치로 돌아갔어요.' : '집 위치를 지웠어요.'); }
