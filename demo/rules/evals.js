@@ -256,6 +256,11 @@
   extract: {
     'rent-2026-2': { name: '서울시 청년월세 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: 150, deposit_max: 8000, rent_max: 70, amount_monthly_max: 20, amount_months: 12, period_start: '2026-11-17', period_end: '2026-11-27', homeless: true, docs: 6, exclusions: 2, url: 'https://housing.seoul.go.kr' },
     'deposit-2026': { name: '서울시 청년 임차보증금 이자 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: null, deposit_max: 30000, period_start: '2026-11-24', period_end: '2026-12-11', homeless: true, docs: 3, exclusions: 1 },
-    'move-2026-fix': { name: '청년 부동산 중개보수·이사비 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: 150, deposit_max: 20000, amount_lump_max: 40, period_start: '2026-10-28', period_end: '2026-11-30', first_come: true, homeless: true, docs: 4 }
+    'move-2026-fix': { name: '청년 부동산 중개보수·이사비 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: 150, deposit_max: 20000, amount_lump_max: 40, period_start: '2026-10-28', period_end: '2026-11-30', first_come: true, homeless: true, docs: 4 },
+    // 실제 공고 안내문 (2026-11-13 수집) — 사람이 원문과 대조해 정한 정답
+    'real-seoul-rent': { name: '청년월세지원', region: '서울특별시', age_min: 19, age_max: 39, income_pct: 150, deposit_max: 8000, rent_max: 60, amount_monthly_max: 20, amount_months: 12, homeless: true, residency: '서울시 거주', channel: '서울주거포털 청년월세지원 페이지' },
+    'real-seoul-deposit': { name: '청년임차보증금 이자지원', age_min: 19, age_max: 39, income_pct: null, homeless: true },
+    'real-seoul-move': { name: '청년 중개보수·이사비 지원사업', region: '서울특별시', age_min: 19, age_max: 39, income_pct: 150, residency: '서울시로 전입 또는 서울시 안에서 이사', amount_lump_max: 40, period_start: '2026-08-18', period_end: '2026-08-31' },
+    'real-busan-rent': { name: '청년 월세 지원', org: '부산광역시', region: '부산광역시', age_min: 19, age_max: 34, income_pct: 60, homeless: true, residency: '부산시 거주', amount_monthly_max: 20, amount_months: 24, period_start: '2026-03-30', period_end: '2026-05-29', channel: '복지로 홈페이지 · 주소지 관할 주민센터 방문', exclusions: 6 }
   }
 });

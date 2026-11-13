@@ -285,3 +285,34 @@ test('추출: 실제 공고 안내문(홈페이지 복사 형식)에서 이름·
   // 근거 문장은 모두 원문에 있다
   [[f, rent], [g, dep]].forEach(([x, src]) => Object.keys(x).forEach((k) => assert.ok(R.inSource(x[k].evidence, src), k + ' 근거가 원문에 있음')));
 });
+
+// 실제 공고 안내문 2 (2026-11-13 수집): 서울 청년 중개보수·이사비(youth.seoul.go.kr key=2310100044), 부산 청년 월세(young.busan.go.kr menuCd=37)
+test('추출: 서울 밖(부산) 공고와 표 형식 공고도 지역·나이·기간·신청 경로·제외 대상을 뽑는다', () => {
+  const bs = fs.readFileSync(path.join(__dirname, 'fixtures/real-busan-youth-rent.txt'), 'utf8');
+  const f = R.ruleExtract(bs), n = R.extractNotes(bs, f);
+  assert.equal(f.org.value, '부산광역시'); assert.equal(f.region.value, '부산광역시'); assert.equal(f.residency.value, '부산시 거주');
+  assert.equal(f.age_min.value, '19'); assert.equal(f.age_max.value, '34');           // '19세~34세' (만 없이)
+  assert.equal(f.period_start.value, '2026-03-30'); assert.equal(f.period_end.value, '2026-05-29'); // 끝 날짜에 연도 없음
+  assert.equal(f.amount_monthly_max.value, '20'); assert.equal(f.amount_months.value, '24');
+  assert.equal(f.channel.value, '복지로 홈페이지 · 주소지 관할 주민센터 방문');
+  assert.ok(/^주택 소유자/.test(f.exclusions.value), '머리말이 아니라 제외 항목을 씀');
+  assert.ok(n.some((x) => /여러 개/.test(x)), '청년가구 60%·원가구 100%처럼 소득 기준이 여럿이면 알림');
+  const mv = fs.readFileSync(path.join(__dirname, 'fixtures/real-seoul-youth-moving.txt'), 'utf8');
+  const g = R.ruleExtract(mv), m = R.extractNotes(mv, g);
+  assert.ok(!g.org || g.org.value !== '국토교통부', '법령 인용 줄의 기관 이름을 시행 기관으로 쓰지 않음');
+  assert.equal(g.residency.value, '서울시로 전입 또는 서울시 안에서 이사');
+  assert.equal(g.amount_lump_max.value, '40'); assert.equal(g.amount_text.value, '실비 · 최대 40만 원');  // '지원규모 8,000명'을 금액으로 읽지 않음
+  assert.equal(g.period_start.value, '2026-08-18'); assert.equal(g.period_end.value, '2026-08-31');
+  assert.ok(/소득 낮은 순/.test(g.select.value));
+  assert.ok(!m.some((x) => /지시처럼/.test(x)), '“복지시설”의 “지시”를 지시문으로 읽지 않음');
+  [[f, bs], [g, mv]].forEach(([x, src]) => Object.keys(x).forEach((k) => assert.ok(R.inSource(x[k].evidence, src), k + ' 근거가 원문에 있음')));
+});
+
+test('화면 파일: app.html·admin.html 안의 스크립트가 문법 오류 없이 읽힌다 (따옴표 하나로 화면 전체가 멈추는 것 방지)', () => {
+  for (const name of ['app.html', 'admin.html']) {
+    const s = fs.readFileSync(path.join(__dirname, '..', 'demo', name), 'utf8');
+    const scripts = [...s.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    assert.ok(scripts.length > 0, name + ' 스크립트 있음');
+    scripts.forEach((code, i) => assert.doesNotThrow(() => new Function(code), name + ' 스크립트 ' + i));
+  }
+});
