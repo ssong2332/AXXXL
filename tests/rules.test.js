@@ -254,3 +254,34 @@ test('내장 AI 코치: 앱이 신고 대상 여부를 판정하지 못한 지�
   assert.ok(a.text.includes('판정하지 못했어요'));
   assert.ok(a.text.includes(f.reportDue));
 });
+
+test('내장 AI 코치·권리봇: 승인 공고에 해당 지원이 없으면 지원사업 화면의 실제 지역 공고로 안내한다', () => {
+  const { cards, facts } = coachSetup();
+  const f = Object.assign({}, facts, { programList: facts.programList.map((p) => Object.assign({}, p, { verdict: '해당 안 됨', fails: ['서울시 거주'] })) });
+  const a = C.answer({ q: '받을 수 있는 지원금 있어?', cards, facts: f });
+  assert.ok(a.text.includes('해당되는 지원이 없어요'));
+  assert.ok(a.text.includes('지원사업 화면'));
+  const b = AS.answer({ q: '받을 수 있는 지원금 있어?', bot: 'rights', cards, facts: f, repairs: SEED.repairs });
+  assert.ok((b.actions || []).some((x) => x.href === '#support'));
+});
+
+// 실제 공고 안내문(서울시 청년몽땅정보통, 2026-11-13 수집)으로 추출 리허설 — 홈페이지에서 복사한 형식
+//  youth.seoul.go.kr/content.do?key=2310100046 (청년월세지원), key=2310100047 (청년임차보증금 이자지원)
+test('추출: 실제 공고 안내문(홈페이지 복사 형식)에서 이름·나이·월 지원금·신청 경로를 뽑고 헛경고를 내지 않는다', () => {
+  const rent = fs.readFileSync(path.join(__dirname, 'fixtures/real-seoul-youth-rent.txt'), 'utf8');
+  const f = R.ruleExtract(rent);
+  assert.equal(f.name.value, '청년월세지원');
+  assert.equal(f.age_min.value, '19'); assert.equal(f.age_max.value, '39');
+  assert.equal(f.amount_monthly_max.value, '20'); assert.equal(f.amount_months.value, '12');
+  assert.equal(f.deposit_max.value, '8000'); assert.equal(f.rent_max.value, '60');
+  assert.equal(f.channel.value, '서울주거포털 청년월세지원 페이지');
+  assert.ok(!R.extractNotes(rent, f).some((n) => /바뀐 흔적/.test(n)), '“부담완화”를 조건 변경으로 읽지 않음');
+  const dep = fs.readFileSync(path.join(__dirname, 'fixtures/real-seoul-youth-deposit.txt'), 'utf8');
+  const g = R.ruleExtract(dep), notes = R.extractNotes(dep, g);
+  assert.equal(g.name.value, '청년임차보증금 이자지원');
+  assert.equal(g.age_min.value, '19'); assert.equal(g.age_max.value, '39');
+  assert.ok(!notes.some((n) => /바뀐 흔적/.test(n)), '“변경/연장 신청하기”를 조건 변경으로 읽지 않음');
+  assert.ok(notes.some((n) => /연소득/.test(n)) && notes.some((n) => /대출·이자/.test(n)));
+  // 근거 문장은 모두 원문에 있다
+  [[f, rent], [g, dep]].forEach(([x, src]) => Object.keys(x).forEach((k) => assert.ok(R.inSource(x[k].evidence, src), k + ' 근거가 원문에 있음')));
+});
