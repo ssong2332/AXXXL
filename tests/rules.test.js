@@ -316,3 +316,11 @@ test('화면 파일: app.html·admin.html 안의 스크립트가 문법 오류 �
     scripts.forEach((code, i) => assert.doesNotThrow(() => new Function(code), name + ' 스크립트 ' + i));
   }
 });
+
+test('AI 비서: 같은 채팅방에서 이어 묻는 대화 7개(27턴)가 앞 질문의 주제를 이어받아 답한다', () => {
+  const E = require('../demo/eval-core.js');
+  const r = E.runConversations(SEED, EV.conversations, AS, SEED.repairs);
+  const bad = r.rows.filter((x) => !x.pass).map((x) => x.flow + ' ' + x.turn + '턴 “' + x.q + '”: ' + x.why.join('; '));
+  assert.equal(r.pass, r.total, bad.join('\n'));
+  assert.ok(r.total >= 27);
+});

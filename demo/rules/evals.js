@@ -253,6 +253,47 @@
       { style: '격식체', q: '계약 만료 시 퇴거 통지는 언제까지 해야 합니까', has: ['2027.09.07'] },
       { style: '격식체', q: '임대인이 계약 기간 중에 나가라고 합니다', has: ['일방적으로 나가라고 할 수 없어요'] }
     ] },
+  // 같은 채팅방에서 이어 묻는 대화: 앞 질문의 주제를 이어받아 답하는지 (턴마다 has/not, bot = 답해야 할 봇)
+  conversations: {
+    p: { age: 25, income: '150', deposit: 1000, rent: 45, fee: 7, contract: '2026-11-01', move: '2026-11-11', term: 2, today: '2026-11-10' },
+    places: [{ id: 'pharm', name: '온누리약국', cat: 'medical', sub: '약국', min: 3, m: 160 }, { id: 'clinic', name: '서울내과의원', cat: 'medical', sub: '의원', min: 4, m: 225 }, { id: 'cvs', name: 'GS25 봉천점', cat: 'life', sub: '편의점', min: 1, m: 50 }],
+    flows: [
+      { id: 'landlord', name: '집주인톡 · 문자 고치고 이어 쓰기', bot: 'landlord', turns: [
+        { q: '보일러 수리 문자 써줘', has: ['수리 요청'] },
+        { q: '더 짧게', has: ['짧게'] },
+        { q: '보증금 반환 문자도 써줘', has: ['보증금 반환'] },
+        { q: '그거 언제 보내야 돼?', has: ['2028.09.10'] }] },
+      { id: 'repair', name: '고쳐봇 · 안 고쳐 주면 → 수리비 → 문자', bot: 'repair', turns: [
+        { q: '보일러가 안 돼요', has: ['집주인이 고쳐야'] },
+        { q: '집주인이 안 고쳐 주면?', has: ['미루면'] },
+        { q: '내가 고치면 돈 돌려받을 수 있어?', has: ['626조'] },
+        { q: '그럼 문자 써줘', bot: 'landlord', has: ['수리 요청'] }] },
+      { id: 'rights', name: '권리봇 · 전입신고 → 어디서 → 확정일자 → 전월세 신고 → 안 하면', bot: 'rights', turns: [
+        { q: '전입신고 언제 해?', has: ['2026.11.25'] },
+        { q: '어디서?', has: ['정부24'] },
+        { q: '확정일자도 같이 돼?', has: ['확정일자도 같이'] },
+        { q: '그럼 전월세 신고는?', has: ['2026.12.01'] },
+        { q: '그거 안 하면?', has: ['과태료'] }] },
+      { id: 'money', name: '절약봇 · 고정비 → 줄일 것 → 지원금 → 월세 비중', bot: 'money', turns: [
+        { q: '이번 달 얼마 나가?', has: ['고정비'] },
+        { q: '그중에 줄일 수 있는 거 있어?', has: ['줄일 수 있는'] },
+        { q: '지원금 받으면?', has: ['200,000원'] },
+        { q: '그럼 월세 비중은?', has: ['%'] }] },
+      { id: 'local', name: '동네봇 · 약국 → 병원 → 밤에 여는 곳', bot: 'local', turns: [
+        { q: '가까운 약국', has: ['온누리약국'] },
+        { q: '병원은?', has: ['서울내과의원'] },
+        { q: '밤에 여는 데는?', has: ['영업시간'] }] },
+      { id: 'support', name: '지원 · 받을 수 있는 지원 → 서류 → 언제 → 중복 수혜', bot: 'rights', turns: [
+        { q: '받을 수 있는 지원금 있어?', has: ['서울시 청년월세 지원'] },
+        { q: '청년월세 서류는?', has: ['임대차계약서'], not: ['함께 받을 수 없어요'] },
+        { q: '언제 신청해?', has: ['다음 공고 대기'], not: ['승인된 안내에 없어서'] },
+        { q: '중복 수혜가 뭐야?', has: ['함께 받을 수 없다는'] }] },
+      { id: 'terms', name: '용어 · 무주택 → 부모님 집 → 답하면 판정', bot: 'rights', turns: [
+        { q: '무주택이 뭐야?', has: ['세대원'] },
+        { q: '부모님 집 있으면?', has: ['부모님'] },
+        { q: '그럼 답하면 판정은 뭐야?', has: ['조건 입력'] }] }
+    ]
+  },
   extract: {
     'rent-2026-2': { name: '서울시 청년월세 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: 150, deposit_max: 8000, rent_max: 70, amount_monthly_max: 20, amount_months: 12, period_start: '2026-11-17', period_end: '2026-11-27', homeless: true, docs: 6, exclusions: 2, url: 'https://housing.seoul.go.kr' },
     'deposit-2026': { name: '서울시 청년 임차보증금 이자 지원', org: '서울특별시', age_min: 19, age_max: 39, income_pct: null, deposit_max: 30000, period_start: '2026-11-24', period_end: '2026-12-11', homeless: true, docs: 3, exclusions: 1 },
