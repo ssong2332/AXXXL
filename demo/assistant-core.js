@@ -304,7 +304,12 @@
   }
 
   // ---------- 권리봇 (승인된 지식 카드) ----------
-  function rightsBot(q, o) { var a = C.answer({ q: q, history: o.history || [], cards: o.cards, facts: o.facts }); return a; }
+  function rightsBot(q, o) {
+    var a = C.answer({ q: q, history: o.history || [], cards: o.cards, facts: o.facts });
+    // 지원금·공고 답이면 지원사업 화면(실제 지역 공고 포함)으로 바로 갈 수 있게
+    if (a.kind === 'answer' && (a.topic || []).some(function (t) { return t === 'k-support' || t === 'k-support-data' || t === 'k-pending' || /^notice-/.test(t); })) a.actions = (a.actions || []).concat([{ label: '지원사업 화면에서 우리 지역 정책 보기', href: '#support' }]);
+    return a;
+  }
 
   var END = '[\\s?!.~ㅎㅋ^♡]*$';
   var P_HELLO = new RegExp('^(안녕(하세요|하십니까)?|하이|hi|hello|헬로|ㅎㅇ|반가워요?|반갑습니다|처음 왔어요?)' + END, 'i');
