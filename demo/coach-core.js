@@ -132,7 +132,7 @@
     else if (/어디|어떻게|신청/.test(q) && p.channel) parts.push(T + ' ' + josa(p.channel, '으로') + ' 신청해요.');
     else parts.push(T + ' ' + josa((p.amountText || '') + (p.select ? ', ' + p.select : ''), '이에요') + '.');
     // 함께 받을 수 없는 지원을 질문에 적었는지 (국토부 = 국토교통부처럼 줄임말도)
-    var exHit = (p.exclusions || []).filter(function (e) { var qq = q.replace(/국토부/g, '국토교통부').replace(/\s+/g, ''); return e.split(/\s+/).some(function (w) { return w.length >= 3 && qq.indexOf(w) >= 0; }); })[0];
+    var exHit = (p.exclusions || []).filter(function (e) { var qq = q.replace(/국토부/g, '국토교통부').replace(/\s+/g, ''); var own = card.title.replace(/\s+/g, ''); return e.split(/\s+/).some(function (w) { return w.length >= 3 && own.indexOf(w) < 0 && qq.indexOf(w) >= 0; }); })[0];
     var haveEx = exHit && /받고\s*있|받는\s*중|받았|받아\s*왔|수급/.test(q);
     if (haveEx) parts.unshift(josa(card.title, '은는') + ' **' + josa(exHit, '을를') + ' 받고 있으면 함께 받을 수 없어요**(공고의 중복 수혜 제외). 말씀대로 지금 받고 계시면 해당 안 돼요. 조건 입력에서 중복 수혜를 \'받고 있음\'으로 답해 두면 판정에도 반영돼요.');
     else if (p.exclusions && p.exclusions.length && (exHit || /같이|함께|중복|둘 다|동시/.test(q))) parts.unshift(josa(card.title, '은는') + ' **' + josa(p.exclusions.join(', '), '과와') + ' 함께 받을 수 없어요**(공고의 중복 수혜 제외).');
@@ -274,7 +274,7 @@
     var askedFee = /(과태료|벌금|비용|수수료|요금)/.exec(q);
     if (askedFee && !new RegExp(askedFee[1] + '[^.]{0,20}\\d').test(said)) gap.push(askedFee[1] === '과태료' || askedFee[1] === '벌금' ? askedFee[1] + ' 금액' : '비용');
     else if (!askedFee && /얼마|돈\s*들/.test(q) && !/\d\s*(원|%|만)/.test(said)) gap.push('비용');
-    if (/언제|기한|며칠|몇\s*일/.test(q) && !/\d|당일|전에|뒤에|바로/.test(said)) gap.push('날짜');
+    if (/언제|기한|며칠|몇\s*일/.test(q) && !/\d|당일|전에|뒤에|바로|공고\s*대기|모집\s*예정/.test(said)) gap.push('날짜');
     if (gap.length) { mine.push('물어보신 ' + josa(gap.join('·'), '은는') + ' 승인된 안내에 없어서, 해당 기관에 확인해 주세요.'); steps.push(gap.join('·') + ' 정보는 안내에 없음을 밝힘'); }
     // 내 상황을 묻는 질문(해야 돼? 언제까지야? 받을 수 있어?)이면 내 경우가 곧 결론이라 앞에 둔다
     var personalQ = /(해야\s*(돼|되|하나|함|할까)|언제(까지)?|돼\?|되나|되냐|받을\s*수|대상이야|대상인가|제가|나\s|내\s|마감)/.test(q);

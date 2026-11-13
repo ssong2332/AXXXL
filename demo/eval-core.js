@@ -120,6 +120,28 @@
     var pass = rows.filter(function (r) { return r.pass; }).length;
     return { total: rows.length, pass: pass, rate: rows.length ? pass / rows.length : 0, wrong: rows.filter(function (r) { return r.wrong; }).length, safe: 0, rows: rows, personas: byP };
   }
+  // 같은 채팅방에서 이어 묻기: 앞 질문(최근 3개)의 주제를 넘기며 턴마다 확인 — 앱의 chatHist와 같은 방식
+  function runConversations(published, conv, A, repairs) {
+    var view = J.publicView(published, pd(conv.p.today)), cards = view.cards.concat(J.noticeCards(view.programs)), f = personaFacts(conv.p, view.programs), rows = [], flows = [];
+    if (conv.places) f.places = { hasHome: true, source: '평가용 장소', list: conv.places };
+    conv.flows.forEach(function (fl) {
+      var hist = [], ok = 0;
+      fl.turns.forEach(function (e, ti) {
+        var a = A.answer({ q: e.q, bot: fl.bot, cards: cards, facts: f, repairs: repairs || published.repairs || [], history: hist.slice(-3) }), why = [];
+        hist.push({ q: e.q, bot: a.bot, topic: a.topic || [] });
+        var all = a.text + ' ' + (a.blocks || []).map(function (b) { return (b.text || '') + ' ' + (b.title || '') + ' ' + (b.label || '') + ' ' + (b.items || []).map(function (x) { return typeof x === 'string' ? x : (x.name || x.label || ''); }).join(' '); }).join(' ');
+        (e.has || []).forEach(function (w) { if (all.indexOf(w) < 0) why.push('“' + w + '” 빠짐'); });
+        (e.not || []).forEach(function (w) { if (all.indexOf(w) >= 0) why.push('“' + w + '”가 들어감'); });
+        if (e.bot && a.bot !== e.bot) why.push('봇 ' + a.bot + ' (기대 ' + e.bot + ')');
+        if (a.kind !== 'answer') why.push('답 종류 ' + a.kind);
+        if (!why.length) ok++;
+        rows.push({ flow: fl.name, turn: ti + 1, q: e.q, pass: !why.length, why: why, bot: a.bot, kind: a.kind, text: a.text, wrong: (e.not || []).some(function (w) { return all.indexOf(w) >= 0; }) });
+      });
+      flows.push({ id: fl.id, name: fl.name, total: fl.turns.length, pass: ok });
+    });
+    var pass = rows.filter(function (r) { return r.pass; }).length;
+    return { total: rows.length, pass: pass, rate: rows.length ? pass / rows.length : 0, wrong: rows.filter(function (r) { return r.wrong; }).length, safe: 0, rows: rows, flows: flows };
+  }
   // 말투 페르소나: 하나의 계약 조건으로 말투만 바꿔 묻기
   function runStyles(published, styles, A, repairs) {
     var r = runPersonas(published, [{ id: 'style', name: '말투', who: '', p: styles.p, qs: styles.qs.map(function (x) { return { q: x.q, bot: x.bot || 'auto', has: x.has, not: x.not }; }) }], A, repairs);
@@ -128,5 +150,5 @@
     r.styles = Object.keys(by).map(function (k) { return by[k]; });
     return r;
   }
-  return { runStyles: runStyles, runPersonas: runPersonas, personaFacts: personaFacts, runAssistant: runAssistant, runCoach: runCoach, runExtract: runExtract, demoFacts: demoFacts, PERSON: PERSON };
+  return { runConversations: runConversations, runStyles: runStyles, runPersonas: runPersonas, personaFacts: personaFacts, runAssistant: runAssistant, runCoach: runCoach, runExtract: runExtract, demoFacts: demoFacts, PERSON: PERSON };
 });
