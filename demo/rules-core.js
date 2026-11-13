@@ -307,6 +307,7 @@
       if (!on) { if (re.test(t)) { on = true; var rest = t.replace(re, '').replace(/^[\s:：]+/, ''); if (rest) out.push({ t: rest, raw: L }); } continue; }
       if (!t) { if (out.length) break; continue; }
       if (/^\d+\.\s/.test(t)) break;
+      if (t.length <= 10 && /^(?:지원|신청|선정|선발|지급|문의|제출|구비|사업|대상|접수|모집|유의|기타|참고|서비스|담당|공고)[가-힣\s]*$/.test(t)) break;
       out.push({ t: t.replace(/^[-•·○◦▪*※]\s*|^[가-하]\.\s*|^\d\)\s*/, ''), raw: L });
     }
     return out;
@@ -322,10 +323,17 @@
     var titleB = function (x) { return x.length >= 4 && x.length <= 40 && notSentence(x) && !/[:：]/.test(x) && !/^\d+[.)]/.test(x) && /(?:지원|사업|주택|대출|보증금|월세|이자|수당|바우처|펀드|모집)$/.test(x.replace(/\s+/g, '')); };
     var title = lines0.filter(function (x) { return titleA(x) || titleB(x); })[0];
     if (title) put(f, 'name', title.trim().replace(/\(.*?\)/g, '').replace(/\s*(사업\s*)?(공고|안내)\s*$/, '').replace(/\s*\d차\s*모집\s*$/, '').replace(/^\d{4}년\s*/, '').replace(/\s+및\s+/g, '·').trim(), title, 'medium');
-    if ((h = hit(t, /(서울특별시|[가-힣]+(?:특별시|광역시|특별자치시|특별자치도|도))\s*(?:공고|장)|(국토교통부|한국토지주택공사|주택도시보증공사)/))) put(f, 'org', h.m[1] || h.m[2], h.line, 'high');
-    if ((h = hit(t, /(서울(?:특별)?시)(?:에|로|내|에서)?\s*(?:거주|전입|이주|이사)/))) put(f, 'region', '서울특별시', h.line, 'medium');
+    if ((h = hit(t, /(서울특별시|[가-힣]+(?:특별시|광역시|특별자치시|특별자치도|도))\s*(?:공고|장)/))) put(f, 'org', h.m[1], h.line, 'high');
+    else {
+      var orgL = t.split('\n').filter(function (L) { return /국토교통부|한국토지주택공사|주택도시보증공사/.test(L) && /공고|주관|시행|장관|담당/.test(L) && !/법|조례|에\s*따라|「/.test(L); })[0];
+      if (orgL) put(f, 'org', orgL.match(/국토교통부|한국토지주택공사|주택도시보증공사/)[0], orgL, 'high');
+      else if ((h = hit(t, /(?:담당\s*부서|주관\s*기관|시행\s*기관|주관)[ \t]*[:：]?[ \t]*\n?[ \t]*((?:서울|부산|대구|인천|광주|대전|울산)(?:특별시|광역시)|세종특별자치시|제주특별자치도|(?:경기|강원특별자치|충청북|충청남|전북특별자치|전라남|경상북|경상남)도)/))) { var oi = h.m.index + h.m[0].lastIndexOf(h.m[1]); put(f, 'org', h.m[1], lineOf(t, oi), 'medium'); }
+    }
+    var SIDO = { 서울: '서울특별시', 부산: '부산광역시', 대구: '대구광역시', 인천: '인천광역시', 광주: '광주광역시', 대전: '대전광역시', 울산: '울산광역시', 세종: '세종특별자치시', 제주: '제주특별자치도', 경기: '경기도', 강원: '강원특별자치도', 충청북: '충청북도', 충북: '충청북도', 충청남: '충청남도', 충남: '충청남도', 전라북: '전북특별자치도', 전북: '전북특별자치도', 전라남: '전라남도', 전남: '전라남도', 경상북: '경상북도', 경북: '경상북도', 경상남: '경상남도', 경남: '경상남도' };
+    var SIDO_RE = '(서울|부산|대구|인천|광주|대전|울산|세종|제주|경기|강원|충청북|충청남|충북|충남|전라북|전라남|전북|전남|경상북|경상남|경북|경남)(?:특별시|광역시|특별자치시|특별자치도|시|도)?';
+    if ((h = hit(t, new RegExp(SIDO_RE + '(?:에|로|내|에서)?\\s*(?:거주|전입|이주|이사)')))) put(f, 'region', SIDO[h.m[1]], h.line, 'medium');
     // 자격
-    if ((h = hit(t, /만\s*(\d{2})\s*세\s*(?:이상|부터)\s*(?:~\s*)?(?:만\s*)?(\d{2})\s*세\s*(?:이하|까지)/)) || (h = hit(t, /만[ \t]*(\d{2})[ \t]*세?[ \t]*[~∼\-–][ \t]*(?:만[ \t]*)?(\d{2})[ \t]*세/))) { put(f, 'age_min', h.m[1], h.line); put(f, 'age_max', h.m[2], h.line); }
+    if ((h = hit(t, /만\s*(\d{2})\s*세\s*(?:이상|부터)\s*(?:~\s*)?(?:만\s*)?(\d{2})\s*세\s*(?:이하|까지)/)) || (h = hit(t, /(?:만[ \t]*)?(\d{2})[ \t]*세?[ \t]*[~∼\-–][ \t]*(?:만[ \t]*)?(\d{2})[ \t]*세/))) { put(f, 'age_min', h.m[1], h.line); put(f, 'age_max', h.m[2], h.line); }
     else if ((h = hit(t, /(\d{4})\.\s*\d{1,2}\.\s*\d{1,2}\.?\s*[~∼\-]\s*(\d{4})\.\s*\d{1,2}\.\s*\d{1,2}\.?\s*(?:사이\s*)?출생/))) {
       var yr = +((t.match(/(20\d{2})년/) || [])[1] || new Date().getFullYear());
       put(f, 'age_min', yr - +h.m[2], h.line, 'low'); put(f, 'age_max', yr - +h.m[1], h.line, 'low');
@@ -334,14 +342,19 @@
     if ((h = hit(t, /보증금\s*([\d,.]+\s*(?:억|천만|만)\s*(?:\d+\s*천\s*만?)?\s*원?)\s*이하/))) put(f, 'deposit_max', manwon(h.m[1])[0], h.line, 'medium');
     if ((h = hit(t, /월\s*세\s*([\d,.]+\s*만\s*원?)\s*이하/))) put(f, 'rent_max', manwon(h.m[1])[0], h.line, 'medium');
     if ((h = hit(t, /무주택/))) put(f, 'homeless', '예', h.line);
-    if ((h = hit(t, /서울(?:특별)?시로\s*전입하였거나\s*서울(?:특별)?시\s*내에서\s*이사/))) put(f, 'residency', '서울시로 전입 또는 서울시 안에서 이사', h.line, 'medium');
-    else if ((h = hit(t, /서울(?:특별)?시에\s*거주하거나\s*이주\s*예정/))) put(f, 'residency', '서울시 거주 또는 이주 예정', h.line, 'medium');
-    else if ((h = hit(t, /서울(?:특별)?시에\s*거주/))) put(f, 'residency', '서울시 거주', h.line, 'medium');
+    // 거주 요건 (짧은 이름: 서울시·부산시·경기도 …)
+    var shortSido = function (k) { var n = SIDO[k] || k; return /도$/.test(n) && !/특별자치도$/.test(n) ? n : n.replace(/(특별시|광역시|특별자치시)$/, '시').replace(/특별자치도$/, '도'); };
+    if ((h = hit(t, new RegExp(SIDO_RE + '로\\s*전입(?:하였거나|\\s*또는)\\s*' + SIDO_RE + '\\s*내에서\\s*이사')))) put(f, 'residency', shortSido(h.m[1]) + '로 전입 또는 ' + shortSido(h.m[1]) + ' 안에서 이사', h.line, 'medium');
+    else if ((h = hit(t, new RegExp(SIDO_RE + '에\\s*거주하거나\\s*이주\\s*예정')))) put(f, 'residency', shortSido(h.m[1]) + ' 거주 또는 이주 예정', h.line, 'medium');
+    else if ((h = hit(t, new RegExp(SIDO_RE + '에\\s*거주')))) put(f, 'residency', shortSido(h.m[1]) + ' 거주', h.line, 'medium');
     // 지원 내용
     if ((h = hit(t, /월\s*최대\s*([\d,.]+\s*만\s*원)/)) || ((h = hit(t, /(?:^|[\s(])월[ \t]*([\d,.]+[ \t]*만[ \t]*원)(?![ \t]*(?:이하|초과|미만|이상))[ \t]*(?:씩|월세|지원|을|를|까지|\()/m)) && (h.line = lineOf(t, h.m.index + (/^[\s(]/.test(h.m[0]) ? 1 : 0)), h))) put(f, 'amount_monthly_max', manwon(h.m[1])[0], h.line, 'medium');
     if ((h = hit(t, /(?:최대|최장)\s*(\d{1,2})\s*개월/))) put(f, 'amount_months', h.m[1], h.line);
     if ((h = hit(t, /(?:1인당|1회|가구당)\s*최대\s*([\d,.]+\s*만\s*원)/))) put(f, 'amount_lump_max', manwon(h.m[1])[0], h.line, 'medium');
-    var sup = section(t, /^(?:\d+\.\s*)?지원\s*(?:내용|금액|규모)/);
+    else if (!f.amount_monthly_max && (h = hit(t, /최대[ \t]*([\d,.]+[ \t]*만[ \t]*원)[ \t]*(?:한도|이내|까지)/))) put(f, 'amount_lump_max', manwon(h.m[1])[0], h.line, 'medium');
+    var sup = section(t, /^(?:\d+\.\s*)?지원\s*금액/);
+    if (!sup.length) sup = section(t, /^(?:\d+\.\s*)?(?:지원\s*내용|서비스\s*내용)/);
+    if (!sup.length) { sup = section(t, /^(?:\d+\.\s*)?지원\s*규모/); if (!sup.some(function (x) { return /원/.test(x.t); })) sup = []; }
     if (sup.length) {
       var summary = f.amount_monthly_max ? '월 최대 ' + f.amount_monthly_max.value + '만 원' + (f.amount_months ? ' · 최대 ' + f.amount_months.value + '개월' : '')
         : f.amount_lump_max ? (/실비/.test(sup[0].t) ? '실비 · ' : '') + '최대 ' + f.amount_lump_max.value + '만 원'
@@ -350,10 +363,14 @@
     }
     // 접수
     if ((h = hit(t, /(\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2})\.?\s*(?:\([월화수목금토일]\))?\s*(?:\d{1,2}:\d{2})?\s*[~∼\-–]\s*(\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2})/))) { put(f, 'period_start', toDate(h.m[1]), h.line); put(f, 'period_end', toDate(h.m[2]), h.line); }
+    else if ((h = hit(t, /(\d{4})\s*\.\s*(\d{1,2})\s*\.\s*(\d{1,2})\.?\s*(?:\([월화수목금토일]\))?\s*(?:\d{1,2}:\d{2})?\s*[~∼\-–]\s*(\d{1,2})\s*\.\s*(\d{1,2})\.?\s*(?:\([월화수목금토일]\))?/))) { put(f, 'period_start', toDate(h.m[1] + '.' + h.m[2] + '.' + h.m[3]), h.line); put(f, 'period_end', toDate(h.m[1] + '.' + h.m[4] + '.' + h.m[5]), h.line, 'medium'); }
     else if ((h = hit(t, /(\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2})\.?\s*(?:\([월화수목금토일]\))?\s*[~∼\-–]\s*예산/))) put(f, 'period_start', toDate(h.m[1]), h.line);
     if ((h = hit(t, /선착순/))) put(f, 'first_come', '예', h.line);
-    if ((h = hit(t, /선정\s*(?:방법|방식|기준)\s*[:：]?\s*(.+)/)) && /선착순/.test(h.m[1])) put(f, 'select', '선착순', h.line, 'medium');
-    else if (h) put(f, 'select', shortText(h.m[1]).split(/,|하며|\s및\s/)[0].replace(/으로\s*선정$/, ' 선정').replace(/이\s*낮은\s*순/, ' 낮은 순').trim(), h.line, 'medium');
+    if ((h = hit(t, /선정\s*(?:방법|방식|기준)\s*[:：]?\s*(.+)/)) && /선착순/.test(h.m[1])) put(f, 'select', '선착순', lineOf(t, h.m.index + h.m[0].lastIndexOf(h.m[1])), 'medium');
+    else if (h) {
+      var selV = shortText(h.m[1]).replace(/^[▶►■□◆◇●○•·\-\s]+/, '').split(/,|하며/)[0].replace(/으로\s*선정$/, ' 선정').replace(/이\s*낮은\s*순/, ' 낮은 순').trim();
+      if (selV && !/경우$/.test(selV)) put(f, 'select', selV.slice(0, 40), lineOf(t, h.m.index + h.m[0].lastIndexOf(h.m[1])), 'medium');
+    }
     if ((h = hit(t, /(?:신청|접수)[ \t]*방법[ \t]*[:：]?[ \t]*(\S.*)/)) && !/^(?:신청|접수)\s*기간|^공고\s*확인|^문의/.test(h.m[1].trim())) put(f, 'channel', shortText(h.m[1]).replace(/(포털|홈페이지|누리집|사이트|페이지)(?:에서|으로)?\s+\S*(?:페이지|에서).*$/, '$1').replace(/\s*신청$/, '').replace(/\s*접수$/, ''), h.line, 'medium');
     else {
       var after = t.split(/(?:신청|접수)\s*방법/).slice(1).join('\n').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
@@ -361,13 +378,24 @@
       // '서울주거포털 청년월세지원 페이지 페이지에서 지원 신청' → '서울주거포털 청년월세지원 페이지'
       if (via) put(f, 'channel', shortText(via).replace(/(\S+)(\s+\1)+/g, '$1').replace(/(포털|홈페이지|누리집|사이트|페이지)(?:에서|으로)?\s.*$/, '$1').replace(/\s*(?:에서|으로)?\s*(?:지원\s*)?신청$/, '').slice(0, 40), via, 'low');
     }
+    if (!f.channel) {
+      var onl = hit(t, /(?:온라인|인터넷)[ \t]*(?:신청|접수)[ \t]*[:：]?[ \t]*\n?[ \t]*(\S[^\n]*)/), vis = hit(t, /방문[ \t]*(?:신청|접수)[ \t]*[:：]?[ \t]*\n?[ \t]*(\S[^\n]*)/);
+      var chs = [onl && shortText(onl.m[1]).replace(/\s*\(\s*\)\s*$/, '').slice(0, 30), vis && shortText(vis.m[1]).replace(/\s*방문$/, '').slice(0, 30) + ' 방문'].filter(Boolean);
+      if (chs.length) put(f, 'channel', chs.join(' · '), lineOf(t, (onl || vis).m.index + (onl || vis).m[0].lastIndexOf((onl || vis).m[1])), 'low');
+    }
     if ((h = hit(t, /(https?:\/\/[^\s)]+)/))) put(f, 'url', h.m[1], h.line);
     // 서류
     var docs = section(t, /^(?:\d+\.\s*)?(?:제출|구비)\s*서류/);
     if (docs.length) put(f, 'docs', docs.map(function (x) { return x.t; }).join('\n'), docs[0].raw, 'medium');
     // 함께 받을 수 없는 지원·제외 대상
     var ex = t.split('\n').filter(function (L) { return /중복\s*(?:지원|수혜)?\s*(?:불가|제외)|대상에서\s*제외|지원\s*제외|함께\s*받을\s*수\s*없/.test(L); });
-    if (ex.length) put(f, 'exclusions', ex.map(function (L) { return L.trim().replace(/^[-•·○◦▪*※]\s*|^[가-하]\.\s*/, '').replace(/\s*(?:은|는)\s*(?:중복\s*(?:지원|수혜)?\s*(?:불가|제외)|지원\s*대상에서\s*제외|대상에서\s*제외).*$/, '').replace(/\s*등\s*다른\s*공공\s*/, ' 등 다른 공공 ').replace(/\s*이용자$/, ' 이용자').trim(); }).join('\n'), ex[0], 'medium');
+    var exHead = ex.length && /아래|다음/.test(ex[0]) ? ex[0] : '';
+    if (exHead) {
+      var L2 = t.split('\n'), at = L2.indexOf(exHead), items = [];
+      for (var xi = at + 1; xi < L2.length && items.length < 6; xi++) { var xl = L2[xi].trim(); if (!xl) { if (items.length) break; continue; } if (/^[▶►■]|^\d+\.\s|^[※]/.test(xl) || (xl.length <= 10 && !/[,()]/.test(xl) && /^(?:지원|신청|선정|사업|서비스|대상)/.test(xl))) break; items.push(xl.replace(/^[-•·○◦▪*]\s*|^[가-하]\.\s*|^\d\)\s*/, '')); }
+      if (items.length) put(f, 'exclusions', items.join('\n'), exHead, 'medium');
+    }
+    if (ex.length && !exHead) put(f, 'exclusions', ex.map(function (L) { return L.trim().replace(/^[-•·○◦▪*※]\s*|^[가-하]\.\s*/, '').replace(/\s*(?:은|는)\s*(?:중복\s*(?:지원|수혜)?\s*(?:불가|제외)|지원\s*대상에서\s*제외|대상에서\s*제외).*$/, '').replace(/\s*등\s*다른\s*공공\s*/, ' 등 다른 공공 ').replace(/\s*이용자$/, ' 이용자').trim(); }).join('\n'), ex[0], 'medium');
     return f;
   }
   // 사람이 판단해야 할 점 (시스템 프롬프트의 notes 규칙)
@@ -378,6 +406,8 @@
     else if (/정정/.test(t)) n.push('정정 공고예요. 바뀐 항목을 지난 승인본과 비교해 확인하세요.');
     var chg = t.split('\n').filter(function (L) { return /(?:기준|조건|요건|소득|월세|보증금|금액|연령|나이|대상)[^\n]{0,20}(?:완화|상향|하향|변경)|(?:완화|상향|하향|변경)(?:됨|되었|했|함|하여)/.test(L) && !/변경\s*\/|변경\s*신청|신청하기|부담\s*완화/.test(L); })[0];
     if (chg) n.push('조건이 바뀐 흔적이 있어요: “' + chg.trim().replace(/^[※\s]+/, '') + '”');
+    var pcts = (t.match(/중위\s*소득\s*(\d{2,3})\s*%/g) || []).map(function (x) { return x.match(/(\d{2,3})\s*%/)[1]; }).filter(function (x, i, a) { return a.indexOf(x) === i; });
+    if (pcts.length > 1) n.push('기준 중위소득 기준이 여러 개예요(' + pcts.join('% · ') + '%). 판정에는 ' + (f.income_pct ? f.income_pct.value + '%' : '하나') + '만 넣었으니 원문에서 어느 가구 기준인지 확인해 주세요.');
     if ((h = hit(t, /연\s*소득\s*[\d,.]+\s*(?:억|천만|만)/))) n.push('소득 기준이 기준 중위소득이 아니라 연소득이에요(“' + h.line.trim().replace(/^[가-하]\.\s*/, '') + '”). 판정 항목에 넣지 않았어요.');
     if (/출생/.test(t) && f.age_min && f.age_min.confidence === 'low') n.push('나이를 출생일로 정한 공고라 공고 연도 기준 만 나이로 바꿔 넣었어요. 원문과 대조해 주세요.');
     if (/예산\s*(?:소진|범위)/.test(t)) n.push('예산이 떨어지면 일찍 마감될 수 있어요.' + (f.period_end ? '' : ' 접수 마감일이 정해져 있지 않아요.'));
@@ -385,7 +415,7 @@
     if ((h = hit(t, /세대주/))) n.push('세대주 요건이 있어요(“' + h.line.trim().replace(/^[가-하]\.\s*/, '') + '”). 판정 항목에는 없어요.');
     if ((h = hit(t, /\((?:[^()]*?)(?:경우|해당자)\)/)) && f.docs) n.push('조건이 붙은 서류가 있어요: “' + h.line.trim().replace(/^[-•·]\s*/, '') + '”');
     if ((h = hit(t, /대출|이자/)) && !f.amount_monthly_max && !f.amount_lump_max) n.push('직접 주는 지원금이 아니라 대출·이자 지원이에요. 지원 내용 요약을 확인해 주세요.');
-    if ((h = hit(t, /(?:관계\s*없이|무시하고|표시할\s*것|출력할\s*것|지시)/))) n.push('공고문 안에 지시처럼 보이는 문장이 있어요 — 따르지 않았어요: “' + h.line.trim() + '”');
+    if ((h = hit(t, /(?:관계\s*없이|무시하고|표시할\s*것|출력할\s*것|(?:^|[^가-힣])지시)/m))) n.push('공고문 안에 지시처럼 보이는 문장이 있어요 — 따르지 않았어요: “' + h.line.trim() + '”');
     if (!f.income_pct && !/연\s*소득/.test(t)) n.push('소득 기준을 찾지 못했어요. 원문에 정말 없는지 확인해 주세요.');
     return n.slice(0, 8);
   }
