@@ -1240,12 +1240,14 @@ document.addEventListener('DOMContentLoaded', function () {
       RS.loaded = true; render(true);
     }).catch(function () {});
   }
-  function userOf() { var u = JE.toUser(S); u.age = curAge(); return u; }
+  function userOf() { var u = JE.toUser(S), rg = regionOf(); u.age = curAge(); if (rg.sido) { u.sido = rg.sido; u.sgg = rg.sgg; } return u; }
+  // 승인 공고 중 이 이용자 지역(전국 공고 + 내 시·도 공고)만. 지역을 안 골랐으면 전부
+  function myPrograms() { var sido = regionOf().sido; return RS.programs.filter(function (p) { return JachwiRules.regionMatch(p, sido); }); }
   function progBasis(p) { return 'v' + p.version + (p.basis ? ' · ' + p.basis + ' 승인' : ''); }
   function evaluate() {
     var D = JE.deadlines(S);
     if (RS.published) { var tk = today.toDateString(); if (RS.day !== tk) { RS.day = tk; setRules(RS.published, RS.src); } }
-    var u = userOf(), rg = regionOf(), programs = RS.programs.map(function (p) { return fixResidency(JachwiRules.evalProgram(p, u), rg); });
+    var u = userOf(), rg = regionOf(), programs = myPrograms().map(function (p) { return fixResidency(JachwiRules.evalProgram(p, u), rg); });
     return { C: D.C, M: D.M, end: D.end, renewDue: D.renewDue, report: D.report, movein: D.movein, programs: programs, eligible: programs.filter(function (x) { return x.eligible; }) };
   }
   // 승인본의 거주 조건은 서울 기준으로 적혀 있다. 고른 지역이 서울이 아니면 '해당 안 됨'으로 바로잡는다.
@@ -1491,7 +1493,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (DATA.status === 'nohome') return { a: '집 위치를 먼저 정하면 가장 가까운 곳을 알려드릴게요.', src: [['집 위치 정하기', '#map']] };
       var ps = places().filter(function (p) { return p.cat === KW[i][1] && (!KW[i][2] || KW[i][2].test(p.name) || KW[i][2].test(p.sub)); });
       if (!ps.length) return { a: '집 주변 1km 안에서 ' + CATS[KW[i][1]][0] + ' 장소를 찾지 못했어요.', src: [['지도 탐색', '#map']] };
-      return { a: '가장 가까운 곳은 <b>' + esc(ps[0].name) + '</b>, 걸어서 약 ' + ps[0].min + '분(' + ps[0].m + 'm)이에요.' + (ps[1] ? ' 다음은 ' + esc(ps[1].name) + '(' + ps[1].min + '분)이에요.' : '') + ' (' + (isReal() ? 'OpenStreetMap 기준, 직선거리' : '시연용 예시 데이터') + ')', src: [['지도 탐색에서 보기', '#map']] };
+      return { a: '가장 가까운 곳은 <b>' + esc(ps[0].name) + '</b>, 걸어서 약 ' + ps[0].min + '분(' + ps[0].m + 'm)이에요.' + (ps[1] ? ' 다음은 ' + esc(ps[1].name) + '(' + ps[1].min + '분)이에요.' : '') + ' (' + (isReal() ? placeSrcName() + ' 기준, 직선거리' : '시연용 예시 데이터') + ')', src: [['지도 탐색에서 보기', '#map']] };
     }
     if (/가스|전기|수도|인터넷|공과금/.test(q)) return { a: '도시가스는 기사가 와서 안전점검을 해야 열 수 있어서 입주 며칠 전에 예약해야 해요. 입주 당일엔 계량기 숫자를 찍어 두세요. 매달 나가는 공과금은 자취 캘린더에 넣어 두면 챙겨드려요.', src: [['자취 캘린더', '#calendar']] };
     return null;
@@ -1807,7 +1809,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var u = sup(), h = '', note = row.st && row.st.k === 'open' && row.st.sure !== false ? restNote(row.st.to) : '';
     if (row.kind === 'approved') {
       var p = row.p, ev = row.conds.filter(function (c) { return c.evidence; }).map(function (c) { return '<div class="ev-row"><b>' + esc(c.label) + '</b><q>' + esc(String(c.evidence).trim()) + '</q></div>'; }).join('');
-      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><div class="row" style="margin-top:8px"><span class="badge solid">담당자 확인 완료</span>' + (p.demo ? '<span class="badge due">시연용 예시 공고</span>' : '') + (p.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
+      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><div class="row" style="margin-top:8px"><span class="badge solid">담당자 확인 완료</span>' + (p.demo ? '<span class="badge due">시연용 예시 공고</span>' : '') + (p.real ? '<span class="badge">실제 공고 원문 대조</span>' : '') + (p.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
         spVerdictBox(row, '선정 방식: ' + p.select + '. 최종 선정은 기관 심사로 정해져요.') + (note ? '<div class="sp-sec"><div class="banner due">' + ic('info') + '<span>' + esc(note) + '</span></div></div>' : '') +
         '<div class="sp-sec"><h3>지원 내용</h3><p>' + esc(p.amountText) + '</p><div class="kv" style="margin-top:8px"><span class="muted">선정 방식</span><b>' + esc(p.select) + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + esc(p.channel) + '</b></div></div>' + spConds(row) +
         (p.exclusions.length ? '<div class="sp-sec"><h3>함께 받을 수 없어요</h3><p class="s13 sub">' + esc(p.exclusions.join(', ')) + '</p></div>' : '') +
@@ -1909,7 +1911,9 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       var yb = supFetch('youth', r.zip + '|' + tab, 'api/support?zip=' + r.zip + '&cat=' + encodeURIComponent(tab));
       var ap = tab === '주거' ? R.programs.map(rowApproved) : [];
-      if (yb.status === 'ok') { ntApply(yb.data.items, r.zip); counts = yb.data.counts; rows = ap.concat(yb.data.items.filter(function (it) { return SP.forRegion(it, r.sido, r.sgg); }).map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : '') + ' · 중앙부처와 내 지역(시·도, 시·군·구)이 운영하는 사업만 보여 줘요' + (yb.data.hidden ? ' (다른 지역이 전국 대상으로 올린 ' + yb.data.hidden + '건 제외)' : ''); }
+      // 승인 공고와 같은 사업으로 등록된 온통청년 정책은 목록에서 한 번만 (승인 공고 쪽을 남긴다)
+      var apIds = {}; R.programs.forEach(function (x) { ((x.p.source && x.p.source.policyIds) || []).forEach(function (id) { apIds[id] = 1; }); });
+      if (yb.status === 'ok') { ntApply(yb.data.items, r.zip); counts = yb.data.counts; rows = ap.concat(yb.data.items.filter(function (it) { return !apIds[it.id] && SP.forRegion(it, r.sido, r.sgg); }).map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : '') + ' · 중앙부처와 내 지역(시·도, 시·군·구)이 운영하는 사업만 보여 줘요' + (yb.data.hidden ? ' (다른 지역이 전국 대상으로 올린 ' + yb.data.hidden + '건 제외)' : ''); }
       else rows = ap;
       all = rows;
       var liveAll = all.filter(function (x) { return x.v !== 'no'; });
@@ -2161,6 +2165,8 @@ document.addEventListener('DOMContentLoaded', function () {
     ['헬스장', 'gym', 1, '헬스장', /헬스|피트니스|체육관|수영/], ['공원', 'park', 1, '공원', /공원/], ['빨래방', 'life', 1, '빨래방·세탁소', /빨래|세탁/], ['시장', 'life', 1, '시장', /전통시장|> 시장/]
   ];
   var KAKAO_SRC = { name: '카카오맵 장소 검색', url: 'https://map.kakao.com', license: '카카오 지도 API' };
+  // 동네봇·물어보기가 밝히는 장소 출처: 실제로 받아 온 곳(카카오맵·공공데이터포털 등). 없으면 OpenStreetMap
+  function placeSrcName() { var n = (DATA.sources || []).map(function (x) { return x && x.name; }).filter(Boolean); return n.length ? n.map(function (x) { return x.replace(/ 장소 검색$/, ''); }).join(' · ') : 'OpenStreetMap'; }
   // v7: 기차역을 검색어 '역' 대신 '기차역'으로 찾음 — '역'으로는 가까운 15곳이 '○○역점' 가게·출구로 차서 수원역(KTX) 같은 기차역이 빠졌다
   var KPLACES_LS = 'jachwi-places-kakao-v8';   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리, v8: 버스정류장을 못 받은 결과는 저장하지 않음(v7에 남은 것 버림)
   try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
@@ -3191,7 +3197,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function md2html(t) { return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
   var REFUSE_LINKS = '<div class="row" style="gap:4px 12px"><a class="s12" href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener">서울시 전월세 안심계약 도움서비스</a><a class="s12" href="https://120dasan.seoul.go.kr" target="_blank" rel="noopener">120 다산콜센터</a></div>';
   // AI 코치가 읽는 승인 안내: 운영자 승인 지식 카드 + 승인 공고
-  function coachCards() { return RS.cards.concat(JachwiRules.noticeCards(RS.programs)); }
+  function coachCards() { return RS.cards.concat(JachwiRules.noticeCards(myPrograms())); }
   // 내 계약으로 계산한 값 (이름·주소·집 위치는 넣지 않음)
   function coachFacts(R) {
     var end = contractEnd(), bf = brokerFee();
@@ -3209,7 +3215,7 @@ document.addEventListener('DOMContentLoaded', function () {
     f.stages = buildTimeline(R).map(function (st) { return { key: st.key, name: st.name, when: st.when, tasks: st.tasks.map(function (t) { return { title: t.title, done: !!S.done[t.id], urgent: !!t.urgent }; }) }; });
     f.money = { month: (mo + 1) + '월', items: billsInMonth(y, mo).map(function (b) { return { name: b.title, amount: b.amount, kind: b.kind, est: b.est }; }) };
     var hasHome = !!(S.home || S.demo), list = hasHome ? places().slice(0, 60).map(function (p) { return { id: p.id, name: p.name, cat: p.cat, sub: p.sub, min: p.min, m: Math.round(p.m) }; }) : [];
-    f.places = { hasHome: hasHome && DATA.status !== 'nohome', list: list, source: isReal() ? 'OpenStreetMap 기준 · 걸리는 시간은 직선거리로 계산' : '시연용 예시 데이터' };
+    f.places = { hasHome: hasHome && DATA.status !== 'nohome', list: list, source: isReal() ? placeSrcName() + ' 기준 · 걸리는 시간은 직선거리로 계산' : '시연용 예시 데이터' };
     return f;
   }
   function repairsData() { return (RS.published && RS.published.repairs) || (window.JACHWI_SEED && window.JACHWI_SEED.repairs) || []; }

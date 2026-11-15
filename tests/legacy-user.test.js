@@ -10,7 +10,9 @@ const SC = require('../demo/support-core.js');
 const SEED = require('../demo/rules/seed.js');
 
 const TODAY = new Date(2026, 10, 11);
-const PROGS = RC.publicView(SEED, TODAY).programs;
+// app.html myPrograms()와 같게: 예전 사용자(구만 저장)는 서울로 보고, 서울·전국 승인 공고만.
+// 이 테스트는 무주택·중복 수혜 판정을 보므로, 접수가 끝났거나 '그 밖의 조건'(공고에서 확인)이 있어 원래 확인 필요인 공고는 뺀다 (11/15 실제 공고 추가)
+const PROGS = RC.publicView(SEED, TODAY).programs.filter((p) => RC.regionMatch(p, '서울특별시') && p.status !== RC.STATUS.closed && !p.conds.some((c) => c.type === 'other'));
 // app.html userOf()와 같게: toUser + 나이는 curAge()(출생연월이 없으면 예전 S.age를 쓴다)
 const userOf = (S) => { const u = E.toUser(S); if (u.age === null && !S.birth && +S.age) u.age = +S.age; return u; };
 const judge = (S) => PROGS.map((p) => RC.verdict(RC.evalProgram(p, userOf(S))));

@@ -111,6 +111,10 @@
     var why = function (p) { return p.fails && p.fails.length ? ' — ' + p.fails[0] + ' 조건에 맞지 않아요' : ''; };
     if (!ok.length) return '지금 입력한 조건으로는 운영자가 승인한 공고 중 해당되는 지원이 없어요.\n' + ps.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') + '\n지원사업 화면에서는 온통청년·복지로·LH의 실제 공고를 내 시·군·구 기준으로 따로 볼 수 있어요. 거기서 우리 지역 정책을 확인해 보세요.';
     var no = ps.filter(function (p) { return ok.indexOf(p) < 0; });
+    // 확정된 지원 없이 '확인 필요'만 남으면: 먼저 해당되는 지원이 없다고 말하고, 공고에서 볼 조건이 남은 지원을 따로 알려 준다
+    if (!ok.some(function (p) { return p.verdict === '해당 가능' || p.verdict === PENDING; })) {
+      return '지금 입력한 조건으로 바로 해당되는 지원이 없어요. 아래 지원은 앱이 판정하지 못한 조건이 남아 있어서, 공고에서 직접 확인해야 해요.\n' + ok.map(function (p) { return '· **' + p.name + '**(확인 필요' + (p.amountText ? ' · ' + p.amountText : '') + (p.status ? ' · ' + p.status : '') + ')'; }).join('\n') + (no.length ? '\n' + no.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') : '');
+    }
     return '지금 조건으로는 ' + ok.map(function (p) { return '**' + p.name + '**(' + p.verdict + (p.amountText ? ' · ' + p.amountText : '') + (p.status ? ' · ' + p.status : '') + ')'; }).join(', ') + josa(ok[ok.length - 1].name, '을를').slice(-1) + ' 신청해 볼 수 있어요. 금액은 공고마다 따로 보고, 합쳐서 받는다고 생각하지 마세요.' + (no.length ? '\n' + no.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') : '') + ask;
   }
   function noticePersonal(card, f) {
@@ -234,6 +238,9 @@
     // 사업 이름을 콕 집으면 그 공고를 먼저
     var named = hits.filter(function (h) { return h.card.kind === 'notice' && h.card.title.split(/[\s·]+/).some(function (w) { return w.length >= 3 && !/^(서울시|지원|청년)$/.test(w) && q.indexOf(w.replace(/지원$/, '')) >= 0; }); })[0];
     if (named && named !== hits[0]) { hits.splice(hits.indexOf(named), 1); hits.unshift(named); }
+    // '전입신고 기한'처럼 전입을 콕 집었는데 '신고 기한' 낱말 때문에 전월세 신고가 앞에 오면 전입신고를 먼저
+    var mv = hits.filter(function (h) { return h.card.id === 'k-movein'; })[0];
+    if (mv && hits[0].card.id === 'k-report' && /전입/.test(q) && !/전월세|임대차|계약\s*신고/.test(q)) { hits.splice(hits.indexOf(mv), 1); hits.unshift(mv); }
     // 승인 안내에 없는 주제를 흔한 낱말로 엮어 답하지 않기
     var corpus = cards.map(function (c) { return c.title + ' ' + (c.keywords || []).join(' ') + ' ' + c.body; }).join(' ');
     var unk = !followed && !P_LEGAL.test(q) ? unknownTopic(q, hits[0].card, corpus) : null;
