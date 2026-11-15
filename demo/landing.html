@@ -64,8 +64,20 @@ h1 em { font-style: normal; color: var(--green) }
 .fine span::before { content: "✓"; color: var(--green); font-weight: 800; margin-right: 6px }
 
 /* 휴대폰 틀 */
-.phone { position: relative; width: 100%; max-width: 300px; aspect-ratio: 390 / 844; border-radius: 42px; padding: 10px; background: #17171A; box-shadow: 0 30px 60px -20px rgba(23,23,26,.35), 0 0 0 1px rgba(23,23,26,.06) }
-.phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 33px; background: #fff }
+/* 아이폰 모양 틀 (CSS로 그림 — 애플 이미지 파일 없음): 티타늄 테두리 · 검은 베젤 · 다이내믹 아일랜드 · 상태 표시줄 · 홈 바 · 옆면 버튼
+   크기는 틀 폭 기준(cqw)이라 어떤 크기로 줄여도 비율이 같다 */
+.phone { position: relative; width: 100%; max-width: 300px; aspect-ratio: 393 / 852; container-type: inline-size; border-radius: 17%/7.9%; padding: 1.2%; background: linear-gradient(145deg, #d9d6d1 0%, #a7a39d 22%, #e9e7e3 48%, #8f8b85 76%, #cfccc7 100%); box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 40px 70px -24px rgba(23,23,26,.45), 0 14px 28px -12px rgba(23,23,26,.25) }
+.phone .bz { position: relative; height: 100%; border-radius: 15.6%/7.3%; padding: 3.4%; background: #0b0b0c; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06) }
+.phone .scr { position: relative; height: 100%; border-radius: 12.6%/5.9%; overflow: hidden; background: #fff; display: flex; flex-direction: column }
+.phone .sb { flex: 0 0 auto; height: 13.5cqw; display: flex; align-items: center; justify-content: space-between; padding: 0 7.5cqw 0 9cqw; background: #fff; color: #000; font-weight: 600; font-size: 4.4cqw; letter-spacing: -0.02em; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font) }
+.phone .sb .ic { display: flex; align-items: center; gap: 1.4cqw }
+.phone .sb svg { display: block; height: 3.2cqw; width: auto }
+.phone .di { position: absolute; top: 3.2cqw; left: 50%; width: 31cqw; height: 9cqw; margin-left: -15.5cqw; border-radius: 6cqw; background: #000; z-index: 3 }
+.phone img { display: block; flex: 1 1 auto; min-height: 0; width: 100%; height: auto; object-fit: cover; object-position: top; background: #fff }
+.phone .hi { position: absolute; left: 50%; bottom: 2.1cqw; width: 35cqw; height: 1.4cqw; margin-left: -17.5cqw; border-radius: 1cqw; background: #000; opacity: .85; z-index: 3 }
+.phone::before, .phone::after { content: ""; position: absolute; width: 1.1%; border-radius: 2px; background: linear-gradient(90deg, #8f8b85, #cfccc7) }
+.phone::before { left: -1%; top: 17%; height: 5%; box-shadow: 0 9.5cqw 0 0 #a7a39d, 0 23cqw 0 0 #a7a39d }
+.phone::after { right: -1%; top: 26%; height: 11% }
 .stage { position: relative; display: flex; justify-content: center; min-height: 560px }
 .stage .phone.back { position: absolute; right: 2%; top: 64px; max-width: 250px; transform: rotate(6deg); opacity: .96 }
 .stage .phone.front { position: relative; left: -14%; z-index: 2 }
@@ -83,6 +95,10 @@ h1 em { font-style: normal; color: var(--green) }
   .stage .phone.back, .chip.c2 { display: none }
   .chip.c1 { left: auto; right: 4%; top: auto; bottom: 30px }
   .hero .ctas .btn { flex: 1 1 100% }
+  /* 휴대폰: 떠 있는 움직임이 그림자를 네모나게 자르는 문제 → 움직임 끄고, 말풍선은 작게 아이폰 아래쪽 바깥으로 */
+  .stage .phone.front { animation: none; box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 24px 40px -20px rgba(23,23,26,.4) }
+  .chip.c1 { right: 0; bottom: -6px; max-width: 176px; padding: 10px 12px; font-size: 12px }
+  .chip.c1 b { font-size: 14px }
   .end-box .ctas .btn { flex: 1 1 100% }
 }
 
@@ -279,8 +295,8 @@ footer a { color: var(--ink-2) }
         <p class="fine"><span>무료</span><span>로그인 없음</span><span>입력값은 내 기기에만</span></p>
       </div>
       <div class="stage" aria-hidden="true">
-        <div class="phone back"><img src="landing/timeline.jpg" alt="" loading="eager" width="390" height="844"></div>
-        <div class="phone front"><img src="landing/home.jpg" alt="" loading="eager" width="390" height="844"></div>
+        <div class="phone back"><div class="bz"><div class="scr"><div class="sb" aria-hidden="true"><span>9:41</span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#000"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#000"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#000"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#000"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.6c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.4 10.4 0 0 0 8 .8 10.4 10.4 0 0 0 .5 3.8l1.3 1.3A8.6 8.6 0 0 1 8 2.6Zm0 3.6c1.4 0 2.7.5 3.7 1.5l1.3-1.3A7 7 0 0 0 8 4.4a7 7 0 0 0-5 2l1.3 1.3c1-1 2.3-1.5 3.7-1.5Zm0 3.6c.5 0 1 .2 1.3.5L8 11.6 6.7 10.3c.3-.3.8-.5 1.3-.5Z" fill="#000"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.2" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2" fill="#000"/><path d="M25 4v4c.8-.3 1.4-1.1 1.4-2S25.8 4.3 25 4Z" fill="#000" opacity=".45"/></svg></span></div><span class="di" aria-hidden="true"></span><img src="landing/timeline.jpg" alt="" loading="eager" width="390" height="844"><span class="hi" aria-hidden="true"></span></div></div></div>
+        <div class="phone front"><div class="bz"><div class="scr"><div class="sb" aria-hidden="true"><span>9:41</span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#000"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#000"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#000"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#000"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.6c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.4 10.4 0 0 0 8 .8 10.4 10.4 0 0 0 .5 3.8l1.3 1.3A8.6 8.6 0 0 1 8 2.6Zm0 3.6c1.4 0 2.7.5 3.7 1.5l1.3-1.3A7 7 0 0 0 8 4.4a7 7 0 0 0-5 2l1.3 1.3c1-1 2.3-1.5 3.7-1.5Zm0 3.6c.5 0 1 .2 1.3.5L8 11.6 6.7 10.3c.3-.3.8-.5 1.3-.5Z" fill="#000"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.2" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2" fill="#000"/><path d="M25 4v4c.8-.3 1.4-1.1 1.4-2S25.8 4.3 25 4Z" fill="#000" opacity=".45"/></svg></span></div><span class="di" aria-hidden="true"></span><img src="landing/home.jpg" alt="" loading="eager" width="390" height="844"><span class="hi" aria-hidden="true"></span></div></div></div>
         <div class="chip c1"><b>전입신고</b><span class="due">11.30까지</span><br>계약서를 같이 내면 전월세 신고까지 한 번에</div>
         <div class="chip c2"><b>서울시 청년월세 지원</b><span class="ok">해당 가능</span> · 월 최대 20만 원</div>
       </div>
@@ -332,7 +348,7 @@ footer a { color: var(--ink-2) }
       </div>
 
       <article class="feat rv">
-        <div class="shot"><div class="phone"><img src="landing/result.jpg" alt="자격 판정 화면: 전월세 신고 대상 여부와 기한, 신청해 볼 수 있는 지원 목록" loading="lazy" width="390" height="844"></div></div>
+        <div class="shot"><div class="phone"><div class="bz"><div class="scr"><div class="sb" aria-hidden="true"><span>9:41</span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#000"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#000"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#000"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#000"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.6c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.4 10.4 0 0 0 8 .8 10.4 10.4 0 0 0 .5 3.8l1.3 1.3A8.6 8.6 0 0 1 8 2.6Zm0 3.6c1.4 0 2.7.5 3.7 1.5l1.3-1.3A7 7 0 0 0 8 4.4a7 7 0 0 0-5 2l1.3 1.3c1-1 2.3-1.5 3.7-1.5Zm0 3.6c.5 0 1 .2 1.3.5L8 11.6 6.7 10.3c.3-.3.8-.5 1.3-.5Z" fill="#000"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.2" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2" fill="#000"/><path d="M25 4v4c.8-.3 1.4-1.1 1.4-2S25.8 4.3 25 4Z" fill="#000" opacity=".45"/></svg></span></div><span class="di" aria-hidden="true"></span><img src="landing/result.jpg" alt="자격 판정 화면: 전월세 신고 대상 여부와 기한, 신청해 볼 수 있는 지원 목록" loading="lazy" width="390" height="844"><span class="hi" aria-hidden="true"></span></div></div></div></div>
         <div>
           <span class="tag">계약·신고</span>
           <h3>신고 대상인지, 언제까지인지<br>내 계약으로 바로 계산해요</h3>
@@ -346,7 +362,7 @@ footer a { color: var(--ink-2) }
       </article>
 
       <article class="feat flip rv">
-        <div class="shot"><div class="phone"><img src="landing/support.jpg" alt="지원사업 화면: 내 지역 청년 주거 지원 목록과 판정" loading="lazy" width="390" height="844"></div></div>
+        <div class="shot"><div class="phone"><div class="bz"><div class="scr"><div class="sb" aria-hidden="true"><span>9:41</span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#000"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#000"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#000"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#000"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.6c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.4 10.4 0 0 0 8 .8 10.4 10.4 0 0 0 .5 3.8l1.3 1.3A8.6 8.6 0 0 1 8 2.6Zm0 3.6c1.4 0 2.7.5 3.7 1.5l1.3-1.3A7 7 0 0 0 8 4.4a7 7 0 0 0-5 2l1.3 1.3c1-1 2.3-1.5 3.7-1.5Zm0 3.6c.5 0 1 .2 1.3.5L8 11.6 6.7 10.3c.3-.3.8-.5 1.3-.5Z" fill="#000"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.2" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2" fill="#000"/><path d="M25 4v4c.8-.3 1.4-1.1 1.4-2S25.8 4.3 25 4Z" fill="#000" opacity=".45"/></svg></span></div><span class="di" aria-hidden="true"></span><img src="landing/support.jpg" alt="지원사업 화면: 내 지역 청년 주거 지원 목록과 판정" loading="lazy" width="390" height="844"><span class="hi" aria-hidden="true"></span></div></div></div></div>
         <div>
           <span class="tag">지원사업</span>
           <h3>우리 동네에서 받을 수 있는 지원을<br>모르는 조건은 그 자리에서 물어 판정해요</h3>
@@ -360,7 +376,7 @@ footer a { color: var(--ink-2) }
       </article>
 
       <article class="feat rv">
-        <div class="shot"><div class="phone"><img src="landing/coach.jpg" alt="AI 자취 코치 화면: 권리봇이 내 입주일 기준 전입신고 기한을 근거와 함께 답함" loading="lazy" width="390" height="844"></div></div>
+        <div class="shot"><div class="phone"><div class="bz"><div class="scr"><div class="sb" aria-hidden="true"><span>9:41</span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#000"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#000"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#000"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#000"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.6c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.4 10.4 0 0 0 8 .8 10.4 10.4 0 0 0 .5 3.8l1.3 1.3A8.6 8.6 0 0 1 8 2.6Zm0 3.6c1.4 0 2.7.5 3.7 1.5l1.3-1.3A7 7 0 0 0 8 4.4a7 7 0 0 0-5 2l1.3 1.3c1-1 2.3-1.5 3.7-1.5Zm0 3.6c.5 0 1 .2 1.3.5L8 11.6 6.7 10.3c.3-.3.8-.5 1.3-.5Z" fill="#000"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.2" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2" fill="#000"/><path d="M25 4v4c.8-.3 1.4-1.1 1.4-2S25.8 4.3 25 4Z" fill="#000" opacity=".45"/></svg></span></div><span class="di" aria-hidden="true"></span><img src="landing/coach.jpg" alt="AI 자취 코치 화면: 권리봇이 내 입주일 기준 전입신고 기한을 근거와 함께 답함" loading="lazy" width="390" height="844"><span class="hi" aria-hidden="true"></span></div></div></div></div>
         <div>
           <span class="tag">AI 자취 코치</span>
           <h3>집주인에게 보낼 문자부터 고장 수리까지,<br>내 계약을 아는 AI에게 물어보세요</h3>
@@ -374,7 +390,7 @@ footer a { color: var(--ink-2) }
       </article>
 
       <article class="feat flip rv">
-        <div class="shot"><div class="phone"><img src="landing/map.jpg" alt="주변 탐색 화면: 카카오 지도 위 집 주변 장소" loading="lazy" width="390" height="844"></div></div>
+        <div class="shot"><div class="phone"><div class="bz"><div class="scr"><div class="sb" aria-hidden="true"><span>9:41</span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#000"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#000"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#000"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#000"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.6c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.4 10.4 0 0 0 8 .8 10.4 10.4 0 0 0 .5 3.8l1.3 1.3A8.6 8.6 0 0 1 8 2.6Zm0 3.6c1.4 0 2.7.5 3.7 1.5l1.3-1.3A7 7 0 0 0 8 4.4a7 7 0 0 0-5 2l1.3 1.3c1-1 2.3-1.5 3.7-1.5Zm0 3.6c.5 0 1 .2 1.3.5L8 11.6 6.7 10.3c.3-.3.8-.5 1.3-.5Z" fill="#000"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.2" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2" fill="#000"/><path d="M25 4v4c.8-.3 1.4-1.1 1.4-2S25.8 4.3 25 4Z" fill="#000" opacity=".45"/></svg></span></div><span class="di" aria-hidden="true"></span><img src="landing/map.jpg" alt="주변 탐색 화면: 카카오 지도 위 집 주변 장소" loading="lazy" width="390" height="844"><span class="hi" aria-hidden="true"></span></div></div></div></div>
         <div>
           <span class="tag">주변 탐색</span>
           <h3>이사 갈 동네,<br>걸어서 몇 분인지 먼저 봐요</h3>
@@ -388,7 +404,7 @@ footer a { color: var(--ink-2) }
       </article>
 
       <article class="feat rv">
-        <div class="shot"><div class="phone"><img src="landing/calendar.jpg" alt="자취 캘린더 화면: 월세·공과금·신고 기한 일정" loading="lazy" width="390" height="844"></div></div>
+        <div class="shot"><div class="phone"><div class="bz"><div class="scr"><div class="sb" aria-hidden="true"><span>9:41</span><span class="ic"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#000"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#000"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#000"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#000"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.6c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.4 10.4 0 0 0 8 .8 10.4 10.4 0 0 0 .5 3.8l1.3 1.3A8.6 8.6 0 0 1 8 2.6Zm0 3.6c1.4 0 2.7.5 3.7 1.5l1.3-1.3A7 7 0 0 0 8 4.4a7 7 0 0 0-5 2l1.3 1.3c1-1 2.3-1.5 3.7-1.5Zm0 3.6c.5 0 1 .2 1.3.5L8 11.6 6.7 10.3c.3-.3.8-.5 1.3-.5Z" fill="#000"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.2" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="20" height="8" rx="2" fill="#000"/><path d="M25 4v4c.8-.3 1.4-1.1 1.4-2S25.8 4.3 25 4Z" fill="#000" opacity=".45"/></svg></span></div><span class="di" aria-hidden="true"></span><img src="landing/calendar.jpg" alt="자취 캘린더 화면: 월세·공과금·신고 기한 일정" loading="lazy" width="390" height="844"><span class="hi" aria-hidden="true"></span></div></div></div></div>
         <div>
           <span class="tag">생활 관리</span>
           <h3>월세·공과금·기한을<br>내 휴대폰 캘린더에 넣어요</h3>
