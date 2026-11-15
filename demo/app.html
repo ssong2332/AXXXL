@@ -991,9 +991,17 @@ body { font-family: var(--font); letter-spacing: -0.01em }
 .btn:active { transform: none; opacity: .55 }
 .btn.ghost { background: var(--ios-fill); color: var(--ink) }
 .btn.line { box-shadow: inset 0 0 0 1px var(--ios-sep) }
-/* 입력칸: 회색 채움, 테두리 없음 */
-.inp { border: 0; border-radius: var(--r-in); background: var(--ios-fill); min-height: 44px }
-.inp:focus { background: var(--surface); box-shadow: 0 0 0 2px var(--brand-text) }
+/* 입력칸: 회색 채움, 테두리 없음
+   아이폰 사파리는 날짜·월·선택 칸을 자체 모양(폭이 다르고 글자가 가운데)으로 그려서 appearance를 끄고 폭·정렬을 맞춘다 */
+.inp { -webkit-appearance: none; appearance: none; display: block; width: 100%; box-sizing: border-box; border: 0; border-radius: var(--r-in); background-color: var(--ios-fill); min-height: 44px; text-align: left }
+.inp:focus { background-color: var(--surface); box-shadow: 0 0 0 2px var(--brand-text) }
+input.inp[type="date"], input.inp[type="month"], input.inp[type="time"] { height: 44px; line-height: 44px; padding-top: 0; padding-bottom: 0 }
+input.inp::-webkit-date-and-time-value { text-align: left; margin: 0; min-height: 1.4em }
+input.inp::-webkit-datetime-edit { padding: 0 }
+select.inp { padding-right: 38px; cursor: pointer; text-overflow: ellipsis; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%238E8E93' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 12px 8px }
+select.inp::-ms-expand { display: none }
+/* 아이폰은 16px보다 작은 글자 칸을 누르면 화면을 확대한다 */
+@media (max-width: 899px) { .inp, select, textarea { font-size: 16px } }
 /* 카드: 0.5px 느낌의 옅은 경계 */
 .card { border-color: var(--ios-sep); border-radius: var(--r-card) }
 a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
