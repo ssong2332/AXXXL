@@ -238,6 +238,9 @@
     // 사업 이름을 콕 집으면 그 공고를 먼저
     var named = hits.filter(function (h) { return h.card.kind === 'notice' && h.card.title.split(/[\s·]+/).some(function (w) { return w.length >= 3 && !/^(서울시|지원|청년)$/.test(w) && q.indexOf(w.replace(/지원$/, '')) >= 0; }); })[0];
     if (named && named !== hits[0]) { hits.splice(hits.indexOf(named), 1); hits.unshift(named); }
+    // '전입신고 기한'처럼 전입을 콕 집었는데 '신고 기한' 낱말 때문에 전월세 신고가 앞에 오면 전입신고를 먼저
+    var mv = hits.filter(function (h) { return h.card.id === 'k-movein'; })[0];
+    if (mv && hits[0].card.id === 'k-report' && /전입/.test(q) && !/전월세|임대차|계약\s*신고/.test(q)) { hits.splice(hits.indexOf(mv), 1); hits.unshift(mv); }
     // 승인 안내에 없는 주제를 흔한 낱말로 엮어 답하지 않기
     var corpus = cards.map(function (c) { return c.title + ' ' + (c.keywords || []).join(' ') + ' ' + c.body; }).join(' ');
     var unk = !followed && !P_LEGAL.test(q) ? unknownTopic(q, hits[0].card, corpus) : null;
