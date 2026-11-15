@@ -152,3 +152,38 @@ test('app.html이 life-core.js를 불러오고, 계산을 직접 하지 않고 J
   assert.ok(/JL\.monthBills\(S\.bills/.test(html));
   assert.ok(!/fee\.amount \+= e\.amount/.test(html), '관리비 합산 계산이 app.html에 두 벌 있으면 안 된다');
 });
+
+// ── 청년월세 지원 공고 고르기 (캘린더 '청년월세 지원 입금' 안내) ──
+const prog = (id, eligible, extra = {}) => ({ eligible, p: Object.assign({ id, name: id }, extra) });
+
+test('청년월세 안내: 서울 밖이라 국토부만 해당 가능해도 국토부 공고를 고른다', () => {
+  const got = JL.pickRentProgram([prog('rent', false), prog('molit-rent', true), prog('guar', true)]);
+  assert.equal(got.p.id, 'molit-rent');
+  assert.equal(got.eligible, true);
+});
+
+test('청년월세 안내: 서울 시연 공고가 빠져도 국토부 공고로 안내가 뜬다', () => {
+  assert.equal(JL.pickRentProgram([prog('molit-rent', true)]).p.id, 'molit-rent');
+});
+
+test('청년월세 안내: 둘 다 해당 가능하면 실제 공고(국토부)를 먼저, 서울만 해당 가능하면 서울', () => {
+  assert.equal(JL.pickRentProgram([prog('rent', true), prog('molit-rent', true)]).p.id, 'molit-rent');
+  assert.equal(JL.pickRentProgram([prog('molit-rent', false), prog('rent', true)]).p.id, 'rent');
+});
+
+test('청년월세 안내: 청년월세 공고가 없으면 null (다른 지원사업은 보지 않는다)', () => {
+  assert.equal(JL.pickRentProgram([prog('guar', true), prog('incheon-bok', true)]), null);
+  assert.equal(JL.pickRentProgram([]), null);
+  assert.equal(JL.pickRentProgram(undefined), null);
+});
+
+test('선정됐어요 · 켜기: 공고의 월 최대 금액과 기간으로 입금 항목을 맞춘다 (국토부 24개월, 서울 12개월)', () => {
+  const bill = { id: 'sup-rent', name: '청년월세 지원 입금', kind: 'in', amount: 200000, count: 12, on: false };
+  const molit = JL.applyRentProgram(bill, { monthly: 20, months: 24 });
+  assert.deepEqual([molit.on, molit.amount, molit.count], [true, 200000, 24]);
+  const seoul = JL.applyRentProgram(bill, { monthly: 20, months: 12 });
+  assert.deepEqual([seoul.amount, seoul.count], [200000, 12]);
+  const none = JL.applyRentProgram(bill, null);
+  assert.deepEqual([none.on, none.amount, none.count], [true, 200000, 12], '공고 값이 없으면 원래 값 유지');
+  assert.equal(bill.on, false, '원래 항목은 바꾸지 않고 새 값을 돌려준다');
+});
