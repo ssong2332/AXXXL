@@ -179,6 +179,14 @@
     });
   }
   api.contractFacts = contractFacts;
+  // T-22: 내 계약 '집' 칸 — 시·군·구 > 시·도 > 없음 순. 지역이 비면 구분점도 붙이지 않는다
+  function homeTrim(x) { return x === null || x === undefined ? '' : String(x).trim(); }
+  function homeLabel(v) {
+    v = v || {};
+    var name = homeTrim(v.addr) || '내 자취방', place = homeTrim(v.gu) || homeTrim(v.sido);
+    return place ? name + ' · ' + place : name;
+  }
+  api.homeLabel = homeLabel;
   // ===== /T-13 =====
 
   // ===== T-16 =====
