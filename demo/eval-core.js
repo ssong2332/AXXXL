@@ -8,6 +8,8 @@
   'use strict';
   // 평가용 예시 이용자: 만 25세 · 중위 100~150% · 보증금 1,000만/월세 45만 · 계약 10.27 · 입주 11.11 · 오늘 11.10
   var PERSON = { age: 25, income: '150', deposit: 1000, rent: 45, gu: '관악구' };
+  // 앱 myPrograms()와 같게: 이용자 시·도(평가 인물은 따로 적지 않으면 서울)의 승인 공고와 전국 공고만
+  function mine(view, p) { var sido = (p && p.sido) || '서울특별시'; view.programs = view.programs.filter(function (x) { return J.regionMatch(x, sido); }); return view; }
   function demoFacts(programs) {
     return {
       today: '2026.11.10', contract: '2026.10.27', move: '2026.11.11', end: '2028.11.10', noticeBy: '2028.09.10',
@@ -26,7 +28,7 @@
     };
   }
   function runCoach(published, evals, today) {
-    var view = J.publicView(published, today || new Date('2026-11-10T09:00:00+09:00'));
+    var view = mine(J.publicView(published, today || new Date('2026-11-10T09:00:00+09:00')), null);
     var cards = view.cards.concat(J.noticeCards(view.programs)), facts = demoFacts(view.programs);
     var rows = evals.map(function (e) {
       var hist = [];
@@ -67,7 +69,7 @@
   }
   // 자취 AI 비서: 알맞은 봇에게 갔는지 + 꼭 있어야 할 말
   function runAssistant(published, evals, A, repairs, today) {
-    var view = J.publicView(published, today || new Date('2026-11-10T09:00:00+09:00'));
+    var view = mine(J.publicView(published, today || new Date('2026-11-10T09:00:00+09:00')), null);
     var cards = view.cards.concat(J.noticeCards(view.programs)), facts = demoFacts(view.programs);
     facts.house = '봉천동 원룸';
     facts.stages = [{ key: 'prep', name: '입주 준비', when: '10.29 ~ 11.10', tasks: [{ title: '이사 수단 예약하기', done: true }, { title: '인터넷 설치 예약' }, { title: '도시가스 개통 예약' }, { title: '잔금 계좌와 이체 한도 확인' }] }, { key: 'mday', name: '입주 당일', when: '11.11', tasks: [{ title: '잔금 보내기 전 등기부등본 다시 떼기' }, { title: '전입신고 + 임대차계약서 제출', urgent: true }] }];
@@ -105,7 +107,7 @@
   function runPersonas(published, personas, A, repairs) {
     var rows = [], byP = [];
     personas.forEach(function (ps) {
-      var view = J.publicView(published, pd(ps.p.today)), cards = view.cards.concat(J.noticeCards(view.programs)), f = personaFacts(ps.p, view.programs), pass = 0;
+      var view = mine(J.publicView(published, pd(ps.p.today)), ps.p), cards = view.cards.concat(J.noticeCards(view.programs)), f = personaFacts(ps.p, view.programs), pass = 0;
       ps.qs.forEach(function (e) {
         var a = A.answer({ q: e.q, bot: e.bot || 'rights', cards: cards, facts: f, repairs: repairs || published.repairs || [] }), why = [];
         var all = a.text + ' ' + (a.blocks || []).map(function (b) { return (b.text || '') + ' ' + (b.label || '') + ' ' + (b.items || []).map(function (x) { return typeof x === 'string' ? x : (x.name || x.label || ''); }).join(' '); }).join(' ');
@@ -122,7 +124,7 @@
   }
   // 같은 채팅방에서 이어 묻기: 앞 질문(최근 3개)의 주제를 넘기며 턴마다 확인 — 앱의 chatHist와 같은 방식
   function runConversations(published, conv, A, repairs) {
-    var view = J.publicView(published, pd(conv.p.today)), cards = view.cards.concat(J.noticeCards(view.programs)), f = personaFacts(conv.p, view.programs), rows = [], flows = [];
+    var view = mine(J.publicView(published, pd(conv.p.today)), conv.p), cards = view.cards.concat(J.noticeCards(view.programs)), f = personaFacts(conv.p, view.programs), rows = [], flows = [];
     if (conv.places) f.places = { hasHome: true, source: '평가용 장소', list: conv.places };
     conv.flows.forEach(function (fl) {
       var hist = [], ok = 0;

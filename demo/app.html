@@ -1240,12 +1240,14 @@ document.addEventListener('DOMContentLoaded', function () {
       RS.loaded = true; render(true);
     }).catch(function () {});
   }
-  function userOf() { var u = JE.toUser(S); u.age = curAge(); return u; }
+  function userOf() { var u = JE.toUser(S), rg = regionOf(); u.age = curAge(); if (rg.sido) { u.sido = rg.sido; u.sgg = rg.sgg; } return u; }
+  // 승인 공고 중 이 이용자 지역(전국 공고 + 내 시·도 공고)만. 지역을 안 골랐으면 전부
+  function myPrograms() { var sido = regionOf().sido; return RS.programs.filter(function (p) { return JachwiRules.regionMatch(p, sido); }); }
   function progBasis(p) { return 'v' + p.version + (p.basis ? ' · ' + p.basis + ' 승인' : ''); }
   function evaluate() {
     var D = JE.deadlines(S);
     if (RS.published) { var tk = today.toDateString(); if (RS.day !== tk) { RS.day = tk; setRules(RS.published, RS.src); } }
-    var u = userOf(), rg = regionOf(), programs = RS.programs.map(function (p) { return fixResidency(JachwiRules.evalProgram(p, u), rg); });
+    var u = userOf(), rg = regionOf(), programs = myPrograms().map(function (p) { return fixResidency(JachwiRules.evalProgram(p, u), rg); });
     return { C: D.C, M: D.M, end: D.end, renewDue: D.renewDue, report: D.report, movein: D.movein, programs: programs, eligible: programs.filter(function (x) { return x.eligible; }) };
   }
   // 승인본의 거주 조건은 서울 기준으로 적혀 있다. 고른 지역이 서울이 아니면 '해당 안 됨'으로 바로잡는다.
@@ -1807,7 +1809,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var u = sup(), h = '', note = row.st && row.st.k === 'open' && row.st.sure !== false ? restNote(row.st.to) : '';
     if (row.kind === 'approved') {
       var p = row.p, ev = row.conds.filter(function (c) { return c.evidence; }).map(function (c) { return '<div class="ev-row"><b>' + esc(c.label) + '</b><q>' + esc(String(c.evidence).trim()) + '</q></div>'; }).join('');
-      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><div class="row" style="margin-top:8px"><span class="badge solid">담당자 확인 완료</span>' + (p.demo ? '<span class="badge due">시연용 예시 공고</span>' : '') + (p.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
+      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><div class="row" style="margin-top:8px"><span class="badge solid">담당자 확인 완료</span>' + (p.demo ? '<span class="badge due">시연용 예시 공고</span>' : '') + (p.real ? '<span class="badge">실제 공고 원문 대조</span>' : '') + (p.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
         spVerdictBox(row, '선정 방식: ' + p.select + '. 최종 선정은 기관 심사로 정해져요.') + (note ? '<div class="sp-sec"><div class="banner due">' + ic('info') + '<span>' + esc(note) + '</span></div></div>' : '') +
         '<div class="sp-sec"><h3>지원 내용</h3><p>' + esc(p.amountText) + '</p><div class="kv" style="margin-top:8px"><span class="muted">선정 방식</span><b>' + esc(p.select) + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + esc(p.channel) + '</b></div></div>' + spConds(row) +
         (p.exclusions.length ? '<div class="sp-sec"><h3>함께 받을 수 없어요</h3><p class="s13 sub">' + esc(p.exclusions.join(', ')) + '</p></div>' : '') +
@@ -1909,7 +1911,9 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       var yb = supFetch('youth', r.zip + '|' + tab, 'api/support?zip=' + r.zip + '&cat=' + encodeURIComponent(tab));
       var ap = tab === '주거' ? R.programs.map(rowApproved) : [];
-      if (yb.status === 'ok') { ntApply(yb.data.items, r.zip); counts = yb.data.counts; rows = ap.concat(yb.data.items.filter(function (it) { return SP.forRegion(it, r.sido, r.sgg); }).map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : '') + ' · 중앙부처와 내 지역(시·도, 시·군·구)이 운영하는 사업만 보여 줘요' + (yb.data.hidden ? ' (다른 지역이 전국 대상으로 올린 ' + yb.data.hidden + '건 제외)' : ''); }
+      // 승인 공고와 같은 사업으로 등록된 온통청년 정책은 목록에서 한 번만 (승인 공고 쪽을 남긴다)
+      var apIds = {}; R.programs.forEach(function (x) { ((x.p.source && x.p.source.policyIds) || []).forEach(function (id) { apIds[id] = 1; }); });
+      if (yb.status === 'ok') { ntApply(yb.data.items, r.zip); counts = yb.data.counts; rows = ap.concat(yb.data.items.filter(function (it) { return !apIds[it.id] && SP.forRegion(it, r.sido, r.sgg); }).map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : '') + ' · 중앙부처와 내 지역(시·도, 시·군·구)이 운영하는 사업만 보여 줘요' + (yb.data.hidden ? ' (다른 지역이 전국 대상으로 올린 ' + yb.data.hidden + '건 제외)' : ''); }
       else rows = ap;
       all = rows;
       var liveAll = all.filter(function (x) { return x.v !== 'no'; });
@@ -3191,7 +3195,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function md2html(t) { return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
   var REFUSE_LINKS = '<div class="row" style="gap:4px 12px"><a class="s12" href="https://news.seoul.go.kr/welfare/archives/577727" target="_blank" rel="noopener">서울시 전월세 안심계약 도움서비스</a><a class="s12" href="https://120dasan.seoul.go.kr" target="_blank" rel="noopener">120 다산콜센터</a></div>';
   // AI 코치가 읽는 승인 안내: 운영자 승인 지식 카드 + 승인 공고
-  function coachCards() { return RS.cards.concat(JachwiRules.noticeCards(RS.programs)); }
+  function coachCards() { return RS.cards.concat(JachwiRules.noticeCards(myPrograms())); }
   // 내 계약으로 계산한 값 (이름·주소·집 위치는 넣지 않음)
   function coachFacts(R) {
     var end = contractEnd(), bf = brokerFee();

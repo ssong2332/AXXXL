@@ -26,6 +26,7 @@
     { key: 'amount_lump_max', label: '1회 최대 지원액', group: '지원', type: 'num', unit: '만 원' },
     { key: 'period_start', label: '접수 시작일', group: '접수', type: 'date' },
     { key: 'period_end', label: '접수 마감일', group: '접수', type: 'date' },
+    { key: 'always', label: '상시 접수', group: '접수', type: 'bool' },
     { key: 'first_come', label: '선착순', group: '접수', type: 'bool' },
     { key: 'select', label: '선정 방식', group: '접수', type: 'text' },
     { key: 'channel', label: '신청 방법', group: '접수', type: 'text' },
@@ -37,6 +38,7 @@
     { key: 'rent_max', label: '월세 상한', group: '자격', type: 'num', unit: '만 원' },
     { key: 'homeless', label: '무주택 요건', group: '자격', type: 'bool' },
     { key: 'residency', label: '거주·주소 요건', group: '자격', type: 'text' },
+    { key: 'other_conds', label: '그 밖의 조건 (공고에서 확인)', group: '자격', type: 'list' },
     { key: 'docs', label: '제출 서류', group: '서류', type: 'list', required: true },
     { key: 'exclusions', label: '함께 받을 수 없는 지원', group: '서류', type: 'list' }
   ];
@@ -119,15 +121,18 @@
     }
     if (f.type === 'date') {
       var d = toDate(value); if (!d) return false;
-      var p = d.split('-'), ev = digits(evidence).map(Number);
+      // '26.3.30, 2026.8.18.처럼 점으로 이은 날짜도 읽도록 정수만 뽑는다 (digits()는 26.3을 소수로 읽음)
+      var p = d.split('-'), ev = (String(evidence).match(/\d+/g) || []).map(Number);
       return ev.indexOf(+p[1]) >= 0 && ev.indexOf(+p[2]) >= 0;
     }
     return true;
   }
   // 목록 항목(제출 서류 등)은 항목마다 원문에 있는지 본다
   function missingItems(list, source) {
-    var src = squash(source);
-    return toList(list).filter(function (x) { var k = squash(x.replace(/\(.*?\)/g, '')); return k.length >= 2 && src.indexOf(k) < 0; });
+    // 괄호 안 설명과 원문 기호(*, ※, ▸, ❶ 등)는 빼고 견준다: '월세지원 신청(변경)서'는 원문 '신청(변경)서'와 같은 항목
+    var mark = function (x) { return squash(String(x).replace(/[*※▸☑\u2776-\u277F]/g, '')); };
+    var src = mark(source), bare = mark(String(source).replace(/\(.*?\)/g, ''));
+    return toList(list).filter(function (x) { var k = mark(x.replace(/\(.*?\)/g, '')); return k.length >= 2 && src.indexOf(k) < 0 && bare.indexOf(k) < 0; });
   }
   function same(key, a, b) {
     var f = FIELD[key] || {};
@@ -183,7 +188,7 @@
     // 모집 상태 이름은 계획서(PRD F-03)와 같게: 모집 중 · 마감 · 다음 공고 대기
     if (v.period_start && t < v.period_start) return [STATUS.wait, ''];
     if (v.period_end && t > v.period_end) return [STATUS.closed, 'no'];
-    if (v.period_start || v.period_end) return [STATUS.open, 'brand'];
+    if (v.period_start || v.period_end || v.always) return [STATUS.open, 'brand'];
     return [STATUS.wait, ''];
   }
   function wonText(n) { if (n === null || n === undefined) return ''; return n >= 10000 ? (n / 10000) + '억' + (n % 10000 ? ' ' + (n % 10000).toLocaleString('ko-KR') + '만' : '') + ' 원' : n.toLocaleString('ko-KR') + '만 원'; }
@@ -197,17 +202,40 @@
     if (v.deposit_max !== null || v.rent_max !== null) conds.push({ type: 'house', deposit: v.deposit_max, rent: v.rent_max, label: [v.deposit_max !== null ? '보증금 ' + wonText(v.deposit_max) : '', v.rent_max !== null ? '월세 ' + wonText(v.rent_max) : ''].filter(Boolean).join('·') + ' 이하', evidence: [ev('deposit_max'), ev('rent_max')].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(' / ') });
     if (v.residency) conds.push({ type: 'residency', text: v.residency, label: v.residency, evidence: ev('residency') });
     if (v.homeless !== false) conds.push({ type: 'homeless', label: '무주택', evidence: ev('homeless') });
+    (v.other_conds || []).forEach(function (t) { conds.push({ type: 'other', label: t, evidence: ev('other_conds') }); });
     if (v.exclusions && v.exclusions.length) conds.push({ type: 'dup', list: v.exclusions, label: v.exclusions.join('·') + ' 중복 수혜 없음', evidence: ev('exclusions') });
     var amount = v.amount_text || [v.amount_monthly_max ? '월 최대 ' + wonText(v.amount_monthly_max) : '', v.amount_months ? '최대 ' + v.amount_months + '개월' : '', v.amount_lump_max ? '최대 ' + wonText(v.amount_lump_max) : ''].filter(Boolean).join(' · ');
     return {
       id: rec.id, name: v.name || '이름 없는 공고', org: v.org || '', amountText: amount,
       status: st[0], statusCls: st[1], firstCome: v.first_come === true,
       select: v.select || (v.first_come ? '선착순' : '공고 확인'), channel: v.channel || '공고 확인', url: safeUrl(v.url) || safeUrl(rec.source && rec.source.url),
-      period: (v.period_start || v.period_end) ? (md(v.period_start) + ' ~ ' + md(v.period_end)) : '',
+      period: (v.period_start || v.period_end) ? (md(v.period_start) + ' ~ ' + md(v.period_end)) : v.always ? '상시 접수' : '',
+      region: v.region || '', always: v.always === true, real: !!rec.real,
       periodEnd: v.period_end, docs: v.docs || [], exclusions: v.exclusions || [], conds: conds, values: v,
       monthly: v.amount_monthly_max, months: v.amount_months, lump: v.amount_lump_max,
       version: rec.version || 1, basis: rec.basis || '', approvedAt: rec.approvedAt || '', approvedBy: rec.approvedBy || '', source: rec.source || {}, demo: !!rec.demo
     };
+  }
+  // 시·도 이름 → 비교용 짧은 이름 ('서울특별시'·'서울시' → '서울', '충청북도' → '충북'). 못 읽으면 ''
+  function sidoKey(s) {
+    s = String(s || '');
+    if (/전남광주/.test(s)) return '전남광주';
+    var m = /^(서울|부산|대구|인천|광주|대전|울산|세종|제주|경기|강원|충청북|충청남|충북|충남|전라북|전라남|전북|전남|경상북|경상남|경북|경남)/.exec(s.replace(/^\s+/, ''));
+    if (!m) return '';
+    return { 충청북: '충북', 충청남: '충남', 전라북: '전북', 전라남: '전남', 경상북: '경북', 경상남: '경남' }[m[1]] || m[1];
+  }
+  function sameSido(a, b) {
+    if (a === b) return true;
+    // 전남광주통합특별시: 통합 전 광주·전남 공고도 같은 시·도로 본다
+    return (a === '전남광주' && (b === '광주' || b === '전남')) || (b === '전남광주' && (a === '광주' || a === '전남'));
+  }
+  // 이 공고를 이 시·도 이용자에게 보여 줄지: 전국 공고·지역을 못 읽은 공고·지역을 안 고른 이용자는 보여 준다
+  function regionMatch(p, sido) {
+    var pr = p && (p.region || (p.values && p.values.region)) || '';
+    if (!pr || /전국/.test(pr)) return true;
+    var pk = sidoKey(pr), uk = sidoKey(sido);
+    if (!pk || !uk) return true;
+    return sameSido(pk, uk);
   }
   // user: { age, income: '100'|'150'|'over'|'unknown', deposit, rent, gu }
   function incomeOk(user, pct) {
@@ -224,11 +252,16 @@
       if (c.type === 'age') { ok = user.age ? (c.min === null || user.age >= c.min) && (c.max === null || user.age <= c.max) : null; mine = user.age ? '만 ' + user.age + '세' : '입력 안 함'; }
       else if (c.type === 'income') { ok = incomeOk(user, c.pct); mine = { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' }[user.income] || '입력 안 함'; }
       else if (c.type === 'house') { ok = (c.deposit === null || user.deposit <= c.deposit) && (c.rent === null || user.rent <= c.rent); mine = wonShort(user.deposit || 0) + ' / ' + (user.rent || 0) + '만'; }
-      else if (c.type === 'residency') { ok = /서울/.test(c.text) && user.gu ? true : null; mine = user.gu ? '서울 ' + user.gu : '직접 확인'; }
+      else if (c.type === 'residency') {
+        // 시·도를 고른 이용자: 공고의 대상 지역(없으면 거주 조건 글)과 같은 시·도인지. 안 골랐으면(예전 저장값) 서울 구만 본다
+        var want = sidoKey(p.region || c.text);
+        if (user.sido) { ok = !want || /전국/.test(p.region || '') ? null : sameSido(want, sidoKey(user.sido)); mine = String(user.sido).replace(/특별자치도|특별자치시|통합특별시|특별시|광역시/, '') + (user.sgg ? ' ' + user.sgg : ''); if (ok === null) mine = mine || '직접 확인'; }
+        else { ok = /서울/.test(c.text) && user.gu ? true : null; mine = user.gu ? '서울 ' + user.gu : '직접 확인'; }
+      }
       // 무주택·중복 수혜: 이용자가 답한 경우에만 반영(asked). 값이 없으면(관리자 미리보기·시뮬레이션) 기존처럼 '직접 확인'
       else if (c.type === 'homeless') { if (user.homeless === undefined) { mine = '직접 확인'; } else { ok = user.homeless === 'yes' ? true : user.homeless === 'no' ? false : null; mine = { yes: '예', no: '아니오' }[user.homeless] || '모름'; } }
       else if (c.type === 'dup') { if (user.dup === undefined) { mine = '직접 확인'; } else { ok = user.dup === 'no' ? true : user.dup === 'yes' ? false : null; mine = { yes: '받고 있음', no: '받고 있지 않음' }[user.dup] || '모름'; } }
-      else { ok = null; mine = '직접 확인'; }
+      else { ok = null; mine = c.type === 'other' ? '공고에서 확인' : '직접 확인'; }
       return { label: c.label, mine: mine, ok: ok, type: c.type, evidence: c.evidence, asked: (c.type === 'homeless' && user.homeless !== undefined) || (c.type === 'dup' && user.dup !== undefined) };
     });
     var closed = p.status === STATUS.closed;
@@ -365,6 +398,8 @@
     if ((h = hit(t, /(\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2})\.?\s*(?:\([월화수목금토일]\))?\s*(?:\d{1,2}:\d{2})?\s*[~∼\-–]\s*(\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2})/))) { put(f, 'period_start', toDate(h.m[1]), h.line); put(f, 'period_end', toDate(h.m[2]), h.line); }
     else if ((h = hit(t, /(\d{4})\s*\.\s*(\d{1,2})\s*\.\s*(\d{1,2})\.?\s*(?:\([월화수목금토일]\))?\s*(?:\d{1,2}:\d{2})?\s*[~∼\-–]\s*(\d{1,2})\s*\.\s*(\d{1,2})\.?\s*(?:\([월화수목금토일]\))?/))) { put(f, 'period_start', toDate(h.m[1] + '.' + h.m[2] + '.' + h.m[3]), h.line); put(f, 'period_end', toDate(h.m[1] + '.' + h.m[4] + '.' + h.m[5]), h.line, 'medium'); }
     else if ((h = hit(t, /(\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2})\.?\s*(?:\([월화수목금토일]\))?\s*[~∼\-–]\s*예산/))) put(f, 'period_start', toDate(h.m[1]), h.line);
+    // 상시 접수: 접수 기간이 날짜로 없고 '상시 신청·연중 접수'로 적힌 공고
+    if (!f.period_start && !f.period_end && ((h = hit(t, /(?:신청|접수|모집)\s*(?:기간|시기)?\s*[:：]?\s*(?:연중\s*)?상시(?:\s*(?:신청|접수|모집))?/)) || (h = hit(t, /(?:^|\n)\s*(?:연중\s*)?상시\s*(?:신청|접수)?\s*(?:\n|$)/)) || (h = hit(t, /연중\s*(?:신청|접수)/)))) put(f, 'always', '예', h.line.trim() ? h.line : lineOf(t, h.m.index + 1), 'medium');
     if ((h = hit(t, /선착순/))) put(f, 'first_come', '예', h.line);
     if ((h = hit(t, /선정\s*(?:방법|방식|기준)\s*[:：]?\s*(.+)/)) && /선착순/.test(h.m[1])) put(f, 'select', '선착순', lineOf(t, h.m.index + h.m[0].lastIndexOf(h.m[1])), 'medium');
     else if (h) {
@@ -545,6 +580,6 @@
     retrieve: retrieve, noticeCards: noticeCards, grams: grams, ruleExtract: ruleExtract, extractNotes: extractNotes,
     safeUrl: safeUrl, manwon: manwon, digits: digits, squash: squash, toDate: toDate,
     renderPrompt: renderPrompt, cardsBlock: cardsBlock, factsBlock: factsBlock, FACT_KEYS: FACT_KEYS,
-    applyOp: applyOp, logMiss: logMiss, publicView: publicView, stamp: stamp, slim: slim
+    applyOp: applyOp, logMiss: logMiss, publicView: publicView, stamp: stamp, slim: slim, regionMatch: regionMatch, sidoKey: sidoKey
   };
 });
