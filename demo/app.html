@@ -23,7 +23,8 @@
 <script src="coach-core.js" defer></script>
 <script src="assistant-core.js" defer></script>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#10111A">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111112" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="자취내비">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -633,9 +634,9 @@ textarea.inp { min-height: 140px; padding: 12px 14px; line-height: 1.55; resize:
    9 지도: 표식을 작고 차분하게
    ============================================================ */
 :root {
-  --bg: #F7F7F4; --surface: #FFFFFF; --fill: #F0F0EB; --fill-2: #E5E5DF;
+  --bg: #FFFFFF; --surface: #FFFFFF; --fill: #F4F5F7; --fill-2: #E9EBEF;
   --ink: #17171A; --ink-2: #44444A; --ink-3: #66666D;
-  --line: #E2E2DC; --hair: rgba(23,23,26,0.08);
+  --line: #E3E5E9; --hair: rgba(23,23,26,0.11);
   --brand: #17171A; --brand-ink: #FFFFFF; --brand-tint: #E6F1EC; --brand-text: #0D6650; --brand-deep: #0D6650;
   --due: #C2410C; --due-tint: #FCEFE6; --due-text: #A6380B;
   --focus: #0D6650; --r-card: 12px; --r-in: 10px; --r-btn: 9px;
@@ -650,8 +651,8 @@ body { letter-spacing: -0.008em }
 .card { box-shadow: none }
 .page-head h1, .hero-banner h1 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.18 }
 .card-h h2 { font-size: 16px; font-weight: 750; letter-spacing: -0.03em }
-.brand-mark { background: var(--ink); color: var(--surface); border-radius: 9px; overflow: hidden }
-.brand-mark img { width: 100%; height: 100%; display: block }
+.brand-mark { background: none; color: var(--ink); border-radius: 0; overflow: visible }
+.brand-mark svg { width: 100%; height: 100%; display: block }
 .g-label { background: none; color: var(--ink-3); padding: 0; margin: 18px 0 6px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em }
 .nav[aria-current="page"] { background: var(--fill); color: var(--ink) }
 .nav[aria-current="page"] svg { color: var(--brand-text) }
@@ -1081,7 +1082,7 @@ details.fold[open] > summary { margin-bottom: 10px }
 <body>
 <div class="shell">
   <aside class="side" aria-label="주요 메뉴">
-    <a class="brand" href="#home"><span class="brand-mark"><img src="icons/logo-mark.png" alt="" width="34" height="34"></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></a>
+    <a class="brand" href="#home"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></a>
     <nav id="side-nav" style="display:flex;flex-direction:column;gap:2px"></nav>
     <div class="side-foot">
       <div id="side-tools"></div>
@@ -1090,7 +1091,7 @@ details.fold[open] > summary { margin-bottom: 10px }
     </div>
   </aside>
   <div>
-    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark"><img src="icons/logo-mark.png" alt="" width="34" height="34"></span><b>자취 계약 내비</b></a><span class="row" id="top-acts" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
+    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><b>자취 계약 내비</b></a><span class="row" id="top-acts" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
     <main class="main" id="app" tabindex="-1"></main>
   </div>
   <nav class="tabbar" id="tab-nav" aria-label="주요 메뉴"></nav>
@@ -3403,7 +3404,7 @@ document.addEventListener('DOMContentLoaded', function () {
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + '</div>';
     var btns = '<div class="row" style="justify-content:space-between;margin-top:8px">' + (st > 1 ? '<button type="button" class="btn ghost" data-act="obprev">이전</button>' : '<span></span>') +
       (st < 4 ? '<button type="button" class="btn" data-act="obnext">' + (st === 3 && !S.home ? '나중에 정하고 다음' : '다음') + '</button>' : '<button type="button" class="btn" data-act="obdone">내 자취 시작하기</button>') + '</div>';
-    return moRoot('start', '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark"><img src="icons/logo-mark.png" alt="" width="34" height="34"></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
+    return moRoot('start', '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
       '<ol class="ob-steps" aria-label="입력 단계">' + steps.map(function (x, i) { return '<li class="' + (i + 1 < st ? 'done' : i + 1 === st ? 'now' : '') + '"' + (i + 1 === st ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + x + '</li>'; }).join('') + '</ol>' +
       '<section class="card stack ob-card">' + body + btns + '</section>' +
       '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
@@ -3802,6 +3803,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function boot() {
     var h = location.hash;
+    // 소개 페이지(landing.html)의 '예시로 둘러보기': 저장된 내 정보가 없을 때만 예시 데이터로 연다 (내 정보가 있으면 덮어쓰지 않고 홈으로)
+    if (h === '#demo') {
+      var mine = null; try { mine = localStorage.getItem(STORE); } catch (e) {}
+      if (!mine || S.demo) { S = clone(DEMO); save(); }
+      history.replaceState(null, '', location.pathname + location.search + '#home');
+    }
     if (h.indexOf('#phone=') === 0) { PHONE_D = h.slice(7).replace(/[^\w-]/g, ''); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
     if (h.indexOf('#import=') === 0) {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
