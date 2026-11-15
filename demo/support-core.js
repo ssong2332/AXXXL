@@ -21,8 +21,9 @@
   var FREE = { '0013010': 1, '0049010': 1, '0014010': 1, '0011009': 1 };
   var CATS = [['주거', '주거'], ['금융･복지･문화', '생활·금융'], ['일자리', '일자리'], ['교육･직업훈련', '교육'], ['참여･기반', '참여']];
 
-  // 2026년 기준 중위소득 100% (월, 원). 보건복지부 고시 인용 자료 기준 — 고시 원문 대조 필요
-  var MEDIAN_2026 = { 1: 2564238, 2: 4199292, 3: 5359036, 4: 6494738, 5: 7556719, 6: 8555952 };
+  // 2026년 기준 중위소득 100% (월, 원). 보건복지부고시 제2025-135호(2025.8.1. 제정, 2026.1.1. 시행) 표 그대로 — 2026-11-15 국가법령정보센터 원문과 대조
+  // 8인 이상 가구는 고시대로 1인 늘 때마다 959,198원을 더한다(8인가구 10,474,348원). 2027.1.1.부터는 2027년 고시 값으로 바꿔야 한다
+  var MEDIAN_2026 = { 1: 2564238, 2: 4199292, 3: 5359036, 4: 6494738, 5: 7556719, 6: 8555952, 7: 9515150 }, MEDIAN_2026_STEP = 959198;
 
   // 등록 글에 섞여 오는 HTML 표기(&quot; 등)는 글자로 되돌린다. 화면에 낼 때는 esc()로 다시 감싼다
   function clip(s, n) { s = String(s || '').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
@@ -456,7 +457,8 @@
   }
   function won(man) { var e = Math.floor(man / 10000), r = man % 10000; return (e ? e + '억' : '') + (e && r ? ' ' : '') + (r || !e ? r.toLocaleString('ko-KR') + '만' : '') + ' 원'; }
   function medianPct(text) { var m = /중위\s*소득\s*(?:의\s*)?(\d{2,3})\s*%/.exec(String(text || '').replace(/기준\s*/g, '')); return m ? +m[1] : 0; }
-  function medianMan(size, pct) { return Math.floor(MEDIAN_2026[size] * (pct || 100) / 100 / 10000); }
+  function median(size) { var n = Math.max(1, Math.floor(+size) || 1); return n <= 7 ? MEDIAN_2026[n] : MEDIAN_2026[7] + (n - 7) * MEDIAN_2026_STEP; }
+  function medianMan(size, pct) { return Math.floor(median(size) * (pct || 100) / 100 / 10000); }
 
   // ---------- 받는 동안 조심할 것 (등록된 조건에서 계산) ----------
   function watch(it, user, scopeLabel) {
@@ -582,6 +584,6 @@
   var VR = { ok: 0, ask: 1, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, check: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' && st.sure ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
-  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regStatus: regStatus, regText: regText, isDeep: isDeep, isLanding: isLanding, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, periodsIn: periodsIn, pickNotice: pickNotice, aboutPolicy: aboutPolicy, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
+  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, median: median, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regStatus: regStatus, regText: regText, isDeep: isDeep, isLanding: isLanding, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, periodsIn: periodsIn, pickNotice: pickNotice, aboutPolicy: aboutPolicy, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
     docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, amountList: amountList, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });

@@ -1674,7 +1674,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function houseInc() { var u = sup(); return !u.hh ? undefined : u.hh === 1 ? u.minc : u.hinc; }
   // 소득을 알려 주면 승인 공고가 쓰는 소득 구간(100%·150%)도 같이 맞춘다
-  function syncIncome() { var u = sup(), v = houseInc(); if (u.hh && v !== undefined) { var pct = v * 10000 / SP.MEDIAN_2026[Math.min(u.hh, 6)] * 100; S.income = pct <= 100 ? '100' : pct <= 150 ? '150' : 'over'; } }
+  function syncIncome() { var u = sup(), v = houseInc(); if (u.hh && v !== undefined) { var pct = v * 10000 / SP.median(u.hh) * 100; S.income = pct <= 100 ? '100' : pct <= 150 ? '150' : 'over'; } }
   // 나이는 조건 입력·내 계약과 같은 기준(출생연월 → 계약일 기준 만 나이, curAge)을 쓴다. 생일 달이라 정할 수 없으면 0 + birth
   function supUser() { var u = sup(), r = regionOf(); return { age: curAge() || 0, birth: S.birth || '', zip: r.zip, region: regionName(r), mrg: u.mrg, job: u.job, school: u.school, minc: u.minc, hh: u.hh, hinc: u.hinc, traits: u.traits, homeless: S.homeless || undefined, deposit: +S.deposit || 0, rent: +S.rent || 0, earn: u.minc === undefined ? 0 : u.minc * 12 }; }
   function scopeLabel(it, r) { return it.scope === 'sgg' ? r.sgg + ' 거주' : it.scope === 'sido' ? r.sido + ' 거주' : it.scope === 'multi' ? '여러 지역 대상 (내 지역 포함)' : '전국 대상'; }
@@ -1740,7 +1740,9 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (c.ask === 'minc') h += '<p>한 달에 얼마 정도 버나요?</p>' + spCrit(c, u) + spMoney('spminc', '한 달에 버는 돈 (세금 떼기 전)', '예: 150') + mincNote;
     else if (c.ask === 'hinc') {
       var back = '<div class="sp-note"><button type="button" class="sp-redo" style="padding:0" data-sp="undo" data-k="hh">가족 수 다시 고르기</button></div>';
-      if (!u.hh) h += '<p>주민등록등본에 같이 올라 있는 가족은 몇 명인가요?</p><div class="sp-opts">' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" class="sp-opt" data-sp="hh" data-v="' + n + '">' + (n === 1 ? '나 혼자' : n + '명') + '</button>'; }).join('') + '</div><div class="sp-note">나를 포함한 수예요. 자취방으로 혼자 전입신고했다면 ‘나 혼자’예요. 가족 수에 따라 소득 기준 금액이 달라져서 먼저 여쭤봐요.</div>';
+      // 6명 이상은 기준 금액이 1명마다 달라서(고시: 8인 이상은 1인마다 더함) 정확한 수를 받는다
+      if (!u.hh && u.hhMore) h += '<p>주민등록등본에 같이 올라 있는 가족은 몇 명인가요?</p><form class="sp-amt" data-form="sphh"><label>가족 수 (나 포함)<span class="sp-inp"><input name="v" inputmode="numeric" autocomplete="off" placeholder="예: 6">명</span></label><button class="btn sm">확인</button></form>' + back;
+      else if (!u.hh) h += '<p>주민등록등본에 같이 올라 있는 가족은 몇 명인가요?</p><div class="sp-opts">' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" class="sp-opt" data-sp="hh" data-v="' + n + '">' + (n === 1 ? '나 혼자' : n + '명') + '</button>'; }).join('') + '<button type="button" class="sp-opt" data-sp="hhmore">6명 이상</button></div><div class="sp-note">나를 포함한 수예요. 자취방으로 혼자 전입신고했다면 ‘나 혼자’예요. 가족 수에 따라 소득 기준 금액이 달라져서 먼저 여쭤봐요.</div>';
       else if (u.hh === 1) h += '<p>한 달에 얼마 정도 버나요?</p>' + spCrit(c, u) + spMoney('spminc', '한 달에 버는 돈 (세금 떼기 전)', '예: 150') + mincNote + back;
       else {
         var hi = c.pct ? SP.medianMan(u.hh, c.pct.hi) : 0;
@@ -1942,13 +1944,14 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'ans') u[k] = v;
     else if (a === 'yn' && (k === 'homeless' || k === 'dup') && /^(yes|no|unknown)$/.test(v)) S[k] = v;
     else if (a === 'trait') { if (v === 'y') u.traits[k] = true; else k.split('|').forEach(function (l) { if (l) u.traits[l] = false; }); }
-    else if (a === 'hh') { u.hh = +v; syncIncome(); }
+    else if (a === 'hh') { u.hh = +v; delete u.hhMore; syncIncome(); }
+    else if (a === 'hhmore') u.hhMore = 1;
     else if (a === 'noinc') { u.minc = 0; syncIncome(); }
     else if (a === 'undo') {
       if (k === 'minc') delete u.minc;
-      else if (k === 'hinc') { if (u.hh === 1) delete u.minc; delete u.hinc; delete u.hh; }
+      else if (k === 'hinc') { if (u.hh === 1) delete u.minc; delete u.hinc; delete u.hh; delete u.hhMore; }
       else if (k === 'hincOnly') delete u.hinc;
-      else if (k === 'hh') delete u.hh;
+      else if (k === 'hh') { delete u.hh; delete u.hhMore; }
       else if (k === 'traits') String(v || '').split('|').forEach(function (l) { if (l) delete u.traits[l]; });
       else if (k === 'homeless' || k === 'dup') delete S[k];
       else if (k === 'mrg' || k === 'job' || k === 'school') delete u[k];
@@ -1972,7 +1975,12 @@ document.addEventListener('DOMContentLoaded', function () {
     u.sel = ''; u.more = 0; save(); render(true);
   });
   document.addEventListener('submit', function (e) {
-    var f = e.target.dataset.form; if (f !== 'spbirth' && f !== 'spminc' && f !== 'sphinc') return; e.preventDefault();
+    var f = e.target.dataset.form; if (f !== 'spbirth' && f !== 'spminc' && f !== 'sphinc' && f !== 'sphh') return; e.preventDefault();
+    if (f === 'sphh') {
+      var hn = parseInt(String(e.target.v.value).replace(/[^0-9]/g, ''), 10);
+      if (isNaN(hn) || hn < 6 || hn > 20) { e.target.v.focus(); toast('6부터 20 사이의 숫자로 넣어 주세요.'); return; }
+      var hu = sup(); hu.hh = hn; delete hu.hhMore; syncIncome(); save(); render(true); return;
+    }
     // 출생연월: 달력 입력이 없는 브라우저에서는 글자로 들어오므로 2002-03, 200203, 2002.3 모두 받는다
     if (f === 'spbirth') {
       var bm = /^\s*(\d{4})\D*(\d{1,2})\s*$/.exec(String(e.target.v.value)), by = bm ? +bm[1] : 0, bmo = bm ? +bm[2] : 0;
