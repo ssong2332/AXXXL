@@ -1595,7 +1595,7 @@ document.addEventListener('DOMContentLoaded', function () {
     Object.keys(u.traits).forEach(function (l) { chips.push(['traits', l, l + (u.traits[l] ? '' : ' 아님')]); });
     return '<section class="card sp-region"><h2 class="sp-ph">사는 곳</h2><div class="form-grid">' + regionFields() + '</div><p class="s12 muted" style="margin-top:8px">전입신고를 한(할) 곳을 골라 주세요. 지원 대상 지역은 주민등록 주소로 정해져요.' + (S.home ? ' 집 위치를 정하면 자동으로 맞춰져요.' : '') + '</p>' +
       '<h2 class="sp-ph" style="margin-top:16px">내가 알려 준 정보</h2>' + (chips.length ? '<div class="sp-chips">' + chips.map(function (c) { return '<span class="sp-chip">' + esc(c[2]) + '<button type="button" data-sp="undo" data-k="' + c[0] + '" data-v="' + esc(c[1]) + '" aria-label="' + esc(c[2]) + ' 지우기">✕</button></span>'; }).join('') + '</div><p class="s12 muted" style="margin-top:8px">지우면 그 조건을 다시 여쭤봐요. 이 기기에만 저장돼요.</p>' : '<p class="s12 muted">조건을 확인하면서 답한 내용이 여기에 모여요. 이 기기에만 저장돼요.</p>') +
-      '<p class="s12 muted" style="margin-top:8px">출생연월·보증금·월세·입주일은 <a href="#contract">내 계약</a>에서 고쳐요. 무주택·중복 수혜 답은 <a href="#input">조건 입력</a>과 같이 쓰여요.</p></section>';
+      '<p class="s12 muted" style="margin-top:8px">출생연월·보증금·월세·입주일은 <a href="#input">조건 입력</a>에서 고쳐요. 무주택·중복 수혜는 여기서 답해도 조건 입력에 같이 반영돼요.</p></section>';
   }
   // 집 주소(예: '경기 수원시 장안구 …')에서 시·도와 시·군·구를 찾아 맞춘다
   function regionFromLabel(label) {
@@ -1700,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return o;
     });
     var v = x.closed ? 'no' : SP.verdict(res), p = x.p;
-    return { kind: 'approved', key: 'ap-' + p.id, name: p.name, one: p.amountText, org: p.org, v: v, conds: res, p: p, x: x, kd: SP.kindOf({ name: p.name + ' ' + p.amountText }), why: '담당자 확인 완료', score: 300,
+    return { kind: 'approved', key: 'ap-' + p.id, name: p.name, one: p.amountText, org: p.org, v: v, conds: res, p: p, x: x, kd: SP.kindOf({ name: p.name + ' ' + p.amountText }), why: p.demo ? '' : '담당자 확인 완료', demo: !!p.demo, score: 300,
       // 상태 이름은 rules-core.js STATUS에서 정한다 (11/11 PR #16에서 '모집 예정' → '다음 공고 대기'). 글자로 비교하지 않는다
       st: { k: x.closed ? 'ended' : p.status === JachwiRules.STATUS.wait ? 'soon' : p.periodEnd ? 'open' : 'always', text: p.status + (p.period ? ' · ' + p.period : ''), left: p.periodEnd ? Math.round((pd(p.periodEnd) - today) / 86400000) : 0, to: p.periodEnd ? pd(p.periodEnd) : null, far: !!p.periodEnd && Math.round((pd(p.periodEnd) - today) / 86400000) > 365 }, sort: (x.closed ? 3e6 : 0) - 1e7 };
   }
@@ -1718,7 +1718,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function spItem(row, selKey) {
     var asks = row.conds ? row.conds.filter(function (c) { return c.ask; }).length : 0, V = row.badge || (row.v ? SPV[row.v] : null);
-    return '<button type="button" class="sp-item" data-sp="pick" data-v="' + esc(row.key) + '" aria-current="' + (row.key === selKey) + '"><span class="sp-i1"><b>' + esc(row.name) + '</b>' + (V ? '<span class="badge ' + V[0] + '">' + V[1] + '</span>' : '') + '</span>' +
+    return '<button type="button" class="sp-item" data-sp="pick" data-v="' + esc(row.key) + '" aria-current="' + (row.key === selKey) + '"><span class="sp-i1"><b>' + esc(row.name) + '</b>' + (V ? '<span class="badge ' + V[0] + '">' + V[1] + '</span>' : '') + (row.demo ? '<span class="badge due">시연용 예시</span>' : '') + '</span>' +
       '<span class="sp-one">' + esc(SP.clip(row.one || '', 70)) + '</span><span class="sp-i3">' + (row.why ? '<span class="sp-why">' + esc(row.why) + '</span>' : '') + (row.kdLabel ? '<span>' + esc(row.kdLabel) + '</span>' : '') + (row.st ? '<span class="' + (row.st.k === 'open' && row.st.sure && row.st.left <= 14 ? 'sp-hot' : row.st.sure === false ? 'sp-unsure' : '') + '">' + esc(row.st.text) + (SP.leftText(row.st) ? ' · ' + SP.leftText(row.st) : '') + '</span>' : '') +
       (row.tag ? '<span>' + esc(row.tag) + '</span>' : '') + (asks && (row.v === 'q' || row.v === 'ask') ? '<span class="sp-ask-n">질문 ' + asks + '개 남음</span>' : '') + '</span></button>';
   }
@@ -1802,7 +1802,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var u = sup(), h = '', note = row.st && row.st.k === 'open' && row.st.sure !== false ? restNote(row.st.to) : '';
     if (row.kind === 'approved') {
       var p = row.p, ev = row.conds.filter(function (c) { return c.evidence; }).map(function (c) { return '<div class="ev-row"><b>' + esc(c.label) + '</b><q>' + esc(String(c.evidence).trim()) + '</q></div>'; }).join('');
-      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><div class="row" style="margin-top:8px"><span class="badge solid">담당자 확인 완료</span>' + (p.demo ? '<span class="badge due">시연용 예시 공고</span>' : '') + (p.real ? '<span class="badge">실제 공고 원문 대조</span>' : '') + (p.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
+      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><div class="row" style="margin-top:8px">' + (p.demo ? '<span class="badge due">시연용 예시 공고</span>' : '<span class="badge solid">담당자 확인 완료</span>') + (p.real ? '<span class="badge">실제 공고 원문 대조</span>' : '') + (p.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
         spVerdictBox(row, '선정 방식: ' + p.select + '. 최종 선정은 기관 심사로 정해져요.') + (note ? '<div class="sp-sec"><div class="banner due">' + ic('info') + '<span>' + esc(note) + '</span></div></div>' : '') +
         '<div class="sp-sec"><h3>지원 내용</h3><p>' + esc(p.amountText) + '</p><div class="kv" style="margin-top:8px"><span class="muted">선정 방식</span><b>' + esc(p.select) + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + esc(p.channel) + '</b></div></div>' + spConds(row) +
         (p.exclusions.length ? '<div class="sp-sec"><h3>함께 받을 수 없어요</h3><p class="s13 sub">' + esc(p.exclusions.join(', ')) + '</p></div>' : '') +
@@ -1849,7 +1849,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (box.status === 'nokey') return '<div class="sp-empty"><p class="sub">이 서버에는 공공 API 키가 없어서 ' + what + ' 불러오지 못했어요.</p><p class="s13 muted">운영자가 환경변수에 키를 넣으면 실제 데이터가 나와요.</p></div>';
     var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname), file = location.protocol === 'file:';
     if (box.status === 'offline') return '<div class="sp-empty"><p class="sub"><b>지원사업 서버에 연결하지 못했어요.</b></p><p class="s13 muted">' + (file ? '파일을 바로 열면 서버 기능이 동작하지 않아요. demo 폴더에서 <code>node dev-server.js</code>를 실행한 뒤 http://localhost:4173/app.html 로 열어 주세요.' : local ? '로컬 서버가 꺼져 있어요. demo 폴더에서 <code>node dev-server.js</code>를 다시 실행한 뒤 [다시 시도]를 눌러 주세요.' : '인터넷 연결을 확인하고 다시 시도해 주세요.') + '</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
-    if (box.status === 'missing') return '<div class="sp-empty"><p class="sub"><b>이 주소의 서버에는 아직 지원사업 기능이 없어요.</b></p><p class="s13 muted">지원사업 실제 데이터는 <code>feat/support-api</code> 브랜치에 있어요. 팀 레포에 합쳐서 배포하고, 배포 환경변수에 API 키를 넣으면 이 화면에 나와요. 그 전에는 로컬 서버에서 볼 수 있어요.</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
+    if (box.status === 'missing') return '<div class="sp-empty"><p class="sub"><b>이 주소의 서버에는 지원사업 기능이 없어요.</b></p><p class="s13 muted">화면 파일만 올린 곳에서는 공공 API 목록이 나오지 않아요. 서비스 배포 주소나 로컬 서버(demo 폴더에서 <code>node dev-server.js</code>)에서 열어 주세요.</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
     if (box.status === 'error') return '<div class="sp-empty"><p class="sub">' + esc((box.data && box.data.error) || what + ' 불러오지 못했어요.') + '</p><p class="s13 muted">공공 API(온통청년·복지로·LH)가 잠깐 응답하지 않을 때가 있어요. 잠시 뒤 다시 시도해 주세요.</p><button type="button" class="btn ghost sm" data-sp="retry">다시 시도</button></div>';
     return '';
   }
@@ -1923,8 +1923,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     var selRow = rows.filter(function (x) { return x.key === u.sel; })[0] || rows.filter(function (x) { return x.v !== 'no'; })[0] || rows[0];
     if (selRow && selRow.key !== u.sel) { u.sel = selRow.key; listHtml = listHtml.split('data-v="' + esc(selRow.key) + '" aria-current="false"').join('data-v="' + esc(selRow.key) + '" aria-current="true"'); }
-    // 이번에 할 일: 받을 수 있어 보이는 것 중 마감이 가장 가까운 것
-    var hot = (all || rows).filter(function (x) { return x.v && x.v !== 'no' && !x.plain && x.score > 40 && x.st && x.st.k === 'open' && x.st.sure !== false && x.st.left >= 0 && !x.st.far && !x.st.long; }).sort(function (x, y) { return x.st.left - y.st.left; })[0];
+    // 이번에 할 일: 받을 수 있어 보이는 것 중 마감이 가장 가까운 것. 시연용 예시 공고는 실제 접수 일정이 아니라서 넣지 않는다
+    var hot = (all || rows).filter(function (x) { return x.v && x.v !== 'no' && !x.plain && !x.demo && x.score > 40 && x.st && x.st.k === 'open' && x.st.sure !== false && x.st.left >= 0 && !x.st.far && !x.st.long; }).sort(function (x, y) { return x.st.left - y.st.left; })[0];
     var hero = hot ? '<section class="sp-todo"><div><small>' + (hot.st.left ? hot.st.left + '일 남았어요' : '오늘 마감이에요') + '</small><b>' + esc(hot.name) + '</b><span>' + esc(hot.st.text) + (hot.v === 'ok' ? ' · 조건이 맞아요' : hot.v === 'ask' ? ' · 질문 몇 개만 답하면 알려 드려요' : ' · 조건을 조금만 더 확인하면 돼요') + '</span></div><button type="button" class="btn" data-sp="pick" data-v="' + esc(hot.key) + '">자세히 보기</button></section>' : '';
     var tabs = '<div class="cats sp-tabs" role="group" aria-label="지원 종류">' + SP_TABS.map(function (t) { return '<button type="button" class="cat" data-sp="tab" data-v="' + esc(t[0]) + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + (counts && counts[t[0]] !== undefined ? ' <i>' + counts[t[0]] + '</i>' : '') + '</button>'; }).join('') + '</div>';
     return head + picker + hero + tabs + sub + extra +
