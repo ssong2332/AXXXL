@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>자취 계약 내비 · 첫 자취 길잡이</title>
+<meta name="description" content="계약한 날부터 나가는 날까지. 전월세 신고·전입신고 기한, 내 지역에서 받을 수 있는 지원, 오늘 할 일을 내 날짜로 알려 주는 첫 자취 길잡이.">
+<meta name="theme-color" content="#FFFFFF">
+<meta property="og:title" content="자취 계약 내비 · 첫 자취 길잡이">
+<meta property="og:description" content="계약한 날부터 나가는 날까지, 할 일과 기한을 한 길로.">
+<meta property="og:image" content="icons/logo-1024.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* 소개 페이지 · 색은 앱(app.html)의 밝은 테마와 같은 값을 쓴다 */
+:root {
+  --bg: #FFFFFF; --soft: #F4F5F7; --soft-2: #E9EBEF; --line: #E3E5E9;
+  --ink: #17171A; --ink-2: #44444A; --ink-3: #66666D;
+  --brand: #17171A; --green: #0D6650; --green-tint: #E6F1EC; --due: #C2410C; --due-tint: #FCEFE6;
+  --r: 20px; --wrap: 1120px;
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+}
+* { box-sizing: border-box }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100% }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto } *, *::before, *::after { animation: none !important; transition: none !important } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; letter-spacing: -0.01em; word-break: keep-all; overflow-x: hidden }
+img { display: block; max-width: 100% }
+a { color: inherit }
+:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; border-radius: 6px }
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 8px; z-index: 50 }
+.skip:focus { left: 8px }
+
+/* 버튼 */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 24px; border-radius: 14px; font: inherit; font-weight: 700; font-size: 16px; text-decoration: none; border: 1.5px solid transparent; cursor: pointer; transition: transform .15s ease, background .15s ease }
+.btn:active { transform: scale(.98) }
+.btn.primary { background: var(--brand); color: #fff }
+.btn.primary:hover { background: #000 }
+.btn.ghost { background: var(--bg); color: var(--ink); border-color: var(--line) }
+.btn.ghost:hover { background: var(--soft) }
+.btn.sm { min-height: 40px; padding: 0 16px; font-size: 14px; border-radius: 11px }
+
+/* 상단 */
+.nav { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.88); -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid transparent; transition: border-color .2s }
+.nav.on { border-bottom-color: var(--line) }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; font-size: 17px; letter-spacing: -0.02em }
+.brand svg { width: 32px; height: 32px; display: block; color: var(--ink) }
+.nav ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; font-size: 15px; color: var(--ink-2) }
+.nav ul a { text-decoration: none }
+.nav ul a:hover { color: var(--ink) }
+@media (max-width: 860px) { .nav ul { display: none } }
+
+/* 첫 화면 */
+.hero { padding: 64px 0 40px; overflow: hidden }
+.hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--green); background: var(--green-tint); padding: 6px 12px; border-radius: 999px; margin: 0 0 20px }
+h1 { font-size: clamp(36px, 5.4vw, 60px); line-height: 1.15; letter-spacing: -0.035em; margin: 0 0 20px; font-weight: 800 }
+h1 em { font-style: normal; color: var(--green) }
+.lead { font-size: clamp(17px, 1.6vw, 19px); color: var(--ink-2); margin: 0 0 32px; max-width: 34em }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px }
+.fine { font-size: 14px; color: var(--ink-3); margin: 0; display: flex; flex-wrap: wrap; gap: 6px 16px }
+.fine span::before { content: "✓"; color: var(--green); font-weight: 800; margin-right: 6px }
+
+/* 휴대폰 틀 */
+.phone { position: relative; width: 100%; max-width: 300px; aspect-ratio: 390 / 844; border-radius: 42px; padding: 10px; background: #17171A; box-shadow: 0 30px 60px -20px rgba(23,23,26,.35), 0 0 0 1px rgba(23,23,26,.06) }
+.phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 33px; background: #fff }
+.stage { position: relative; display: flex; justify-content: center; min-height: 560px }
+.stage .phone.back { position: absolute; right: 2%; top: 64px; max-width: 250px; transform: rotate(6deg); opacity: .96 }
+.stage .phone.front { position: relative; left: -14%; z-index: 2 }
+.chip { position: absolute; z-index: 3; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; box-shadow: 0 12px 30px -12px rgba(23,23,26,.25); font-size: 13px; line-height: 1.4; max-width: 210px }
+.chip b { display: block; font-size: 15px }
+.chip .due { color: var(--due); font-weight: 700 }
+.chip .ok { color: var(--green); font-weight: 700 }
+.chip.c1 { left: 0; top: 70px }
+.chip.c2 { right: 0; bottom: 60px }
+@media (max-width: 860px) {
+  .hero { padding: 36px 0 24px }
+  .hero .wrap { grid-template-columns: 1fr; gap: 28px }
+  .stage { min-height: 0; padding: 10px 0 20px }
+  .stage .phone.front { left: 0; max-width: 260px }
+  .stage .phone.back, .chip.c2 { display: none }
+  .chip.c1 { left: auto; right: 4%; top: auto; bottom: 30px }
+}
+
+/* 공통 구역 */
+section { padding: 96px 0 }
+.sec-h { max-width: 720px; margin: 0 0 48px }
+.kicker { font-size: 14px; font-weight: 700; color: var(--green); margin: 0 0 12px; letter-spacing: 0 }
+h2 { font-size: clamp(28px, 3.6vw, 42px); line-height: 1.25; letter-spacing: -0.03em; margin: 0 0 14px; font-weight: 800 }
+.sec-h p { color: var(--ink-2); margin: 0; font-size: 17px }
+@media (max-width: 860px) { section { padding: 64px 0 } .sec-h { margin-bottom: 32px } }
+
+/* 놓치기 쉬운 날짜 */
+.dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px }
+.date { border: 1px solid var(--line); border-radius: var(--r); padding: 28px }
+.date .n { font-size: 44px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 14px; font-variant-numeric: tabular-nums }
+.date .n small { font-size: 18px; font-weight: 700; margin-left: 4px; color: var(--ink-2) }
+.date h3 { font-size: 18px; margin: 0 0 6px }
+.date p { margin: 0; color: var(--ink-2); font-size: 15px }
+.date .src { display: block; margin-top: 12px; font-size: 13px; color: var(--ink-3) }
+@media (max-width: 860px) { .dates { grid-template-columns: 1fr } }
+
+/* 길 (계약 전 → 퇴거) */
+.road-sec { background: var(--soft) }
+.road { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px }
+.road::before { content: ""; position: absolute; left: 4%; right: 4%; top: 21px; border-top: 3px dashed #B9BEC6 }
+.road li { position: relative; text-align: center; padding-top: 56px }
+.road li::before { content: attr(data-n); position: absolute; left: 50%; top: 0; width: 44px; height: 44px; margin-left: -22px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); display: grid; place-items: center; font-weight: 800; font-size: 15px }
+.road li.hot::before { background: var(--ink); color: #fff }
+.road li.end::after { content: ""; position: absolute; right: -12px; top: 13px; border: 9px solid transparent; border-left: 13px solid #B9BEC6 }
+.road b { display: block; font-size: 15px; margin-bottom: 4px }
+.road span { display: block; font-size: 13px; color: var(--ink-2); line-height: 1.45 }
+@media (max-width: 860px) {
+  .road { grid-template-columns: 1fr; gap: 0 }
+  .road::before { left: 21px; right: auto; top: 22px; bottom: 22px; border-top: 0; border-left: 3px dashed #B9BEC6 }
+  .road li { text-align: left; padding: 0 0 24px 64px; min-height: 44px }
+  .road li::before { left: 0; margin-left: 0 }
+  .road li.end::after { display: none }
+  .road b { padding-top: 10px }
+}
+
+/* 기능 */
+.feat { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 40px 0 }
+.feat + .feat { border-top: 1px solid var(--line) }
+.feat.flip .shot { order: 2 }
+.feat .shot { display: flex; justify-content: center; background: var(--soft); border-radius: 28px; padding: 40px 20px }
+.feat .shot .phone { max-width: 270px }
+.feat h3 { font-size: clamp(24px, 2.6vw, 32px); line-height: 1.3; letter-spacing: -0.03em; margin: 0 0 14px }
+.feat p { color: var(--ink-2); margin: 0 0 18px; font-size: 17px }
+.feat ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px }
+.feat li { position: relative; padding-left: 28px; font-size: 15.5px }
+.feat li::before { content: ""; position: absolute; left: 2px; top: 7px; width: 14px; height: 9px; border-left: 2.5px solid var(--green); border-bottom: 2.5px solid var(--green); transform: rotate(-45deg) }
+.tag { display: inline-block; font-size: 13px; font-weight: 700; color: var(--ink-2); background: var(--soft); border-radius: 8px; padding: 4px 10px; margin-bottom: 14px }
+@media (max-width: 860px) { .feat { grid-template-columns: 1fr; gap: 24px; padding: 32px 0 } .feat.flip .shot { order: 0 } .feat .shot { padding: 28px 16px } .feat .shot .phone { max-width: 240px } }
+
+/* 원칙 */
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px }
+.rule { background: #fff; border: 1px solid var(--line); border-radius: var(--r); padding: 28px }
+.rule .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--green-tint); display: grid; place-items: center; margin-bottom: 18px }
+.rule .ic svg { width: 22px; height: 22px; stroke: var(--green); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.rule h3 { font-size: 18px; margin: 0 0 8px }
+.rule p { margin: 0; color: var(--ink-2); font-size: 15px }
+.nums { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: var(--r); background: #fff; overflow: hidden }
+.num { padding: 26px 24px; border-left: 1px solid var(--line) }
+.num:first-child { border-left: 0 }
+.num b { display: block; font-size: 32px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; margin-bottom: 6px }
+.num span { font-size: 14px; color: var(--ink-2) }
+.nums-note { font-size: 13px; color: var(--ink-3); margin: 12px 0 0 }
+.srcs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 32px; padding: 0; list-style: none }
+.srcs li { font-size: 13.5px; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px }
+@media (max-width: 860px) { .rules { grid-template-columns: 1fr } .nums { grid-template-columns: 1fr 1fr } .num:nth-child(3) { border-left: 0 } .num:nth-child(n+3) { border-top: 1px solid var(--line) } }
+
+/* 자주 묻는 질문 */
+.faq { max-width: 800px }
+.faq details { border-bottom: 1px solid var(--line) }
+.faq summary { list-style: none; cursor: pointer; padding: 22px 40px 22px 0; font-weight: 700; font-size: 17px; position: relative }
+.faq summary::-webkit-details-marker { display: none }
+.faq summary::after { content: ""; position: absolute; right: 8px; top: 50%; width: 10px; height: 10px; margin-top: -7px; border-right: 2px solid var(--ink-2); border-bottom: 2px solid var(--ink-2); transform: rotate(45deg); transition: transform .2s }
+.faq details[open] summary::after { transform: rotate(-135deg); margin-top: -2px }
+.faq details p { margin: 0 0 22px; color: var(--ink-2) }
+
+/* 마지막 */
+.end { text-align: center; padding: 96px 0 }
+.end-box { background: var(--ink); color: #fff; border-radius: 32px; padding: 64px 24px }
+.end-box h2 { color: #fff }
+.end-box p { color: #C9CACF; margin: 0 0 28px }
+.end-box .btn.primary { background: #fff; color: var(--ink) }
+.end-box .btn.primary:hover { background: #E9EBEF }
+.end-box .btn.ghost { background: transparent; color: #fff; border-color: #4A4B52 }
+.end-box .btn.ghost:hover { background: #26272C }
+.end-box .ctas { justify-content: center; margin: 0 }
+footer { border-top: 1px solid var(--line); padding: 36px 0 120px; font-size: 14px; color: var(--ink-3) }
+footer .wrap { display: grid; gap: 10px }
+footer a { color: var(--ink-2) }
+@media (min-width: 861px) { footer { padding-bottom: 40px } }
+
+/* 휴대폰: 엄지가 닿는 곳에 고정 버튼 */
+.sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-top: 1px solid var(--line); transform: translateY(110%); transition: transform .25s ease }
+.sticky.on { transform: none }
+.sticky .btn { width: 100% }
+@media (min-width: 861px) { .sticky { display: none } }
+
+/* 스크롤 등장 (움직임 줄이기면 끔) */
+.rv { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease }
+.rv.in { opacity: 1; transform: none }
+@media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none } }
+.no-js .rv { opacity: 1; transform: none }
+</style>
+</head>
+<body class="no-js">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="자취 계약 내비 처음으로"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg>자취 계약 내비</a>
+    <nav aria-label="소개 메뉴"><ul>
+      <li><a href="#how">이렇게 도와줘요</a></li>
+      <li><a href="#features">기능</a></li>
+      <li><a href="#trust">믿을 수 있는 이유</a></li>
+      <li><a href="#faq">자주 묻는 질문</a></li>
+    </ul></nav>
+    <a class="btn primary sm" href="app.html#start">시작하기</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top" aria-labelledby="hero-h">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">처음 자취하는 만 19~39세를 위한 길잡이</p>
+        <h1 id="hero-h">계약한 날부터<br>나가는 날까지,<br><em>할 일과 기한을 한 길로</em></h1>
+        <p class="lead">계약일·입주일·보증금·월세만 넣으면 전월세 신고와 전입신고 기한, 우리 동네에서 받을 수 있는 지원, 오늘 할 일을 내 날짜로 알려 드려요.</p>
+        <div class="ctas">
+          <a class="btn primary" href="app.html#start">내 조건으로 시작하기</a>
+          <a class="btn ghost" href="app.html#demo">예시로 먼저 둘러보기</a>
+        </div>
+        <p class="fine"><span>무료</span><span>로그인 없음</span><span>입력값은 내 기기에만</span></p>
+      </div>
+      <div class="stage" aria-hidden="true">
+        <div class="phone back"><img src="landing/timeline.jpg" alt="" loading="eager" width="390" height="844"></div>
+        <div class="phone front"><img src="landing/home.jpg" alt="" loading="eager" width="390" height="844"></div>
+        <div class="chip c1"><b>전입신고</b><span class="due">11.30까지</span><br>계약서를 같이 내면 전월세 신고까지 한 번에</div>
+        <div class="chip c2"><b>서울시 청년월세 지원</b><span class="ok">해당 가능</span> · 월 최대 20만 원</div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="dates-h">
+    <div class="wrap">
+      <div class="sec-h rv">
+        <p class="kicker">왜 필요할까요</p>
+        <h2 id="dates-h">첫 자취에는 놓치면<br>손해 보는 날짜가 있어요</h2>
+        <p>계약서에 사인한 순간부터 법으로 정해진 기한이 하나씩 시작돼요. 누가 따로 알려 주지 않아서 처음 하는 사람이 가장 많이 놓쳐요.</p>
+      </div>
+      <div class="dates">
+        <div class="date rv"><div class="n">30<small>일</small></div><h3>전월세 신고</h3><p>보증금 6천만 원 또는 월세 30만 원을 넘으면 계약한 날부터 30일 안에. 넘기면 과태료가 나올 수 있어요.</p><span class="src">부동산 거래신고 등에 관한 법률</span></div>
+        <div class="date rv"><div class="n">14<small>일</small></div><h3>전입신고</h3><p>이사한 날부터 14일 안에. 보증금을 지키는 힘(대항력)은 신고 다음 날부터 생겨서 늦을수록 불리해요.</p><span class="src">주민등록법 · 주택임대차보호법</span></div>
+        <div class="date rv"><div class="n">2<small>개월 전</small></div><h3>계약 만료 통지</h3><p>나가려면 만료 2개월 전까지 집주인에게 알려야 해요. 말이 없으면 같은 조건으로 계약이 이어져요.</p><span class="src">주택임대차보호법 제6조</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="road-sec" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <div class="sec-h rv">
+        <p class="kicker">이렇게 도와줘요</p>
+        <h2 id="how-h">계약 전부터 퇴거까지,<br>지금 어디쯤인지 보여 줘요</h2>
+        <p>내 계약일과 입주일로 8단계 타임라인을 만들어요. 오늘 해야 할 일이 맨 위로 오고, 기한이 다가오면 알려 줘요.</p>
+      </div>
+      <ol class="road rv" aria-label="자취 타임라인 8단계">
+        <li data-n="1"><b>계약 전</b><span>시세·등기부 확인, 특약 요청</span></li>
+        <li data-n="2"><b>계약 당일</b><span>집주인 명의 계좌로 이체</span></li>
+        <li data-n="3"><b>입주 준비</b><span>이사·인터넷·가스 예약</span></li>
+        <li data-n="4" class="hot"><b>입주 당일</b><span>전입신고, 집 상태 사진</span></li>
+        <li data-n="5" class="hot"><b>신고·정리</b><span>전월세 신고, 확정일자</span></li>
+        <li data-n="6"><b>지원 신청</b><span>내 조건에 맞는 지원</span></li>
+        <li data-n="7"><b>거주 중</b><span>월세·공과금, 고장 대응</span></li>
+        <li data-n="8" class="end"><b>만료·퇴거</b><span>통지 기한, 보증금 돌려받기</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="features" aria-labelledby="feat-h">
+    <div class="wrap">
+      <div class="sec-h rv">
+        <p class="kicker">기능</p>
+        <h2 id="feat-h">흩어져 있던 자취 정보를<br>내 조건으로 한곳에</h2>
+      </div>
+
+      <article class="feat rv">
+        <div class="shot"><div class="phone"><img src="landing/result.jpg" alt="자격 판정 화면: 전월세 신고 대상 여부와 기한, 신청해 볼 수 있는 지원 목록" loading="lazy" width="390" height="844"></div></div>
+        <div>
+          <span class="tag">계약·신고</span>
+          <h3>신고 대상인지, 언제까지인지<br>내 계약으로 바로 계산해요</h3>
+          <p>법에 정해진 기준으로만 계산해요. 같은 조건이면 언제나 같은 답이 나와요.</p>
+          <ul>
+            <li>전국 시·군·구별 전월세 신고 대상 판정</li>
+            <li>전입신고와 함께 내면 신고·확정일자까지 한 번에</li>
+            <li>갱신 통지 마감, 계약갱신요구권, 임차권등기명령 안내</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="feat flip rv">
+        <div class="shot"><div class="phone"><img src="landing/support.jpg" alt="지원사업 화면: 내 지역 청년 주거 지원 목록과 판정" loading="lazy" width="390" height="844"></div></div>
+        <div>
+          <span class="tag">지원사업</span>
+          <h3>우리 동네에서 받을 수 있는 지원을<br>모르는 조건은 그 자리에서 물어 판정해요</h3>
+          <p>온통청년·복지로·LH의 실제 공고를 내 시·군·구 기준으로 보여 줘요. 담당자가 공고 원문과 대조한 공고는 조건마다 원문 근거를 같이 보여 줘요.</p>
+          <ul>
+            <li>해당 가능 · 답하면 판정 · 확인 필요 · 해당 안 됨으로 솔직하게</li>
+            <li>소득 기준은 내 가구 기준 금액으로 바꿔서 비교</li>
+            <li>서류마다 어디서 떼는지 바로 연결</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="feat rv">
+        <div class="shot"><div class="phone"><img src="landing/coach.jpg" alt="AI 자취 코치 화면: 권리봇이 내 입주일 기준 전입신고 기한을 근거와 함께 답함" loading="lazy" width="390" height="844"></div></div>
+        <div>
+          <span class="tag">AI 자취 코치</span>
+          <h3>집주인에게 보낼 문자부터 고장 수리까지,<br>내 계약을 아는 AI에게 물어보세요</h3>
+          <p>봇 6개가 각자 잘하는 일을 맡아요. 모든 답은 승인된 안내와 내 계약 값에서만 나오고, 모르는 건 지어내지 않고 멈춰요.</p>
+          <ul>
+            <li>집주인톡: 정중하게·짧게 문자 써 주고 바로 보내기</li>
+            <li>고쳐봇: 누가 고쳐야 하는지, 지금 할 일 (가스 냄새는 안전 먼저)</li>
+            <li>권리봇·절약봇·동네봇: 기한, 고정비, 가까운 곳</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="feat flip rv">
+        <div class="shot"><div class="phone"><img src="landing/map.jpg" alt="주변 탐색 화면: 카카오 지도 위 집 주변 장소" loading="lazy" width="390" height="844"></div></div>
+        <div>
+          <span class="tag">주변 탐색</span>
+          <h3>이사 갈 동네,<br>걸어서 몇 분인지 먼저 봐요</h3>
+          <p>집 위치를 정하면 마트·약국·병원·버스정류장·주민센터까지 걸리는 시간을 보여 줘요.</p>
+          <ul>
+            <li>카카오 지도와 집 → 장소 도보 경로</li>
+            <li>전국 버스정류장 (국토교통부 TAGO · 서울시)</li>
+            <li>화면 안에서 바로 보는 로드뷰</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="feat rv">
+        <div class="shot"><div class="phone"><img src="landing/calendar.jpg" alt="자취 캘린더 화면: 월세·공과금·신고 기한 일정" loading="lazy" width="390" height="844"></div></div>
+        <div>
+          <span class="tag">생활 관리</span>
+          <h3>월세·공과금·기한을<br>내 휴대폰 캘린더에 넣어요</h3>
+          <p>앱을 열지 않아도 휴대폰 캘린더가 알려 줘요. 이번 달 고정비와 남은 납부도 한눈에 봐요.</p>
+          <ul>
+            <li>아이폰·구글 캘린더 구독, .ics 내보내기</li>
+            <li>이번 달 고정비 구성과 앞으로 6개월</li>
+            <li>입주·퇴거 때 방별 집 상태 기록</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="road-sec" id="trust" aria-labelledby="trust-h">
+    <div class="wrap">
+      <div class="sec-h rv">
+        <p class="kicker">믿을 수 있는 이유</p>
+        <h2 id="trust-h">AI가 추측하지 않도록<br>원칙부터 정했어요</h2>
+        <p>돈과 자격이 걸린 정보라서, 틀린 답보다 "모른다"가 낫다고 생각했어요.</p>
+      </div>
+      <div class="rules">
+        <div class="rule rv"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="m15 17 2 2 4-4"/></svg></div><h3>판정은 규칙으로만</h3><p>신고 대상·기한·지원 자격은 AI가 아니라 법령과 공고 기준으로 계산해요.</p></div>
+        <div class="rule rv"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 14l3 3 5-6"/></svg></div><h3>원문과 대조한 공고만</h3><p>담당자가 공고 원문과 한 줄씩 대조해 승인한 내용만 판정에 써요. 근거 문장을 같이 보여 줘요.</p></div>
+        <div class="rule rv"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>내 정보는 내 기기에</h3><p>계약 조건과 소득은 서버로 보내지 않고 브라우저에서 계산해요. 로그인도 없어요.</p></div>
+      </div>
+      <div class="nums rv" role="list" aria-label="자체 품질 평가 결과">
+        <div class="num" role="listitem"><b>30 / 30</b><span>손으로 계산한 신고·기한 정답과 일치</span></div>
+        <div class="num" role="listitem"><b>104 / 104</b><span>자취생 질문에 맞는 안내로 답함 (처음 보는 질문 34개 포함)</span></div>
+        <div class="num" role="listitem"><b>78 / 78</b><span>공고문에서 뽑은 항목이 원문과 일치 (실제 공고 4건 포함)</span></div>
+        <div class="num" role="listitem"><b>332</b><span>개 자동 테스트 통과</span></div>
+      </div>
+      <p class="nums-note">팀이 직접 만든 평가 세트로 잰 결과예요 (2026년 11월). 운영자 콘솔 ‘품질 평가’에서 같은 평가를 다시 돌려 볼 수 있어요.</p>
+      <ul class="srcs" aria-label="사용하는 공공 데이터">
+        <li>온통청년 청년정책 (한국고용정보원)</li><li>복지로 복지서비스</li><li>LH 분양임대공고</li><li>법정동코드</li><li>특일 정보 (한국천문연구원)</li><li>국토교통부 TAGO 버스정류소</li><li>서울시 정류소정보</li><li>카카오 지도·로컬</li><li>국가법령정보센터</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="faq" aria-labelledby="faq-h">
+    <div class="wrap">
+      <div class="sec-h rv"><p class="kicker">자주 묻는 질문</p><h2 id="faq-h">궁금한 점</h2></div>
+      <div class="faq rv">
+        <details><summary>정말 무료이고 가입이 필요 없나요?</summary><p>네. 로그인 없이 바로 쓸 수 있어요. 홈 화면에 앱처럼 설치할 수도 있어요.</p></details>
+        <details><summary>입력한 계약 정보는 어디에 저장되나요?</summary><p>쓰고 있는 기기의 브라우저에만 저장돼요. 서버에는 지원 목록을 받을 때 지역 코드와 분류만 보내요. PC에서 넣은 내용은 QR로 휴대폰에 옮길 수 있어요.</p></details>
+        <details><summary>서울이 아니어도 쓸 수 있나요?</summary><p>네. 전월세 신고 대상 판정과 지원사업 목록은 전국 시·군·구를 기준으로 해요. 담당자가 원문과 대조한 공고는 전국 공고와 각 시·도 공고 일부부터 늘려 가고 있어요.</p></details>
+        <details><summary>‘해당 가능’이면 지원금을 받을 수 있는 건가요?</summary><p>공고의 조건에 맞는다는 뜻이에요. 최종 선정은 기관 심사로 정해져요. 앱이 판정할 수 없는 조건(예: 연소득 금액)은 ‘확인 필요’로 따로 표시해요.</p></details>
+        <details><summary>AI가 틀린 답을 하면 어떡하죠?</summary><p>AI 코치는 승인된 안내에 없는 내용이면 답하지 않고 멈춰요. 답에는 근거(법령·공고)가 함께 붙어서 직접 확인할 수 있어요. 전세사기 위험 진단이나 법률 판단은 하지 않고 상담받을 곳을 알려 드려요.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="end" aria-labelledby="end-h">
+    <div class="wrap">
+      <div class="end-box rv">
+        <h2 id="end-h">첫 자취,<br>길 잃지 않게 시작해요</h2>
+        <p>계약일과 입주일만 있으면 1분이면 충분해요.</p>
+        <div class="ctas">
+          <a class="btn primary" href="app.html#start">내 조건으로 시작하기</a>
+          <a class="btn ghost" href="app.html#demo">예시로 먼저 둘러보기</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><b style="color:var(--ink)">자취 계약 내비</b> · 처음 자취하는 청년을 위한 계약·신고·지원 통합 타임라인</div>
+    <div>이 서비스의 안내는 법령과 공고를 바탕으로 한 참고 정보예요. 실제 신고·신청은 해당 기관 안내를 따라 주세요.</div>
+    <div><a href="app.html">서비스 바로 가기</a> · <a href="admin.html">운영자 콘솔</a></div>
+  </div>
+</footer>
+
+<div class="sticky" id="sticky"><a class="btn primary" href="app.html#start">내 조건으로 시작하기</a></div>
+
+<script>
+(function () {
+  document.body.classList.remove('no-js');
+  var nav = document.getElementById('nav'), sticky = document.getElementById('sticky'), hero = document.getElementById('top');
+  function onScroll() {
+    var y = window.scrollY || 0;
+    nav.classList.toggle('on', y > 8);
+    sticky.classList.toggle('on', y > hero.offsetHeight - 120);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  var els = [].slice.call(document.querySelectorAll('.rv'));
+  if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
+  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { rootMargin: '0px 0px -8% 0px' });
+  els.forEach(function (e) { io.observe(e); });
+})();
+</script>
+</body>
+</html>
