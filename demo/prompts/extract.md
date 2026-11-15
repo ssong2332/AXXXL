@@ -30,17 +30,21 @@
 | `amount_lump_max` | 1회 최대 지원액 | 만 원 단위 숫자. 한 번에 주는 지원일 때만 |
 | `period_start` | 접수 시작일 | YYYY-MM-DD |
 | `period_end` | 접수 마감일 | YYYY-MM-DD |
+| `always` | 상시 접수 여부 (접수 기간이 날짜 없이 "상시", "연중", "매월 말까지"로 적힘) | "예" / "아니오". 날짜로 된 접수 기간이 있으면 비운다 |
 | `first_come` | 선착순 여부 | "예" / "아니오" |
 | `select` | 선정 방식 | 짧게. 예: "소득 낮은 순 선정" |
 | `channel` | 신청 방법 | 짧게. 예: "서울주거포털 온라인" |
 | `url` | 신청·공고 주소 | 원문에 적힌 http(s) 주소만 |
 | `age_min` | 나이 하한 | 만 나이 숫자 |
 | `age_max` | 나이 상한 | 만 나이 숫자 |
+| `age_none` | 나이 제한이 없는 공고 (청년·청년 외·신혼부부 모두 대상 등) | "예"일 때만 채운다. 이때 `age_min`·`age_max`는 비운다 |
 | `income_pct` | 소득 기준 | "기준 중위소득 N% 이하"의 N. 다른 기준이면 null |
 | `deposit_max` | 보증금 상한 | 만 원 단위 숫자 |
 | `rent_max` | 월세 상한 | 만 원 단위 숫자 |
+| `rent_soft` | 월세 상한을 넘어도 예외 기준으로 신청할 수 있다고 적힌 경우 (예: "월세 60만원 초과자 중 … 93만원 이하인 경우 신청 가능") | "예"일 때만 채운다 |
 | `homeless` | 무주택 요건 | 원문에 무주택 요건이 있으면 "예" |
 | `residency` | 거주·주소 요건 | 짧게. 예: "서울시 거주", "서울시로 전입 또는 서울시 안에서 이사" |
+| `other_conds` | 위 항목으로 나타낼 수 없는 자격 조건 (연소득 금액, 부모님 가구 소득, 보증보험 가입, 일하는 청년 등) | 한 줄에 하나. 원문 표현을 되도록 그대로. 화면은 판정하지 않고 "공고에서 확인"으로 보여 준다 |
 | `docs` | 제출 서류 | 원문 순서대로, 한 줄에 하나(줄바꿈 `\n`). 괄호 조건은 그대로 둔다 |
 | `exclusions` | 함께 받을 수 없는 지원·지원 제외 대상 | 한 줄에 하나. 원문 표현을 되도록 그대로 |
 
@@ -77,7 +81,7 @@
   "fields": {
     "name": { "value": "…", "evidence": "원문 한 줄 그대로", "confidence": "high" },
     "org": { "value": null, "evidence": null, "confidence": "high" },
-    "…": "나머지 키도 같은 모양으로 (region, amount_text, amount_monthly_max, amount_months, amount_lump_max, period_start, period_end, first_come, select, channel, url, age_min, age_max, income_pct, deposit_max, rent_max, homeless, residency, docs, exclusions)"
+    "…": "나머지 키도 같은 모양으로 (region, amount_text, amount_monthly_max, amount_months, amount_lump_max, period_start, period_end, always, first_come, select, channel, url, age_min, age_max, age_none, income_pct, deposit_max, rent_max, rent_soft, homeless, residency, other_conds, docs, exclusions)"
   },
   "notes": ["사람이 확인해야 할 점"]
 }

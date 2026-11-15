@@ -133,6 +133,15 @@ test('취업·혼인 조건: 답하기 전에는 답하면 판정(ask), 답하�
   assert.equal(S.verdict(S.check(it, me({ job: '미취업자', mrg: '기혼' }), '')), 'no');
 });
 
+test('기준 중위소득: 보건복지부고시 제2025-135호 금액, 8인 이상은 1인마다 959,198원 더함', () => {
+  // 고시 표 그대로 (원/월). 2026-11-15 국가법령정보센터 원문과 대조
+  const notice = { 1: 2564238, 2: 4199292, 3: 5359036, 4: 6494738, 5: 7556719, 6: 8555952, 7: 9515150 };
+  Object.keys(notice).forEach((n) => assert.equal(S.median(+n), notice[n], n + '인 가구'));
+  assert.equal(S.median(8), 10474348);   // 고시: 8인가구 10,474,348원
+  assert.equal(S.median(9), 10474348 + 959198);
+  assert.equal(S.medianMan(7, 100), 951); assert.equal(S.medianMan(8, 60), 628);
+});
+
 test('글로 적힌 중위소득 조건: 가구원 수를 알면 금액으로 바꿔 견준다', () => {
   const it = S.normalize(raw({ earnCndSeCd: '0043003', earnEtcCn: '청년독립가구 소득 기준 중위소득 60% 이하' }));
   const c = (u) => S.check(it, me(u), '').filter((x) => x.key === 'earn:pct')[0];

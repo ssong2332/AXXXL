@@ -111,6 +111,10 @@
     var why = function (p) { return p.fails && p.fails.length ? ' — ' + p.fails[0] + ' 조건에 맞지 않아요' : ''; };
     if (!ok.length) return '지금 입력한 조건으로는 운영자가 승인한 공고 중 해당되는 지원이 없어요.\n' + ps.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') + '\n지원사업 화면에서는 온통청년·복지로·LH의 실제 공고를 내 시·군·구 기준으로 따로 볼 수 있어요. 거기서 우리 지역 정책을 확인해 보세요.';
     var no = ps.filter(function (p) { return ok.indexOf(p) < 0; });
+    // 확정된 지원 없이 '확인 필요'만 남으면: 먼저 해당되는 지원이 없다고 말하고, 공고에서 볼 조건이 남은 지원을 따로 알려 준다
+    if (!ok.some(function (p) { return p.verdict === '해당 가능' || p.verdict === PENDING; })) {
+      return '지금 입력한 조건으로 바로 해당되는 지원이 없어요. 아래 지원은 앱이 판정하지 못한 조건이 남아 있어서, 공고에서 직접 확인해야 해요.\n' + ok.map(function (p) { return '· **' + p.name + '**(확인 필요' + (p.amountText ? ' · ' + p.amountText : '') + (p.status ? ' · ' + p.status : '') + ')'; }).join('\n') + (no.length ? '\n' + no.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') : '');
+    }
     return '지금 조건으로는 ' + ok.map(function (p) { return '**' + p.name + '**(' + p.verdict + (p.amountText ? ' · ' + p.amountText : '') + (p.status ? ' · ' + p.status : '') + ')'; }).join(', ') + josa(ok[ok.length - 1].name, '을를').slice(-1) + ' 신청해 볼 수 있어요. 금액은 공고마다 따로 보고, 합쳐서 받는다고 생각하지 마세요.' + (no.length ? '\n' + no.map(function (p) { return '· ' + p.name + ': ' + p.verdict + why(p); }).join('\n') : '') + ask;
   }
   function noticePersonal(card, f) {
@@ -136,11 +140,14 @@
     var haveEx = exHit && /받고\s*있|받는\s*중|받았|받아\s*왔|수급/.test(q);
     if (haveEx) parts.unshift(josa(card.title, '은는') + ' **' + josa(exHit, '을를') + ' 받고 있으면 함께 받을 수 없어요**(공고의 중복 수혜 제외). 말씀대로 지금 받고 계시면 해당 안 돼요. 조건 입력에서 중복 수혜를 \'받고 있음\'으로 답해 두면 판정에도 반영돼요.');
     else if (p.exclusions && p.exclusions.length && (exHit || /같이|함께|중복|둘 다|동시/.test(q))) parts.unshift(josa(card.title, '은는') + ' **' + josa(p.exclusions.join(', '), '과와') + ' 함께 받을 수 없어요**(공고의 중복 수혜 제외).');
+    // 승인 공고에 '함께 받을 수 없는 지원'이 적혀 있지 않은데 다른 지원을 받고 있다고 하면: 된다고 단정하지 않고 공고문의 신청 제외자를 보게 한다
+    var noteEx = !(p.exclusions && p.exclusions.length) && /지원|수급|급여/.test(q.replace(card.title, '')) && /받고\s*있|받는\s*중|같이|함께|중복|둘 다|동시/.test(q) ? '승인된 공고에는 함께 받을 수 없는 지원이 적혀 있지 않아요. 지금 받는 지원이 있으면 **공고문의 신청 제외자**에 해당하는지 꼭 확인하세요.' : '';
     var askBoth = !haveEx && p.exclusions && p.exclusions.length && (exHit || /같이|함께|중복|둘 다|동시/.test(q));
     var me = haveEx ? '' : noticePersonal(card, f), bad = p.verdict === '해당 안 됨' || p.verdict === '마감';
     // "받을 수 있어?"처럼 내 자격을 물으면 판정을 맨 앞에
     if (me && askBoth) parts.splice(1, 0, me);
     else if (me && /받을\s*수|돼\?|되나|되냐|가능|해당/.test(q)) { parts[0] = parts[0].replace(T, '지원 내용은'); parts.unshift(me.replace('내 조건으로는', josa(card.title, '은는') + ' 내 조건으로')); } else if (me) parts.push(me);
+    if (noteEx) parts.splice(me && /받을\s*수|돼\?|되나|되냐|가능|해당/.test(q) ? 1 : 0, 0, noteEx);
     if (!bad) parts.push('최종 선정은 기관 심사로 정해져요.');
     return parts;
   }
@@ -212,7 +219,10 @@
     // 앞 대화에 이어지는 짧은 질문이면 주제를 이어 받는다
     var last = hist.length ? hist[hist.length - 1] : null, ctxQ = q, followed = false;
     var hits = J.retrieve(q, cards, 6);
-    if (last && last.topic && last.topic.length && (P_FOLLOW.test(q) || (q.length <= 12 && P_HOUSING.test(q))) && (!hits.length || hits[0].score < 6)) {
+    // "온라인으로도 돼?"처럼 짧게 덧붙여 묻는 말: 다른 주제 낱말을 콕 집지 않았으면 점수가 높아도 앞 주제를 잇는다
+    var tagOn = last && last.topic && last.topic.length && q.length <= 14 && /도\s*(돼|되|가능|할\s*수|받|해)|으로도|로도/.test(q) &&
+      !hits.some(function (h) { return last.topic.indexOf(h.card.id) < 0 && (h.card.keywords || []).some(function (k) { return k.length >= 2 && !/^(신고|지원|계약|집|돈)$/.test(k) && q.indexOf(k) >= 0; }); });
+    if (last && last.topic && last.topic.length && (tagOn || ((P_FOLLOW.test(q) || (q.length <= 12 && P_HOUSING.test(q))) && (!hits.length || hits[0].score < 6)))) {
       ctxQ = (last.q || '') + ' ' + q; followed = true;
       var prev = cards.filter(function (c) { return last.topic.indexOf(c.id) >= 0; });
       hits = J.retrieve(ctxQ, cards, 6);
@@ -227,6 +237,8 @@
     }
     if (!hits.length) {
       if (P_VAGUE.test(q) && !pre.length) return { kind: 'clarify', text: '어떤 게 궁금한지 조금만 더 알려 주세요. 예를 들면 이런 걸 물어볼 수 있어요.', chips: POPULAR, cites: [], topic: [], steps: steps };
+      // 앞 대화 없이 "그럼 언제까지?"만 오면 범위 밖이라고 하지 않고 무엇이 궁금한지 묻는다
+      if (P_FOLLOW.test(q) && q.length <= 12 && !pre.length) return { kind: 'clarify', text: '무엇의 기한·방법이 궁금한지 알려 주세요. 예를 들면 이런 걸 물어볼 수 있어요.', chips: POPULAR, cites: [], topic: [], steps: steps.concat(['앞 대화가 없어 무엇을 묻는지 확인']) };
       if (!P_HOUSING.test(q) && !pre.length) return { kind: 'scope', text: SCOPE, chips: POPULAR, cites: [], topic: [], steps: steps.concat(['승인된 안내와 관련 없는 질문']) };
       if (q.length <= 6) return { kind: 'clarify', text: '어떤 게 궁금한지 조금만 더 알려 주세요. 예를 들면 이런 걸 물어볼 수 있어요.', chips: POPULAR, cites: [], topic: [], steps: steps };
       return { kind: 'refuse', text: (pre.length ? pre.join(' ') + '\n\n' : '') + REFUSE, chips: POPULAR, cites: [], topic: [], steps: steps.concat(['승인된 안내에서 맞는 내용을 찾지 못함']) };
@@ -234,6 +246,12 @@
     // 사업 이름을 콕 집으면 그 공고를 먼저
     var named = hits.filter(function (h) { return h.card.kind === 'notice' && h.card.title.split(/[\s·]+/).some(function (w) { return w.length >= 3 && !/^(서울시|지원|청년)$/.test(w) && q.indexOf(w.replace(/지원$/, '')) >= 0; }); })[0];
     if (named && named !== hits[0]) { hits.splice(hits.indexOf(named), 1); hits.unshift(named); }
+    // 사업 이름을 콕 집지 않고 "지원금 받을 수 있나요"처럼 물으면 공고 하나가 아니라 지원 전체(판정 목록)로
+    var supH = hits.filter(function (h) { return h.card.id === 'k-support'; })[0];
+    if (!named && supH && hits[0].card.kind === 'notice' && /지원/.test(q)) { hits.splice(hits.indexOf(supH), 1); hits.unshift(supH); }
+    // '전입신고 기한'처럼 전입을 콕 집었는데 '신고 기한' 낱말 때문에 전월세 신고가 앞에 오면 전입신고를 먼저
+    var mv = hits.filter(function (h) { return h.card.id === 'k-movein'; })[0];
+    if (mv && hits[0].card.id === 'k-report' && /전입/.test(q) && !/전월세|임대차|계약\s*신고/.test(q)) { hits.splice(hits.indexOf(mv), 1); hits.unshift(mv); }
     // 승인 안내에 없는 주제를 흔한 낱말로 엮어 답하지 않기
     var corpus = cards.map(function (c) { return c.title + ' ' + (c.keywords || []).join(' ') + ' ' + c.body; }).join(' ');
     var unk = !followed && !P_LEGAL.test(q) ? unknownTopic(q, hits[0].card, corpus) : null;

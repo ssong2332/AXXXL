@@ -11,6 +11,7 @@
 <script src="rules-core.js" defer></script>
 <script src="rules/seed.js" defer></script>
 <script src="rules/samples.js" defer></script>
+<script src="data/regions.js" defer></script>
 <script src="coach-core.js" defer></script>
 <script src="assistant-core.js" defer></script>
 <script src="eval-core.js" defer></script>
@@ -18,9 +19,9 @@
 <style>
 /* 운영자 콘솔 — 이용자 화면(app.html)과 같은 색·글꼴, 정보 밀도는 더 높게 */
 :root {
-  --bg: #F7F7F4; --surface: #FFFFFF; --fill: #F0F0EB; --fill-2: #E5E5DF;
+  --bg: #FFFFFF; --surface: #FFFFFF; --fill: #F4F5F7; --fill-2: #E9EBEF;
   --ink: #17171A; --ink-2: #44444A; --ink-3: #66666D;
-  --line: #E2E2DC; --hair: rgba(23,23,26,0.08);
+  --line: #E3E5E9; --hair: rgba(23,23,26,0.11);
   --brand-tint: #E6F1EC; --brand-text: #0D6650;
   --due: #C2410C; --due-tint: #FCEFE6; --due-text: #A6380B;
   --bad-tint: #FBEAEA; --bad-text: #A12A2A;
@@ -44,8 +45,8 @@ button, input, select, textarea { font: inherit; color: inherit }
 .shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh }
 .side { position: sticky; top: 0; height: 100vh; padding: 18px 12px; border-right: 1px solid var(--hair); background: var(--surface); display: flex; flex-direction: column; gap: 4px }
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 14px; font-weight: 800; letter-spacing: -0.03em }
-.brand i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--surface); font-style: normal; font-size: 13px; overflow: hidden }
-.brand i img { width: 100%; height: 100%; display: block }
+.brand i { display: grid; place-items: center; width: 30px; height: 30px; background: none; color: var(--ink); font-style: normal; font-size: 13px }
+.brand i svg { width: 100%; height: 100%; display: block }
 .brand small { display: block; font-size: 11px; font-weight: 600; color: var(--ink-3) }
 .nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-radius: 9px; color: var(--ink-2); text-decoration: none; font-weight: 600 }
 .nav:hover { background: var(--fill) }
@@ -220,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var R = route(), nd = drafts().filter(function (d) { return d.status !== 'rejected'; }).length, nm = A.st ? A.st.unanswered.items.length : 0, nn = Object.keys(notices()).length, nc = A.st ? A.st.published.cards.length : 0;
     var nav = [['queue', '검수함', nd, true], ['new', '새 공고 추출'], ['published', '승인된 공고', nn], ['cards', '코치 지식', nc], ['missed', '답 못 한 질문', nm, true], ['quality', '품질 평가'], ['prompts', '시스템 프롬프트'], ['log', '변경 기록']];
     var cur = { review: 'queue', notice: 'published' }[R.r] || R.r;
-    return '<div class="shell"><nav class="side" aria-label="운영자 메뉴"><div class="brand"><i class="logo"><img src="icons/logo-mark.png" alt="" width="34" height="34"></i><div>운영자 콘솔<small>공고 검수 · AI 코치</small></div></div>' +
+    return '<div class="shell"><nav class="side" aria-label="운영자 메뉴"><div class="brand"><i class="logo"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></i><div>운영자 콘솔<small>공고 검수 · AI 코치</small></div></div>' +
       nav.map(function (n) { return '<a class="nav" href="#' + n[0] + '"' + (cur === n[0] ? ' aria-current="page"' : '') + '><span>' + n[1] + '</span>' + (n[2] !== undefined ? '<span class="n' + (n[3] && n[2] ? '' : ' z') + '">' + n[2] + '</span>' : '') + '</a>'; }).join('') +
       '<div class="foot">' + modeBadge() + (A.ai ? '<span class="badge ok">Claude 연결됨 · 내장 AI 대기</span>' : '<span class="badge ok" title="외부 API 없이 이 기기 안에서 동작해요">내장 AI로 동작 중</span>') +
       '<label class="field">검수자 이름<input class="inp" data-name value="' + esc(A.name) + '" placeholder="예: 이성준" maxlength="20"></label>' +
@@ -231,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- 로그인 ----------
   function viewLogin() {
-    return '<div class="login stack"><div class="brand"><i class="logo"><img src="icons/logo-mark.png" alt="" width="34" height="34"></i><div>운영자 콘솔<small>자취 계약 내비</small></div></div><div class="card stack"><h2>운영자 코드</h2><p class="s13 muted">공유 저장소의 공고를 승인·발행하려면 운영자 코드가 필요해요. 코드는 이 탭에만 보관되고 닫으면 지워져요.</p>' +
+    return '<div class="login stack"><div class="brand"><i class="logo"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></i><div>운영자 콘솔<small>자취 계약 내비</small></div></div><div class="card stack"><h2>운영자 코드</h2><p class="s13 muted">공유 저장소의 공고를 승인·발행하려면 운영자 코드가 필요해요. 코드는 이 탭에만 보관되고 닫으면 지워져요.</p>' +
       (A.err ? '<div class="banner bad">' + esc(A.err) + '</div>' : '') +
       '<form data-form="login" class="stack"><input class="inp" type="password" autocomplete="current-password" name="t" placeholder="운영자 코드" required><input class="inp" name="n" placeholder="검수자 이름 (기록에 남아요)" value="' + esc(A.name) + '" maxlength="20"><button class="btn">들어가기</button></form>' +
       '<button class="btn ghost" data-act="practice">코드 없이 연습 모드로 둘러보기</button><p class="s12 muted">연습 모드는 이 브라우저에만 저장돼요. 같은 브라우저의 이용자 화면에서 결과를 바로 확인할 수 있어요.</p></div></div>';
@@ -261,13 +262,63 @@ document.addEventListener('DOMContentLoaded', function () {
       var prev = notices()[s.noticeId];
       return '<section class="card c4 stack"><div class="row"><span class="badge">' + (prev ? '기존 공고 v' + prev.version + '의 새 버전' : '새 공고') + '</span>' + (s.real ? '<span class="badge ok">실제 안내문</span>' : '<span class="badge">시연용 예시</span>') + '</div><h2>' + esc(s.title) + '</h2>' + (s.real ? '<a class="s12" href="' + esc(J.safeUrl(s.source.url)) + '" target="_blank" rel="noopener">' + esc(s.source.name) + ' ↗</a>' : '') + '<p class="s13 muted">' + esc(s.hint) + '</p><pre class="srcbox" style="max-height:140px">' + esc(s.text.slice(0, 400)) + '…</pre><button class="btn" data-act="extract-sample" data-v="' + s.id + '"' + (busy ? ' disabled' : '') + '>이 공고 추출하기</button></section>';
     }).join('') + '</div><p class="s12 muted" style="margin-top:10px">‘시연용 예시’는 시연을 위해 만든 공고, ‘실제 안내문’은 서울시·부산시 홈페이지에 게시된 안내문을 그대로 옮긴 거예요(2026-11-13 수집, 출처는 공고 이름 아래 링크).</p>';
+    else if (t === 'youth') body = viewYouth(busy);
     else body = '<section class="card stack"><div class="grid"><label class="field c7">공고 이름이나 출처<input class="inp" id="nsrc" placeholder="예: 서울주거포털 · 2026 청년월세 2차 공고" maxlength="120"></label><label class="field c5">원문 주소 (선택)<input class="inp" id="nurl" placeholder="https://" maxlength="300"></label></div>' +
       '<label class="field">공고 원문<textarea class="inp" id="ntext" rows="14" placeholder="공고문 전체나 지원 대상·지원 내용·접수 기간·제출 서류 부분을 붙여 넣으세요"></textarea></label>' +
       '<div class="row"><label class="btn ghost">파일에서 불러오기 (PDF · HWPX · TXT)<input type="file" accept=".pdf,.hwpx,.txt,text/plain,application/pdf" data-act="file" hidden></label><span class="s12 muted" id="fileinfo">HWP(구형 한글 파일)는 한글에서 HWPX나 PDF로 저장해 올려 주세요. 파일은 이 브라우저에서 글자만 뽑고, 원문 글자만 서버로 보내요.</span></div>' +
       '<div class="row"><button class="btn" data-act="extract-text"' + (busy ? ' disabled' : '') + '>추출하기</button><span class="s12 muted">' + (A.mode === 'server' && A.ai ? 'Claude로 추출해요. 실패하면 내장 AI가 대신해요.' : '내장 AI가 이 기기 안에서 추출해요. 원문은 서버로 가지 않아요.') + '</span></div></section>';
     return head('공고 검수', '새 공고 추출') +
-      '<div class="tabs" role="tablist">' + [['sample', '시연 공고로 해 보기'], ['paste', '원문 붙여넣기 · 파일']].map(function (x) { return '<button class="tab" role="tab" aria-selected="' + (t === x[0]) + '" data-act="tab" data-k="new" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="tabs" role="tablist">' + [['sample', '시연 공고로 해 보기'], ['youth', '온통청년에서 불러오기'], ['paste', '원문 붙여넣기 · 파일']].map(function (x) { return '<button class="tab" role="tab" aria-selected="' + (t === x[0]) + '" data-act="tab" data-k="new" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       (busy ? '<div class="banner" style="margin-bottom:14px;flex-direction:column;gap:6px"><div class="row"><span class="spin"></span><b>' + (A.exMode === 'ai' ? 'Claude가' : '내장 AI가') + ' 공고를 읽고 있어요</b></div><ol class="s13" style="margin:0;padding-left:20px">' + (A.exSteps || []).slice(0, A.exN || 0).map(function (x) { return '<li>' + esc(x) + ' ✓</li>'; }).join('') + '</ol></div>' : '') + body;
+  }
+  // ---------- 온통청년에서 불러오기: 지역의 실제 주거 정책(등록 정보)을 검수 초안으로 ----------
+  // 등록 정보는 공고 원문이 아니다. 접수 기간이 사업 기간으로 등록된 경우가 많아, 공고 원문 주소를 함께 열어 대조하게 한다.
+  var YC = { sido: '', zip: '', status: 'idle', items: [], error: '', at: '' };
+  function regionsList() { return window.JACHWI_REGIONS || []; }
+  function ycYmd(s) { s = String(s || ''); return /^\d{8}$/.test(s) ? s.slice(0, 4) + '.' + s.slice(4, 6) + '.' + s.slice(6, 8) : ''; }
+  function ycUrl(it) { return 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/' + encodeURIComponent(it.id); }
+  function ycText(it) {
+    var L = [], add = function (k, v) { v = String(v == null ? '' : v).trim(); if (v) L.push(k + ' : ' + v.replace(/\r/g, '')); };
+    add('사업명', it.name); add('주관 기관', it.org); add('사업 요약', it.sum); add('지원 내용', it.support); add('지원 대상', it.cond);
+    if (it.age && (it.age[0] || it.age[1])) add('연령', '만 ' + (it.age[0] || 0) + '~' + (it.age[1] || '') + '세');
+    if (it.earn && it.earn.t === 'etc') add('소득', it.earn.text);
+    else if (it.earn && it.earn.t === 'year') add('소득', '연소득 ' + (it.earn.min ? it.earn.min + '만원 이상 ' : '') + (it.earn.max ? it.earn.max + '만원 이하' : ''));
+    if (it.apply && it.apply.t === 'always') add('신청 기간', '상시');
+    else if (it.apply && (it.apply.from || it.apply.to)) add('신청 기간', ycYmd(it.apply.from) + ' ~ ' + ycYmd(it.apply.to));
+    add('신청 방법', it.how); add('선정 방법', it.select); add('제출 서류', it.docs); add('지원 제외 대상', it.excl); add('기타', it.etc);
+    if (it.url) add('신청 주소', it.url); (it.notices || []).slice(0, 2).forEach(function (u) { add('공고 주소', u); });
+    return L.join('\n');
+  }
+  function approvedIds() { var o = {}; Object.keys(notices()).forEach(function (id) { var src = notices()[id].source || {}; (src.policyIds || []).forEach(function (x) { o[x] = id; }); }); return o; }
+  function viewYouth(busy) {
+    var R = regionsList(), sido = YC.sido || (R[0] && R[0][0]) || '', sggs = ((R.filter(function (r) { return r[0] === sido; })[0]) || ['', []])[1];
+    var zip = YC.zip && sggs.some(function (x) { return x[0] === YC.zip; }) ? YC.zip : (sggs[0] && sggs[0][0]) || '';
+    var ap = approvedIds();
+    var list = YC.status === 'loading' ? '<p class="s13 muted"><span class="spin"></span> 온통청년에서 받아 오는 중…</p>'
+      : YC.status === 'error' ? '<p class="s13">불러오지 못했어요: ' + esc(YC.error) + '</p>'
+      : YC.status === 'ok' ? (YC.items.length ? '<div class="stack">' + YC.items.map(function (it) {
+          var per = it.apply && it.apply.t === 'always' ? '상시' : it.apply && (it.apply.from || it.apply.to) ? ycYmd(it.apply.from) + ' ~ ' + ycYmd(it.apply.to) : '기간 없음';
+          return '<div class="card stack" style="padding:12px"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div><b>' + esc(it.name) + '</b><div class="s12 muted">' + esc(it.org || '') + ' · 등록된 신청 기간 ' + esc(per) + '</div></div><div class="row">' +
+            (ap[it.id] ? '<span class="badge ok">승인 공고에 있음</span>' : '') +
+            '<a class="btn ghost sm" href="' + ycUrl(it) + '" target="_blank" rel="noopener">온통청년에서 보기 ↗</a>' + ((it.notices || [])[0] ? '<a class="btn ghost sm" href="' + esc(it.notices[0]) + '" target="_blank" rel="noopener">공고 원문 ↗</a>' : '') +
+            '<button class="btn sm" data-act="yc-pick" data-v="' + esc(it.id) + '"' + (busy ? ' disabled' : '') + '>검수로 가져오기</button></div></div>' +
+            (it.support ? '<p class="s13" style="margin:0">' + esc(String(it.support).slice(0, 160)) + '</p>' : '') + '</div>';
+        }).join('') + '</div>' : '<p class="s13 muted">이 지역에 등록된 주거 정책이 없어요.</p>')
+      : '<p class="s13 muted">시·도와 시·군·구를 고르고 불러오세요.</p>';
+    return '<section class="card stack"><div class="grid">' +
+      '<label class="field c4">시·도<select class="inp" id="ycsido" data-act="yc-sido">' + R.map(function (r) { return '<option' + (r[0] === sido ? ' selected' : '') + '>' + esc(r[0]) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="field c5">시·군·구<select class="inp" id="yczip">' + sggs.map(function (x) { return '<option value="' + esc(x[0]) + '"' + (x[0] === zip ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select></label>' +
+      '<div class="field c3" style="justify-content:flex-end"><button class="btn" data-act="yc-load"' + (YC.status === 'loading' ? ' disabled' : '') + '>주거 정책 불러오기</button></div></div>' +
+      '<p class="s12 muted" style="margin:0">온통청년 청년정책 API(한국고용정보원)에 지자체·부처가 등록한 정보를 가져와요. 내 지역 사업과 중앙부처 사업만 보여 줘요. <b>등록 정보는 공고 원문이 아니에요.</b> 접수 기간이 사업 기간으로 등록된 경우가 많으니, 검수할 때 ‘공고 원문’을 열어 날짜·금액을 대조하고 다르면 원문 붙여넣기로 다시 추출하세요.' + (YC.at ? ' · ' + esc(YC.at.slice(0, 10)) + ' 받아 옴' : '') + '</p>' +
+      list + '</section>';
+  }
+  function ycLoad() {
+    var zs = document.getElementById('yczip'), zip = zs && zs.value; if (!zip) return;
+    YC.zip = zip; YC.status = 'loading'; render(true);
+    fetch('api/support?zip=' + encodeURIComponent(zip) + '&cat=' + encodeURIComponent('주거')).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || !j.ok) throw new Error((j && j.error) || '응답 오류');
+      YC.items = j.items || []; YC.at = j.fetchedAt || ''; YC.status = 'ok'; render(true);
+    }).catch(function (e) { YC.status = 'error'; YC.error = (e && e.message) || '네트워크 오류'; render(true); });
   }
   function guessNotice(name) {
     var n = J.squash(name || ''), best = '';
@@ -505,6 +556,12 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'logout') { A.token = ''; ss('jachwi-admin-token', null); A.mode = 'login'; A.err = ''; render(); }
     else if (a === 'resetlocal') { if (confirm('이 브라우저의 연습 내용(승인·초안·지식)을 모두 지우고 처음 상태로 돌릴까요?')) { try { localStorage.removeItem(LOCAL); localStorage.removeItem(MISS); } catch (x) {} A.st = localState(); location.hash = '#queue'; render(); toast('처음 상태로 돌렸어요.'); } }
     else if (a === 'extract-sample') { var s = SAMPLES.filter(function (x) { return x.id === v; })[0]; runExtract({ sample: v }, { noticeId: s.noticeId, title: s.title, source: s.source, text: s.text }); }
+    else if (a === 'yc-load') ycLoad();
+    else if (a === 'yc-pick') {
+      var it = YC.items.filter(function (x) { return x.id === v; })[0]; if (!it) return;
+      var txt = ycText(it), sname = '온통청년 등록 정보 · ' + it.name + ' · ' + new Date().toISOString().slice(0, 10) + ' 수집';
+      runExtract({ text: txt, sourceName: sname, sourceUrl: ycUrl(it) }, { title: it.name, source: { name: sname, url: ycUrl(it), policyIds: [it.id] }, text: txt });
+    }
     else if (a === 'extract-text') {
       var text = (document.getElementById('ntext').value || '').trim(), sn = document.getElementById('nsrc').value.trim(), su = document.getElementById('nurl').value.trim();
       if (text.length < 40) { toast('공고 원문을 붙여 넣어 주세요.'); return; }
@@ -538,6 +595,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var t = e.target, d = curDraft();
     if (t.hasAttribute('data-name')) { A.name = t.value.trim().slice(0, 20); ls('jachwi-admin-name', A.name); return; }
     if (t.getAttribute('data-act') === 'file' && t.files && t.files[0]) { readFile(t.files[0]); return; }
+    if (t.getAttribute('data-act') === 'yc-sido') { YC.sido = t.value; YC.zip = ''; render(true); return; }
+    if (t.id === 'yczip') { YC.zip = t.value; return; }
     if (!d) return;
     if (t.hasAttribute('data-ack')) { d.acks[t.getAttribute('data-ack')] = t.checked; dirty = true; render(true); }
     else if (t.hasAttribute('data-fv')) {

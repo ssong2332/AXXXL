@@ -36,13 +36,15 @@ test('원문에 없는 근거와 맞지 않는 숫자를 잡아낸다', () => {
   assert.ok(c.byKey.name.flags.includes('missing'));
 });
 
+// 승인 흐름·자격 판정 엔진 시험은 시연용 고정 데이터(fixture.js)로: 시연 공고 원문(samples.js)과 짝이 맞는다
+const FIX = require('../demo/rules/fixture.js');
 test('지난 승인본과 달라진 항목은 사람이 확인해야 승인된다', () => {
-  const prev = R.values(SEED.notices.rent.fields);
-  const f = clone(SEED.notices.rent.fields);
+  const prev = R.values(FIX.notices.rent.fields);
+  const f = clone(FIX.notices.rent.fields);
   const line = ' 다. 임차보증금 8천만 원 이하 및 월세 70만 원 이하 건물에 월세로 거주하는 자';
   f.rent_max = { value: '70', evidence: line, confidence: 'high' };
   f.deposit_max = { value: '8000', evidence: line, confidence: 'high' };
-  const src = SEED.notices.rent.sourceText.replace('월세 60만 원 이하', '월세 70만 원 이하');
+  const src = FIX.notices.rent.sourceText.replace('월세 60만 원 이하', '월세 70만 원 이하');
   let r = R.readyToApprove(f, src, prev, {});
   assert.equal(r.ok, false);
   assert.deepEqual(r.left.map((x) => x.key), ['rent_max']);
@@ -51,26 +53,26 @@ test('지난 승인본과 달라진 항목은 사람이 확인해야 승인된�
 });
 
 test('자격 판정: 나이·소득·주거비·마감', () => {
-  const p = R.toProgram(SEED.notices.rent, new Date('2026-11-10'));
+  const p = R.toProgram(FIX.notices.rent, new Date('2026-11-10'));
   const ok = R.evalProgram(p, { age: 25, income: '100', deposit: 500, rent: 50, gu: '관악구' });
   assert.equal(R.verdict(ok), '해당 가능');
   assert.equal(R.verdict(R.evalProgram(p, { age: 40, income: '100', deposit: 500, rent: 50, gu: '관악구' })), '해당 안 됨');
   assert.equal(R.verdict(R.evalProgram(p, { age: 25, income: 'unknown', deposit: 500, rent: 50, gu: '관악구' })), '확인 필요');
   assert.equal(R.verdict(R.evalProgram(p, { age: 25, income: 'over', deposit: 500, rent: 50, gu: '관악구' })), '해당 안 됨');
-  const closed = R.toProgram(SEED.notices.move, new Date('2027-01-05'));
+  const closed = R.toProgram(FIX.notices.move, new Date('2027-01-05'));
   assert.equal(closed.status, '마감');
   assert.equal(R.verdict(R.evalProgram(closed, { age: 25, income: '100', deposit: 500, rent: 50, gu: '관악구' })), '마감');
 });
 
 test('대상자 시뮬레이션은 판정이 바뀌는 사람을 찾는다', () => {
-  const next = clone(SEED.notices.rent);
+  const next = clone(FIX.notices.rent);
   next.fields.rent_max.value = 70;
-  const rows = R.simulate(SEED.notices.rent, next, new Date('2026-11-10'));
+  const rows = R.simulate(FIX.notices.rent, next, new Date('2026-11-10'));
   assert.ok(rows.some((x) => x.changed && x.persona.rent === 70));
 });
 
 test('발행·되돌리기·지식 저장은 같은 규칙으로 처리된다', () => {
-  const st = { published: clone(SEED), drafts: { items: [] }, unanswered: { items: [] } };
+  const st = { published: clone(FIX), drafts: { items: [] }, unanswered: { items: [] } };
   const s = SAMPLES[2];
   const fields = R.ruleExtract(s.text);
   let out = R.applyOp(st, { op: 'saveDraft', draft: { noticeId: 'move', sourceText: s.text, fields, source: s.source } }, '시험');
@@ -317,10 +319,81 @@ test('화면 파일: app.html·admin.html 안의 스크립트가 문법 오류 �
   }
 });
 
-test('AI 비서: 같은 채팅방에서 이어 묻는 대화 7개(27턴)가 앞 질문의 주제를 이어받아 답한다', () => {
+test('AI 비서: 같은 채팅방에서 이어 묻는 대화 9개(33턴)가 앞 질문의 주제를 이어받아 답한다', () => {
   const E = require('../demo/eval-core.js');
   const r = E.runConversations(SEED, EV.conversations, AS, SEED.repairs);
   const bad = r.rows.filter((x) => !x.pass).map((x) => x.flow + ' ' + x.turn + '턴 “' + x.q + '”: ' + x.why.join('; '));
   assert.equal(r.pass, r.total, bad.join('\n'));
-  assert.ok(r.total >= 27);
+  assert.ok(r.total >= 33);
+});
+
+// ---------- 실제 공고·지역 (11/15) ----------
+test('지역: 전국 공고와 내 시·도 공고만 보인다 (전남광주통합특별시는 광주·전남 공고도)', () => {
+  const P = R.publicView(SEED, new Date('2026-11-15T12:00:00+09:00')).programs;
+  const ids = (sido) => P.filter((p) => R.regionMatch(p, sido)).map((p) => p.id).sort();
+  assert.deepEqual(ids('인천광역시'), ['incheon-bok', 'molit-guar', 'molit-rent']);
+  assert.ok(ids('서울특별시').includes('rent') && !ids('서울특별시').includes('busan-move'));
+  assert.ok(ids('').length === P.length, '지역을 안 골랐으면 전부');
+  assert.ok(R.regionMatch({ region: '광주광역시' }, '전남광주통합특별시'));
+  assert.ok(R.regionMatch({ region: '전라남도' }, '전남광주통합특별시'));
+  assert.ok(!R.regionMatch({ region: '전라북도' }, '전남광주통합특별시'));
+  assert.equal(R.sidoKey('충청북도'), '충북'); assert.equal(R.sidoKey('서울시'), '서울');
+});
+
+test('지역: 거주 조건은 이용자 시·도와 견주고, 다른 시·도면 해당 안 됨', () => {
+  const P = R.publicView(SEED, new Date('2026-11-15T12:00:00+09:00')).programs;
+  const inc = P.find((p) => p.id === 'incheon-bok');
+  const res = (sido) => R.evalProgram(inc, { age: 25, income: '100', deposit: 1000, rent: 40, sido, homeless: 'yes', dup: 'no' }).res.find((r) => r.type === 'residency');
+  assert.equal(res('인천광역시').ok, true);
+  assert.equal(res('부산광역시').ok, false);
+  // 예전 저장값(시·도 없이 서울 구만)은 서울 공고만 맞음으로
+  const rent = P.find((p) => p.id === 'rent');
+  assert.equal(R.evalProgram(rent, { age: 25, income: '100', deposit: 1000, rent: 40, gu: '관악구' }).res.find((r) => r.type === 'residency').ok, true);
+});
+
+test('상시 접수는 모집 중, 그 밖의 조건은 공고에서 확인(확인 필요)', () => {
+  const P = R.publicView(SEED, new Date('2026-11-15T12:00:00+09:00')).programs;
+  const inc = P.find((p) => p.id === 'incheon-bok');
+  assert.equal(inc.status, R.STATUS.open); assert.equal(inc.period, '상시 접수');
+  const x = R.evalProgram(inc, { age: 25, income: '100', deposit: 1000, rent: 40, sido: '인천광역시', homeless: 'yes', dup: 'no' });
+  const other = x.res.filter((r) => r.type === 'other');
+  assert.ok(other.length && other.every((r) => r.ok === null && r.mine === '공고에서 확인'));
+  assert.equal(R.verdict(x), '확인 필요');
+  assert.equal(R.values(R.ruleExtract('신청기간\n상시\n')).always, true);
+});
+
+test('나이 제한 없는 공고: 나이 제한 없음(근거 포함)이면 나이 칸이 비어도 승인 가능', () => {
+  const n = SEED.notices['molit-guar'];
+  assert.equal(R.check(n.fields, n.sourceText, null).count, 0);
+  const noFlag = Object.assign({}, n.fields); delete noFlag.age_none;
+  assert.ok(R.check(noFlag, n.sourceText, null).byKey.age_min.flags.includes('missing'));
+});
+
+test('검수기: 점으로 이은 날짜와 괄호가 있는 목록 항목도 원문과 대조', () => {
+  assert.ok(R.valueFits('period_start', '2026-03-30', "(신청기간) '26.3.30(월) 09:00 ~ '26.5.29(금) 16:00"));
+  assert.ok(R.valueFits('period_end', '2026-08-24', '2026.8.18.(화) 10:00 ~ 8.24.(월) 18:00'));
+  assert.ok(!R.valueFits('period_end', '2026-08-25', '2026.8.18.(화) 10:00 ~ 8.24.(월) 18:00'));
+  assert.deepEqual(R.missingItems(['월세지원 신청(변경)서', '서약서'], '(필수서류) 월세지원 신청(변경)서, 서약서'), []);
+  assert.deepEqual(R.missingItems(['가족관계증명서'], '(필수서류) 월세지원 신청(변경)서'), ['가족관계증명서']);
+});
+
+// ---------- 소개 페이지 (landing.html, /intro) ----------
+test('소개 페이지: 앱 시작·예시 링크, 화면 이미지, 스크립트 문법, /intro 주소', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../demo/landing.html'), 'utf8');
+  assert.ok(html.includes('href="app.html#start"') && html.includes('href="app.html#demo"'));
+  for (const m of html.matchAll(/src="(landing\/[\w-]+\.jpg)"/g)) assert.ok(fs.existsSync(path.join(__dirname, '../demo', m[1])), m[1]);
+  for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m[1]);
+  const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '../demo/vercel.json'), 'utf8'));
+  assert.ok(vj.rewrites.some((r) => r.source === '/intro' && r.destination === '/landing.html'));
+  // 앱은 #demo로 들어오면 저장된 내 정보가 없을 때만 예시 데이터로 연다
+  const app = fs.readFileSync(path.join(__dirname, '../demo/app.html'), 'utf8');
+  assert.ok(/if \(h === '#demo'\)[\s\S]{0,200}if \(!mine \|\| S\.demo\)/.test(app));
+});
+
+test('로고: 배경 없는 독립 로고(글자색을 따름)를 앱·운영자 콘솔·소개 페이지가 같이 쓴다', () => {
+  for (const f of ['app.html', 'admin.html', 'landing.html']) {
+    const html = fs.readFileSync(path.join(__dirname, '../demo', f), 'utf8');
+    assert.ok(!html.includes('logo-mark.png'), f);
+    assert.ok(html.includes('stroke="currentColor" stroke-width="5.5"'), f);
+  }
 });

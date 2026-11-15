@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const E = require('../demo/engine.js');
 const RC = require('../demo/rules-core.js');
-const SEED = require('../demo/rules/seed.js');
+const SEED = require('../demo/rules/fixture.js'); // 정답표·화면 테스트는 고정 데이터로 (실제 공고는 seed.js)
 
 const base = {
   gu: '관악구', deposit: 1000, rent: 45, contract: '2026-11-14', move: '2026-12-01', term: 2,

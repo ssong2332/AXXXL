@@ -13,6 +13,10 @@
   ],
   "rewrites": [
     {
+      "source": "/intro",
+      "destination": "/landing.html"
+    },
+    {
       "source": "/cal.ics",
       "destination": "/api/calendar"
     },
