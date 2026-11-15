@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     const notices = {};
     Object.keys(P.notices || {}).forEach((id) => {
       const n = P.notices[id];
-      notices[id] = { id: n.id, version: n.version, basis: n.basis, approvedAt: n.approvedAt, approvedBy: n.approvedBy, source: n.source, fields: n.fields, changes: n.changes || [], demo: !!n.demo };
+      notices[id] = { id: n.id, version: n.version, basis: n.basis, approvedAt: n.approvedAt, approvedBy: n.approvedBy, source: n.source, fields: n.fields, changes: n.changes || [], demo: !!n.demo, real: !!n.real };
     });
     L.send(res, 200, { ok: true, storage: L.storage(), ai: L.aiReady(), updatedAt: (P.meta && P.meta.updatedAt) || '', notices, cards: (P.cards || []).filter((c) => c.status === 'approved'), repairs: P.repairs || L.SEED.repairs || [] }, 'public, s-maxage=20, stale-while-revalidate=60');
   } catch (e) {

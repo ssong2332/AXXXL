@@ -37,6 +37,7 @@
     { key: 'income_pct', label: '소득 기준 (기준 중위소득)', group: '자격', type: 'num', unit: '% 이하' },
     { key: 'deposit_max', label: '보증금 상한', group: '자격', type: 'num', unit: '만 원' },
     { key: 'rent_max', label: '월세 상한', group: '자격', type: 'num', unit: '만 원' },
+    { key: 'rent_soft', label: '월세 상한을 넘어도 예외 기준이 있음', group: '자격', type: 'bool' },
     { key: 'homeless', label: '무주택 요건', group: '자격', type: 'bool' },
     { key: 'residency', label: '거주·주소 요건', group: '자격', type: 'text' },
     { key: 'other_conds', label: '그 밖의 조건 (공고에서 확인)', group: '자격', type: 'list' },
@@ -202,7 +203,7 @@
     var conds = [];
     if (v.age_min !== null || v.age_max !== null) conds.push({ type: 'age', min: v.age_min, max: v.age_max, label: '만 ' + (v.age_min !== null ? v.age_min : '') + '~' + (v.age_max !== null ? v.age_max : '') + '세', evidence: [ev('age_min'), ev('age_max')].filter(Boolean)[0] || '' });
     if (v.income_pct !== null) conds.push({ type: 'income', pct: v.income_pct, label: '기준 중위소득 ' + v.income_pct + '% 이하', evidence: ev('income_pct') });
-    if (v.deposit_max !== null || v.rent_max !== null) conds.push({ type: 'house', deposit: v.deposit_max, rent: v.rent_max, label: [v.deposit_max !== null ? '보증금 ' + wonText(v.deposit_max) : '', v.rent_max !== null ? '월세 ' + wonText(v.rent_max) : ''].filter(Boolean).join('·') + ' 이하', evidence: [ev('deposit_max'), ev('rent_max')].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(' / ') });
+    if (v.deposit_max !== null || v.rent_max !== null) conds.push({ type: 'house', deposit: v.deposit_max, rent: v.rent_max, rentSoft: v.rent_soft === true, label: [v.deposit_max !== null ? '보증금 ' + wonText(v.deposit_max) : '', v.rent_max !== null ? '월세 ' + wonText(v.rent_max) : ''].filter(Boolean).join('·') + ' 이하', evidence: [ev('deposit_max'), ev('rent_max')].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(' / ') });
     if (v.residency) conds.push({ type: 'residency', text: v.residency, label: v.residency, evidence: ev('residency') });
     if (v.homeless !== false) conds.push({ type: 'homeless', label: '무주택', evidence: ev('homeless') });
     (v.other_conds || []).forEach(function (t) { conds.push({ type: 'other', label: t, evidence: ev('other_conds') }); });
@@ -254,7 +255,11 @@
       var ok = null, mine = '';
       if (c.type === 'age') { ok = user.age ? (c.min === null || user.age >= c.min) && (c.max === null || user.age <= c.max) : null; mine = user.age ? '만 ' + user.age + '세' : '입력 안 함'; }
       else if (c.type === 'income') { ok = incomeOk(user, c.pct); mine = { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' }[user.income] || '입력 안 함'; }
-      else if (c.type === 'house') { ok = (c.deposit === null || user.deposit <= c.deposit) && (c.rent === null || user.rent <= c.rent); mine = wonShort(user.deposit || 0) + ' / ' + (user.rent || 0) + '만'; }
+      else if (c.type === 'house') {
+        var depOk = c.deposit === null || user.deposit <= c.deposit, rentOk = c.rent === null || user.rent <= c.rent;
+        // 월세 상한을 넘어도 예외 기준(예: 보증금 환산액과 합산 93만 원 이하)이 있으면 '해당 안 됨' 대신 '확인 필요'
+        ok = !depOk ? false : rentOk ? true : c.rentSoft ? null : false; mine = wonShort(user.deposit || 0) + ' / ' + (user.rent || 0) + '만';
+      }
       else if (c.type === 'residency') {
         // 시·도를 고른 이용자: 공고의 대상 지역(없으면 거주 조건 글)과 같은 시·도인지. 안 골랐으면(예전 저장값) 서울 구만 본다
         var want = sidoKey(p.region || c.text);

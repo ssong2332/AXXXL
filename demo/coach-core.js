@@ -140,11 +140,14 @@
     var haveEx = exHit && /받고\s*있|받는\s*중|받았|받아\s*왔|수급/.test(q);
     if (haveEx) parts.unshift(josa(card.title, '은는') + ' **' + josa(exHit, '을를') + ' 받고 있으면 함께 받을 수 없어요**(공고의 중복 수혜 제외). 말씀대로 지금 받고 계시면 해당 안 돼요. 조건 입력에서 중복 수혜를 \'받고 있음\'으로 답해 두면 판정에도 반영돼요.');
     else if (p.exclusions && p.exclusions.length && (exHit || /같이|함께|중복|둘 다|동시/.test(q))) parts.unshift(josa(card.title, '은는') + ' **' + josa(p.exclusions.join(', '), '과와') + ' 함께 받을 수 없어요**(공고의 중복 수혜 제외).');
+    // 승인 공고에 '함께 받을 수 없는 지원'이 적혀 있지 않은데 다른 지원을 받고 있다고 하면: 된다고 단정하지 않고 공고문의 신청 제외자를 보게 한다
+    var noteEx = !(p.exclusions && p.exclusions.length) && /지원|수급|급여/.test(q.replace(card.title, '')) && /받고\s*있|받는\s*중|같이|함께|중복|둘 다|동시/.test(q) ? '승인된 공고에는 함께 받을 수 없는 지원이 적혀 있지 않아요. 지금 받는 지원이 있으면 **공고문의 신청 제외자**에 해당하는지 꼭 확인하세요.' : '';
     var askBoth = !haveEx && p.exclusions && p.exclusions.length && (exHit || /같이|함께|중복|둘 다|동시/.test(q));
     var me = haveEx ? '' : noticePersonal(card, f), bad = p.verdict === '해당 안 됨' || p.verdict === '마감';
     // "받을 수 있어?"처럼 내 자격을 물으면 판정을 맨 앞에
     if (me && askBoth) parts.splice(1, 0, me);
     else if (me && /받을\s*수|돼\?|되나|되냐|가능|해당/.test(q)) { parts[0] = parts[0].replace(T, '지원 내용은'); parts.unshift(me.replace('내 조건으로는', josa(card.title, '은는') + ' 내 조건으로')); } else if (me) parts.push(me);
+    if (noteEx) parts.splice(me && /받을\s*수|돼\?|되나|되냐|가능|해당/.test(q) ? 1 : 0, 0, noteEx);
     if (!bad) parts.push('최종 선정은 기관 심사로 정해져요.');
     return parts;
   }
@@ -243,6 +246,9 @@
     // 사업 이름을 콕 집으면 그 공고를 먼저
     var named = hits.filter(function (h) { return h.card.kind === 'notice' && h.card.title.split(/[\s·]+/).some(function (w) { return w.length >= 3 && !/^(서울시|지원|청년)$/.test(w) && q.indexOf(w.replace(/지원$/, '')) >= 0; }); })[0];
     if (named && named !== hits[0]) { hits.splice(hits.indexOf(named), 1); hits.unshift(named); }
+    // 사업 이름을 콕 집지 않고 "지원금 받을 수 있나요"처럼 물으면 공고 하나가 아니라 지원 전체(판정 목록)로
+    var supH = hits.filter(function (h) { return h.card.id === 'k-support'; })[0];
+    if (!named && supH && hits[0].card.kind === 'notice' && /지원/.test(q)) { hits.splice(hits.indexOf(supH), 1); hits.unshift(supH); }
     // '전입신고 기한'처럼 전입을 콕 집었는데 '신고 기한' 낱말 때문에 전월세 신고가 앞에 오면 전입신고를 먼저
     var mv = hits.filter(function (h) { return h.card.id === 'k-movein'; })[0];
     if (mv && hits[0].card.id === 'k-report' && /전입/.test(q) && !/전월세|임대차|계약\s*신고/.test(q)) { hits.splice(hits.indexOf(mv), 1); hits.unshift(mv); }

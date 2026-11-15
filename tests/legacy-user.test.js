@@ -7,7 +7,7 @@ const path = require('node:path');
 const E = require('../demo/engine.js');
 const RC = require('../demo/rules-core.js');
 const SC = require('../demo/support-core.js');
-const SEED = require('../demo/rules/seed.js');
+const SEED = require('../demo/rules/fixture.js'); // 정답표·화면 테스트는 고정 데이터로 (실제 공고는 seed.js)
 
 const TODAY = new Date(2026, 10, 11);
 // app.html myPrograms()와 같게: 예전 사용자(구만 저장)는 서울로 보고, 서울·전국 승인 공고만.

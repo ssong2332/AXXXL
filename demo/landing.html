@@ -102,24 +102,70 @@ h2 { font-size: clamp(28px, 3.6vw, 42px); line-height: 1.25; letter-spacing: -0.
 .date .src { display: block; margin-top: 12px; font-size: 13px; color: var(--ink-3) }
 @media (max-width: 860px) { .dates { grid-template-columns: 1fr } }
 
-/* 길 (계약 전 → 퇴거) */
-.road-sec { background: var(--soft) }
-.road { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px }
-.road::before { content: ""; position: absolute; left: 4%; right: 4%; top: 21px; border-top: 3px dashed #B9BEC6 }
-.road li { position: relative; text-align: center; padding-top: 56px }
-.road li::before { content: attr(data-n); position: absolute; left: 50%; top: 0; width: 44px; height: 44px; margin-left: -22px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); display: grid; place-items: center; font-weight: 800; font-size: 15px }
-.road li.hot::before { background: var(--ink); color: #fff }
-.road li.end::after { content: ""; position: absolute; right: -12px; top: 13px; border: 9px solid transparent; border-left: 13px solid #B9BEC6 }
+/* 길 (계약 전 → 퇴거)
+   흐름: 화면에 들어오면 초록 진행선이 1→8로 차오르며 단계가 차례로 켜지고(.on), 지나간 단계는 채워진다(.done).
+   마우스·포커스를 올리면 자동 재생을 멈추고 그 단계를 보여 준다. 움직임 줄이기면 자동 재생 없음. */
+.road-sec { background: var(--soft); padding-bottom: 210px }
+.road { --p: 0; position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px }
+.road::before { content: ""; position: absolute; left: 6.25%; right: 6.25%; top: 21px; border-top: 3px dashed #B9BEC6 }
+.road .bar { position: absolute; left: 6.25%; right: 6.25%; top: 21px; height: 3px; background: var(--green); border-radius: 3px; transform: scaleX(var(--p)); transform-origin: left center; transition: transform .7s cubic-bezier(.4,0,.2,1); pointer-events: none }
+.road > li { position: relative; text-align: center; padding-top: 58px; cursor: default; outline: none; transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .25s ease }
+.road > li::before { content: attr(data-n); position: absolute; left: 50%; top: 0; width: 44px; height: 44px; margin-left: -22px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); display: grid; place-items: center; font-weight: 800; font-size: 15px; z-index: 1; transition: transform .3s cubic-bezier(.2,.8,.2,1), background .25s ease, color .25s ease, border-color .25s ease, box-shadow .3s ease }
+.road > li.done::before { background: var(--ink); color: #fff }
+.road > li.end::after { content: ""; position: absolute; right: -14px; top: 13px; border: 9px solid transparent; border-left: 13px solid #B9BEC6 }
 .road b { display: block; font-size: 15px; margin-bottom: 4px }
 .road span { display: block; font-size: 13px; color: var(--ink-2); line-height: 1.45 }
+.road .law { display: inline-block; font-style: normal; margin-top: 6px; font-size: 11.5px; font-weight: 700; color: var(--due); background: var(--due-tint); border-radius: 6px; padding: 2px 7px }
+/* 켜진 단계 (자동 재생 .on 또는 마우스·포커스) */
+.road:hover > li:not(:hover), .road.play > li:not(.on) { opacity: .42 }
+.road:hover > li:not(:hover).done { opacity: .62 }
+.road > li.on, .road > li:hover, .road > li:focus-visible { opacity: 1; transform: translateY(-6px); z-index: 5 }
+.road > li.on::before, .road > li:hover::before, .road > li:focus-visible::before { transform: scale(1.2); background: var(--green); border-color: var(--green); color: #fff; box-shadow: 0 0 0 7px rgba(13,102,80,.14), 0 12px 26px -8px rgba(13,102,80,.6) }
+.road > li.on::before { animation: pulse 1.6s ease-out infinite }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(13,102,80,.35), 0 12px 26px -8px rgba(13,102,80,.6) } 100% { box-shadow: 0 0 0 14px rgba(13,102,80,0), 0 12px 26px -8px rgba(13,102,80,.6) } }
+/* 할 일 카드 */
+.road .more { position: absolute; top: 150px; left: 50%; width: 248px; margin: 0; padding: 14px 16px; list-style: none; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px -16px rgba(23,23,26,.3); font-size: 13.5px; line-height: 1.5; color: var(--ink); opacity: 0; transform: translate(-50%, -8px) scale(.95); transform-origin: top center; pointer-events: none; transition: opacity .22s ease, transform .3s cubic-bezier(.2,.8,.2,1) }
+.road .more li { padding-left: 16px; position: relative; opacity: 0; transform: translateY(4px); transition: opacity .25s ease, transform .25s ease }
+.road .more li + li { margin-top: 6px }
+.road .more li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--green) }
+.road > li:first-child .more { left: 0; transform: translate(0, -8px) scale(.95); transform-origin: top left }
+.road > li:last-child .more { left: auto; right: 0; transform: translate(0, -8px) scale(.95); transform-origin: top right }
+.road > li.on .more, .road > li:hover .more, .road > li:focus-visible .more { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto }
+.road > li:first-child.on .more, .road > li:first-child:hover .more, .road > li:first-child:focus-visible .more,
+.road > li:last-child.on .more, .road > li:last-child:hover .more, .road > li:last-child:focus-visible .more { transform: translate(0, 0) scale(1) }
+.road > li.on .more li, .road > li:hover .more li, .road > li:focus-visible .more li { opacity: 1; transform: none }
+.road > li .more li:nth-child(2) { transition-delay: .06s } .road > li .more li:nth-child(3) { transition-delay: .12s }
+.road:hover > li.on:not(:hover) .more { opacity: 0 }
+.road-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -16px 0 36px; flex-wrap: wrap }
+.road-hint { font-size: 13px; color: var(--ink-3); margin: 0 }
+.road-ctl { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer }
+.road-ctl:hover { color: var(--ink) }
 @media (max-width: 860px) {
+  .road-sec { padding-bottom: 64px }
   .road { grid-template-columns: 1fr; gap: 0 }
   .road::before { left: 21px; right: auto; top: 22px; bottom: 22px; border-top: 0; border-left: 3px dashed #B9BEC6 }
-  .road li { text-align: left; padding: 0 0 24px 64px; min-height: 44px }
-  .road li::before { left: 0; margin-left: 0 }
-  .road li.end::after { display: none }
+  .road .bar { left: 21px; right: auto; top: 22px; bottom: 22px; width: 3px; height: auto; transform: scaleY(var(--p)); transform-origin: center top }
+  .road > li { text-align: left; padding: 0 0 26px 64px; min-height: 44px }
+  .road > li::before { left: 0; margin-left: 0 }
+  .road > li.end::after { display: none }
   .road b { padding-top: 10px }
+  .road > li.on, .road > li:hover, .road > li:focus-visible { transform: none }
+  /* 휴대폰: 카드는 눌렀을 때만(포커스) 단계 아래에 펼친다. 자동 재생은 단계만 켠다 */
+  .road .more { position: static; width: auto; max-height: 0; padding: 0 16px; overflow: hidden; border-width: 0; box-shadow: none; opacity: 0; transform: none !important; transition: max-height .3s ease, padding .3s ease, opacity .2s ease, margin .3s ease }
+  .road > li.on .more, .road > li:hover .more { opacity: 0 }
+  .road > li:focus-visible .more, .road > li:focus .more { opacity: 1; max-height: 220px; padding: 12px 16px; margin-top: 10px; border-width: 1px }
+  .road > li:focus .more li { opacity: 1; transform: none }
 }
+
+/* 첫 화면 움직임 */
+@keyframes floatA { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+@keyframes floatB { 0%, 100% { transform: rotate(6deg) translateY(0) } 50% { transform: rotate(6deg) translateY(-6px) } }
+@keyframes popIn { from { opacity: 0; transform: translateY(10px) scale(.92) } to { opacity: 1; transform: none } }
+.stage .phone.front { animation: floatA 6s ease-in-out infinite }
+.stage .phone.back { animation: floatB 7s ease-in-out infinite .6s }
+.chip { opacity: 0; animation: popIn .5s cubic-bezier(.2,.8,.2,1) forwards }
+.chip.c1 { animation-delay: .7s } .chip.c2 { animation-delay: 1.3s }
+@media (prefers-reduced-motion: reduce) { .chip { opacity: 1 } }
 
 /* 기능 */
 .feat { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 40px 0 }
@@ -182,6 +228,16 @@ footer a { color: var(--ink-2) }
 .sticky .btn { width: 100% }
 @media (min-width: 861px) { .sticky { display: none } }
 
+/* 기능: 화면은 옆에서 미끄러져 들어오고 글은 조금 늦게 */
+.feat.rv { opacity: 1; transform: none }
+.feat.rv .shot { opacity: 0; transform: translateX(-32px); transition: opacity .7s ease, transform .8s cubic-bezier(.2,.8,.2,1) }
+.feat.flip.rv .shot { transform: translateX(32px) }
+.feat.rv > div:not(.shot) { opacity: 0; transform: translateY(18px); transition: opacity .6s ease .15s, transform .7s cubic-bezier(.2,.8,.2,1) .15s }
+.feat.rv.in .shot, .feat.rv.in > div:not(.shot) { opacity: 1; transform: none }
+.feat .shot .phone { transition: transform .4s cubic-bezier(.2,.8,.2,1) }
+.feat:hover .shot .phone { transform: translateY(-6px) rotate(-1deg) }
+.no-js .feat.rv .shot, .no-js .feat.rv > div { opacity: 1; transform: none }
+@media (prefers-reduced-motion: reduce) { .feat.rv .shot, .feat.rv > div:not(.shot) { opacity: 1; transform: none } }
 /* 스크롤 등장 (움직임 줄이기면 끔) */
 .rv { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease }
 .rv.in { opacity: 1; transform: none }
@@ -235,8 +291,8 @@ footer a { color: var(--ink-2) }
         <p>계약서에 사인한 순간부터 법으로 정해진 기한이 하나씩 시작돼요. 누가 따로 알려 주지 않아서 처음 하는 사람이 가장 많이 놓쳐요.</p>
       </div>
       <div class="dates">
-        <div class="date rv"><div class="n">30<small>일</small></div><h3>전월세 신고</h3><p>보증금 6천만 원 또는 월세 30만 원을 넘으면 계약한 날부터 30일 안에. 넘기면 과태료가 나올 수 있어요.</p><span class="src">부동산 거래신고 등에 관한 법률</span></div>
-        <div class="date rv"><div class="n">14<small>일</small></div><h3>전입신고</h3><p>이사한 날부터 14일 안에. 보증금을 지키는 힘(대항력)은 신고 다음 날부터 생겨서 늦을수록 불리해요.</p><span class="src">주민등록법 · 주택임대차보호법</span></div>
+        <div class="date rv"><div class="n"><span data-count="30">30</span><small>일</small></div><h3>전월세 신고</h3><p>보증금 6천만 원 또는 월세 30만 원을 넘으면 계약한 날부터 30일 안에. 넘기면 과태료가 나올 수 있어요.</p><span class="src">부동산 거래신고 등에 관한 법률</span></div>
+        <div class="date rv"><div class="n"><span data-count="14">14</span><small>일</small></div><h3>전입신고</h3><p>이사한 날부터 14일 안에. 보증금을 지키는 힘(대항력)은 신고 다음 날부터 생겨서 늦을수록 불리해요.</p><span class="src">주민등록법 · 주택임대차보호법</span></div>
         <div class="date rv"><div class="n">2<small>개월 전</small></div><h3>계약 만료 통지</h3><p>나가려면 만료 2개월 전까지 집주인에게 알려야 해요. 말이 없으면 같은 조건으로 계약이 이어져요.</p><span class="src">주택임대차보호법 제6조</span></div>
       </div>
     </div>
@@ -249,15 +305,17 @@ footer a { color: var(--ink-2) }
         <h2 id="how-h">계약 전부터 퇴거까지,<br>지금 어디쯤인지 보여 줘요</h2>
         <p>내 계약일과 입주일로 8단계 타임라인을 만들어요. 오늘 해야 할 일이 맨 위로 오고, 기한이 다가오면 알려 줘요.</p>
       </div>
-      <ol class="road rv" aria-label="자취 타임라인 8단계">
-        <li data-n="1"><b>계약 전</b><span>시세·등기부 확인, 특약 요청</span></li>
-        <li data-n="2"><b>계약 당일</b><span>집주인 명의 계좌로 이체</span></li>
-        <li data-n="3"><b>입주 준비</b><span>이사·인터넷·가스 예약</span></li>
-        <li data-n="4" class="hot"><b>입주 당일</b><span>전입신고, 집 상태 사진</span></li>
-        <li data-n="5" class="hot"><b>신고·정리</b><span>전월세 신고, 확정일자</span></li>
-        <li data-n="6"><b>지원 신청</b><span>내 조건에 맞는 지원</span></li>
-        <li data-n="7"><b>거주 중</b><span>월세·공과금, 고장 대응</span></li>
-        <li data-n="8" class="end"><b>만료·퇴거</b><span>통지 기한, 보증금 돌려받기</span></li>
+      <div class="road-foot"><p class="road-hint">단계에 마우스를 올리거나 눌러 보세요. 그 단계에서 할 일을 보여 드려요.</p><button type="button" class="road-ctl" id="road-ctl" aria-pressed="false">❚❚ 자동 재생 멈추기</button></div>
+      <ol class="road rv" id="road" aria-label="자취 타임라인 8단계">
+        <span class="bar" aria-hidden="true"></span>
+        <li data-n="1" tabindex="0"><b>계약 전</b><span>시세·등기부 확인, 특약 요청</span><ul class="more"><li>안심전세 앱으로 시세·보증보험 가입 가능 여부 보기</li><li>등기부등본으로 진짜 집주인·근저당 확인</li><li>"퇴거 시 보증금 즉시 반환" 같은 약속은 특약으로</li></ul></li>
+        <li data-n="2" tabindex="0"><b>계약 당일</b><span>집주인 명의 계좌로 이체</span><ul class="more"><li>계약금은 집주인 본인 명의 계좌로</li><li>이체확인증·계약서 사본을 서류함에</li><li>계약일부터 전월세 신고 30일이 시작돼요</li></ul></li>
+        <li data-n="3" tabindex="0"><b>입주 준비</b><span>이사·인터넷·가스 예약</span><ul class="more"><li>이사 업체 견적 2~3곳 비교</li><li>인터넷·도시가스 개통을 입주일로 예약</li><li>잔금 계좌와 이체 한도 미리 확인</li></ul></li>
+        <li data-n="4" tabindex="0"><b>입주 당일</b><span>전입신고, 집 상태 사진</span><em class="law">법정 기한 14일</em><ul class="more"><li>잔금 보내기 전 등기부등본 다시 떼기</li><li>전입신고는 14일 안, 오늘이 가장 안전</li><li>계량기·벽지·바닥 사진 찍어 두기</li></ul></li>
+        <li data-n="5" tabindex="0"><b>신고·정리</b><span>전월세 신고, 확정일자</span><em class="law">법정 기한 30일</em><ul class="more"><li>보증금 6천만·월세 30만 넘으면 30일 안에 전월세 신고</li><li>전입신고 때 계약서를 내면 신고·확정일자까지 한 번에</li><li>신고 대상이 아니어도 확정일자는 받아 두기</li></ul></li>
+        <li data-n="6" tabindex="0"><b>지원 신청</b><span>내 조건에 맞는 지원</span><ul class="more"><li>내 시·군·구에서 받을 수 있는 지원을 판정</li><li>모르는 조건은 그 자리에서 묻기</li><li>서류마다 어디서 떼는지 바로 연결</li></ul></li>
+        <li data-n="7" tabindex="0"><b>거주 중</b><span>월세·공과금, 고장 대응</span><ul class="more"><li>월세·공과금 일정을 휴대폰 캘린더로</li><li>고장 나면 누가 고치는지 고쳐봇에게</li><li>집주인에게 보낼 문자는 집주인톡이</li></ul></li>
+        <li data-n="8" tabindex="0" class="end"><b>만료·퇴거</b><span>통지 기한, 보증금 돌려받기</span><ul class="more"><li>나가려면 만료 2개월 전까지 집주인에게 통지</li><li>입주 때 사진과 비교해 원상복구 다툼 대비</li><li>보증금을 못 받았으면 이사 전에 임차권등기명령</li></ul></li>
       </ol>
     </div>
   </section>
@@ -354,10 +412,10 @@ footer a { color: var(--ink-2) }
         <div class="rule rv"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>내 정보는 내 기기에</h3><p>계약 조건과 소득은 서버로 보내지 않고 브라우저에서 계산해요. 로그인도 없어요.</p></div>
       </div>
       <div class="nums rv" role="list" aria-label="자체 품질 평가 결과">
-        <div class="num" role="listitem"><b>30 / 30</b><span>손으로 계산한 신고·기한 정답과 일치</span></div>
-        <div class="num" role="listitem"><b>104 / 104</b><span>자취생 질문에 맞는 안내로 답함 (처음 보는 질문 34개 포함)</span></div>
-        <div class="num" role="listitem"><b>78 / 78</b><span>공고문에서 뽑은 항목이 원문과 일치 (실제 공고 4건 포함)</span></div>
-        <div class="num" role="listitem"><b>332</b><span>개 자동 테스트 통과</span></div>
+        <div class="num" role="listitem"><b><span data-count="30">30</span> / 30</b><span>손으로 계산한 신고·기한 정답과 일치</span></div>
+        <div class="num" role="listitem"><b><span data-count="104">104</span> / 104</b><span>자취생 질문에 맞는 안내로 답함 (처음 보는 질문 34개 포함)</span></div>
+        <div class="num" role="listitem"><b><span data-count="78">78</span> / 78</b><span>공고문에서 뽑은 항목이 원문과 일치 (실제 공고 4건 포함)</span></div>
+        <div class="num" role="listitem"><b><span data-count="333">333</span></b><span>개 자동 테스트 통과</span></div>
       </div>
       <p class="nums-note">팀이 직접 만든 평가 세트로 잰 결과예요 (2026년 11월). 운영자 콘솔 ‘품질 평가’에서 같은 평가를 다시 돌려 볼 수 있어요.</p>
       <ul class="srcs" aria-label="사용하는 공공 데이터">
@@ -413,6 +471,53 @@ footer a { color: var(--ink-2) }
     sticky.classList.toggle('on', y > hero.offsetHeight - 120);
   }
   window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- 8단계 길: 진행선이 차오르며 단계가 차례로 켜진다 ----------
+  var road = document.getElementById('road'), ctl = document.getElementById('road-ctl');
+  if (road) {
+    var steps = [].slice.call(road.children).filter(function (x) { return x.tagName === 'LI'; }), at = -1, timer = 0, seen = false, user = false, stopped = still;
+    var show = function (n) {
+      at = n;
+      steps.forEach(function (li, i) { li.classList.toggle('on', i === n); li.classList.toggle('done', n >= 0 && i < n); });
+      road.style.setProperty('--p', n <= 0 ? 0 : n / (steps.length - 1));
+    };
+    var tick = function () {
+      clearTimeout(timer);
+      if (stopped || user || !seen) return;
+      if (at >= steps.length - 1) { timer = setTimeout(function () { show(-1); road.style.setProperty('--p', 0); timer = setTimeout(function () { show(0); tick(); }, 700); }, 2200); return; }
+      timer = setTimeout(function () { show(at + 1); tick(); }, at < 0 ? 400 : 2600);
+    };
+    var setPlay = function (on) { road.classList.toggle('play', on && !stopped); };
+    // 실제 마우스만 (휴대폰 터치는 마우스 들어옴·나감을 흉내 내서 재생이 다시 켜진다) · 단계에 포커스가 있으면 멈춘 채로
+    var pause = function () { user = true; clearTimeout(timer); setPlay(false); steps.forEach(function (li) { li.classList.remove('on'); }); };
+    var resume = function () { if (road.contains(document.activeElement)) return; user = false; if (!stopped) { setPlay(true); show(Math.max(at, 0)); timer = setTimeout(tick, 1200); } };
+    road.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') pause(); });
+    road.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') resume(); });
+    road.addEventListener('focusin', pause);
+    road.addEventListener('focusout', function () { setTimeout(function () { if (!road.matches(':hover')) resume(); }, 0); });
+    var paint = function () { ctl.textContent = stopped ? '▶ 자동 재생' : '❚❚ 자동 재생 멈추기'; ctl.setAttribute('aria-pressed', String(stopped)); };
+    ctl.addEventListener('click', function () { stopped = !stopped; paint(); if (stopped) { clearTimeout(timer); setPlay(false); steps.forEach(function (li) { li.classList.remove('on'); }); } else { setPlay(true); tick(); } });
+    paint();
+    if (still) { show(-1); steps.forEach(function (li) { li.classList.add('done'); }); road.style.setProperty('--p', 1); }
+    else if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting && !seen) { seen = true; setPlay(true); tick(); } else if (!e.isIntersecting && seen) { clearTimeout(timer); } else if (e.isIntersecting && seen && !user && !stopped) { tick(); } }); }, { threshold: 0.35 }).observe(road);
+    }
+  }
+
+  // ---------- 숫자가 0부터 올라간다 ----------
+  var counts = [].slice.call(document.querySelectorAll('[data-count]'));
+  var run = function (el) {
+    var to = +el.getAttribute('data-count'), t0 = 0, dur = 900;
+    var step = function (t) { if (!t0) t0 = t; var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(to * e); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  };
+  if (!still && 'IntersectionObserver' in window) {
+    counts.forEach(function (el) { el.textContent = '0'; });
+    var co = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { run(e.target); co.unobserve(e.target); } }); }, { threshold: 0.6 });
+    counts.forEach(function (el) { co.observe(el); });
+  }
+
   var els = [].slice.call(document.querySelectorAll('.rv'));
   if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
   var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { rootMargin: '0px 0px -8% 0px' });
