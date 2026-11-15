@@ -258,6 +258,15 @@
     p: { age: 25, income: '150', deposit: 1000, rent: 45, fee: 7, contract: '2026-11-01', move: '2026-11-11', term: 2, today: '2026-11-10' },
     places: [{ id: 'pharm', name: '온누리약국', cat: 'medical', sub: '약국', min: 3, m: 160 }, { id: 'clinic', name: '서울내과의원', cat: 'medical', sub: '의원', min: 4, m: 225 }, { id: 'cvs', name: 'GS25 봉천점', cat: 'life', sub: '편의점', min: 1, m: 50 }],
     flows: [
+      // 11/15 실제 사람처럼 13명 시뮬레이션에서 나온 질문
+      { id: 'sim-report', name: '권리봇 · 신고 뒤 "온라인으로도 돼?", 띄어 쓴 "전입 신고"', bot: 'rights', turns: [
+        { q: '전월세 신고 언제까지야?', has: ['30일'] },
+        { q: '온라인으로도 돼?', has: ['부동산거래관리시스템'] },
+        { q: '전입 신고 기한', has: ['14일'] }] },
+      { id: 'sim-slang', name: '권리봇 · 보증금 속어 · 계약 끝나면', bot: 'rights', turns: [
+        { q: '집주인이 보증금 안줘요 ㅠㅠ 어캄', has: ['임차권등기명령', '132'] },
+        { q: '계약 끝나면 뭐 해야 돼?', has: ['2028.09.10'], not: ['30일 안에 신고'] },
+        { q: '전세 신고 꼭 해야돼?', has: ['신고 대상'], not: ['안내에 없어서'] }] },
       { id: 'landlord', name: '집주인톡 · 문자 고치고 이어 쓰기', bot: 'landlord', turns: [
         { q: '보일러 수리 문자 써줘', has: ['수리 요청'] },
         { q: '더 짧게', has: ['짧게'] },

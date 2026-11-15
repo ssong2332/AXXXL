@@ -37,6 +37,7 @@
 | `url` | 신청·공고 주소 | 원문에 적힌 http(s) 주소만 |
 | `age_min` | 나이 하한 | 만 나이 숫자 |
 | `age_max` | 나이 상한 | 만 나이 숫자 |
+| `age_none` | 나이 제한이 없는 공고 (청년·청년 외·신혼부부 모두 대상 등) | "예"일 때만 채운다. 이때 `age_min`·`age_max`는 비운다 |
 | `income_pct` | 소득 기준 | "기준 중위소득 N% 이하"의 N. 다른 기준이면 null |
 | `deposit_max` | 보증금 상한 | 만 원 단위 숫자 |
 | `rent_max` | 월세 상한 | 만 원 단위 숫자 |
@@ -79,7 +80,7 @@
   "fields": {
     "name": { "value": "…", "evidence": "원문 한 줄 그대로", "confidence": "high" },
     "org": { "value": null, "evidence": null, "confidence": "high" },
-    "…": "나머지 키도 같은 모양으로 (region, amount_text, amount_monthly_max, amount_months, amount_lump_max, period_start, period_end, always, first_come, select, channel, url, age_min, age_max, income_pct, deposit_max, rent_max, homeless, residency, other_conds, docs, exclusions)"
+    "…": "나머지 키도 같은 모양으로 (region, amount_text, amount_monthly_max, amount_months, amount_lump_max, period_start, period_end, always, first_come, select, channel, url, age_min, age_max, age_none, income_pct, deposit_max, rent_max, homeless, residency, other_conds, docs, exclusions)"
   },
   "notes": ["사람이 확인해야 할 점"]
 }

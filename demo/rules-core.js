@@ -33,6 +33,7 @@
     { key: 'url', label: '신청·공고 주소', group: '접수', type: 'text' },
     { key: 'age_min', label: '나이 하한', group: '자격', type: 'num', unit: '세', required: true },
     { key: 'age_max', label: '나이 상한', group: '자격', type: 'num', unit: '세', required: true },
+    { key: 'age_none', label: '나이 제한 없음', group: '자격', type: 'bool' },
     { key: 'income_pct', label: '소득 기준 (기준 중위소득)', group: '자격', type: 'num', unit: '% 이하' },
     { key: 'deposit_max', label: '보증금 상한', group: '자격', type: 'num', unit: '만 원' },
     { key: 'rent_max', label: '월세 상한', group: '자격', type: 'num', unit: '만 원' },
@@ -150,7 +151,9 @@
     var out = {}, total = 0;
     FIELDS.forEach(function (f) {
       var it = fields[f.key] || {}, flags = [], v = normalize(f.key, it.value);
-      if (f.required && blank(v)) flags.push('missing');
+      // 나이 하한·상한은 꼭 적는다. 공고에 나이 제한이 없으면 '나이 제한 없음'(근거 문장 포함)으로 대신한다
+      var ageFree = (f.key === 'age_min' || f.key === 'age_max') && normalize('age_none', fields.age_none && fields.age_none.value) === true;
+      if (f.required && blank(v) && !ageFree) flags.push('missing');
       if (!blank(v)) {
         if (!it.evidence) flags.push('no_evidence');
         else if (source && !inSource(it.evidence, source)) flags.push('not_in_source');
@@ -400,6 +403,7 @@
     else if ((h = hit(t, /(\d{4}\s*[.\-]\s*\d{1,2}\s*[.\-]\s*\d{1,2})\.?\s*(?:\([월화수목금토일]\))?\s*[~∼\-–]\s*예산/))) put(f, 'period_start', toDate(h.m[1]), h.line);
     // 상시 접수: 접수 기간이 날짜로 없고 '상시 신청·연중 접수'로 적힌 공고
     if (!f.period_start && !f.period_end && ((h = hit(t, /(?:신청|접수|모집)\s*(?:기간|시기)?\s*[:：]?\s*(?:연중\s*)?상시(?:\s*(?:신청|접수|모집))?/)) || (h = hit(t, /(?:^|\n)\s*(?:연중\s*)?상시\s*(?:신청|접수)?\s*(?:\n|$)/)) || (h = hit(t, /연중\s*(?:신청|접수)/)))) put(f, 'always', '예', h.line.trim() ? h.line : lineOf(t, h.m.index + 1), 'medium');
+    if (!f.age_min && !f.age_max && ((h = hit(t, /(?:연령|나이)\s*(?:제한)?\s*[:：]?\s*(?:없음|무관|제한\s*없)/)))) put(f, 'age_none', '예', h.line, 'medium');
     if ((h = hit(t, /선착순/))) put(f, 'first_come', '예', h.line);
     if ((h = hit(t, /선정\s*(?:방법|방식|기준)\s*[:：]?\s*(.+)/)) && /선착순/.test(h.m[1])) put(f, 'select', '선착순', lineOf(t, h.m.index + h.m[0].lastIndexOf(h.m[1])), 'medium');
     else if (h) {
@@ -476,7 +480,7 @@
     switch (op && op.op) {
       case 'saveDraft': {
         var d = op.draft || {}; if (!d.sourceText && !d.fields) return { ok: false, error: '내용이 없는 초안이에요.' };
-        var keep = { id: d.id || uid('d'), noticeId: clip(d.noticeId, 40), title: clip(d.title, 120), source: { name: clip(d.source && d.source.name, 120), url: safeUrl(clip(d.source && d.source.url, 300)) },
+        var keep = { id: d.id || uid('d'), noticeId: clip(d.noticeId, 40), title: clip(d.title, 120), source: { name: clip(d.source && d.source.name, 120), url: safeUrl(clip(d.source && d.source.url, 300)), policyIds: ((d.source && d.source.policyIds) || []).map(String).filter(function (x) { return /^\d{10,30}$/.test(x); }).slice(0, 20) },
           sourceText: clip(d.sourceText, 80000), mode: d.mode === 'ai' ? 'ai' : 'local', model: clip(d.model, 60), extractedAt: d.extractedAt || t.iso, notes: (d.notes || []).slice(0, 20).map(function (x) { return clip(x, 300); }),
           fields: slim(d.fields), acks: d.acks || {}, status: d.status === 'rejected' ? 'rejected' : 'review', memo: clip(d.memo, 500), rejectReason: clip(d.rejectReason, 300), updatedAt: t.iso, updatedBy: name };
         var i = findDraft(keep.id); if (i >= 0) D.items[i] = keep; else D.items.unshift(keep);
