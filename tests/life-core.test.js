@@ -1,0 +1,154 @@
+// 생활 관리(주거비 관리·자취 캘린더) 계산 단위 테스트 — demo/life-core.js
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const JL = require('../demo/life-core.js');
+
+// 2026년 12월에 입주, 계약은 2028년 11월까지 (y*12+m)
+const START = 2026 * 12 + 11, END = 2028 * 12 + 10;
+const BILLS = () => [
+  { id: 'rent', name: '월세', kind: 'out', link: 'rent', day: 25, every: 1, on: true },
+  { id: 'fee', name: '관리비', kind: 'out', link: 'fee', day: 25, every: 1, on: true },
+  { id: 'elec', name: '전기요금', kind: 'out', amount: 25000, day: 18, every: 1, on: true, est: true },
+  { id: 'net', name: '인터넷', kind: 'out', amount: 22000, day: 10, every: 1, on: true },
+  { id: 'water', name: '수도요금', kind: 'out', amount: 16000, day: 20, every: 2, on: true, est: true },
+  { id: 'sup', name: '청년월세 지원 입금', kind: 'in', amount: 200000, day: 25, every: 1, count: 3, on: true }
+];
+const LINK = { rent: 450000, fee: 70000 };
+function month(bills, y, m, extra = {}) {
+  return JL.monthBills(bills, Object.assign({
+    y, m, endIdx: END, paid: {}, actual: {},
+    amt: (b) => (b.link ? LINK[b.link] : +b.amount || 0), start: () => START, day: (b) => b.day
+  }, extra));
+}
+const ids = (ev) => ev.map((e) => e.bid).sort();
+const out = (ev) => ev.filter((e) => e.kind === 'out');
+
+test('입주한 달: 켜 둔 항목이 전부 나온다 (2개월마다 내는 수도는 첫 달에 나온다)', () => {
+  assert.deepEqual(ids(month(BILLS(), 2026, 11)), ['elec', 'fee', 'net', 'rent', 'sup', 'water']);
+});
+
+test('2개월마다 내는 항목은 다음 달에 쉬고 그다음 달에 다시 나온다', () => {
+  assert.ok(!ids(month(BILLS(), 2027, 0)).includes('water'));
+  assert.ok(ids(month(BILLS(), 2027, 1)).includes('water'));
+});
+
+test('계약이 끝난 다음 달부터는 반복 납부가 생기지 않는다', () => {
+  assert.ok(month(BILLS(), 2028, 10).length > 0);
+  assert.equal(month(BILLS(), 2028, 11).length, 0);
+});
+
+test('입주 전 달에는 아무것도 없다', () => {
+  assert.equal(month(BILLS(), 2026, 10).length, 0);
+});
+
+test('횟수가 정해진 지원금은 그 횟수만큼만 들어온다', () => {
+  const got = [0, 1, 2, 3].map((i) => month(BILLS(), 2026 + Math.floor((11 + i) / 12), (11 + i) % 12).some((e) => e.bid === 'sup'));
+  assert.deepEqual(got, [true, true, true, false]);
+  assert.equal(month(BILLS(), 2027, 1).find((e) => e.bid === 'sup').nth, '3/3');
+});
+
+test("'기본 관리비에 포함'으로 고른 항목은 따로 더하지 않는다 (중복 계산 방지)", () => {
+  const b = BILLS(); b.find((x) => x.id === 'net').incl = 'incl';
+  const ev = month(b, 2026, 11);
+  assert.ok(!ids(ev).includes('net'));
+  assert.equal(JL.summary(ev).total, 450000 + 70000 + 25000 + 16000);
+});
+
+test("'관리비 고지서에 합산'은 관리비 한 건으로 묶고 합계는 한 번만 센다", () => {
+  const b = BILLS(); b.find((x) => x.id === 'elec').incl = 'bundle';
+  const ev = month(b, 2026, 11), fee = ev.find((e) => e.bid === 'fee');
+  assert.ok(!ids(ev).includes('elec'));
+  assert.equal(fee.amount, 70000 + 25000);
+  assert.equal(fee.with, '전기요금');
+  assert.equal(fee.est, true, '합산된 전기요금이 예상 금액이라 관리비도 예상으로 표시');
+});
+
+test('관리비 고지서 실제 총액을 넣으면 합산 항목을 또 더하지 않는다', () => {
+  const b = BILLS(); b.find((x) => x.id === 'elec').incl = 'bundle';
+  const fee = month(b, 2026, 11, { actual: { 'fee@2026-12': 98000 } }).find((e) => e.bid === 'fee');
+  assert.equal(fee.amount, 98000);
+  assert.equal(fee.real, true);
+});
+
+test("'확인 필요'는 따로 더하되 확인 필요 표시가 붙는다", () => {
+  const b = BILLS(); b.find((x) => x.id === 'net').incl = 'check';
+  assert.equal(month(b, 2026, 11).find((e) => e.bid === 'net').chk, true);
+});
+
+test('월세·관리비와 들어오는 돈은 관리비 포함 설정을 무시한다', () => {
+  assert.equal(JL.incl({ link: 'rent', incl: 'incl' }), 'sep');
+  assert.equal(JL.incl({ kind: 'in', incl: 'incl' }), 'sep');
+  assert.equal(JL.incl({ kind: 'out' }), 'sep');
+});
+
+test('고지서 실제 금액은 그 달에만 적용되고 다음 달은 다시 예상 금액이다', () => {
+  const actual = { 'elec@2026-12': 31200 };
+  const dec = month(BILLS(), 2026, 11, { actual }).find((e) => e.bid === 'elec');
+  const jan = month(BILLS(), 2027, 0, { actual }).find((e) => e.bid === 'elec');
+  assert.deepEqual([dec.amount, dec.real, dec.est], [31200, true, false]);
+  assert.deepEqual([jan.amount, jan.real, jan.est], [25000, false, true]);
+});
+
+test('금액을 모르는 공과금은 0원이 아니라 금액 미확정으로 남는다', () => {
+  const b = BILLS(); b.find((x) => x.id === 'elec').amount = 0;
+  const ev = month(b, 2026, 11), e = ev.find((x) => x.bid === 'elec');
+  assert.equal(e.unk, true);
+  assert.equal(JL.summary(ev).unknown, 1);
+});
+
+test('월세가 0이면(계약 정보 없음) 월세 항목을 만들지 않는다', () => {
+  const ev = month(BILLS(), 2026, 11, { amt: (b) => (b.link === 'rent' ? 0 : b.link ? 70000 : +b.amount || 0) });
+  assert.ok(!ids(ev).includes('rent'));
+});
+
+test('납부 체크는 달마다 따로다 — 12월에 냈어도 1월은 다시 예정', () => {
+  const paid = { 'rent@2026-12': true };
+  assert.equal(month(BILLS(), 2026, 11, { paid }).find((e) => e.bid === 'rent').paid, true);
+  assert.equal(month(BILLS(), 2027, 0, { paid }).find((e) => e.bid === 'rent').paid, false);
+});
+
+test('납부일이 그달 마지막 날보다 크면 말일로 맞춘다 (2월 31일 → 28일)', () => {
+  const b = [{ id: 'x', name: '말일', kind: 'out', amount: 1000, day: 31, every: 1, on: true }];
+  assert.equal(month(b, 2027, 1)[0].date.getDate(), 28);
+});
+
+test('꺼 둔 항목은 나오지 않는다', () => {
+  const b = BILLS(); b.find((x) => x.id === 'net').on = false;
+  assert.ok(!ids(month(b, 2026, 11)).includes('net'));
+});
+
+test('이번 달 합계: 나갈 돈만 더하고, 확정·예상·납부 완료를 나눈다', () => {
+  const ev = month(BILLS(), 2026, 11, { paid: { 'rent@2026-12': true } });
+  const s = JL.summary(ev);
+  assert.equal(s.total, 450000 + 70000 + 25000 + 22000 + 16000);
+  assert.equal(s.fixed, 450000 + 70000 + 22000);
+  assert.equal(s.est, 25000 + 16000);
+  assert.equal(s.done, 450000);
+  assert.equal(s.wait, s.total - 450000);
+  assert.equal(s.pct, Math.round(450000 / s.total * 100));
+  assert.equal(out(ev).length, 5, '지원금 입금은 합계에 넣지 않는다');
+});
+
+test("납부 상태: 냈으면 완료, 날짜가 지났는데 안 했으면 '날짜 지남'(미납이라 단정하지 않음), 아니면 예정", () => {
+  const today = new Date(2026, 11, 20);
+  assert.equal(JL.payState({ paid: true, kind: 'out', date: new Date(2026, 11, 10) }, today)[0], 'ok');
+  assert.deepEqual(JL.payState({ paid: false, kind: 'out', date: new Date(2026, 11, 10) }, today), ['late', '날짜 지남 · 냈나요?']);
+  assert.equal(JL.payState({ paid: false, kind: 'out', date: new Date(2026, 11, 25) }, today)[0], 'wait');
+  assert.equal(JL.payState({ paid: false, kind: 'in', date: new Date(2026, 11, 25) }, today)[1], '입금 예정');
+});
+
+test('실제 금액 추천값: 예상 금액 주변을 5천 원 단위로, 겹치는 값 없이', () => {
+  assert.deepEqual(JL.amtPicks(25000), [20000, 25000, 30000, 40000]);
+  assert.deepEqual(JL.amtPicks(0), [10000, 20000, 30000, 50000]);
+  const p = JL.amtPicks(3000); assert.equal(new Set(p).size, p.length);
+  assert.ok(p.every((v) => v >= 1000 && v % 1000 === 0));
+});
+
+test('app.html이 life-core.js를 불러오고, 계산을 직접 하지 않고 JachwiLife를 쓴다', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../demo/app.html'), 'utf8');
+  assert.ok(html.includes('<script src="life-core.js" defer></script>'));
+  assert.ok(/JL\.monthBills\(S\.bills/.test(html));
+  assert.ok(!/fee\.amount \+= e\.amount/.test(html), '관리비 합산 계산이 app.html에 두 벌 있으면 안 된다');
+});
