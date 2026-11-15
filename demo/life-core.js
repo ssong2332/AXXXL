@@ -62,6 +62,23 @@
     return ['wait', e.kind === 'in' ? '입금 예정' : '납부 예정'];
   };
 
+  // 청년월세 지원 공고 고르기: 국토부(실제 공고)와 서울(시연 공고) 둘 다 본다.
+  // 해당 가능한 공고를 먼저, 같으면 목록 앞쪽(국토부)을 고른다. 하나도 없으면 null
+  api.RENT_SUPPORT_IDS = Object.freeze(['molit-rent', 'rent']);
+  api.pickRentProgram = function (programs) {
+    var ids = api.RENT_SUPPORT_IDS;
+    var list = (programs || []).filter(function (x) { return x && x.p && ids.indexOf(x.p.id) >= 0; });
+    list.sort(function (a, b) { return (b.eligible ? 1 : 0) - (a.eligible ? 1 : 0) || ids.indexOf(a.p.id) - ids.indexOf(b.p.id); });
+    return list[0] || null;
+  };
+  // 선정된 공고의 금액·기간으로 '청년월세 지원 입금' 항목을 맞춘다 (공고에 값이 없으면 원래 값 유지)
+  api.applyRentProgram = function (bill, p) {
+    var b = Object.assign({}, bill, { on: true });
+    if (p && +p.monthly) b.amount = +p.monthly * 10000;
+    if (p && +p.months) b.count = +p.months;
+    return b;
+  };
+
   // 고지서 실제 금액 추천값: 예상 금액 주변(5천 원 단위), 예상이 없으면 흔한 금액
   api.amtPicks = function (base) {
     var r = function (n) { return Math.max(1000, Math.round(n / 5000) * 5000); };
