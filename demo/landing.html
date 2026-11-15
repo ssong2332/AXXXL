@@ -82,6 +82,8 @@ h1 em { font-style: normal; color: var(--green) }
   .stage .phone.front { left: 0; max-width: 260px }
   .stage .phone.back, .chip.c2 { display: none }
   .chip.c1 { left: auto; right: 4%; top: auto; bottom: 30px }
+  .hero .ctas .btn { flex: 1 1 100% }
+  .end-box .ctas .btn { flex: 1 1 100% }
 }
 
 /* 공통 구역 */
@@ -138,6 +140,8 @@ h2 { font-size: clamp(28px, 3.6vw, 42px); line-height: 1.25; letter-spacing: -0.
 .road:hover > li.on:not(:hover) .more { opacity: 0 }
 .road-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -16px 0 36px; flex-wrap: wrap }
 .road-hint { font-size: 13px; color: var(--ink-3); margin: 0 }
+.road-hint .hint-m { display: none }
+@media (hover: none) { .road-hint .hint-pc { display: none } .road-hint .hint-m { display: inline } }
 .road-ctl { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer }
 .road-ctl:hover { color: var(--ink) }
 @media (max-width: 860px) {
@@ -305,7 +309,7 @@ footer a { color: var(--ink-2) }
         <h2 id="how-h">계약 전부터 퇴거까지,<br>지금 어디쯤인지 보여 줘요</h2>
         <p>내 계약일과 입주일로 8단계 타임라인을 만들어요. 오늘 해야 할 일이 맨 위로 오고, 기한이 다가오면 알려 줘요.</p>
       </div>
-      <div class="road-foot"><p class="road-hint">단계에 마우스를 올리거나 눌러 보세요. 그 단계에서 할 일을 보여 드려요.</p><button type="button" class="road-ctl" id="road-ctl" aria-pressed="false">❚❚ 자동 재생 멈추기</button></div>
+      <div class="road-foot"><p class="road-hint"><span class="hint-pc">단계에 마우스를 올리거나 눌러 보세요.</span><span class="hint-m">단계를 눌러 보세요.</span> 그 단계에서 할 일을 보여 드려요.</p><button type="button" class="road-ctl" id="road-ctl" aria-pressed="false">❚❚ 자동 재생 멈추기</button></div>
       <ol class="road rv" id="road" aria-label="자취 타임라인 8단계">
         <span class="bar" aria-hidden="true"></span>
         <li data-n="1" tabindex="0"><b>계약 전</b><span>시세·등기부 확인, 특약 요청</span><ul class="more"><li>안심전세 앱으로 시세·보증보험 가입 가능 여부 보기</li><li>등기부등본으로 진짜 집주인·근저당 확인</li><li>"퇴거 시 보증금 즉시 반환" 같은 약속은 특약으로</li></ul></li>
