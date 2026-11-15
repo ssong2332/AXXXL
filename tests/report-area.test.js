@@ -85,7 +85,7 @@ test('첫 실행 길잡이 2단계: null이면 "대상은 아니에요"라고 �
 // ---------- 코치(coach-core, 다른 팀원 영역 — 수정 없이) 문장이 새 이유와 자연스럽게 이어지는지 ----------
 const C = require('../demo/coach-core.js');
 const RC2 = require('../demo/rules-core.js');
-const SEED2 = require('../demo/rules/seed.js');
+const SEED2 = require('../demo/rules/fixture.js'); // 정답표·화면 테스트는 고정 데이터로 (실제 공고는 seed.js)
 function coachFacts(over) {
   const progs = Object.values(SEED2.notices).map((n) => RC2.toProgram(n, new Date('2026-11-10')));
   const cards = SEED2.cards.concat(RC2.noticeCards(progs));

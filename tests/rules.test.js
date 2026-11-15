@@ -36,13 +36,15 @@ test('원문에 없는 근거와 맞지 않는 숫자를 잡아낸다', () => {
   assert.ok(c.byKey.name.flags.includes('missing'));
 });
 
+// 승인 흐름·자격 판정 엔진 시험은 시연용 고정 데이터(fixture.js)로: 시연 공고 원문(samples.js)과 짝이 맞는다
+const FIX = require('../demo/rules/fixture.js');
 test('지난 승인본과 달라진 항목은 사람이 확인해야 승인된다', () => {
-  const prev = R.values(SEED.notices.rent.fields);
-  const f = clone(SEED.notices.rent.fields);
+  const prev = R.values(FIX.notices.rent.fields);
+  const f = clone(FIX.notices.rent.fields);
   const line = ' 다. 임차보증금 8천만 원 이하 및 월세 70만 원 이하 건물에 월세로 거주하는 자';
   f.rent_max = { value: '70', evidence: line, confidence: 'high' };
   f.deposit_max = { value: '8000', evidence: line, confidence: 'high' };
-  const src = SEED.notices.rent.sourceText.replace('월세 60만 원 이하', '월세 70만 원 이하');
+  const src = FIX.notices.rent.sourceText.replace('월세 60만 원 이하', '월세 70만 원 이하');
   let r = R.readyToApprove(f, src, prev, {});
   assert.equal(r.ok, false);
   assert.deepEqual(r.left.map((x) => x.key), ['rent_max']);
@@ -51,26 +53,26 @@ test('지난 승인본과 달라진 항목은 사람이 확인해야 승인된�
 });
 
 test('자격 판정: 나이·소득·주거비·마감', () => {
-  const p = R.toProgram(SEED.notices.rent, new Date('2026-11-10'));
+  const p = R.toProgram(FIX.notices.rent, new Date('2026-11-10'));
   const ok = R.evalProgram(p, { age: 25, income: '100', deposit: 500, rent: 50, gu: '관악구' });
   assert.equal(R.verdict(ok), '해당 가능');
   assert.equal(R.verdict(R.evalProgram(p, { age: 40, income: '100', deposit: 500, rent: 50, gu: '관악구' })), '해당 안 됨');
   assert.equal(R.verdict(R.evalProgram(p, { age: 25, income: 'unknown', deposit: 500, rent: 50, gu: '관악구' })), '확인 필요');
   assert.equal(R.verdict(R.evalProgram(p, { age: 25, income: 'over', deposit: 500, rent: 50, gu: '관악구' })), '해당 안 됨');
-  const closed = R.toProgram(SEED.notices.move, new Date('2027-01-05'));
+  const closed = R.toProgram(FIX.notices.move, new Date('2027-01-05'));
   assert.equal(closed.status, '마감');
   assert.equal(R.verdict(R.evalProgram(closed, { age: 25, income: '100', deposit: 500, rent: 50, gu: '관악구' })), '마감');
 });
 
 test('대상자 시뮬레이션은 판정이 바뀌는 사람을 찾는다', () => {
-  const next = clone(SEED.notices.rent);
+  const next = clone(FIX.notices.rent);
   next.fields.rent_max.value = 70;
-  const rows = R.simulate(SEED.notices.rent, next, new Date('2026-11-10'));
+  const rows = R.simulate(FIX.notices.rent, next, new Date('2026-11-10'));
   assert.ok(rows.some((x) => x.changed && x.persona.rent === 70));
 });
 
 test('발행·되돌리기·지식 저장은 같은 규칙으로 처리된다', () => {
-  const st = { published: clone(SEED), drafts: { items: [] }, unanswered: { items: [] } };
+  const st = { published: clone(FIX), drafts: { items: [] }, unanswered: { items: [] } };
   const s = SAMPLES[2];
   const fields = R.ruleExtract(s.text);
   let out = R.applyOp(st, { op: 'saveDraft', draft: { noticeId: 'move', sourceText: s.text, fields, source: s.source } }, '시험');

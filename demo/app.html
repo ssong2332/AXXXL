@@ -3255,7 +3255,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var body = md2html(streaming ? c.a.slice(0, c.shown) : c.a) + (streaming ? '<span class="caret"></span>' : '');
     var cites = (c.cites || []).map(function (ct) { return (ct.src || []).slice(0, 2).map(function (x) { return '<a class="s12" href="' + esc(x[1] || '#coach') + '"' + ext(x[1] || '') + '>근거 · ' + esc(x[0]) + '</a>'; }).join(''); }).join('');
     var engine = c.mode === 'ai' ? 'Claude' : '내장 AI';
-    var foot = c.kind === 'refuse' ? engine + ' · 질문은 운영자에게 전달했어요' : (c.cites || []).length ? engine + ' · 승인된 안내 ' + c.cites.length + '개 근거' : engine;
+    var foot = c.kind === 'refuse' ? engine + ' · 질문은 이 기기에만 기록했어요 (같은 기기의 운영자 콘솔에서 볼 수 있어요)' : (c.cites || []).length ? engine + ' · 승인된 안내 ' + c.cites.length + '개 근거' : engine;
     var blocks = streaming ? '' : (c.blocks || []).map(function (b, bi) { return blockHtml(b, i, bi, c); }).join('');
     if (!streaming && c.routed && c.want && c.want !== 'auto' && c.bot !== c.want && c.bot !== 'auto' && !(c.actions || []).some(function (a) { return a.room; })) c.actions = (c.actions || []).concat([{ label: BOTS[c.bot].name + ' 방에서 이어 묻기', room: c.bot }]);
     var acts = !streaming && (c.actions || []).length ? '<div class="acts">' + c.actions.map(function (a) { return a.room ? '<button type="button" class="act" data-act="pickbot" data-v="' + a.room + '">' + botAv(a.room, true) + esc(a.label) + '</button>' : a.href ? '<a class="act" href="' + esc(a.href) + '">' + esc(a.label) + ic('chev', 'sm') + '</a>' : '<button type="button" class="act" data-act="askbot" data-k="' + a.bot + '" data-v="' + esc(a.q) + '">' + botAv(a.bot, true) + esc(a.label) + '</button>'; }).join('') + '</div>' : '';
