@@ -216,7 +216,10 @@
     // 앞 대화에 이어지는 짧은 질문이면 주제를 이어 받는다
     var last = hist.length ? hist[hist.length - 1] : null, ctxQ = q, followed = false;
     var hits = J.retrieve(q, cards, 6);
-    if (last && last.topic && last.topic.length && (P_FOLLOW.test(q) || (q.length <= 12 && P_HOUSING.test(q))) && (!hits.length || hits[0].score < 6)) {
+    // "온라인으로도 돼?"처럼 짧게 덧붙여 묻는 말: 다른 주제 낱말을 콕 집지 않았으면 점수가 높아도 앞 주제를 잇는다
+    var tagOn = last && last.topic && last.topic.length && q.length <= 14 && /도\s*(돼|되|가능|할\s*수|받|해)|으로도|로도/.test(q) &&
+      !hits.some(function (h) { return last.topic.indexOf(h.card.id) < 0 && (h.card.keywords || []).some(function (k) { return k.length >= 2 && !/^(신고|지원|계약|집|돈)$/.test(k) && q.indexOf(k) >= 0; }); });
+    if (last && last.topic && last.topic.length && (tagOn || ((P_FOLLOW.test(q) || (q.length <= 12 && P_HOUSING.test(q))) && (!hits.length || hits[0].score < 6)))) {
       ctxQ = (last.q || '') + ' ' + q; followed = true;
       var prev = cards.filter(function (c) { return last.topic.indexOf(c.id) >= 0; });
       hits = J.retrieve(ctxQ, cards, 6);
@@ -231,6 +234,8 @@
     }
     if (!hits.length) {
       if (P_VAGUE.test(q) && !pre.length) return { kind: 'clarify', text: '어떤 게 궁금한지 조금만 더 알려 주세요. 예를 들면 이런 걸 물어볼 수 있어요.', chips: POPULAR, cites: [], topic: [], steps: steps };
+      // 앞 대화 없이 "그럼 언제까지?"만 오면 범위 밖이라고 하지 않고 무엇이 궁금한지 묻는다
+      if (P_FOLLOW.test(q) && q.length <= 12 && !pre.length) return { kind: 'clarify', text: '무엇의 기한·방법이 궁금한지 알려 주세요. 예를 들면 이런 걸 물어볼 수 있어요.', chips: POPULAR, cites: [], topic: [], steps: steps.concat(['앞 대화가 없어 무엇을 묻는지 확인']) };
       if (!P_HOUSING.test(q) && !pre.length) return { kind: 'scope', text: SCOPE, chips: POPULAR, cites: [], topic: [], steps: steps.concat(['승인된 안내와 관련 없는 질문']) };
       if (q.length <= 6) return { kind: 'clarify', text: '어떤 게 궁금한지 조금만 더 알려 주세요. 예를 들면 이런 걸 물어볼 수 있어요.', chips: POPULAR, cites: [], topic: [], steps: steps };
       return { kind: 'refuse', text: (pre.length ? pre.join(' ') + '\n\n' : '') + REFUSE, chips: POPULAR, cites: [], topic: [], steps: steps.concat(['승인된 안내에서 맞는 내용을 찾지 못함']) };

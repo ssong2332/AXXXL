@@ -317,10 +317,60 @@ test('화면 파일: app.html·admin.html 안의 스크립트가 문법 오류 �
   }
 });
 
-test('AI 비서: 같은 채팅방에서 이어 묻는 대화 7개(27턴)가 앞 질문의 주제를 이어받아 답한다', () => {
+test('AI 비서: 같은 채팅방에서 이어 묻는 대화 9개(33턴)가 앞 질문의 주제를 이어받아 답한다', () => {
   const E = require('../demo/eval-core.js');
   const r = E.runConversations(SEED, EV.conversations, AS, SEED.repairs);
   const bad = r.rows.filter((x) => !x.pass).map((x) => x.flow + ' ' + x.turn + '턴 “' + x.q + '”: ' + x.why.join('; '));
   assert.equal(r.pass, r.total, bad.join('\n'));
-  assert.ok(r.total >= 27);
+  assert.ok(r.total >= 33);
+});
+
+// ---------- 실제 공고·지역 (11/15) ----------
+test('지역: 전국 공고와 내 시·도 공고만 보인다 (전남광주통합특별시는 광주·전남 공고도)', () => {
+  const P = R.publicView(SEED, new Date('2026-11-15T12:00:00+09:00')).programs;
+  const ids = (sido) => P.filter((p) => R.regionMatch(p, sido)).map((p) => p.id).sort();
+  assert.deepEqual(ids('인천광역시'), ['incheon-bok', 'molit-guar', 'molit-rent']);
+  assert.ok(ids('서울특별시').includes('rent') && !ids('서울특별시').includes('busan-move'));
+  assert.ok(ids('').length === P.length, '지역을 안 골랐으면 전부');
+  assert.ok(R.regionMatch({ region: '광주광역시' }, '전남광주통합특별시'));
+  assert.ok(R.regionMatch({ region: '전라남도' }, '전남광주통합특별시'));
+  assert.ok(!R.regionMatch({ region: '전라북도' }, '전남광주통합특별시'));
+  assert.equal(R.sidoKey('충청북도'), '충북'); assert.equal(R.sidoKey('서울시'), '서울');
+});
+
+test('지역: 거주 조건은 이용자 시·도와 견주고, 다른 시·도면 해당 안 됨', () => {
+  const P = R.publicView(SEED, new Date('2026-11-15T12:00:00+09:00')).programs;
+  const inc = P.find((p) => p.id === 'incheon-bok');
+  const res = (sido) => R.evalProgram(inc, { age: 25, income: '100', deposit: 1000, rent: 40, sido, homeless: 'yes', dup: 'no' }).res.find((r) => r.type === 'residency');
+  assert.equal(res('인천광역시').ok, true);
+  assert.equal(res('부산광역시').ok, false);
+  // 예전 저장값(시·도 없이 서울 구만)은 서울 공고만 맞음으로
+  const rent = P.find((p) => p.id === 'rent');
+  assert.equal(R.evalProgram(rent, { age: 25, income: '100', deposit: 1000, rent: 40, gu: '관악구' }).res.find((r) => r.type === 'residency').ok, true);
+});
+
+test('상시 접수는 모집 중, 그 밖의 조건은 공고에서 확인(확인 필요)', () => {
+  const P = R.publicView(SEED, new Date('2026-11-15T12:00:00+09:00')).programs;
+  const inc = P.find((p) => p.id === 'incheon-bok');
+  assert.equal(inc.status, R.STATUS.open); assert.equal(inc.period, '상시 접수');
+  const x = R.evalProgram(inc, { age: 25, income: '100', deposit: 1000, rent: 40, sido: '인천광역시', homeless: 'yes', dup: 'no' });
+  const other = x.res.filter((r) => r.type === 'other');
+  assert.ok(other.length && other.every((r) => r.ok === null && r.mine === '공고에서 확인'));
+  assert.equal(R.verdict(x), '확인 필요');
+  assert.equal(R.values(R.ruleExtract('신청기간\n상시\n')).always, true);
+});
+
+test('나이 제한 없는 공고: 나이 제한 없음(근거 포함)이면 나이 칸이 비어도 승인 가능', () => {
+  const n = SEED.notices['molit-guar'];
+  assert.equal(R.check(n.fields, n.sourceText, null).count, 0);
+  const noFlag = Object.assign({}, n.fields); delete noFlag.age_none;
+  assert.ok(R.check(noFlag, n.sourceText, null).byKey.age_min.flags.includes('missing'));
+});
+
+test('검수기: 점으로 이은 날짜와 괄호가 있는 목록 항목도 원문과 대조', () => {
+  assert.ok(R.valueFits('period_start', '2026-03-30', "(신청기간) '26.3.30(월) 09:00 ~ '26.5.29(금) 16:00"));
+  assert.ok(R.valueFits('period_end', '2026-08-24', '2026.8.18.(화) 10:00 ~ 8.24.(월) 18:00'));
+  assert.ok(!R.valueFits('period_end', '2026-08-25', '2026.8.18.(화) 10:00 ~ 8.24.(월) 18:00'));
+  assert.deepEqual(R.missingItems(['월세지원 신청(변경)서', '서약서'], '(필수서류) 월세지원 신청(변경)서, 서약서'), []);
+  assert.deepEqual(R.missingItems(['가족관계증명서'], '(필수서류) 월세지원 신청(변경)서'), ['가족관계증명서']);
 });
