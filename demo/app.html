@@ -17,6 +17,7 @@
 <script src="rules/seed.js" defer></script>
 <script src="engine.js" defer></script>
 <script src="screens-core.js" defer></script>
+<script src="life-core.js" defer></script>
 <script src="data/regions.js" defer></script>
 <script src="support-core.js" defer></script>
 <script src="coach-core.js" defer></script>
@@ -821,7 +822,18 @@ details.add-ev[open] > summary .btn { display: none }
 .incl-row .seg button { border: 0; background: transparent; color: var(--ink-3); font: inherit; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; cursor: pointer; white-space: nowrap }
 .incl-row .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.25) }
 .stat .progress-line { margin: 6px 0 4px }
-.stat.click { cursor: pointer; text-align: left; font: inherit; color: inherit; border: inherit }
+.stat.click { cursor: pointer; text-align: left; font: inherit; color: inherit; border: inherit; text-decoration: none; display: block; width: 100% }
+.stat.click:hover { background: var(--fill) }
+.stat.click.on { box-shadow: inset 0 0 0 2px var(--due) }
+.stat .go { display: inline-flex; vertical-align: -3px; color: var(--ink-3) } .stat .go svg { width: 14px; height: 14px }
+.todo-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 4px; border: 0; border-top: 1px solid var(--hair); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.todo-row:hover { background: var(--fill) }
+.todo-row .what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px }
+.todo-row > svg { width: 14px; height: 14px; color: var(--ink-3) }
+.todo-d { flex: 0 0 52px; display: flex; flex-direction: column; align-items: center; padding: 6px 0; border-radius: 10px; background: var(--fill-2); font-size: 11px; color: var(--ink-3) }
+.todo-d b { font-size: 14px; color: var(--ink) }
+.todo-d.soon { background: var(--due-tint); color: var(--due-text) } .todo-d.soon b { color: var(--due-text) }
+.todo-d.late { background: var(--late-tint); color: var(--late) } .todo-d.late b { color: var(--late) }
 details.fold > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px }
 details.fold > summary::-webkit-details-marker { display: none }
 details.fold[open] > summary { margin-bottom: 10px }
@@ -1192,6 +1204,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // 무주택·중복 수혜는 기본값을 두지 않는다. 값이 없으면 '아직 답하지 않음', 'unknown'은 '모른다고 답함'이다.
   // 기본값을 'unknown'으로 두면 이 질문을 본 적 없는 예전 사용자도 '모름'으로 판정돼 모든 지원이 '확인 필요'로 보인다.
   delete FRESH.homeless; delete FRESH.dup;
+  // 공과금은 집마다 달라서 근거 없는 예시 금액 대신 '금액 미확정'으로 시작한다. 고지서가 오면 주거비 관리에서 실제 금액을 넣는다.
+  FRESH.bills = FRESH.bills.map(function (b) { return !b.link && b.kind === 'out' ? Object.assign({}, b, { amount: 0, est: true }) : b; });
   var DEFAULT = FRESH;
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   // 예전에 저장된 값 맞추기: 지원사업 화면이 따로 받던 무주택 답(S.sup.self.homeless 'y'·'n')은 S.homeless가 비어 있을 때만 옮긴다.
@@ -1356,29 +1370,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function billDay(b) { if (+b.day) return +b.day; var d = pd(S.move).getDate(); return d > 28 ? 31 : d; }
   function dayLabel(d) { return d === 31 ? '말일' : d + '일'; }
   function billStart(b) { if (b.start) { var p = String(b.start).split('-'); return +p[0] * 12 + (+p[1] - 1); } return ym(pd(S.move)) + (+b.off || 0); }
-  // 관리비와의 관계: sep 별도 납부 · incl 기본 관리비에 포함 · bundle 관리비 고지서에 합산 · check 확인 필요
-  var INCL = [['sep', '별도 납부'], ['incl', '기본 관리비에 포함'], ['bundle', '관리비 고지서에 합산 청구'], ['check', '확인 필요']];
-  function billIncl(b) { return b.link || b.kind === 'in' ? 'sep' : (b.incl || 'sep'); }
-  function billsInMonth(y, m) {
-    var idx = y * 12 + m, endIdx = ym(contractEnd()), out = [], bundled = [];
-    S.bills.forEach(function (b) {
-      var amt = billAmt(b), s = billStart(b), every = +b.every || 1, inc = billIncl(b);
-      if (!b.on || (!amt && (b.link || b.kind === 'in')) || idx < s || idx > endIdx || (idx - s) % every) return;
-      var k = (idx - s) / every; if (+b.count && k >= +b.count) return;
-      if (inc === 'incl') return; // 기본 관리비에 이미 들어 있으니 따로 더하지 않는다
-      var key = b.id + '@' + y + '-' + (m + 1);
-      var act = (S.actual || {})[key], real = act != null;
-      var e = { date: new Date(y, m, Math.min(billDay(b), new Date(y, m + 1, 0).getDate())), kind: b.kind, title: b.name, amount: real ? act : amt, base: amt, key: key, paid: !!S.paid[key], est: !real && !!b.est, unk: !real && !amt, real: real, chk: inc === 'check', bid: b.id, nth: +b.count ? (k + 1) + '/' + b.count : '' };
-      if (inc === 'bundle') bundled.push(e); else out.push(e);
-    });
-    // 관리비 고지서에 합산되는 항목은 관리비 한 건으로 묶어 중복 납부·중복 합계를 막는다
-    var fee = out.filter(function (e) { return e.bid === 'fee'; })[0];
-    // 관리비 고지서 실제 총액을 넣었으면 그 금액이 전부다(합산 항목을 또 더하지 않는다)
-    if (fee && bundled.length) { if (!fee.real) bundled.forEach(function (e) { fee.amount += e.amount; if (e.est) fee.est = true; }); fee.with = bundled.map(function (e) { return e.title; }).join('·'); }
-    else out = out.concat(bundled);
-    return out;
-  }
-  function payState(e) { if (e.paid) return ['ok', e.kind === 'in' ? '받음' : '납부 완료']; if (e.date < today) return ['late', '날짜 지남 · 냈나요?']; return ['wait', e.kind === 'in' ? '입금 예정' : '납부 예정']; }
+  // 주거비 계산은 life-core.js(생활 관리 전용 순수 함수)가 맡는다 — tests/life-core.test.js
+  var JL = window.JachwiLife;
+  var INCL = JL.INCL;
+  function billIncl(b) { return JL.incl(b); }
+  function billsInMonth(y, m) { return JL.monthBills(S.bills, { y: y, m: m, endIdx: ym(contractEnd()), paid: S.paid, actual: S.actual, amt: billAmt, start: billStart, day: billDay }); }
+  function payState(e) { return JL.payState(e, today); }
   // 납부 체크 버튼: 안 냈으면 '납부 체크', 냈으면 초록 '✓ 완료'(다시 누르면 취소)
   function payBtn(e) { var inn = e.kind === 'in'; return e.paid ? '<button type="button" class="pay-btn on" data-act="paytoggle" data-v="' + e.key + '" aria-pressed="true" title="다시 누르면 취소돼요">' + ic('check', 'sm') + (inn ? '받았어요' : '납부 완료') + '</button>' : '<button type="button" class="pay-btn" data-act="paytoggle" data-v="' + e.key + '" aria-pressed="false">' + (inn ? '받음 체크' : '납부 체크') + '</button>'; }
   // 항목 이모지: 글자보다 먼저 눈에 들어오도록 (직접 추가한 항목은 영수증)
@@ -1414,11 +1411,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (condRooms().some(function (r) { return r[1] === name; })) { toast('이미 있는 항목이에요.'); return; }
     S.condExtra = (S.condExtra || []).concat([{ id: 'x' + Date.now().toString(36), name: name }]); S.condAddOpen = true; save(); render(true); toast(name + ' 항목을 추가했어요.');
   }
-  function amtPicks(e) {
-    var r = function (n) { return Math.max(1000, Math.round(n / 5000) * 5000); }, base = e.base || 0;
-    var list = base ? [r(base * 0.8), r(base), r(base * 1.2), r(base * 1.5)] : [10000, 20000, 30000, 50000];
-    return list.filter(function (v, i) { return list.indexOf(v) === i; });
-  }
+  function amtPicks(e) { return JL.amtPicks(e.base || 0); }
   function actualBox(e) {
     var cur = e.real ? e.amount : 0;
     return '<div class="act-box"><div class="s12 muted" style="width:100%">' + (e.base ? '예상 ' + won(e.base) + '원 · ' : '') + '고지서에 적힌 금액을 고르거나 직접 넣어요</div>' +
@@ -3008,13 +3001,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('');
     var addF = '<form data-form="billadd" class="bill-form" style="margin-top:12px"><b class="full">항목 추가</b><label class="field"><span>이름</span><input class="inp" name="name" maxlength="20" placeholder="휴대폰 요금"></label><label class="field"><span>금액</span><div class="unit"><input class="inp" name="amount" inputmode="numeric" placeholder="55000"><em>원</em></div></label>' +
       '<label class="field"><span>매월</span><select class="inp" name="day">' + dayOptions(25) + '</select></label><label class="field"><span>구분</span><select class="inp" name="kind"><option value="out">나가는 돈</option><option value="in">들어오는 돈</option></select></label><button class="btn sm full" type="submit">' + ic('plus', 'sm') + '추가</button></form>';
-    var tab = S.calTab === 'money' ? 'money' : S.calTab === 'phone' ? 'phone' : 'day';
+    var tab = S.calTab === 'money' ? 'money' : S.calTab === 'phone' ? 'phone' : S.calTab === 'todo' ? 'todo' : 'day';
+    // 챙길 일정 모아 보기: 이번 달 안 끝낸 할 일·내 일정을 날짜순으로, 누르면 그날로 이동
+    var todoList = tasks.slice().sort(function (p, q) { return p.date - q.date; }).map(function (e) {
+      var late = e.date < today, dd = Math.round((e.date - today) / 864e5);
+      return '<button type="button" class="todo-row" data-act="calday" data-v="' + iso(e.date) + '"><span class="todo-d' + (late ? ' late' : dd <= 3 ? ' soon' : '') + '"><b>' + (e.date.getMonth() + 1) + '.' + e.date.getDate() + '</b><span>' + (late ? '지남' : dd === 0 ? '오늘' : 'D-' + dd) + '</span></span><span class="what"><b>' + esc(e.title) + '</b><span class="s12 muted">' + esc(e.sub || '') + '</span></span>' + ic('chev', 'sm') + '</button>';
+    }).join('') || '<p class="muted s13" style="padding:8px 0">이번 달 챙길 일정을 다 끝냈어요.</p>';
+    var todoPanel = '<div role="tabpanel"><div class="split" style="margin-bottom:8px"><b class="s14">' + (m + 1) + '월 챙길 일정 ' + tasks.length + '개</b><button type="button" class="link-btn" data-act="caltab" data-v="day">날짜별로 보기</button></div><p class="s12 muted" style="margin-bottom:6px">안 끝낸 것만 날짜순이에요. 누르면 그날로 가요.</p>' + todoList + '</div>';
     var panel = '<section class="card" id="cal-panel"><div class="panel-tabs" role="tablist"><button type="button" role="tab" data-act="caltab" data-v="day" aria-selected="' + (tab === 'day') + '">' + md(selD) + '</button><button type="button" role="tab" data-act="caltab" data-v="money" aria-selected="' + (tab === 'money') + '">납부 항목</button><button type="button" role="tab" data-act="caltab" data-v="phone" aria-selected="' + (tab === 'phone') + '">' + ic('bell', 'sm') + ' 폰 연동</button></div>' +
-      (tab === 'day' ? '<div role="tabpanel">' + agenda + addEv + '</div>'
+      (tab === 'todo' ? todoPanel : tab === 'day' ? '<div role="tabpanel">' + agenda + addEv + '</div>'
         : tab === 'money' ? '<div role="tabpanel"><p class="s13 muted" style="margin-bottom:6px">계약 기간(' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + ') 동안 반복해서 보여줘요.</p>' + (rentP.eligible && sup && !sup.on ? '<div class="banner" style="margin:8px 0">' + ic('gift') + '<span>청년월세 지원 <b>' + judge(rentP)[1] + '</b> · 선정되면 ‘청년월세 지원 입금’을 켜 두세요.</span></div>' : '') + '<a class="btn line sm block" href="#spend" style="margin:4px 0 10px">' + ic('chart', 'sm') + ' 금액·날짜 수정과 항목 추가는 주거비 관리에서</a>' + bills + '</div>'
         : '<div role="tabpanel">' + phonePanel() + '</div>') + '</section>';
     return '<div class="page-head"><div><p class="eyebrow">생활 관리 · ' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + '</p><h1>자취 캘린더</h1></div><div class="month-nav"><button type="button" class="icon-btn" data-act="calnav" data-v="-1" aria-label="이전 달">' + ic('back') + '</button><h2 aria-live="polite">' + y + '. ' + (m + 1) + '</h2><button type="button" class="icon-btn" data-act="calnav" data-v="1" aria-label="다음 달">' + ic('chev') + '</button><button type="button" class="btn ghost sm" data-act="calnav" data-v="0">오늘</button></div></div>' +
-      '<div class="stats"><div class="stat"><div class="k">' + (m + 1) + '월 주거비</div><div class="v">' + won(outSum) + '원</div><div class="h">납부 완료 ' + won(paid) + ' · 납부 대기 ' + won(outSum - paid) + '</div></div><div class="stat"><div class="k">' + (m + 1) + '월 들어올 돈</div><div class="v' + (inSum ? ' in' : '') + '">' + won(inSum) + '원</div><div class="h">' + (ins.length ? '지원금 입금' : '선정된 지원금을 켜 보세요') + '</div></div><div class="stat"><div class="k">챙길 일정</div><div class="v' + (tasks.length ? ' due' : '') + '">' + tasks.length + '개</div><div class="h">기한·내 일정</div></div></div>' +
+      '<div class="stats"><a class="stat click" href="#spend"><div class="k">' + (m + 1) + '월 주거비 <span class="go">' + ic('chev', 'sm') + '</span></div><div class="v">' + won(outSum) + '원</div><div class="h">납부 완료 ' + won(paid) + ' · 납부 대기 ' + won(outSum - paid) + '</div></a><button type="button" class="stat click" data-act="caltab" data-v="money"><div class="k">' + (m + 1) + '월 들어올 돈 <span class="go">' + ic('chev', 'sm') + '</span></div><div class="v' + (inSum ? ' in' : '') + '">' + won(inSum) + '원</div><div class="h">' + (ins.length ? '지원금 입금' : '선정된 지원금을 켜 보세요') + '</div></button><button type="button" class="stat click' + (tab === 'todo' ? ' on' : '') + '" data-act="caltab" data-v="todo" aria-pressed="' + (tab === 'todo') + '"><div class="k">챙길 일정 <span class="go">' + ic('chev', 'sm') + '</span></div><div class="v' + (tasks.length ? ' due' : '') + '">' + tasks.length + '개</div><div class="h">기한·내 일정 · 눌러서 모아 보기</div></button></div>' +
       '<div class="cal-wrap"><section class="card"><div class="cal-filter" role="group" aria-label="일정 종류 고르기">' + CAL_F.map(function (f) { return '<button type="button" class="chip" data-act="calf" data-v="' + f[0] + '" aria-pressed="' + (F === f[0]) + '">' + f[1] + '</button>'; }).join('') + '</div><div class="wd" aria-hidden="true">' + WD.map(function (w, i) { return '<span' + (i === 0 ? ' class="sun"' : i === 6 ? ' class="sat"' : '') + '>' + w + '</span>'; }).join('') + '</div><div class="days">' + cells + '</div>' +
       '<div class="legend lg2"><span class="lg-g"><b>납부</b><span><i class="lg" style="background:var(--due)"></i>예정</span><span><i class="lg" style="background:var(--ok)"></i>완료</span><span><i class="lg" style="background:var(--late)"></i>날짜 지남</span></span><span class="lg-g"><span><i class="lg bar"></i>할 일·기한</span><span><i class="lg lgpill"></i>내 일정 (고른 색)</span></span></div></section><div>' + panel + '</div></div>';
   }
