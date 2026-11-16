@@ -3504,11 +3504,16 @@ document.addEventListener('DOMContentLoaded', function () {
   // 휴대폰에서 한 줄을 다 쓰는 칸(긴 질문·긴 선택지). 나머지는 두 칸씩 나란히 (F-11 ②)
   var INPUT_WIDE = { income: 1, homeless: 1, dup: 1, birth: 1 };
   function birthErr(err) { if (!err.birth && S.birth && (S.birth > iso(realToday()).slice(0, 7) || (!err.contract && S.birth > iso(pd(S.contract)).slice(0, 7)))) err.birth = '출생연월이 계약일이나 이번 달보다 늦어요. 날짜를 확인해 주세요.'; }
-  function viewInput() {
-    moBegin('input');
+  function inputErr() {
     var err = JE.validate(S);
     if (!err.contract && !err.move && pd(S.move) < pd(S.contract)) err.move = '입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.';
     birthErr(err);
+    ['deposit', 'rent'].forEach(function (k) { if (AMT_NOTE[k] && !err[k]) err[k] = ''; });
+    return err;
+  }
+  function viewInput() {
+    moBegin('input');
+    var err = inputErr();
     var f = function (lab, inner, k, hint) { return '<label class="field' + (INPUT_WIDE[k] ? ' mo-input-wide' : '') + '"><span>' + lab + '</span>' + inner + (err[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">' + err[k] + '</em>' : hint ? '<em class="s12 muted" style="font-style:normal">' + hint + '</em>' : '') + '</label>'; };
     var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + esc(S[k]) + '"' + (err[k] ? ' aria-invalid="true"' : '') + '><em>' + unit + '</em></div>' + amtNote(k); };
     var sel = function (k, opts) { return '<select class="inp" data-field="' + k + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(S[k] == null ? '' : S[k]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; };
@@ -3547,8 +3552,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function resultPlace() { var t = function (x) { return x == null ? '' : String(x).trim(); }, p = t(S.gu) || t(S.sido); return p ? esc(p) + ' · ' : ''; }
   function viewResult() {
     moBegin('result');
-    var err = JE.validate(S);
-    birthErr(err);
+    var err = inputErr();
     if (Object.keys(err).length) return moRoot('result', '<div class="page-head"><div><h1>자격 판정</h1></div></div><section class="card stack"><p>조건에 고칠 칸이 있어 판정할 수 없어요.</p><a class="btn" href="#input">조건 입력으로</a></section>');
     var R = evaluate(), rp = R.report;
     var src = function (name, url, basis) { return '<p class="s12 muted">근거 <a href="' + url + '" target="_blank" rel="noopener">' + name + '</a> · ' + basis + ' 기준</p>'; };
@@ -3810,11 +3814,12 @@ document.addEventListener('DOMContentLoaded', function () {
       var st = +S.obStep || 1;
       if (st === 1 && (!/^\d{4}-\d{2}-\d{2}$/.test(S.contract) || !/^\d{4}-\d{2}-\d{2}$/.test(S.move))) { toast('계약일과 입주일을 넣어 주세요.'); return; }
       if (st === 1 && pd(S.move) < pd(S.contract)) { toast('입주일이 계약일보다 빨라요.'); return; }
+      if (st === 2 && (AMT_NOTE.deposit || AMT_NOTE.rent || AMT_NOTE.fee)) { toast('금액으로 읽지 못한 칸이 있어요. 칸 아래 안내대로 고쳐 주세요.'); return; }
       if (st === 2 && !(+S.deposit > 0 || +S.rent > 0)) { toast('보증금이나 월세를 넣어 주세요.'); return; }
       S.obStep = st + 1; save(); render(false);
     }
     else if (a === 'obprev') { S.obStep = Math.max(1, (+S.obStep || 1) - 1); save(); render(false); }
-    else if (a === 'obdone') { S.onboarded = true; S.obStep = 1; S.done = {}; save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }
+    else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }
     else if (a === 'demo') { S = clone(DEMO); save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'home'; render(false); }
     else if (a === 'startreal') { S = clone(FRESH); save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'start'; render(false); }
     else if (a === 'backup') backupJson();

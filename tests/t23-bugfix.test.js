@@ -130,9 +130,9 @@ test('B4: 받는 쪽 루프가 휴대폰 옛 값(homeless yes)을 null로 바꾼
 
 // ---------- B5 조건 입력 날짜 순서 ----------
 function orderLine() {
-  const v = fnText('  function viewInput() {', '\n    var f = function');
+  const v = fnText('  function inputErr() {', '\n  function viewInput() {');
   const lines = v.split('\n').filter((l) => /err\.move = '입주일이 계약일보다 빨라요/.test(l));
-  assert.equal(lines.length, 1, 'viewInput에 날짜 순서 줄 없음');
+  assert.equal(lines.length, 1, 'inputErr에 날짜 순서 줄 없음');
   return lines[0];
 }
 function runOrder(S) {
@@ -341,11 +341,13 @@ test('B9: 형식 오류 문구는 그대로, 계약일 오류면 이번 달 기�
   assert.equal(runBirth({ birth: '2030-01', contract: '' }, { contract: '계약일을 넣어 주세요' }).birth, BIRTH_MSG);
   assert.equal(runBirth({ birth: '2026-05', contract: '' }, { contract: '계약일을 넣어 주세요' }).birth, undefined);
 });
-test('B9: viewInput·viewResult가 각각 birthErr(err)를 1번 부르고 validate는 불변 (정적·회귀)', () => {
+test('B9: inputErr가 birthErr(err)를 1번 부르고 viewInput·viewResult가 각각 inputErr()를 1번 쓰며 validate는 불변 (정적·회귀)', () => {
+  const ie = fnText('  function inputErr() {', '\n  function viewInput() {');
   const vi = fnText('  function viewInput() {', '\n    var f = function');
   const vr = fnText('  function viewResult() {', '\n    var R = evaluate()');
-  assert.equal(vi.split('birthErr(err);').length - 1, 1);
-  assert.equal(vr.split('birthErr(err);').length - 1, 1);
+  assert.equal(ie.split('birthErr(err);').length - 1, 1);
+  assert.equal(vi.split('var err = inputErr();').length - 1, 1);
+  assert.equal(vr.split('var err = inputErr();').length - 1, 1);
   assert.deepEqual(JE.validate({ deposit: 1, rent: 1, term: 2, contract: '2026-03-01', move: '2026-03-10', birth: '2030-01' }), {});
 });
 
