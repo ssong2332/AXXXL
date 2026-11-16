@@ -127,6 +127,6 @@ test('CSS T-11: 체크 그리기 keyframes mo-timeline-draw를 짧게(--mo-short
 // ---------- F-09 ⑧ 기한 계산 불변 ----------
 test('기한 계산(buildTimeline~openTasks) 텍스트가 T-11 전과 같다 (F-09 ⑧, N-05)', () => {
   const block = fnText('  function buildTimeline(R) {', '  // ---------- 캘린더 계산 ----------');
-  // T-18(2026-11-12)이 '신고 대상인지 모름(null)' 할 일을 의도적으로 추가해 기준값을 갱신했다 — 이전 448c9a4c…678d. 리뷰 권고 #1 esc 추가로 한 번 더 갱신 — 직전 c34c6ca6…ef71
-  assert.equal(crypto.createHash('sha256').update(block).digest('hex'), '873ab0d4927b62a839403ba89ff8d11a1d30b83579e62fec8e246a4524bc54f9');
+  // T-18(2026-11-12)이 '신고 대상인지 모름(null)' 할 일을 의도적으로 추가해 기준값을 갱신했다 — 이전 448c9a4c…678d. 리뷰 권고 #1 esc 추가로 한 번 더 갱신 — 직전 c34c6ca6…ef71. T-23 B7 `openTasks` 입주 준비 제외로 갱신(2026-11-16) — 직전 873ab0d4…54f9
+  assert.equal(crypto.createHash('sha256').update(block).digest('hex'), '6323756e6ae9904dca30d88939f28acfe51d485f7071cb9b2d1015205517666f');
 });
