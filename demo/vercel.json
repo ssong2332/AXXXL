@@ -21,7 +21,7 @@
       "destination": "/api/calendar"
     },
     {
-      "source": "/api/:fn(support|welfare|lh|holidays|period)",
+      "source": "/api/:fn(support|welfare|lh|holidays|period|bus-arrival|safety)",
       "destination": "/api/public?fn=:fn"
     }
   ],
@@ -90,12 +90,6 @@
       "maxDuration": 30
     },
     "api/public.js": {
-      "maxDuration": 30
-    },
-    "api/bus-arrival.js": {
-      "maxDuration": 15
-    },
-    "api/safety.js": {
       "maxDuration": 30,
       "includeFiles": "data/inst-codes.json"
     }
