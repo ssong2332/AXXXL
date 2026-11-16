@@ -30,7 +30,8 @@
   function codes(s) { return String(s || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); }
   function labels(s, table) { var c = codes(s).filter(function (x) { return !FREE[x]; }); return c.length ? c.map(function (x) { return table[x] || x; }) : null; }
   function ymd8(s) { s = String(s || '').replace(/[^0-9]/g, ''); return s.length === 8 ? s : ''; }
-  function url(s) { s = String(s || '').trim(); if (!s) return ''; if (!/^https?:\/\//i.test(s)) { if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) return ''; s = 'https://' + s; } return /^https?:\/\/[^\s<>"']+$/i.test(s) ? s : ''; }
+  // 온통청년 등록 주소에 '&amp;'가 그대로 든 것이 있다(2026-11-16 관악·광주 북구·수원 장안 1,452건 중 4건). 그대로 열면 기관이 다른 주소로 읽어 공고가 안 열린다
+  function url(s) { s = String(s || '').trim().replace(/&amp;/gi, '&'); if (!s) return ''; if (!/^https?:\/\//i.test(s)) { if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) return ''; s = 'https://' + s; } return /^https?:\/\/[^\s<>"']+$/i.test(s) ? s : ''; }
 
   // 대상 지역 범위: 코드가 200개 이상이면 전국, 한 시도 코드를 거의 다 가지면 시도, 아니면 시군구
   function scopeOf(zipList, sidoSize) {
@@ -298,9 +299,13 @@
     if (it.tper && it.tper.state === 'found') { var t = fromRanges(it.tper.ranges, today, 'text'); if (t.k === 'ended') return t; }
     if (rk === 'ended') return { k: 'ended', text: '접수 끝남 · ' + dl(d8(a.to), today) + ' 마감(등록 기준)', sure: true, src: 'reg' };
     if (bizEnd && today > bizEnd) return { k: 'ended', text: '사업 기간 끝남', sure: true, src: 'reg' };
+    // 화면에는 '못 읽었다'가 아니라 이용자가 할 일(공고 확인)로 말한다(11/16).
+    // 상시 등록이라도 '상시 접수'라고는 공고 본문에도 기간이 없을 때만 말한다. 11/16 점검(관악·광주 북구·수원 장안 주거·금융복지문화 359건):
+    // 상시로 등록됐고 공고에서 기간을 읽은 15건 중 11건이 실제로는 기간이 정해져 있었고 이미 끝났다
     var pend = n.state === 'pending';
-    if (a.t === 'period') return { k: 'check', text: pend ? '접수 기간 확인 중' : '접수 기간 확인 필요', sure: false, src: 'reg', pending: pend };
-    return { k: 'always', text: pend ? '접수 기간 확인 중' : '상시 접수로 등록(공고 미확인)', sure: false, src: 'reg', pending: pend };
+    if (pend) return { k: a.t === 'period' ? 'check' : 'always', text: '접수 기간 확인 중', sure: false, src: 'reg', pending: true };
+    if (a.t !== 'period' && n.why === 'notstated') return { k: 'always', text: '상시 접수(온통청년 등록 기준)', sure: false, src: 'reg', pending: false };
+    return { k: a.t === 'period' ? 'check' : 'always', text: '접수 기간은 공고에서 확인', sure: false, src: 'reg', pending: false };
   }
 
   // 남은 날 표시. 공고로 확인한 마감만 센다. 1년 넘게 남았거나 반년 넘는 긴 접수면 날짜만 보여 준다.
