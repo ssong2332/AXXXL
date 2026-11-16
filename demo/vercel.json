@@ -91,6 +91,13 @@
     },
     "api/public.js": {
       "maxDuration": 30
+    },
+    "api/bus-arrival.js": {
+      "maxDuration": 15
+    },
+    "api/safety.js": {
+      "maxDuration": 30,
+      "includeFiles": "data/inst-codes.json"
     }
   }
 }

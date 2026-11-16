@@ -62,7 +62,7 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const deadline = Date.now() + 20000;
   const lat = Math.round(parseFloat(req.query.lat) * 1000) / 1000, lng = Math.round(parseFloat(req.query.lng) * 1000) / 1000;
-  const r = Math.min(Math.max(parseInt(req.query.r, 10) || 1000, 200), 1500);
+  const r = Math.min(Math.max(parseInt(req.query.r, 10) || 1000, 200), 2000);   // 2000 = 화면의 '2km까지 넓혀 보기'
   if (!(lat > 33 && lat < 39 && lng > 124 && lng < 132)) return res.status(400).json({ ok: false, error: '위치가 올바르지 않아요.' });
   const c = { lat, lng }, sources = [], notes = [], key = process.env.DATA_GO_KR_KEY;
   const [osm, sb] = await Promise.all([
