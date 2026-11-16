@@ -113,7 +113,7 @@ test("접수 상태 문구: 못 읽었다고 하지 않고 '공고에서 확인'
   // 상시 등록 + 공고 페이지에 기간이 글로 없음 → 상시로 보여 준다
   const quiet = at(al(), { state: 'none', why: 'notstated' });
   assert.deepEqual([quiet.k, quiet.sure, quiet.text], ['always', false, '상시 접수(온통청년 등록 기준)']);
-  // 상시 등록이라도 공고를 못 열었거나 주소가 없으면 '상시'라고 하지 않는다 (11/16 점검: 공고로 확인한 상시 등록 15건 중 11건이 실제로는 기간이 있었고 끝남)
+  // 상시 등록이라도 공고를 못 열었거나 주소가 없으면 '상시'라고 하지 않는다
   ['nolink', 'unreachable', 'unrelated', 'stale', 'ambiguous'].forEach((why) => {
     const st = at(al(), { state: 'none', why });
     assert.deepEqual([st.k, st.text], ['always', '접수 기간은 공고에서 확인'], why);
@@ -124,9 +124,8 @@ test("접수 상태 문구: 못 읽었다고 하지 않고 '공고에서 확인'
 });
 
 test("등록 주소의 '&amp;'는 '&'로 풀어서 연다", () => {
-  // 2026-11-16 실제 사례: 광주 창업 지원 공고 주소가 '&amp;'를 그대로 담아 등록돼 서버에서 열리지 않았다
-  const it = S.normalize(raw({ refUrlAddr2: 'https://www.gwangju.go.kr/boardView.do?pageId=www789&amp;boardId=BD_0000000027&amp;seq=1' }));
-  assert.deepEqual(it.notices, ['https://www.gwangju.go.kr/boardView.do?pageId=www789&boardId=BD_0000000027&seq=1']);
+  const it = S.normalize(raw({ refUrlAddr2: 'https://x.go.kr/boardView.do?pageId=1&amp;boardId=2&amp;seq=3' }));
+  assert.deepEqual(it.notices, ['https://x.go.kr/boardView.do?pageId=1&boardId=2&seq=3']);
   assert.equal(S.normalize(raw({ aplyUrlAddr: 'https://x.go.kr/a.do?b=1&AMP;c=2' })).url, 'https://x.go.kr/a.do?b=1&c=2');
 });
 
