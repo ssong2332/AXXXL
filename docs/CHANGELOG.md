@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- 2026-11-16 내 계약 '집' 칸 빈 구분점 제거 (T-22, PRD F-11 범위 안 결함 수정, 사용자 답 "네, 고쳐") — 시·도만 고르면 "내 자취방 · "처럼 점 뒤가 비던 표시를 시·군·구 > 시·도 > 없음 순으로 지역을 보이고 지역이 비면 " · "를 붙이지 않게 고침. `demo/screens-core.js` 순수 함수 `homeLabel` 추가, `demo/app.html` viewContract '집' 칸이 이를 사용(screens-core.js를 못 불러오면 집 이름만 표시), `tests/screen-input-contract.test.js` 테스트 7개 추가
 - 2026-11-13 PRD F-09 ① 예외 추가 — '지금' 단계는 할 일을 다 끝내도 펼친 채 둠 (사용자 답 "지금처럼 펼침 유지"). 조건 입력 빈 값·첫 실행 길잡이 날짜 빈 값은 관찰 메모로만 기록 (`docs/PRD.md`)
 - 2026-11-12 조건 입력 지역 선택을 서울 25개 구에서 전국 시·도/시·군·구로 확장 (T-20, PRD F-01, 사용자 원문 "내 작업이면 하고 아니면 하지마") — `demo/app.html` 조건 입력의 시·군·구 칸을 공용 `regionFields()` 호출로 교체, `tests/screen-input-contract.test.js`
 - 2026-11-12 전월세 신고 지역 판정 보완 (T-21, PR #37 리뷰 반영, PRD F-02, DECISIONS #23, ADR-0004 승인 — 사용자 답 "승인 (Recommended)") — `demo/engine.js` `reportArea`에 7개 도(충북·충남·경북·경남·강원·전북·전남광주) 시·군·구 이름 표 136개 추가(`reportAreaSgg`로 노출, `demo/data/regions.js`와 일치하는지 테스트), 시·군·구 미선택·시·도 불일치는 '확인 필요'(null). `demo/app.html`: 지역 선택에서 시·도만 바꾸면 `S.gu`를 비움, 내 계약 '전월세 신고' 칸을 기한/대상 아님/확인 필요로 구분, `qaAnswer`의 신고·확정일자 답을 false(이유는 `rep.reason`)/null로 구분. `tests/report-area.test.js`, `tests/screen-input-contract.test.js`
@@ -35,6 +36,7 @@
 - {{DATE}} 프로젝트 초기화 (start_coding 템플릿)
 
 ### Changed
+- 2026-11-16 테스트 312/312 통과 (T-22, `.artifacts/verification/T-22/20261114-regress2/`, QA `20261114-qa` 311/311), 사용자 화면 확인 통과("통과, PR까지")
 - 2026-11-13 T-05(서류함 통합)·T-08('답하면 판정') 현 main 기준 재검증·완료 (리뷰 치명 0, QA 통과, 사용자 답 "통과, T-14 진행")
 - 2026-11-13 T-14 통합 검증 완료 — 내 화면 7개를 휴대폰 390·PC 1280에서 확인(움직임 줄이기, 모션 길이, T-17 회귀, 서류 올림·지움, 지역 선택 포함), 테스트 300/300·정답표 30/30, 코드 변경 없음, 증거 `.artifacts/verification/T-14/` (사용자 답 "통과, PR까지")
 - 2026-11-12 테스트 300/300 통과 (T-20·T-21, `.artifacts/verification/T-21/20261112-164428-green`, QA `20261112-1700-qa`), 사용자 화면 확인 통과("통과, PR에 올려")
