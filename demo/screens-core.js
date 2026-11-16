@@ -197,5 +197,18 @@
   };
   // ===== /T-16 =====
 
+  // ===== T-23 =====
+  // 금액 칸(만 원 단위) 해석 (DECISIONS #24): '1억'→10000, '1억 2천'→12000, 끝의 '만'·'만원'·공백·쉼표 허용, 빈 칸 → 0.
+  // 해석하지 못하면(음수·소수점·'원'·한글 숫자·숫자 없음) { ok: false, value: null }. 던지지 않는다.
+  api.parseAmount = function (text) {
+    var s = String(text == null ? '' : text).replace(/[\s,]/g, '');
+    if (s === '') return { ok: true, value: 0 };
+    s = s.replace(/만원?$/, '');
+    var m = s !== '' && /^(?:(\d+)억)?(?:(\d+)천)?(?:(\d+)백)?(\d*)$/.exec(s);
+    if (!m) return { ok: false, value: null };
+    return { ok: true, value: (+m[1] || 0) * 10000 + (+m[2] || 0) * 1000 + (+m[3] || 0) * 100 + (+m[4] || 0) };
+  };
+  // ===== /T-23 =====
+
   return api;
 });

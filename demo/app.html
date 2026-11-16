@@ -1264,7 +1264,7 @@ document.addEventListener('DOMContentLoaded', function () {
     bills: DEFAULT_BILLS, paid: {}, calM: '', calSel: '', calTab: 'day', calEdit: '', nick: '', home: null, saved: {}, savedP: {}, events: [], pickHome: false, chal: {}, homeCat: 'all', mapCat: 'all', mapSel: '', recCat: 'park', cond: { in: {}, out: {} }, condTab: 'in', chat: [], areaChk: {}, sim: null, qa: '', remind: '1d', files: [] };
   // 처음 쓰는 사람: 아무것도 체크하지 않은 빈 상태에서 시작해 온보딩으로 입력받는다
   var FRESH = JSON.parse(JSON.stringify(DEMO));
-  Object.assign(FRESH, { gu: '관악구', addr: '', deposit: 0, rent: 0, fee: 0, age: 0, birth: '', income: 'unknown', contract: iso(realToday()), move: iso(add(realToday(), 14)), done: {}, demo: false, onboarded: false, obStep: 1 });
+  Object.assign(FRESH, { gu: '', addr: '', deposit: 0, rent: 0, fee: 0, age: 0, birth: '', income: 'unknown', contract: iso(realToday()), move: iso(add(realToday(), 14)), done: {}, demo: false, onboarded: false, obStep: 1 });
   // 무주택·중복 수혜는 기본값을 두지 않는다. 값이 없으면 '아직 답하지 않음', 'unknown'은 '모른다고 답함'이다.
   // 기본값을 'unknown'으로 두면 이 질문을 본 적 없는 예전 사용자도 '모름'으로 판정돼 모든 지원이 '확인 필요'로 보인다.
   delete FRESH.homeless; delete FRESH.dup;
@@ -1420,6 +1420,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function openTasks(R, T) {
     var skip = today >= R.C ? { pre: 1, cday: 1 } : {}, flat = [];
+    if (today >= R.M) skip.prep = 1;
     T.forEach(function (s) { s.tasks.forEach(function (t) { flat.push({ t: t, s: s }); }); });
     var open = flat.filter(function (x) { return !skip[x.s.key] && !S.done[x.t.id] && x.t.due; });
     var byDue = function (a, b) { return a.t.due - b.t.due; };
@@ -1562,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function srcLink(src) { return /법/.test(src) ? '<a class="src" href="' + LAW + '" target="_blank" rel="noopener">근거 · ' + src + '</a>' : '<span class="src">근거 · ' + src + '</span>'; }
   function lateNote(t, c) {
     if (c) return '';
-    var d = t.legal ? (today > t.legal ? t.legal : null) : t.id === 'rp' && t.due < today ? t.due : null;
+    var d = t.legal ? (today > t.legal ? t.legal : null) : t.urgent === true && t.id === 'rp' && t.due < today ? t.due : null;
     return d ? '<p class="late">기한이 ' + Math.round((today - d) / 864e5) + '일 지났어요. 지금이라도 바로 하세요. 늦으면 과태료가 나올 수 있어요.</p>' : '';
   }
   function taskItem(t, o) {
@@ -3093,7 +3094,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // 내 계약: 폰으로 이어서 보기 · 앱처럼 설치
   var INSTALL = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); INSTALL = e; if (route() === 'contract') render(true); });
-  function exportObj() { var o = {}; ['gu', 'addr', 'deposit', 'rent', 'fee', 'term', 'age', 'income', 'contract', 'move', 'done', 'bills', 'events', 'home', 'remind', 'nick'].forEach(function (k) { o[k] = S[k]; }); return o; }
+  function exportObj() { var o = {}; ['gu', 'addr', 'deposit', 'rent', 'fee', 'term', 'age', 'income', 'contract', 'move', 'done', 'bills', 'events', 'home', 'remind', 'nick', 'sido', 'zip', 'sgg', 'birth', 'homeless', 'dup'].forEach(function (k, i) { o[k] = i >= 16 && S[k] === undefined ? null : S[k]; }); return o; }
   function deviceCards() {
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
     var inst = standalone ? '<p class="s13 sub">이미 앱으로 설치돼 있어요.</p>' : INSTALL ? '<button type="button" class="btn block" data-act="install">' + ic('down', 'sm') + '홈 화면에 앱 설치</button>'
@@ -3419,7 +3420,7 @@ document.addEventListener('DOMContentLoaded', function () {
     moBegin('contract');
     var R = evaluate(), T = buildTimeline(R), P = phase(R), end = contractEnd();
     var f = function (lab, inner, wide) { return '<label class="field' + (wide ? ' mo-contract-wide' : '') + '"><span>' + lab + '</span>' + inner + '</label>'; };
-    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + S[k] + '"><em>' + unit + '</em></div>'; };
+    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + S[k] + '"><em>' + unit + '</em></div>' + amtNote(k); };
     var GU = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
     var big = P.dm < 0 ? 'D-' + (-P.dm) : P.dm === 0 ? 'D-day' : (P.dm + 1) + '<small>일째</small>';
     return moRoot('contract', '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · 계약 값은 조건 입력에서 고쳐요</p><h1>내 계약</h1></div><button type="button" class="btn line sm" data-act="reset">' + (S.demo ? '예시 처음 상태로' : '처음부터 다시 입력') + '</button></div>' +
@@ -3459,7 +3460,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var st = +S.obStep || 1, R = evaluate();
     moBeginStep('start', st);
     var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
-    var num = function (k, unit, ph) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + (S[k] || '') + '" placeholder="' + (ph || '0') + '"><em>' + unit + '</em></div>'; };
+    var num = function (k, unit, ph) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + (S[k] || '') + '" placeholder="' + (ph || '0') + '"><em>' + unit + '</em></div>' + amtNote(k); };
     var steps = ['날짜', '금액', '집 위치', '나에 대해'], body = '';
     if (st === 1) body = '<h1>언제 계약하고, 언제 들어가요?</h1><p class="sub">이 두 날짜로 전월세 신고·전입신고 기한과 할 일 날짜를 계산해요.</p><div class="form-grid">' +
       f('계약일 (계약서 쓴 날 · 예정이면 예정일)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">') + f('입주일 (잔금 내고 이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">') +
@@ -3502,8 +3503,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function viewInput() {
     moBegin('input');
     var err = JE.validate(S);
+    if (!err.contract && !err.move && pd(S.move) < pd(S.contract)) err.move = '입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.';
     var f = function (lab, inner, k, hint) { return '<label class="field' + (INPUT_WIDE[k] ? ' mo-input-wide' : '') + '"><span>' + lab + '</span>' + inner + (err[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">' + err[k] + '</em>' : hint ? '<em class="s12 muted" style="font-style:normal">' + hint + '</em>' : '') + '</label>'; };
-    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + esc(S[k]) + '"' + (err[k] ? ' aria-invalid="true"' : '') + '><em>' + unit + '</em></div>'; };
+    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + esc(S[k]) + '"' + (err[k] ? ' aria-invalid="true"' : '') + '><em>' + unit + '</em></div>' + amtNote(k); };
     var sel = function (k, opts) { return '<select class="inp" data-field="' + k + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(S[k] == null ? '' : S[k]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; };
     // '아직 안 정함'(값 없음)과 '잘 모르겠어요'(모른다고 답함)는 다르다. 값이 없을 때 '예'가 골라진 것처럼 보이지 않게 맨 앞에 둔다
     var yn = [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']];
@@ -3850,9 +3852,11 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('pointerup', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
   document.addEventListener('pointercancel', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
   document.addEventListener('input', function (e) { var t = e.target; if (t.id === 'q') updateSearch(t.value); else if (t.dataset.field && t.hasAttribute('data-num')) setField(t); });
+  var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24
+  function amtNote(k) { return AMT_NOTE[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">\'' + esc(AMT_NOTE[k]) + '\'은(는) 금액으로 읽지 못했어요. 숫자나 \'1억 2천\'처럼 넣어 주세요.</em>' : ''; }
   function setField(t) {
     var k = t.dataset.field, v = t.value;
-    if (t.hasAttribute('data-num')) { var n = parseInt(String(v).replace(/[^0-9]/g, ''), 10); v = isNaN(n) ? 0 : n; }
+    if (t.hasAttribute('data-num')) { if (JS && JS.parseAmount) { var a = JS.parseAmount(v); if (!a.ok) { AMT_NOTE[k] = String(v).slice(0, 20); return; } delete AMT_NOTE[k]; v = a.value; } else { var n = parseInt(String(v).replace(/[^0-9]/g, ''), 10); v = isNaN(n) ? 0 : n; } }
     if ((k === 'contract' || k === 'move') && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
     if (k === 'nick' || k === 'addr') v = String(v).slice(0, k === 'nick' ? 10 : 20);
     if ((k === 'homeless' || k === 'dup') && !v) { delete S[k]; save(); return; } // '아직 안 정함' = 답 없음
