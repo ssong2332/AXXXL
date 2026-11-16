@@ -105,7 +105,8 @@ function dedupe(items, local) {
   });
   const rank = (y) => [local.has(y.city) ? 1 : 0, y.no ? 1 : 0, y.name.length];
   const better = (a, b) => { const ra = rank(a), rb = rank(b); for (let i = 0; i < 3; i++) if (ra[i] !== rb[i]) return ra[i] > rb[i] ? a : b; return a; };
-  return groups.map((g) => { const { city, node, ...keep } = g.reduce(better); return keep; });
+  // arr: 버스 도착 정보(/api/bus-arrival)를 물을 번호 — TAGO는 '도시코드:정류소ID', 서울은 화면에서 정류장 번호(arsId)로 만든다
+  return groups.map((g) => { const best = g.reduce(better), { city, node, ...keep } = best; if (best.src === 'tago' && city && node) keep.arr = city + ':' + node; return keep; });
 }
 
 module.exports = async (req, res) => {
