@@ -13,7 +13,7 @@ REGIONS.forEach(([sido, list]) => list.forEach(([code, name]) => { ZIP[code] = s
 const CATS = S.CATS.map((c) => c[0]);
 
 async function loadZip(zip, key) {
-  // 한 번에 1000건을 받으면 응답이 25초를 넘길 때가 있어(2026-11-11 측정) 200건씩 나눠 동시에 받는다
+  // 한 번에 많이 받으면 응답이 25초를 넘길 때가 있어 200건씩 나눠 동시에 받는다
   const SIZE = 200, base = 'https://www.youthcenter.go.kr/go/ythip/getPlcy?rtnType=json&pageSize=' + SIZE + '&zipCd=' + zip + '&apiKeyNm=' + encodeURIComponent(key);
   // 한 쪽이라도 실패하면 목록 전체가 안 나오므로, 쪽마다 세 번까지 다시 부른다
   const pageOf = (n) => O.retry(async () => {

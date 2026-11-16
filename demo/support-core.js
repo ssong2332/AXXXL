@@ -21,8 +21,7 @@
   var FREE = { '0013010': 1, '0049010': 1, '0014010': 1, '0011009': 1 };
   var CATS = [['주거', '주거'], ['금융･복지･문화', '생활·금융'], ['일자리', '일자리'], ['교육･직업훈련', '교육'], ['참여･기반', '참여']];
 
-  // 2026년 기준 중위소득 100% (월, 원). 보건복지부고시 제2025-135호(2025.8.1. 제정, 2026.1.1. 시행) 표 그대로 — 2026-11-15 국가법령정보센터 원문과 대조
-  // 8인 이상 가구는 고시대로 1인 늘 때마다 959,198원을 더한다(8인가구 10,474,348원). 2027.1.1.부터는 2027년 고시 값으로 바꿔야 한다
+  // 2026년 기준 중위소득 100%(월, 원). 보건복지부고시 제2025-135호. 8인 이상은 1인마다 959,198원을 더한다. 2027년부터는 새 고시 값으로 바꾼다
   var MEDIAN_2026 = { 1: 2564238, 2: 4199292, 3: 5359036, 4: 6494738, 5: 7556719, 6: 8555952, 7: 9515150 }, MEDIAN_2026_STEP = 959198;
 
   // 등록 글에 섞여 오는 HTML 표기(&quot; 등)는 글자로 되돌린다. 화면에 낼 때는 esc()로 다시 감싼다
@@ -30,7 +29,7 @@
   function codes(s) { return String(s || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); }
   function labels(s, table) { var c = codes(s).filter(function (x) { return !FREE[x]; }); return c.length ? c.map(function (x) { return table[x] || x; }) : null; }
   function ymd8(s) { s = String(s || '').replace(/[^0-9]/g, ''); return s.length === 8 ? s : ''; }
-  // 온통청년 등록 주소에 '&amp;'가 그대로 든 것이 있다(2026-11-16 관악·광주 북구·수원 장안 1,452건 중 4건). 그대로 열면 기관이 다른 주소로 읽어 공고가 안 열린다
+  // 등록 주소에 '&amp;'가 그대로 든 것이 있어 '&'로 푼다 (풀지 않으면 공고가 열리지 않는다)
   function url(s) { s = String(s || '').trim().replace(/&amp;/gi, '&'); if (!s) return ''; if (!/^https?:\/\//i.test(s)) { if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) return ''; s = 'https://' + s; } return /^https?:\/\/[^\s<>"']+$/i.test(s) ? s : ''; }
 
   // 대상 지역 범위: 코드가 200개 이상이면 전국, 한 시도 코드를 거의 다 가지면 시도, 아니면 시군구
@@ -43,8 +42,7 @@
   }
 
   // ---------- 운영 지역 ----------
-  // 다른 지자체가 자기 사업을 '전국 대상'으로 등록해 둔 경우가 많다(2026-11-11 확인: 경북 의성군 사업이 전국 254개 시·군·구 코드로 등록).
-  // 대상 지역 코드만 믿지 않고, 등록·주관 기관 이름에서 어느 시·도, 어느 시·군·구의 사업인지 읽는다.
+  // 지자체 사업이 '전국 대상'으로 등록된 경우가 많아, 대상 지역 코드 대신 등록·주관 기관 이름으로 운영 지역을 읽는다
   var SIDO_OLD = { '광주광역시': '전남광주통합특별시', '광주시청': '전남광주통합특별시', '전라남도': '전남광주통합특별시', '강원도': '강원특별자치도', '전라북도': '전북특별자치도', '제주도': '제주특별자치도' };
   // regions: data/regions.js 의 [[시도, [[코드, 시군구], ...]], ...]. 반환: { sido, sgg } (못 읽으면 빈 글자)
   function ownerOf(p, regions) {
@@ -56,12 +54,11 @@
       Object.keys(SIDO_OLD).forEach(function (o) { if (!sido && f.indexOf(o) >= 0 && names.indexOf(SIDO_OLD[o]) >= 0) { sido = SIDO_OLD[o]; part = /^광주/.test(o) ? '광주' : /^전라남도/.test(o) ? '전남' : ''; } });
     }
     if (!sido) return { sido: '', sgg: '', part: '' };
-    // 그 시·도의 시·군·구 이름(첫 낱말: '포항시 남구' → '포항시')이 낱말로 들어 있으면 그 시·군·구의 사업이다.
-    // 기관 이름을 먼저 보고, 없으면 정책 이름을 본다 ('[광주 서구] …', '(광양시) …', '남구 백운광장 청년축제'처럼 시가 대신 등록한 구 사업)
+    // 그 시·도의 시·군·구 이름(첫 낱말)이 들어 있으면 그 시·군·구 사업. 기관 이름을 먼저, 없으면 정책 이름을 본다(시가 대신 등록한 구 사업)
     var firsts = {}; ((regions.filter(function (r) { return r[0] === sido; })[0] || ['', []])[1]).forEach(function (x) { var w = String(x[1]).split(' ')[0]; if (w && w !== sido) firsts[w] = 1; });
     function words(s) { return String(s || '').split(/[^0-9A-Za-z가-힣]+/); }
     words(fields.join(' ')).concat(words(p.plcyNm)).forEach(function (w) { if (!sgg && firsts[w]) sgg = w; else if (!sgg && firsts[w.replace(/청$/, '')] && /(시|군|구)청$/.test(w)) sgg = w.replace(/청$/, ''); });
-    // part: 광주·전남이 합쳐진 시·도에서, 이 사업이 옛 광주 것인지 옛 전남 것인지 (기관·정책 이름에 한쪽만 적혀 있을 때)
+    // part: 통합된 시·도(전남광주)에서 옛 광주·옛 전남 중 어느 쪽 사업인지
     if (sido === '전남광주통합특별시') {
       var rest = (fields.join(' ') + ' ' + String(p.plcyNm || '')).split('전남광주통합특별시').join(' '), gj = /광주/.test(rest), jn = /전남|전라남도/.test(rest);
       part = gj && !jn ? '광주' : jn && !gj ? '전남' : gj && jn ? '' : part;
@@ -111,7 +108,7 @@
     var path = (m[1] || '').replace(/\/(index|main|home)\.(do|html?|jsp|php|asp|aspx|es|nm)$/i, '/').replace(/\/+$/, '');
     return path !== '' || (m[2] || '').length > 1;
   }
-  // 참고 주소 두 칸 중 공고까지 들어가는 주소를 먼저 쓴다 (11/11 확인: 참고1은 첫 화면, 참고2가 공고인 정책이 많다)
+  // 참고 주소 두 칸 중 공고까지 들어가는 주소를 먼저 쓴다
   function linksOf(p) {
     var a = url(p.aplyUrlAddr), r1 = url(p.refUrlAddr1), r2 = url(p.refUrlAddr2);
     var ref = [r1, r2].filter(isDeep)[0] || r1 || r2, seen = {};
@@ -119,8 +116,7 @@
     return { ref: ref, refHome: !!ref && !isDeep(ref), notices: notices };
   }
 
-  // 대문 주소인지: 첫 화면이거나, 파일 이름이 main·index·home·portal 인데 뒤에 붙은 값이 없거나, 폴더 하나로 끝나는 주소
-  // (11/11 확인: 마이홈 getMgtMainPage.do, 국토부 portal.do, 장학재단 /ko/main.do 가 공고 주소 칸에 들어 있었다)
+  // 대문 주소인지: 첫 화면, 값 없는 main·index·home·portal 파일, 폴더 하나로 끝나는 주소
   function isLanding(s) {
     if (!isDeep(s)) return true;
     var m = /^https?:\/\/[^\/?#]+([^?#]*)(\?[^#]*)?/i.exec(String(s)); if ((m[2] || '').length > 1) return false;
@@ -129,25 +125,23 @@
     // 폴더 하나로 끝나는 주소(/nysc/)나 흔한 대문 이름(/main, /korean). 사업 이름이 붙은 주소(/youngtech)는 공고로 본다
     return seg.length === 1 && !/\./.test(last) && (/\/$/.test(m[1]) || /^(main|index|home|portal|kor|korean|ko|kr|www|web|site|page)$/i.test(last));
   }
-  // 온통청년의 그 정책 상세 화면 (2026-11-11 브라우저로 확인: 정책번호를 붙이면 그 정책이 바로 열린다)
+  // 온통청년의 그 정책 상세 화면
   function youthUrl(it) { var base = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch'; return /^\d{10,30}$/.test((it && it.id) || '') ? base + '/ythPlcyDetail/' + it.id : base; }
-  // '공고 보기'가 갈 곳. 기관 첫 화면으로는 보내지 않는다 (이용자가 사업 이름을 다시 검색하지 않게).
-  //  1) 공고 페이지를 열어 이 사업 글인 것을 확인한 주소  2) 아직 확인 전이면 등록된 주소 중 대문이 아닌 것
-  //  3) 둘 다 없거나, 열어 보니 이 사업 글이 아니면 온통청년의 그 정책 상세 화면
-  // 반환: { url, kind: 'notice' | 'youth', checked }   n 은 api/period 가 돌려준 판독 결과(it.notice)
+  // '공고 보기'가 갈 곳(기관 첫 화면은 안 됨): 확인한 공고 주소 → 대문이 아닌 등록 주소 → 온통청년 상세 화면
+  // n: api/period 판독 결과. 반환 { url, kind: 'notice' | 'youth', checked }
   function noticeLink(it, n) {
     n = n || it.notice || {};
     var yc = { url: youthUrl(it), kind: 'youth', checked: false };
     if (n.url && (n.state === 'found' || n.state === 'always')) return { url: n.url, kind: 'notice', checked: true };
     if (n.url && /^(notstated|stale|ambiguous)$/.test(n.why || '')) return isLanding(n.url) ? yc : { url: n.url, kind: 'notice', checked: true };
     if (n.why === 'unrelated' || n.why === 'nolink') return yc;
-    // 확인 전이거나 서버에서 열리지 않은 경우(기관이 자동 접속을 막아도 브라우저로는 열릴 수 있다): 등록된 주소 중 대문이 아닌 것
+    // 확인 전이거나 서버에서 안 열린 경우(브라우저로는 열릴 수 있다)
     var first = (it.notices || []).filter(function (u) { return !isLanding(u); })[0];
     return first ? { url: first, kind: 'notice', checked: false } : yc;
   }
 
   // ---------- 공고 글에서 접수 기간 읽기 ----------
-  // 규칙으로만 읽는다(AI 없음). 못 읽으면 못 읽었다고 돌려준다. 2026-11-11 실제 공고 790곳으로 맞춰 봄.
+  // 규칙으로만 읽는다(AI 없음). 못 읽으면 그 까닭(why)을 돌려준다
   function htmlText(html) {
     return String(html || '')
       .replace(/<(script|style|noscript|svg|head|template)[\s\S]*?<\/\1>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ')
@@ -228,7 +222,7 @@
     o = o || {};
     var hi = cands.filter(function (c) { return c.lv === 2; }), mid = cands.filter(function (c) { return c.lv === 1 && c.from && c.to && !c.month && days(d8(c.to), d8(c.from)) <= 120; });
     var use = hi.length ? hi : mid, seen = {}, ranges = use.filter(function (c) { var k = c.from + c.to; if (c.always || !c.to || seen[k]) return false; seen[k] = 1; return true; });
-    // 사업 연도보다 앞선 해의 기간만 있으면 지난 공고다 (11/11 확인: 2026년 사업에 2022년 공고가 연결된 경우)
+    // 사업 연도보다 앞선 해의 기간만 있으면 지난 공고다
     var fresh = o.year ? ranges.filter(function (r) { return +r.to.slice(0, 4) >= o.year; }) : ranges;
     if (ranges.length && !fresh.length) return { state: 'stale', line: ranges[0].line };
     // 한 페이지에 서로 다른 기간이 여럿이면 게시판 목록이거나 다른 공고가 섞인 것이다. '1차·2차'라고 적힌 경우만 받는다
@@ -280,7 +274,7 @@
     if (a.t === 'period' && from && to) return today < from ? 'soon' : today > to ? 'ended' : 'open';
     return a.t === 'always' ? 'always' : 'none';
   }
-  // 등록된 접수 기간이 '자리만 채운 값'으로 보이는지 (11/11 점검: 접수 중으로 계산되던 194건 중 177건)
+  // 등록된 접수 기간이 '자리만 채운 값'(사업 기간 복사 등)으로 보이는지
   function regLoose(it) {
     var a = it.apply || {}, b = it.biz || {};
     if (a.t !== 'period' || !a.from || !a.to) return false;
@@ -299,13 +293,10 @@
     if (it.tper && it.tper.state === 'found') { var t = fromRanges(it.tper.ranges, today, 'text'); if (t.k === 'ended') return t; }
     if (rk === 'ended') return { k: 'ended', text: '접수 끝남 · ' + dl(d8(a.to), today) + ' 마감(등록 기준)', sure: true, src: 'reg' };
     if (bizEnd && today > bizEnd) return { k: 'ended', text: '사업 기간 끝남', sure: true, src: 'reg' };
-    // 화면에는 '못 읽었다'가 아니라 이용자가 할 일(공고 확인)로 말한다(11/16).
-    // 상시 등록이라도 '상시 접수'라고는 공고 본문에도 기간이 없을 때만 말한다. 11/16 점검(관악·광주 북구·수원 장안 주거·금융복지문화 359건):
-    // 상시로 등록됐고 공고에서 기간을 읽은 15건 중 11건이 실제로는 기간이 정해져 있었고 이미 끝났다
-    var pend = n.state === 'pending';
-    if (pend) return { k: a.t === 'period' ? 'check' : 'always', text: '접수 기간 확인 중', sure: false, src: 'reg', pending: true };
-    if (a.t !== 'period' && n.why === 'notstated') return { k: 'always', text: '상시 접수(온통청년 등록 기준)', sure: false, src: 'reg', pending: false };
-    return { k: a.t === 'period' ? 'check' : 'always', text: '접수 기간은 공고에서 확인', sure: false, src: 'reg', pending: false };
+    // 상시 등록도 '상시 접수'라고는 공고에도 기간이 없을 때(notstated)만 말한다. 상시로 등록돼도 공고에는 기간이 있는 경우가 많다
+    var pend = n.state === 'pending', k = a.t === 'period' ? 'check' : 'always';
+    var text = pend ? '접수 기간 확인 중' : k === 'always' && n.why === 'notstated' ? '상시 접수(온통청년 등록 기준)' : '접수 기간은 공고에서 확인';
+    return { k: k, text: text, sure: false, src: 'reg', pending: pend };
   }
 
   // 남은 날 표시. 공고로 확인한 마감만 센다. 1년 넘게 남았거나 반년 넘는 긴 접수면 날짜만 보여 준다.
@@ -324,7 +315,7 @@
     school: { q: '학력은 어디에 해당하나요?', o: [['대학 재학', '대학 재학 중'], ['대졸 예정', '졸업 예정'], ['대학 졸업', '대학 졸업'], ['고교 졸업', '고교 졸업'], ['석·박사', '대학원'], ['고교 재학', '고교 재학 중'], ['고졸 미만', '고졸 미만']] }
   };
   function inList(list, v) { return list.indexOf(v) >= 0; }
-  // '5천만원', '7.5천만원', '7,000만원', '3억원', '8천5백만 원', '1억 3천만원' → 만 원 단위 숫자. 글 안의 위치(i)도 함께 돌려준다
+  // '7.5천만원', '3억원', '1억 3천만원' 같은 금액 → 만 원 단위 숫자와 글 안의 위치(i)
   function amountList(text) {
     var out = [], t = String(text || ''), m, re = /(?:(\d+(?:[.,]\d+)?)\s*억)?\s*(?:(\d+(?:[.,]\d+)?)\s*천)?\s*(?:(\d+(?:[.,]\d+)?)\s*백)?\s*(?:(\d+(?:[.,]\d+)?)\s*(?=만))?(만)?\s*원/g;
     function num(s) { return s ? parseFloat(s.replace(/,/g, '')) : 0; }
@@ -387,8 +378,7 @@
   }
   // 대상 조건을 풀어 쓴 말
   var TRAIT = { '중소기업': '중소기업에 다녀요', '여성': '여성이에요', '기초생활수급자': '기초생활수급자예요', '한부모가정': '한부모 가정이에요', '장애인': '장애인 등록이 돼 있어요', '농업인': '농사를 지어요', '군인': '군인이에요 (복무 중·전역 예정)', '지역인재': '이 지역 학교를 다니거나 졸업했어요', '수급·차상위': '기초생활수급자나 차상위계층이에요' };
-  // user: { age, birth(출생연월, 생일 달이라 age를 못 정했을 때 구분용), region, mrg, job, school, minc(내 월 소득 만원), hh(가구원 수), hinc(가구 월 소득 만원), traits:{이름:true|false},
-  //         homeless('yes'|'no'|'unknown', 답 안 했으면 없음 — app.html S.homeless와 같은 값), deposit, rent }
+  // user: { age, birth, region, mrg, job, school, minc(월 소득 만원), hh(가구원 수), hinc(가구 월 소득 만원), traits, homeless('yes'|'no'|'unknown'), deposit, rent }
   // 반환 조건: { key, label, mine, ok(true|false|null), ask?: 질문 종류, ... }
   function check(it, user, scopeLabel) {
     var out = [], traits = user.traits || {};
@@ -452,8 +442,7 @@
     if (tr.rent && user.rent !== undefined) out.push({ key: 'cap:rent', label: '월세 ' + won(tr.rent) + ' 이하', mine: won(user.rent), ok: user.rent <= tr.rent ? true : null, note: user.rent <= tr.rent ? '' : over, from: 'text' });
     return out;
   }
-  // ok 해당 가능 / no 해당 안 됨 / ask 아직 답하지 않은 질문만 남음(답하면 판정) / q 확인 필요(공고에서 직접 봐야 하거나 '모름'이라고 답함)
-  // 답을 안 한 것과 확인이 필요한 것을 섞지 않는다. 둘 다 있으면 답해도 확인이 남으므로 q
+  // ok 해당 가능 / no 해당 안 됨 / ask 답하면 판정 / q 확인 필요(공고에서 봐야 하거나 '모름'). ask와 q가 함께 있으면 q
   function verdict(conds) {
     if (conds.some(function (c) { return c.ok === false; })) return 'no';
     var open = conds.filter(function (c) { return c.ok === null; });
@@ -522,7 +511,7 @@
     return parts.slice(0, 12).map(function (x) { return { name: x.length > 90 ? x.slice(0, 89) + '…' : x, src: docSource(x) }; });
   }
 
-  // 은행별 받는 방법: [이름, 앱, 이체확인증 메뉴, 저장 방법]. 메뉴 이름은 앱 버전에 따라 다를 수 있다 (2026-11-10 정리)
+  // 은행별 받는 방법: [이름, 앱, 이체확인증 메뉴, 저장 방법]. 메뉴 이름은 앱 버전에 따라 다를 수 있다
   var BANK = {
     kakao: ['카카오뱅크', '카카오뱅크 앱', '아래 메뉴 [전체] → [이체내역조회]를 눌러요', '상세 화면을 캡처하거나 공유로 저장해요'],
     toss: ['토스뱅크', '토스 앱', '아래 메뉴 [전체] → [고객센터] → [송금확인증]을 눌러요', '[발급하기]를 눌러 PDF로 저장해요'],
@@ -589,6 +578,6 @@
   var VR = { ok: 0, ask: 1, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, check: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' && st.sure ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
-  return { CATS: CATS, CODE: CODE, ASK: ASK, BANK: BANK, MEDIAN_2026: MEDIAN_2026, median: median, normalize: normalize, scopeOf: scopeOf, ownerOf: ownerOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regStatus: regStatus, regText: regText, isDeep: isDeep, isLanding: isLanding, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, periodsIn: periodsIn, pickNotice: pickNotice, aboutPolicy: aboutPolicy, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
+  return { CATS: CATS, ASK: ASK, BANK: BANK, median: median, normalize: normalize, scopeOf: scopeOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regText: regText, isDeep: isDeep, isLanding: isLanding, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
     docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, amountList: amountList, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });
