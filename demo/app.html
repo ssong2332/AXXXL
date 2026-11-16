@@ -1166,7 +1166,6 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
     <div class="side-foot">
       <div id="side-tools"></div>
       <div class="privacy"><span data-icon="lock"></span><span id="side-privacy">로그인 없이 쓰고, 입력한 정보는 이 기기에만 저장돼요.</span></div>
-      <a class="small-link" href="index.html">← 계약 전 화면 (조건 입력·집 보기)</a>
     </div>
   </aside>
   <div>
@@ -1302,17 +1301,22 @@ document.addEventListener('DOMContentLoaded', function () {
   migrate(S);
   function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} accTouch(); }
 
-  // ---------- 계정(선택): 로그인하면 다른 기기에서도 이어 보기 (account-core.js) ----------
-  // 로그인 없이도 다 쓸 수 있다. /api/config 에 Supabase 설정이 없으면 로그인 화면 자체가 안 보인다.
+  // ---------- 계정: 로그인해서 쓰고, 다른 기기에서도 이어 보기 (account-core.js) ----------
+  // 내 기록을 쓰려면 로그인한다(예시 데이터 둘러보기는 로그인 없이). /api/config 에 Supabase 설정이 없거나
+  // 켜진 로그인 방식이 없으면 예전처럼 로그인 없이 쓴다(서버 설정이 빠져도 앱이 막히지 않게).
   // 위치·대화·사진·서류는 올리지 않는다 (JachwiAccount.SKIP).
   var JA = window.JachwiAccount || null;
-  var ACC = { cli: null, ready: false, prov: { email: true, kakao: true, google: true }, mode: 'in', open: false, busy: false, msg: '', state: '', at: 0 }, ACC_T = null;
+  var ACC = { cli: null, ready: false, loading: !!JA, prov: { email: true, kakao: true, google: true }, mode: 'in', open: false, busy: false, msg: '', state: '', at: 0 }, ACC_T = null;
   var ACC_AT = 'jachwi-edited';   // 이 기기에서 기록을 마지막으로 고친 시각(ms)
   var ACC_LAST = JA ? JSON.stringify(JA.pick(S)) : '';
   // OAuth·메일 링크에서 돌아오면 주소에 #access_token=… 가 붙어 온다. 화면 주소로 쓰기 전에 떼어 낸다
   var AUTH_BACK = JA ? JA.parseAuthHash(location.hash) : null;
   if (AUTH_BACK) history.replaceState(null, '', location.pathname + location.search + '#contract');
   function accOn() { return !!(ACC.cli && ACC.cli.session()); }
+  var ACC_OWNER = 'jachwi-owner';   // 이 기기 기록의 주인(계정 id). 다른 계정이 로그인하면 이 기기 기록을 비우고 시작한다
+  var HAS_SESS = (function () { try { return !!localStorage.getItem('jachwi-auth'); } catch (e) { return false; } })();
+  // 로그인 화면을 보여야 하나: 예시 둘러보기·휴대폰 캘린더 링크는 로그인 없이. 설정을 불러오는 동안, 로그인했던 기기는 기다리지 않고 바로 연다
+  function accGate() { return !!JA && !S.demo && !PHONE_D && !accOn() && (ACC.loading ? !HAS_SESS : ACC.ready); }
   function accLocalAt() { try { return +localStorage.getItem(ACC_AT) || 0; } catch (e) { return 0; } }
   function accSetLocalAt(t) { try { localStorage.setItem(ACC_AT, String(t)); } catch (e) {} }
   // 저장할 때마다: 올릴 내용이 실제로 바뀌었을 때만 고친 시각을 남기고, 로그인 중이면 잠시 뒤 서버에도 올린다
@@ -1334,11 +1338,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // 로그인했을 때·앱으로 돌아왔을 때: 서버 기록과 이 기기 기록 중 최근 것을 남긴다
   function accSync(first) {
     if (!accOn()) return;
+    var uid = ACC.cli.user().id, owner = null;
+    try { owner = localStorage.getItem(ACC_OWNER); } catch (e) {}
+    if (owner && owner !== uid && !S.demo) { S = clone(FRESH); AMT_NOTE = {}; try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} ACC_LAST = JSON.stringify(JA.pick(S)); accSetLocalAt(0); PC.k = ''; }
+    try { localStorage.setItem(ACC_OWNER, uid); } catch (e) {}
     ACC.cli.pull().then(function (r) {
       var fresh = S.demo || !S.onboarded;
       var how = JA.decide(r && r.state, r ? r.at : 0, accLocalAt(), fresh);
       if (how === 'pull') {
-        if (fresh) { var keep = {}; if (!S.demo) JA.PRIVATE.forEach(function (k) { if (k in S) keep[k] = S[k]; }); S = Object.assign(clone(FRESH), keep); }
+        if (fresh) { var keep = {}; if (!S.demo) JA.PRIVATE.forEach(function (k) { if (k in S) keep[k] = S[k]; }); S = Object.assign(clone(FRESH), keep); AMT_NOTE = {}; }
         JA.apply(S, r.state); migrate(S);
         try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {}
         ACC_LAST = JSON.stringify(JA.pick(S)); accSetLocalAt(r.at); ACC.at = r.at;
@@ -1357,26 +1365,27 @@ document.addEventListener('DOMContentLoaded', function () {
   function accInit() {
     if (!JA) return;
     fetch(API + '/api/config').then(function (r) { return r.ok ? r.json() : {}; }).then(function (c) {
-      if (!c || !c.supabase) { if (AUTH_BACK) toast('로그인을 아직 쓸 수 없어요.'); return; }
+      if (!c || !c.supabase) { ACC.loading = false; if (AUTH_BACK) toast('로그인을 아직 쓸 수 없어요.'); render(true); return; }
       ACC.cli = JA.client(c.supabase);
       return ACC.cli.providers().then(function (pv) { ACC.prov = pv; }, function () {}).then(function () {
       // 켜진 로그인 방식이 하나도 없으면(아직 설정 전) 로그인 화면을 보이지 않는다. 이미 로그인한 사람은 그대로 둔다
       ACC.ready = ACC.prov.email || ACC.prov.kakao || ACC.prov.google || accOn();
-      if (!ACC.ready) return;
+      ACC.loading = false;
+      if (!ACC.ready) { render(true); return; }
       if (AUTH_BACK) {
         if (AUTH_BACK.error) toast('로그인하지 못했어요. ' + AUTH_BACK.error);
         else { ACC.cli.adopt(AUTH_BACK.session); var ty = AUTH_BACK.session.type; toast(ty === 'recovery' ? '새 비밀번호를 정해 주세요.' : ty === 'signup' ? '이메일 인증이 끝났어요. 로그인했어요.' : '로그인했어요.'); if (ty === 'recovery') ACC.open = true; }
         AUTH_BACK = null;
       }
-      if (accOn()) accSync(true); else accPaint();
+      if (accOn()) accSync(true); else { accPaint(); render(true); }
       });
-    }).catch(function () {});
+    }).catch(function () { ACC.loading = false; render(true); });
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && accOn()) accSync(false); });
   }
   // 개인정보 안내 한 줄 (로그인 여부에 따라)
   function privacyText(short) {
     if (!ACC.ready) return short ? '로그인 없이 쓰고, 입력한 정보는 이 기기에만 저장돼요.' : '로그인이 없어요. 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.';
-    if (!accOn()) return short ? '로그인 없이도 다 쓸 수 있어요. 로그인 전에는 이 기기에만 저장돼요.' : '로그인하지 않으면 입력한 값은 서버로 보내지 않고 이 브라우저에만 저장돼요.';
+    if (!accOn()) return short ? '로그인하면 기록이 내 계정에 저장돼요.' : '로그인하면 계약·할 일·주거비 기록이 내 계정에 저장돼요. 집 위치·AI 대화·사진·서류는 이 기기에만 있어요.';
     return short ? '로그인 중 · 위치·대화·사진·서류는 이 기기에만 있어요.' : '로그인 중이라 계약·할 일·주거비 기록은 내 계정에 저장돼요. 집 위치·AI 대화·사진·서류는 이 기기에만 있어요.';
   }
   var ACC_PROV = { kakao: '카카오', google: 'Google', email: '이메일' };
@@ -1397,15 +1406,14 @@ document.addEventListener('DOMContentLoaded', function () {
         '<div class="row"><button type="button" class="btn line sm" data-act="acclogout">로그아웃</button><button type="button" class="btn ghost sm" data-act="accdel">계정 삭제</button></div>' + note + '</section>';
     }
     var m = ACC.mode, title = m === 'up' ? '이메일로 가입' : m === 'reset' ? '비밀번호 다시 정하기' : '이메일로 로그인';
-    return '<section class="card stack acc" aria-labelledby="acc-h"><div class="card-h" style="margin:0"><h2 id="acc-h">다른 기기에서도 이어 보기</h2><span class="badge">선택</span></div>' +
-      '<p class="s13 sub">로그인하면 계약·할 일·주거비 기록을 저장해서 폰을 바꿔도 이어서 볼 수 있어요. 로그인 안 해도 지금처럼 다 쓸 수 있어요.</p>' +
+    return '<div class="stack acc">' +
       (ACC.prov.kakao || ACC.prov.google ? '<div class="acc-sns">' + (ACC.prov.kakao ? '<button type="button" class="acc-btn acc-kakao" data-act="acclogin" data-v="kakao">' + KAKAO_SYM + '카카오로 계속하기</button>' : '') + (ACC.prov.google ? '<button type="button" class="acc-btn acc-google" data-act="acclogin" data-v="google">' + GOOGLE_G + 'Google로 계속하기</button>' : '') + '</div>' : '') +
       (!ACC.prov.email ? '' : (ACC.prov.kakao || ACC.prov.google ? '<div class="acc-or"><span>또는 ' + title + '</span></div>' : '<p class="s13" style="font-weight:650">' + title + '</p>') +
       '<form data-form="accmail" class="acc-form"><label class="field"><span>이메일</span><input class="inp" type="email" name="email" autocomplete="email" required></label>' +
       (m === 'reset' ? '' : '<label class="field"><span>비밀번호' + (m === 'up' ? ' (6자 이상)' : '') + '</span><input class="inp" type="password" name="pw" minlength="6" autocomplete="' + (m === 'up' ? 'new-password' : 'current-password') + '" required></label>') +
       (ACC.msg ? '<p class="s13" style="color:' + (/메일함|보냈어요/.test(ACC.msg) ? 'var(--brand-text)' : 'var(--no)') + '" role="alert">' + esc(ACC.msg) + '</p>' : '') +
       '<button class="btn" type="submit"' + (ACC.busy ? ' disabled' : '') + '>' + (m === 'up' ? '가입하기' : m === 'reset' ? '재설정 메일 보내기' : '로그인') + '</button></form>' +
-      '<p class="s13 muted acc-links">' + (m === 'in' ? '<button type="button" class="linkbtn" data-act="accmode" data-v="up">처음이면 가입하기</button> · <button type="button" class="linkbtn" data-act="accmode" data-v="reset">비밀번호를 잊었어요</button>' : '<button type="button" class="linkbtn" data-act="accmode" data-v="in">로그인으로 돌아가기</button>') + '</p>') + note + '</section>';
+      '<p class="s13 muted acc-links">' + (m === 'in' ? '<button type="button" class="linkbtn" data-act="accmode" data-v="up">처음이면 가입하기</button> · <button type="button" class="linkbtn" data-act="accmode" data-v="reset">비밀번호를 잊었어요</button>' : '<button type="button" class="linkbtn" data-act="accmode" data-v="in">로그인으로 돌아가기</button>') + '</p>') + '</div>';
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act^="acc"]'); if (!b || !ACC.cli) return;
@@ -1413,10 +1421,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (a === 'acclogin') { location.href = ACC.cli.oauthUrl(v, location.origin + location.pathname); }
     else if (a === 'accmode') { ACC.mode = v; ACC.msg = ''; render(true); }
     else if (a === 'accopen') { ACC.open = !ACC.open; render(true); }
-    else if (a === 'acclogout') { ACC.cli.signOut().then(function () { ACC.state = ''; ACC.at = 0; toast('로그아웃했어요. 이 기기 기록은 그대로 있어요.'); accPaint(); }); }
+    else if (a === 'acclogout') { ACC.cli.signOut().then(function () { ACC.state = ''; ACC.at = 0; toast('로그아웃했어요.'); accPaint(); render(false); }); }
     else if (a === 'accdel') {
       if (!confirm('계정과 서버에 저장된 기록을 지울까요? 이 기기에 있는 기록은 남아요.')) return;
-      ACC.cli.deleteMe().then(function () { ACC.state = ''; ACC.at = 0; toast('계정을 지웠어요.'); accPaint(); }, function (er) { toast(er.message); });
+      ACC.cli.deleteMe().then(function () { ACC.state = ''; ACC.at = 0; try { localStorage.removeItem(ACC_OWNER); } catch (e) {} toast('계정을 지웠어요.'); accPaint(); render(false); }, function (er) { toast(er.message); });
     }
   });
   document.addEventListener('submit', function (e) {
@@ -3875,7 +3883,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- 처음 시작하기 (온보딩) ----------
   var GU_LIST = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
+  function obBrand() { return '<div class="brand" style="padding:0"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>'; }
+  // 로그인 화면 (내 기록을 쓰려면 로그인. 예시 데이터는 로그인 없이)
+  function viewLogin() {
+    moBegin('start');
+    return moRoot('start', '<div class="ob">' + obBrand() +
+      '<section class="card stack ob-card"><h1>로그인하고 시작해요</h1><p class="sub">계약·할 일·주거비 기록을 내 계정에 저장해서 폰을 바꿔도 이어서 볼 수 있어요.</p>' +
+      (ACC.loading ? '<p class="s13 muted" role="status">로그인 준비 중…</p>' : accountCard()) + '</section>' +
+      '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
+      '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></div>');
+  }
   function viewStart() {
+    if (accGate()) return viewLogin();
     var st = +S.obStep || 1, R = evaluate();
     moBeginStep('start', st);
     var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
@@ -3899,7 +3918,6 @@ document.addEventListener('DOMContentLoaded', function () {
       '<ol class="ob-steps" aria-label="입력 단계">' + steps.map(function (x, i) { return '<li class="' + (i + 1 < st ? 'done' : i + 1 === st ? 'now' : '') + '"' + (i + 1 === st ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + x + '</li>'; }).join('') + '</ol>' +
       '<section class="card stack ob-card">' + body + btns + '</section>' +
       '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
-      (ACC.ready && !accOn() ? '<p class="s13 muted" style="text-align:center">다른 기기에서 쓰던 기록이 있나요? <button type="button" class="linkbtn" data-act="accopen" aria-expanded="' + ACC.open + '">로그인해서 불러오기</button></p>' + (ACC.open ? accountCard() : '') : accOn() ? accountCard() : '') +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></div>');
   }
   function backupJson() {
@@ -4116,6 +4134,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var r = route();
     if (!S.onboarded && !(r === 'calendar' && PHONE_D)) r = 'start';
     if (S.onboarded && r === 'start') r = 'home';
+    if (accGate()) r = 'start';
     document.body.classList.toggle('ob', r === 'start');
     var g = groupOf(r) || GROUPS[0], y = window.scrollY, ae = document.activeElement, act = ae && ae.dataset && (ae.dataset.field || ae.dataset.cond), sel = null;
     try { if (act && typeof ae.selectionStart === 'number') sel = [ae.selectionStart, ae.selectionEnd]; } catch (x) {}

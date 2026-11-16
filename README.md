@@ -78,10 +78,10 @@
 
 ## 개인정보 원칙
 
-- 계약 조건·소득 등 입력값은 서버에 보내지 않고 브라우저에서 계산한다. 체크 기록·서류 상태는 이용자 기기(`localStorage`)에만 저장한다.
+- 판정·기한 계산은 브라우저에서 한다. 서버 함수(공공데이터·지도 등)는 이용자 정보를 받지 않는다. 기록은 기기(`localStorage`)에 두고, 로그인한 계정에만 아래 범위로 동기화한다.
 - 서버 함수는 이용자 정보를 받지 않는다. 지역 코드·분류만 받고, 서버를 거치는 주변 장소 조회(OpenStreetMap)는 위치를 약 100m 단위로 흐려서 보낸다.
 - 신분증·서류 원본은 보관하지 않는다.
-- 로그인은 선택이다. 로그인하지 않으면 위 원칙대로 기기에만 저장된다. 로그인하면(카카오·Google·이메일, Supabase Auth) 계약·할 일·주거비 기록만 본인 계정 한 줄(`user_state`)에 저장해 다른 기기에서 이어 본다. 집·통학 위치 좌표, 저장한 장소, AI 대화, 집 상태 사진 기록, 서류는 올리지 않는다(`demo/account-core.js`의 `SKIP`). 본인 줄만 읽고 쓰도록 DB 권한(RLS)을 걸었고, 계정 삭제를 누르면 서버 기록과 계정이 함께 지워진다.
+- 내 기록을 쓰려면 로그인한다(이메일, 카카오·Google은 콘솔 설정 후 자동으로 켜짐. 예시 데이터 둘러보기는 로그인 없이). 로그인하면(Supabase Auth) 계약·할 일·주거비 기록만 본인 계정 한 줄(`user_state`)에 저장해 다른 기기에서 이어 본다. 집·통학 위치 좌표, 저장한 장소, AI 대화, 집 상태 사진 기록, 서류는 올리지 않는다(`demo/account-core.js`의 `SKIP`). 본인 줄만 읽고 쓰도록 DB 권한(RLS)을 걸었고, 계정 삭제를 누르면 서버 기록과 계정이 함께 지워진다.
 - API 키와 운영자 코드는 Vercel 환경변수로만 관리하고 저장소·화면 코드에 넣지 않는다(카카오 지도 JavaScript 키는 도메인 제한이 있는 브라우저용 키라 예외).
 
 ## 직접 실행하기
@@ -101,7 +101,7 @@ cd demo && node dev-server.js
 | `TAGO_API_KEY` | 버스정류장 |
 | `KAKAOMAPSDK_KEY`, `KAKAOREST_API_KEY` | 카카오 지도·장소·도보 경로 |
 | `ADMIN_TOKEN`, `BLOB_READ_WRITE_TOKEN` | 운영자 콘솔 서버 저장(없으면 연습 모드만) |
-| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | 선택. 로그인·기기 간 이어 보기. 없으면 로그인 화면이 안 보인다. 테이블·권한은 `supabase/user_state.sql` |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | 로그인·기기 간 이어 보기. 없으면 로그인 없이 쓰는 예전 방식으로 돌아간다. 테이블·권한은 `supabase/user_state.sql` |
 | `ANTHROPIC_API_KEY` 또는 `ANTHROPIC_AUTH_TOKEN` | 선택. 운영 배포판에는 넣지 않았다(내장 엔진만) |
 
 테스트 (저장소 루트):
