@@ -180,15 +180,17 @@ test('R4: 이미 빈 객체여도 빈 객체, save·render 호출 수 그대로 
   });
 });
 test('R4: AMT_NOTE = {}; 정확히 5번, 각각 S 통째 대입 바로 뒤, 다른 줄 불변 (정적)', () => {
-  assert.equal((HTML.match(/(?<!var )AMT_NOTE = \{\};/g) || []).length, 5); // 선언 `var AMT_NOTE = {};` 1번은 빼고 셈
+  assert.equal((HTML.match(/(?<!var )AMT_NOTE = \{\};/g) || []).length, 7); // 선언 `var AMT_NOTE = {};` 1번은 빼고 셈 (계정 동기화 2곳 포함)
   ['S = clone(DEMO); AMT_NOTE = {}; save(); render(true);',
     'S = clone(FRESH); AMT_NOTE = {}; save(); DATA = ',
     "else if (a === 'demo') { S = clone(DEMO); AMT_NOTE = {}; save();",
     "else if (a === 'startreal') { S = clone(FRESH); AMT_NOTE = {}; save();",
-    'S = migrate(Object.assign(clone(FRESH), o, { onboarded: true, demo: false, sim: null })); AMT_NOTE = {}; save();'
+    'S = migrate(Object.assign(clone(FRESH), o, { onboarded: true, demo: false, sim: null })); AMT_NOTE = {}; save();',
+    'S = clone(FRESH); AMT_NOTE = {}; try { localStorage.setItem(STORE',   // 계정: 다른 계정이 로그인하면 이 기기 기록 비움
+    'S = Object.assign(clone(FRESH), keep); AMT_NOTE = {}; }'                // 계정: 빈 기기에 서버 기록 불러오기
   ].forEach((s) => assert.equal(HTML.split(s).length - 1, 1, s));
   const assigns = HTML.split('\n').filter((l) => /\bS = (clone|migrate)\(/.test(l)).length;
-  assert.equal(assigns, 6); // var S 첫 값·restoreJson·reset(두 갈래 한 줄)·demo·startreal·boot #demo
+  assert.equal(assigns, 7); // var S 첫 값·restoreJson·reset(두 갈래 한 줄)·demo·startreal·boot #demo·계정 주인 바뀜
   assert.equal(lineOf('  var AMT_NOTE = {};'), '  var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24');
   assert.match(lineOf('      if (!mine || S.demo) {'), /\{ S = clone\(DEMO\); save\(\); \}/);
 });
