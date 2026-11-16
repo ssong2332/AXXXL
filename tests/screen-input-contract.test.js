@@ -161,3 +161,37 @@ test('T-20: 조건 입력은 서울 25개 구 목록 대신 공용 regionFields(
   assert.doesNotMatch(INPUT, /JE\.LAW\.seoulGu/, '서울 구만 고르는 목록이 남아 있음');
   assert.doesNotMatch(INPUT, /시·군·구 \(서울\)/);
 });
+
+// ---------- T-22: 내 계약 '집' 칸 (homeLabel) ----------
+test('T-22 정상: 시·군·구가 있으면 "집 · 구" (기존과 동일)', () => {
+  assert.equal(JS.homeLabel({ addr: '해오름빌 302호', sido: '서울특별시', gu: '마포구' }), '해오름빌 302호 · 마포구');
+});
+test('T-22 경계: 시·도만 있으면 "집 · 시·도" — 빈 구분점 없음', () => {
+  assert.equal(JS.homeLabel({ addr: '', sido: '부산광역시', gu: '' }), '내 자취방 · 부산광역시');
+});
+test('T-22 경계: 지역이 없으면 집 이름만', () => {
+  assert.equal(JS.homeLabel({ addr: '해오름빌', sido: '', gu: '' }), '해오름빌');
+  assert.equal(JS.homeLabel({}), '내 자취방');
+});
+test('T-22 예외: 공백뿐인 값은 빈 값으로 본다', () => {
+  assert.equal(JS.homeLabel({ addr: '   ', sido: '  ', gu: ' ' }), '내 자취방');
+  assert.equal(JS.homeLabel({ addr: '  ', sido: '부산광역시', gu: '  ' }), '내 자취방 · 부산광역시');
+});
+test('T-22 예외: 인자가 없거나 문자열이 아닌 값이어도 던지지 않고 구분점이 끝에 남지 않는다', () => {
+  assert.equal(JS.homeLabel(), '내 자취방');
+  assert.equal(JS.homeLabel(null), '내 자취방');
+  assert.equal(JS.homeLabel({ addr: 302, sido: undefined, gu: null }), '302');
+});
+test('T-22: viewContract는 homeLabel을 쓰고 빈 구분점 식이 남지 않는다', () => {
+  assert.match(CONTRACT, /homeLabel\(/);
+  assert.doesNotMatch(CONTRACT, /'내 자취방'\) \+ ' · ' \+ esc\(S\.gu\)/);
+});
+test('T-22 대체 식(screens-core.js 없음): 지역을 붙이지 않고 공백뿐인 집 이름은 "내 자취방" — 빈 구분점이 생길 수 없다 (PR 리뷰 권고 1~3)', () => {
+  const m = CONTRACT.match(/JS\.homeLabel\(S\) : (.*?)\) \+ '<\/dd>/);
+  assert.ok(m, '대체 식을 찾지 못함');
+  assert.doesNotMatch(m[1], /·/);
+  const fb = new Function('S', 'return ' + m[1]);
+  assert.equal(fb({ addr: '', sido: '부산광역시', gu: '' }), '내 자취방');
+  assert.equal(fb({ addr: '   ', gu: '  ' }), '내 자취방');
+  assert.equal(fb({ addr: ' 해오름빌 ', gu: '마포구' }), '해오름빌');
+});
