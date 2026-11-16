@@ -115,3 +115,9 @@ test('/api/config: 공개 키만 내보낸다 (service_role JWT·잘못된 주�
   assert.ok(config.supabase({ SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co', SUPABASE_PUBLISHABLE_KEY: jwt({ role: 'anon' }) }));
   assert.equal(config.supabase({ SUPABASE_URL: 'https://evil.example.com', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abcdefghijklmnopqrstuv' }), null);
 });
+
+test('client: 켜진 로그인 방식만 알려 준다 (가입 막힘이면 이메일 끔)', async () => {
+  const mk = (body) => A.client({ url: 'https://abcdefghijklmnopqrst.supabase.co', key: 'k' }, { store: { get: () => null, set() {}, del() {} }, fetch: () => Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify(body)) }) });
+  assert.deepEqual(await mk({ external: { email: true, kakao: false, google: true }, disable_signup: false }).providers(), { email: true, kakao: false, google: true });
+  assert.deepEqual(await mk({ external: { email: true }, disable_signup: true }).providers(), { email: false, kakao: false, google: false });
+});

@@ -1306,7 +1306,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // 로그인 없이도 다 쓸 수 있다. /api/config 에 Supabase 설정이 없으면 로그인 화면 자체가 안 보인다.
   // 위치·대화·사진·서류는 올리지 않는다 (JachwiAccount.SKIP).
   var JA = window.JachwiAccount || null;
-  var ACC = { cli: null, ready: false, mode: 'in', open: false, busy: false, msg: '', state: '', at: 0 }, ACC_T = null;
+  var ACC = { cli: null, ready: false, prov: { email: true, kakao: true, google: true }, mode: 'in', open: false, busy: false, msg: '', state: '', at: 0 }, ACC_T = null;
   var ACC_AT = 'jachwi-edited';   // 이 기기에서 기록을 마지막으로 고친 시각(ms)
   var ACC_LAST = JA ? JSON.stringify(JA.pick(S)) : '';
   // OAuth·메일 링크에서 돌아오면 주소에 #access_token=… 가 붙어 온다. 화면 주소로 쓰기 전에 떼어 낸다
@@ -1358,13 +1358,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!JA) return;
     fetch(API + '/api/config').then(function (r) { return r.ok ? r.json() : {}; }).then(function (c) {
       if (!c || !c.supabase) { if (AUTH_BACK) toast('로그인을 아직 쓸 수 없어요.'); return; }
-      ACC.cli = JA.client(c.supabase); ACC.ready = true;
+      ACC.cli = JA.client(c.supabase);
+      return ACC.cli.providers().then(function (pv) { ACC.prov = pv; }, function () {}).then(function () {
+      // 켜진 로그인 방식이 하나도 없으면(아직 설정 전) 로그인 화면을 보이지 않는다. 이미 로그인한 사람은 그대로 둔다
+      ACC.ready = ACC.prov.email || ACC.prov.kakao || ACC.prov.google || accOn();
+      if (!ACC.ready) return;
       if (AUTH_BACK) {
         if (AUTH_BACK.error) toast('로그인하지 못했어요. ' + AUTH_BACK.error);
         else { ACC.cli.adopt(AUTH_BACK.session); var ty = AUTH_BACK.session.type; toast(ty === 'recovery' ? '새 비밀번호를 정해 주세요.' : ty === 'signup' ? '이메일 인증이 끝났어요. 로그인했어요.' : '로그인했어요.'); if (ty === 'recovery') ACC.open = true; }
         AUTH_BACK = null;
       }
       if (accOn()) accSync(true); else accPaint();
+      });
     }).catch(function () {});
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && accOn()) accSync(false); });
   }
@@ -1394,13 +1399,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var m = ACC.mode, title = m === 'up' ? '이메일로 가입' : m === 'reset' ? '비밀번호 다시 정하기' : '이메일로 로그인';
     return '<section class="card stack acc" aria-labelledby="acc-h"><div class="card-h" style="margin:0"><h2 id="acc-h">다른 기기에서도 이어 보기</h2><span class="badge">선택</span></div>' +
       '<p class="s13 sub">로그인하면 계약·할 일·주거비 기록을 저장해서 폰을 바꿔도 이어서 볼 수 있어요. 로그인 안 해도 지금처럼 다 쓸 수 있어요.</p>' +
-      '<div class="acc-sns"><button type="button" class="acc-btn acc-kakao" data-act="acclogin" data-v="kakao">' + KAKAO_SYM + '카카오로 계속하기</button><button type="button" class="acc-btn acc-google" data-act="acclogin" data-v="google">' + GOOGLE_G + 'Google로 계속하기</button></div>' +
-      '<div class="acc-or"><span>또는 ' + title + '</span></div>' +
+      (ACC.prov.kakao || ACC.prov.google ? '<div class="acc-sns">' + (ACC.prov.kakao ? '<button type="button" class="acc-btn acc-kakao" data-act="acclogin" data-v="kakao">' + KAKAO_SYM + '카카오로 계속하기</button>' : '') + (ACC.prov.google ? '<button type="button" class="acc-btn acc-google" data-act="acclogin" data-v="google">' + GOOGLE_G + 'Google로 계속하기</button>' : '') + '</div>' : '') +
+      (!ACC.prov.email ? '' : (ACC.prov.kakao || ACC.prov.google ? '<div class="acc-or"><span>또는 ' + title + '</span></div>' : '<p class="s13" style="font-weight:650">' + title + '</p>') +
       '<form data-form="accmail" class="acc-form"><label class="field"><span>이메일</span><input class="inp" type="email" name="email" autocomplete="email" required></label>' +
       (m === 'reset' ? '' : '<label class="field"><span>비밀번호' + (m === 'up' ? ' (6자 이상)' : '') + '</span><input class="inp" type="password" name="pw" minlength="6" autocomplete="' + (m === 'up' ? 'new-password' : 'current-password') + '" required></label>') +
       (ACC.msg ? '<p class="s13" style="color:' + (/메일함|보냈어요/.test(ACC.msg) ? 'var(--brand-text)' : 'var(--no)') + '" role="alert">' + esc(ACC.msg) + '</p>' : '') +
       '<button class="btn" type="submit"' + (ACC.busy ? ' disabled' : '') + '>' + (m === 'up' ? '가입하기' : m === 'reset' ? '재설정 메일 보내기' : '로그인') + '</button></form>' +
-      '<p class="s13 muted acc-links">' + (m === 'in' ? '<button type="button" class="linkbtn" data-act="accmode" data-v="up">처음이면 가입하기</button> · <button type="button" class="linkbtn" data-act="accmode" data-v="reset">비밀번호를 잊었어요</button>' : '<button type="button" class="linkbtn" data-act="accmode" data-v="in">로그인으로 돌아가기</button>') + '</p>' + note + '</section>';
+      '<p class="s13 muted acc-links">' + (m === 'in' ? '<button type="button" class="linkbtn" data-act="accmode" data-v="up">처음이면 가입하기</button> · <button type="button" class="linkbtn" data-act="accmode" data-v="reset">비밀번호를 잊었어요</button>' : '<button type="button" class="linkbtn" data-act="accmode" data-v="in">로그인으로 돌아가기</button>') + '</p>') + note + '</section>';
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act^="acc"]'); if (!b || !ACC.cli) return;

@@ -139,6 +139,13 @@
     }
 
     var api = {
+      // 켜져 있는 로그인 방식: { email, kakao, google } (Supabase 공개 설정)
+      providers: function () {
+        return call('/auth/v1/settings').then(function (j) {
+          var x = (j && j.external) || {};
+          return { email: !!x.email && !j.disable_signup, kakao: !!x.kakao, google: !!x.google };
+        });
+      },
       session: function () { return sess; },
       user: function () { return sess && sess.user; },
       adopt: function (s) { return keep(s); },
