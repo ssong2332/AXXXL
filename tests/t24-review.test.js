@@ -147,3 +147,48 @@ test('R3: 다른 칸 오류(birth 없음)로는 막지 않음 (예외 — 범위
 test('R3: 완료 줄 뒤쪽은 그대로, 검사는 S.onboarded 앞 (정적)', () => {
   assert.equal(lineOf("    else if (a === 'obdone') {"), "    else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }");
 });
+
+// ---------- R4 값 통째 교체 시 금액 안내 비우기 (DECISIONS #30) ----------
+function runBranch(act, opts) {
+  const line = lineOf("    else if (a === '" + act + "') {").trim().replace(/^else /, '');
+  const env = { save: 0, render: 0, toasts: [], loc: { hash: 'input' } };
+  const S = { demo: !!opts.demo, deposit: 500 };
+  // eslint-disable-next-line no-new-func
+  const out = new Function('a', 'S', 'AMT_NOTE', 'DEMO', 'FRESH', 'clone', 'save', 'render', 'toast', 'confirm', 'location', 'PC', 'DATA',
+    line + '\nreturn { S: S, AMT_NOTE: AMT_NOTE };')(act, S, opts.note, { demo: true, deposit: 1000 }, { demo: false, deposit: 0 },
+    (o) => JSON.parse(JSON.stringify(o)), () => env.save++, () => env.render++, (m) => env.toasts.push(m), () => opts.confirm !== false, env.loc, {}, null);
+  return Object.assign(env, out);
+}
+test('R4: 예시 reset·demo·startreal 뒤 금액 안내가 빈 객체 (정상)', () => {
+  const r1 = runBranch('reset', { demo: true, note: { deposit: '이천' } });
+  assert.deepEqual(r1.AMT_NOTE, {}); assert.equal(r1.S.deposit, 1000);
+  const r2 = runBranch('demo', { note: { deposit: '이천' } });
+  assert.deepEqual(r2.AMT_NOTE, {}); assert.equal(r2.S.deposit, 1000);
+  const r3 = runBranch('startreal', { note: { rent: 'x', fee: 'y' } });
+  assert.deepEqual(r3.AMT_NOTE, {}); assert.equal(r3.S.deposit, 0);
+});
+test('R4: 실제 사용자 reset 확인 → 비움, 취소 → 안내·값 그대로 (예외)', () => {
+  const ok = runBranch('reset', { demo: false, note: { deposit: '이천' }, confirm: true });
+  assert.deepEqual(ok.AMT_NOTE, {}); assert.equal(ok.loc.hash, 'start');
+  const no = runBranch('reset', { demo: false, note: { deposit: '이천' }, confirm: false });
+  assert.equal(no.AMT_NOTE.deposit, '이천'); assert.equal(no.S.deposit, 500); assert.equal(no.save, 0); assert.equal(no.render, 0);
+});
+test('R4: 이미 빈 객체여도 빈 객체, save·render 호출 수 그대로 (경계)', () => {
+  [['reset', { demo: true }, 1, 1], ['reset', { demo: false, confirm: true }, 1, 1], ['demo', {}, 1, 1], ['startreal', {}, 1, 1]].forEach(([act, o, sv, rd]) => {
+    const r = runBranch(act, Object.assign({ note: {} }, o));
+    assert.deepEqual(r.AMT_NOTE, {}); assert.equal(r.save, sv, act); assert.equal(r.render, rd, act);
+  });
+});
+test('R4: AMT_NOTE = {}; 정확히 5번, 각각 S 통째 대입 바로 뒤, 다른 줄 불변 (정적)', () => {
+  assert.equal((HTML.match(/(?<!var )AMT_NOTE = \{\};/g) || []).length, 5); // 선언 `var AMT_NOTE = {};` 1번은 빼고 셈
+  ['S = clone(DEMO); AMT_NOTE = {}; save(); render(true);',
+    'S = clone(FRESH); AMT_NOTE = {}; save(); DATA = ',
+    "else if (a === 'demo') { S = clone(DEMO); AMT_NOTE = {}; save();",
+    "else if (a === 'startreal') { S = clone(FRESH); AMT_NOTE = {}; save();",
+    'S = migrate(Object.assign(clone(FRESH), o, { onboarded: true, demo: false, sim: null })); AMT_NOTE = {}; save();'
+  ].forEach((s) => assert.equal(HTML.split(s).length - 1, 1, s));
+  const assigns = HTML.split('\n').filter((l) => /\bS = (clone|migrate)\(/.test(l)).length;
+  assert.equal(assigns, 6); // var S 첫 값·restoreJson·reset(두 갈래 한 줄)·demo·startreal·boot #demo
+  assert.equal(lineOf('  var AMT_NOTE = {};'), '  var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24');
+  assert.match(lineOf('      if (!mine || S.demo) {'), /\{ S = clone\(DEMO\); save\(\); \}/);
+});

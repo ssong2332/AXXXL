@@ -3496,7 +3496,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var j = JSON.parse(t), o = j && j.state;
       if (!o || !/^\d{4}-\d{2}-\d{2}$/.test(o.contract || '') || !/^\d{4}-\d{2}-\d{2}$/.test(o.move || '')) throw new Error('bad');
       if (!confirm('이 파일의 기록으로 지금 기록을 바꿀까요?')) return;
-      S = migrate(Object.assign(clone(FRESH), o, { onboarded: true, demo: false, sim: null })); save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; render(false); toast('기록을 불러왔어요.');
+      S = migrate(Object.assign(clone(FRESH), o, { onboarded: true, demo: false, sim: null })); AMT_NOTE = {}; save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; render(false); toast('기록을 불러왔어요.');
     }).catch(function () { toast('자취 계약 내비 백업 파일이 아니에요.'); });
   }
 
@@ -3809,7 +3809,7 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'evdel') { S.events = (S.events || []).filter(function (x) { return x.id !== v; }); save(); render(true); toast('일정을 지웠어요.'); }
     else if (a === 'install') { if (INSTALL) { INSTALL.prompt(); INSTALL.userChoice.then(function () { INSTALL = null; render(true); }); } }
     else if (a === 'weekday') { var wd = pd(v); S.calSel = v; S.calM = wd.getFullYear() + '-' + (wd.getMonth() + 1); S.calTab = 'day'; save(); location.hash = 'calendar'; }
-    else if (a === 'reset') { if (S.demo) { S = clone(DEMO); save(); render(true); toast('예시 처음 상태로 되돌렸어요.'); } else if (confirm('입력한 정보와 체크 기록을 모두 지우고 처음부터 시작할까요? (서류·사진 파일은 남아요)')) { S = clone(FRESH); save(); DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'start'; render(false); } }
+    else if (a === 'reset') { if (S.demo) { S = clone(DEMO); AMT_NOTE = {}; save(); render(true); toast('예시 처음 상태로 되돌렸어요.'); } else if (confirm('입력한 정보와 체크 기록을 모두 지우고 처음부터 시작할까요? (서류·사진 파일은 남아요)')) { S = clone(FRESH); AMT_NOTE = {}; save(); DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'start'; render(false); } }
     else if (a === 'obnext') {
       var st = +S.obStep || 1;
       if (st === 1 && (!/^\d{4}-\d{2}-\d{2}$/.test(S.contract) || !/^\d{4}-\d{2}-\d{2}$/.test(S.move))) { toast('계약일과 입주일을 넣어 주세요.'); return; }
@@ -3820,8 +3820,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     else if (a === 'obprev') { S.obStep = Math.max(1, (+S.obStep || 1) - 1); save(); render(false); }
     else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }
-    else if (a === 'demo') { S = clone(DEMO); save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'home'; render(false); }
-    else if (a === 'startreal') { S = clone(FRESH); save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'start'; render(false); }
+    else if (a === 'demo') { S = clone(DEMO); AMT_NOTE = {}; save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'home'; render(false); }
+    else if (a === 'startreal') { S = clone(FRESH); AMT_NOTE = {}; save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'start'; render(false); }
     else if (a === 'backup') backupJson();
     else if (a === 'fdel') { if (confirm('이 파일을 지울까요?')) delFile(v); }
     else if (a === 'sharecond') {
