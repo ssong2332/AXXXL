@@ -208,6 +208,20 @@
     if (!m) return { ok: false, value: null };
     return { ok: true, value: (+m[1] || 0) * 10000 + (+m[2] || 0) * 1000 + (+m[3] || 0) * 100 + (+m[4] || 0) };
   };
+  // 올해가 아닌 날짜에 연도 (B10, DECISIONS #28): app.html md(d) 모양 앞에 '연도.' — 같은 해·날짜 아님이면 null
+  var WD_SHORT = ['일', '월', '화', '수', '목', '금', '토'];
+  api.yearDate = function (d, now) {
+    if (!isDate(d) || !isDate(now) || d.getFullYear() === now.getFullYear()) return null;
+    return d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate() + '(' + WD_SHORT[d.getDay()] + ')';
+  };
+  // 할 일 복사본에 연도 붙은 dueText (다른 해의 미래 날짜만 — dueTag의 dueText 갈래 색이 원래와 같은 경우). 원본은 바꾸지 않는다
+  api.yearTasks = function (tasks, now) {
+    if (!Array.isArray(tasks)) return [];
+    return tasks.map(function (t) {
+      var y = t && typeof t === 'object' && !t.dueText && isDate(t.due) && isDate(now) && t.due > now ? api.yearDate(t.due, now) : null;
+      return y ? Object.assign({}, t, { dueText: y + (t.legal ? ' 권장' : '') + ' · D-' + Math.round((t.due - now) / 864e5) }) : t;
+    });
+  };
   // ===== /T-23 =====
 
   return api;

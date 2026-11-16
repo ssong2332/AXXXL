@@ -281,3 +281,123 @@ test('B7: flat(타임라인용 전체 목록)에는 입주 준비가 그대로 (
   const r = makeOpenTasks(day(2026, 11, 16))({ C: C0, M: M0 }, T0);
   assert.equal(r.flat.filter((x) => x.s.key === 'prep').length, 2);
 });
+
+// ---------- B8 자격 판정 머리 줄 지역 ----------
+const escApp = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function makeResultPlace(S) {
+  const src = lineOf('  function resultPlace() {');
+  // eslint-disable-next-line no-new-func
+  return new Function('S', 'esc', src + '\nreturn resultPlace;')(S, escApp);
+}
+test('B8: 시·군·구 있으면 그대로 (정상 — 이전과 같음)', () => {
+  assert.equal(makeResultPlace({ gu: '관악구', sido: '서울특별시' })(), '관악구 · ');
+});
+test('B8: 시·군·구 없고 시·도만 → 시·도 (경계 — 지적)', () => {
+  assert.equal(makeResultPlace({ gu: '', sido: '충청남도' })(), '충청남도 · ');
+  assert.equal(makeResultPlace({ gu: '', sido: '부산광역시' })(), '부산광역시 · ');
+});
+test('B8: 지역 없음·공백·null → 구분점도 없음 (예외)', () => {
+  assert.equal(makeResultPlace({ gu: '  ' })(), '');
+  assert.equal(makeResultPlace({ gu: null, sido: null })(), '');
+  assert.equal(makeResultPlace({})(), '');
+});
+test('B8: 지역 값은 이스케이프 (예외)', () => {
+  assert.equal(makeResultPlace({ gu: '<b>' })(), '&lt;b&gt; · ');
+});
+test('B8: viewResult 머리 줄이 resultPlace()를 쓰고 esc(S.gu) + \' · \'는 없음 (정적)', () => {
+  const v = fnText('  function viewResult() {', '\n  function moReduce()');
+  assert.equal(v.split('resultPlace() + ageText()').length - 1, 1);
+  assert.equal(v.split("esc(S.gu) + ' · '").length - 1, 0);
+  assert.equal(HTML.split('resultPlace()').length - 1, 2); // 정의 1 + 호출 1
+});
+
+// ---------- B9 미래 출생연월 ----------
+function runBirth(S, err) {
+  const src = lineOf('  function birthErr(err) {');
+  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const realToday = () => new Date(2026, 10, 16);
+  const pd = (s) => { const p = String(s || '').split('-'); const d = new Date(+p[0], +p[1] - 1, +p[2]); return isNaN(d) ? realToday() : d; };
+  err = err || {};
+  // eslint-disable-next-line no-new-func
+  new Function('S', 'iso', 'pd', 'realToday', src + '\nreturn birthErr;')(S, iso, pd, realToday)(err);
+  return err;
+}
+const BIRTH_MSG = '출생연월이 계약일이나 이번 달보다 늦어요. 날짜를 확인해 주세요.';
+test('B9: 미래 출생연월 2030-01 → 안내 (정상 — 지적)', () => {
+  assert.equal(runBirth({ birth: '2030-01', contract: '2026-03-01' }).birth, BIRTH_MSG);
+});
+test('B9: 이번 달보다 늦음·계약 달보다 늦음 → 안내 (경계)', () => {
+  assert.equal(runBirth({ birth: '2026-12', contract: '2027-01-01' }).birth, BIRTH_MSG);
+  assert.equal(runBirth({ birth: '2026-05', contract: '2026-03-01' }).birth, BIRTH_MSG);
+});
+test('B9: 이번 달·계약 달과 같음, 과거, 빈 값 → 안내 없음 (경계)', () => {
+  assert.deepEqual(runBirth({ birth: '2026-11', contract: '2026-12-01' }), {});
+  assert.deepEqual(runBirth({ birth: '2026-03', contract: '2026-03-01' }), {});
+  assert.deepEqual(runBirth({ birth: '2000-05', contract: '2026-03-01' }), {});
+  assert.deepEqual(runBirth({ birth: '', contract: '2026-03-01' }), {});
+});
+test('B9: 형식 오류 문구는 그대로, 계약일 오류면 이번 달 기준만 (예외)', () => {
+  assert.equal(runBirth({ birth: '2030-13', contract: '2026-03-01' }, { birth: '출생연월 형식이 맞지 않아요' }).birth, '출생연월 형식이 맞지 않아요');
+  assert.equal(runBirth({ birth: '2030-01', contract: '' }, { contract: '계약일을 넣어 주세요' }).birth, BIRTH_MSG);
+  assert.equal(runBirth({ birth: '2026-05', contract: '' }, { contract: '계약일을 넣어 주세요' }).birth, undefined);
+});
+test('B9: viewInput·viewResult가 각각 birthErr(err)를 1번 부르고 validate는 불변 (정적·회귀)', () => {
+  const vi = fnText('  function viewInput() {', '\n    var f = function');
+  const vr = fnText('  function viewResult() {', '\n    var R = evaluate()');
+  assert.equal(vi.split('birthErr(err);').length - 1, 1);
+  assert.equal(vr.split('birthErr(err);').length - 1, 1);
+  assert.deepEqual(JE.validate({ deposit: 1, rent: 1, term: 2, contract: '2026-03-01', move: '2026-03-10', birth: '2030-01' }), {});
+});
+
+// ---------- B10 올해가 아닌 미래 날짜에 연도 ----------
+const NOW = new Date(2026, 10, 16);
+// eslint-disable-next-line no-new-func
+const mdApp = new Function('WD', lineOf('  function md(d) {') + '\nreturn md;')(['일', '월', '화', '수', '목', '금', '토']);
+test('B10: yearDate — 다른 해는 연도 붙은 md 모양, 같은 해는 null (정상·경계)', () => {
+  assert.equal(typeof JS.yearDate, 'function');
+  assert.equal(JS.yearDate(new Date(2028, 10, 10), NOW), '2028.11.10(금)');
+  assert.equal(JS.yearDate(new Date(2025, 0, 5), NOW), '2025.' + mdApp(new Date(2025, 0, 5)));
+  assert.equal(JS.yearDate(new Date(2026, 11, 31), NOW), null);
+  for (let i = 0; i < 400; i += 37) { const d = new Date(2027, 0, 1 + i); assert.equal(JS.yearDate(d, NOW), d.getFullYear() + '.' + mdApp(d)); }
+});
+test('B10: yearDate — Date 아님·Invalid Date → null, 던지지 않음 (예외)', () => {
+  assert.equal(JS.yearDate(null, NOW), null);
+  assert.equal(JS.yearDate('2028-11-10', NOW), null);
+  assert.equal(JS.yearDate(new Date('x'), NOW), null);
+  assert.equal(JS.yearDate(new Date(2028, 0, 1), null), null);
+});
+test('B10: yearTasks — 다른 해 미래만 복사본 dueText, 나머지는 같은 참조, 원본 불변', () => {
+  const far = { id: 'o3', due: new Date(2028, 10, 10) }, legal = { id: 'q', due: new Date(2028, 0, 3), legal: new Date(2028, 0, 9) };
+  const same = { id: 'a', due: new Date(2026, 11, 1) }, past = { id: 'b', due: new Date(2025, 5, 1) }, none = { id: 'o1', due: null }, txt = { id: 'c', due: new Date(2028, 1, 1), dueText: 'x' };
+  const src = [far, legal, same, past, none, txt];
+  const out = JS.yearTasks(src, NOW);
+  assert.equal(out[0].dueText, '2028.11.10(금) · D-725');
+  assert.notEqual(out[0], far); assert.equal(far.dueText, undefined);
+  assert.match(out[1].dueText, /^2028\.1\.3\(월\) 권장 · D-\d+$/);
+  [2, 3, 4, 5].forEach((i) => assert.equal(out[i], src[i]));
+  assert.deepEqual(JS.yearTasks(null, NOW), []);
+  assert.deepEqual(JS.yearTasks('x', NOW), []);
+});
+test('B10: dueTag — 복사본 배지 색은 원본과 같고 글자는 연도만 붙음 (회귀 — dueTag 0줄)', () => {
+  // eslint-disable-next-line no-new-func
+  const dday = new Function('today', lineOf('  function dday(d) {') + '\nreturn dday;')(NOW);
+  // eslint-disable-next-line no-new-func
+  const dueTag = new Function('S', 'today', 'md', 'dday', fnText('  function dueTag(t) {', '\n  function openTasks(') + '\nreturn dueTag;')({ done: {} }, NOW, mdApp, dday);
+  [{ id: 'o3', due: new Date(2028, 10, 10) }, { id: 'u', urgent: true, due: new Date(2027, 2, 1) }, { id: 'l', due: new Date(2027, 2, 1), legal: new Date(2027, 2, 5) }].forEach((t) => {
+    const a = dueTag(t), b = dueTag(JS.yearTasks([t], NOW)[0]);
+    assert.equal(b[0], a[0]);
+    assert.equal(b[1], t.due.getFullYear() + '.' + a[1]);
+  });
+});
+test('B10: md·dueTag 정의 불변, viewMoveout·tlStage·moveoutChip 연결 (정적)', () => {
+  assert.equal(lineOf('  function md(d) {'), "  function md(d) { return (d.getMonth() + 1) + '.' + d.getDate() + '(' + WD[d.getDay()] + ')'; }");
+  assert.equal(lineOf('  function dueTag(t) {'), '  function dueTag(t) {');
+  assert.match(fnText('  function viewMoveout() {', '\n  // ---------- AI 자취 코치'), /\(JS && JS\.yearTasks \? JS\.yearTasks\(tasks, today\) : tasks\)\.map\(function \(t\) \{ return taskItem\(t\); \}\)/);
+  assert.match(fnText('    function tlStage(s, cls) {', '\n      return '), /\(JS && JS\.yearTasks \? JS\.yearTasks\(s\.tasks, today\) : s\.tasks\)\.map\(/);
+  const chip = fnText('  function moveoutChip(d) {', '\n  // 갱신 통지');
+  assert.match(chip, /y \+ '년<\/span>'/);
+  assert.match(chip, /aria-label="' \+ \(y \? y \+ '년 ' : ''\) \+ p\.label/);
+});
+test('B10: screens-core 요일 표가 app.html WD와 같은 값 (대조)', () => {
+  for (let i = 0; i < 7; i++) { const d = new Date(2030, 0, 6 + i); assert.equal(JS.yearDate(d, NOW).slice(-2, -1), mdApp(d).slice(-2, -1)); }
+});
