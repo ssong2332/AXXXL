@@ -192,3 +192,62 @@ test('R4: AMT_NOTE = {}; 정확히 5번, 각각 S 통째 대입 바로 뒤, 다�
   assert.equal(lineOf('  var AMT_NOTE = {};'), '  var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24');
   assert.match(lineOf('      if (!mine || S.demo) {'), /\{ S = clone\(DEMO\); save\(\); \}/);
 });
+
+// ---------- R5 금액 칸에 입력 원문 보이기 (DECISIONS #31) ----------
+const JSC = require('../demo/screens-core.js');
+const escR5 = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function makeAmt(S) {
+  const three = lineOf('  var AMT_NOTE = {};') + '\n' + lineOf('  function amtNote(k)') + '\n' + lineOf('  function amtVal(k, v)');
+  const sf = fnText('  function setField(t) {', '\n  document.addEventListener(\'submit\'');
+  const env = { saved: 0 };
+  // eslint-disable-next-line no-new-func
+  const r = new Function('esc', 'S', 'save', 'JS', three + '\n' + sf + '\nreturn { AMT_NOTE: AMT_NOTE, amtVal: amtVal, setField: setField };')(escR5, S || {}, () => env.saved++, JSC);
+  r.env = env;
+  r.set = (k, v) => r.setField({ value: v, dataset: { field: k }, hasAttribute: (a) => a === 'data-num' });
+  return r;
+}
+test('R5: 해석 실패 원문이 있으면 칸 값은 그 원문 (정상)', () => {
+  const r = makeAmt();
+  r.AMT_NOTE.deposit = '이천';
+  assert.equal(r.amtVal('deposit', 500), '이천');
+});
+test('R5: 기록 없음·빈 원문이면 지금 값 그대로 (경계)', () => {
+  const r = makeAmt();
+  assert.equal(r.amtVal('deposit', 500), '500');
+  assert.equal(r.amtVal('fee', ''), '');
+  r.AMT_NOTE.deposit = '';
+  assert.equal(r.amtVal('deposit', 500), '500');
+});
+test('R5: 원문은 이스케이프 — 속성 값 탈출 없음 (예외)', () => {
+  const r = makeAmt();
+  r.AMT_NOTE.rent = '"><b>';
+  assert.equal(r.amtVal('rent', 50), '&quot;&gt;&lt;b&gt;');
+});
+test('R5: setField 연결 — 이천이면 칸 이천·S 유지, 같은 값 500 재입력이면 칸 500·안내 삭제', () => {
+  const S = { deposit: 500 };
+  const r = makeAmt(S);
+  r.set('deposit', '이천');
+  assert.equal(r.amtVal('deposit', S.deposit), '이천');
+  assert.equal(S.deposit, 500);
+  assert.equal(r.env.saved, 0);
+  r.set('deposit', '500');
+  assert.equal(r.amtVal('deposit', S.deposit), '500');
+  assert.ok(!('deposit' in r.AMT_NOTE));
+  assert.equal(r.env.saved, 1);
+});
+test('R5: 세 num 줄 value 식 교체, 옛 식 0개, amtVal 호출 3곳+정의 1곳, 선언 줄 불변 (정적)', () => {
+  const nums = HTML.split('\n').filter((l) => /var num = function/.test(l) && /data-num/.test(l));
+  assert.equal(nums.length, 3);
+  assert.equal(nums.filter((l) => l.includes("value=\"' + amtVal(k, S[k]) + '\"")).length, 2);
+  assert.equal(nums.filter((l) => l.includes("value=\"' + amtVal(k, S[k] || '') + '\"")).length, 1);
+  nums.forEach((l) => {
+    assert.ok(!l.includes("value=\"' + S[k] + '\""), l);
+    assert.ok(!l.includes('esc(S[k])'), l);
+    assert.ok(!l.includes("value=\"' + (S[k] || '') + '\""), l);
+  });
+  assert.equal(HTML.split('amtVal(').length - 1, 4);
+  assert.equal(HTML.split('\n').filter((l) => /data-num\b/.test(l)).length, 5);
+  assert.equal(lineOf('  var AMT_NOTE = {};'), '  var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24');
+  assert.equal(lineOf('  function amtNote(k)'), "  function amtNote(k) { return AMT_NOTE[k] ? '<em class=\"s12\" style=\"color:var(--no);font-style:normal\" role=\"alert\">\\'' + esc(AMT_NOTE[k]) + '\\'은(는) 금액으로 읽지 못했어요. 숫자나 \\'1억 2천\\'처럼 넣어 주세요.</em>' : ''; }");
+  assert.equal(lineOf('    if (t.hasAttribute(\'data-num\')) {'), "    if (t.hasAttribute('data-num')) { if (JS && JS.parseAmount) { var a = JS.parseAmount(v); if (!a.ok) { AMT_NOTE[k] = String(v).slice(0, 20); return; } delete AMT_NOTE[k]; v = a.value; } else { var n = parseInt(String(v).replace(/[^0-9]/g, ''), 10); v = isNaN(n) ? 0 : n; } }");
+});

@@ -3423,7 +3423,7 @@ document.addEventListener('DOMContentLoaded', function () {
     moBegin('contract');
     var R = evaluate(), T = buildTimeline(R), P = phase(R), end = contractEnd();
     var f = function (lab, inner, wide) { return '<label class="field' + (wide ? ' mo-contract-wide' : '') + '"><span>' + lab + '</span>' + inner + '</label>'; };
-    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + S[k] + '"><em>' + unit + '</em></div>' + amtNote(k); };
+    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + amtVal(k, S[k]) + '"><em>' + unit + '</em></div>' + amtNote(k); };
     var GU = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
     var big = P.dm < 0 ? 'D-' + (-P.dm) : P.dm === 0 ? 'D-day' : (P.dm + 1) + '<small>일째</small>';
     return moRoot('contract', '<div class="page-head"><div><p class="eyebrow">내 주거 관리 · 계약 값은 조건 입력에서 고쳐요</p><h1>내 계약</h1></div><button type="button" class="btn line sm" data-act="reset">' + (S.demo ? '예시 처음 상태로' : '처음부터 다시 입력') + '</button></div>' +
@@ -3463,7 +3463,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var st = +S.obStep || 1, R = evaluate();
     moBeginStep('start', st);
     var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
-    var num = function (k, unit, ph) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + (S[k] || '') + '" placeholder="' + (ph || '0') + '"><em>' + unit + '</em></div>' + amtNote(k); };
+    var num = function (k, unit, ph) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + amtVal(k, S[k] || '') + '" placeholder="' + (ph || '0') + '"><em>' + unit + '</em></div>' + amtNote(k); };
     var steps = ['날짜', '금액', '집 위치', '나에 대해'], body = '';
     if (st === 1) body = '<h1>언제 계약하고, 언제 들어가요?</h1><p class="sub">이 두 날짜로 전월세 신고·전입신고 기한과 할 일 날짜를 계산해요.</p><div class="form-grid">' +
       f('계약일 (계약서 쓴 날 · 예정이면 예정일)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">') + f('입주일 (잔금 내고 이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">') +
@@ -3515,7 +3515,7 @@ document.addEventListener('DOMContentLoaded', function () {
     moBegin('input');
     var err = inputErr();
     var f = function (lab, inner, k, hint) { return '<label class="field' + (INPUT_WIDE[k] ? ' mo-input-wide' : '') + '"><span>' + lab + '</span>' + inner + (err[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">' + err[k] + '</em>' : hint ? '<em class="s12 muted" style="font-style:normal">' + hint + '</em>' : '') + '</label>'; };
-    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + esc(S[k]) + '"' + (err[k] ? ' aria-invalid="true"' : '') + '><em>' + unit + '</em></div>' + amtNote(k); };
+    var num = function (k, unit) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + amtVal(k, S[k]) + '"' + (err[k] ? ' aria-invalid="true"' : '') + '><em>' + unit + '</em></div>' + amtNote(k); };
     var sel = function (k, opts) { return '<select class="inp" data-field="' + k + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(S[k] == null ? '' : S[k]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; };
     // '아직 안 정함'(값 없음)과 '잘 모르겠어요'(모른다고 답함)는 다르다. 값이 없을 때 '예'가 골라진 것처럼 보이지 않게 맨 앞에 둔다
     var yn = [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']];
@@ -3866,6 +3866,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('input', function (e) { var t = e.target; if (t.id === 'q') updateSearch(t.value); else if (t.dataset.field && t.hasAttribute('data-num')) setField(t); });
   var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24
   function amtNote(k) { return AMT_NOTE[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">\'' + esc(AMT_NOTE[k]) + '\'은(는) 금액으로 읽지 못했어요. 숫자나 \'1억 2천\'처럼 넣어 주세요.</em>' : ''; }
+  function amtVal(k, v) { return esc(AMT_NOTE[k] ? AMT_NOTE[k] : v); }
   function setField(t) {
     var k = t.dataset.field, v = t.value;
     if (t.hasAttribute('data-num')) { if (JS && JS.parseAmount) { var a = JS.parseAmount(v); if (!a.ok) { AMT_NOTE[k] = String(v).slice(0, 20); return; } delete AMT_NOTE[k]; v = a.value; } else { var n = parseInt(String(v).replace(/[^0-9]/g, ''), 10); v = isNaN(n) ? 0 : n; } }
