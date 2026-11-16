@@ -1634,7 +1634,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var SP_TABS = SP.CATS.concat([['welfare', '지역 복지'], ['lh', '다음 집']]);
   // ask = 아직 답하지 않은 질문만 남음. '확인 필요'(공고에서 직접 봐야 하거나 '모름'이라고 답함)와 따로 보여 준다
   var SPV = { ok: ['brand', '해당 가능', '✓', 'ok'], q: ['due', '확인 필요', '?', 'q'], ask: ['', '답하면 판정', '?', 'a'], no: ['no', '해당 안 됨', '✕', 'x'] };
-  // 무주택·중복 수혜 답은 조건 입력 화면과 같은 S.homeless·S.dup 하나만 쓴다 ('yes'·'no'·'unknown'=모른다고 답함, 값 없음=아직 안 답함)
+  // 무주택·중복 수혜는 조건 입력과 같은 S.homeless·S.dup ('unknown'=모른다고 답함, 값 없음=아직 안 답함)
   var SP_YN = { homeless: { yes: '집 없음', no: '집 있음', unknown: '모름' }, dup: { yes: '받고 있음', no: '받고 있지 않음', unknown: '모름' } };
   var SP_CHIP = { homeless: { yes: '무주택', no: '집 있음', unknown: '무주택 여부 모름' }, dup: { yes: '비슷한 주거 지원 받는 중', no: '비슷한 주거 지원 안 받음', unknown: '중복 수혜 여부 모름' } };
   var SUP = { youth: {}, wf: {}, lh: {}, spl: {}, holi: {} };
@@ -1698,13 +1698,14 @@ document.addEventListener('DOMContentLoaded', function () {
       })(ids);
     }
   }
-  var NT_WHY = { nolink: '등록 자료에 공고로 바로 가는 주소가 없어요.', unreachable: '공고 페이지가 열리지 않았어요.', unrelated: '연결된 주소가 이 사업의 공고 페이지가 아니었어요.', notstated: '공고 페이지에 접수 기간이 글로 적혀 있지 않아요. 첨부 파일이나 그림에만 있을 수 있어요.', stale: '연결된 공고가 지난 해 것이에요.', ambiguous: '한 페이지에 기간이 여러 개라 어느 것인지 가려내지 못했어요.' };
+  // 공고에서 기간을 읽지 못한 까닭 (경고가 아니라 안내로)
+  var NT_WHY = { nolink: '등록 자료에 공고 주소가 따로 없어요.', unreachable: '기관 공고 페이지가 이 서비스에서 바로 열리지 않아요.', unrelated: '등록된 주소가 이 사업 공고로 바로 연결되지 않아요.', notstated: '공고 본문에 기간이 글로 적혀 있지 않아요. 첨부 파일이나 그림에 있을 수 있어요.', stale: '연결된 공고가 지난해 것이라 올해 기간과 다를 수 있어요.', ambiguous: '공고에 기간이 여러 개 적혀 있어 어느 것이 접수 기간인지 직접 봐 주세요.' };
   function ntDay(s) { return s ? s.slice(0, 4) + '.' + +s.slice(4, 6) + '.' + +s.slice(6, 8) : ''; }
   function spPeriod(row) {
     var it = row.it, st = row.st, n = it.notice || {}, left = SP.leftText(st), nl = SP.noticeLink(it, n), go = nl.kind === 'notice';
-    // 기관 첫 화면으로는 보내지 않는다. 공고 주소가 없으면 온통청년의 이 정책 상세 화면으로 간다 (SP.noticeLink)
+    // 공고 주소가 없으면 온통청년 상세 화면으로 (SP.noticeLink)
     var link = function (label) { return '<a class="sp-get" href="' + esc(nl.url) + '" target="_blank" rel="noopener">' + (go ? label : '온통청년에서 이 정책 공고 보기') + ' ↗</a>'; };
-    var h = '<div class="sp-sec"><h3>접수 기간<small>' + (st.sure ? (st.src === 'notice' ? '공고 원문에서 확인했어요' : st.src === 'text' ? '등록된 안내 글에서 읽었어요' : '온통청년 등록 기준') : st.pending ? '공고를 확인하는 중' : '공고에서 확인하지 못했어요') + '</small></h3>';
+    var h = '<div class="sp-sec"><h3>접수 기간<small>' + (st.sure ? (st.src === 'notice' ? '공고 원문에서 확인했어요' : st.src === 'text' ? '등록된 안내 글에서 읽었어요' : '온통청년 등록 기준') : st.pending ? '공고를 확인하는 중' : st.k === 'always' && n.why === 'notstated' ? '온통청년 등록 기준' : '공고 확인 필요') + '</small></h3>';
     if (st.pending) return h + '<p class="sub">공고 페이지를 열어 접수 기간을 읽고 있어요. 잠시만 기다려 주세요.</p></div>';
     if (st.sure) {
       h += '<p class="sp-per"><b>' + esc(st.text) + '</b>' + (left ? '<span class="sp-hot"> · ' + left + '</span>' : '') + '</p>';
@@ -1714,11 +1715,12 @@ document.addEventListener('DOMContentLoaded', function () {
       if (st.long) h += '<p class="sp-note">접수 기간이 반년을 넘어요. 예산이 떨어지면 일찍 끝날 수 있으니 공고를 확인해 주세요.</p>';
       return h + '</div>';
     }
-    var reg = SP.regText(it);
-    // 공고 페이지는 열렸는데 기간이 따로 없고, 등록도 상시인 사업: 실패가 아니라 '상시로 보임'으로 알려 준다
-    if (st.k === 'always' && n.why === 'notstated') return h + '<p class="sp-per"><b>상시 접수로 등록돼 있어요</b></p><p class="s13 sub">공고 페이지에 접수 기간이 따로 적혀 있지 않아요. 예산이 떨어지면 일찍 끝날 수 있으니 신청 전에 공고를 확인해 주세요.</p><div style="margin-top:10px">' + link('공고 보기') + '</div></div>';
-    return h + '<div class="banner due">' + ic('info') + '<span><b>정확한 접수 기간을 공고에서 읽지 못했어요.</b> ' + esc(NT_WHY[n.why] || NT_WHY.notstated) + ' 신청 전에 공고에서 기간을 꼭 확인해 주세요.</span></div>' +
-      (reg ? '<p class="sp-note">온통청년에 등록된 값: ' + esc(reg) + (SP.regLoose(it) ? ' · 사업 기간을 그대로 넣은 값으로 보여서 마감일로 쓰지 않았어요.' : ' · 공고와 맞춰 보지 못해 마감일로 쓰지 않았어요.') + '</p>' : '') +
+    var reg = SP.regText(it), why = esc(NT_WHY[n.why] || NT_WHY.notstated);
+    // 상시 등록 + 공고에도 기간이 없음 → '상시 접수'
+    if (st.k === 'always' && n.why === 'notstated') return h + '<p class="sp-per"><b>상시 접수로 등록돼 있어요</b></p><p class="s13 sub">공고 페이지에도 접수 기간이 따로 적혀 있지 않아요. 예산이 떨어지면 일찍 끝날 수 있으니 신청 전에 공고를 확인해 주세요.</p><div style="margin-top:10px">' + link('공고 보기') + '</div></div>';
+    // 그 밖에 기간을 못 읽은 사업(상시 등록 포함): 할 일(공고 확인)을 먼저, 까닭은 작게
+    return h + '<p class="sp-per"><b>접수 기간은 공고에서 확인해 주세요</b></p><p class="s13 sub">' + why + '</p>' +
+      (reg ? '<p class="sp-note">온통청년에 등록된 값: ' + esc(reg) + (st.k === 'always' ? ' · 상시로 등록된 사업도 공고에는 기간이 정해져 있는 경우가 많아 그대로 쓰지 않았어요.' : SP.regLoose(it) ? ' · 사업 기간을 그대로 넣은 값으로 보여서 마감일로 쓰지 않았어요.' : ' · 공고와 맞춰 보지 못해 마감일로 쓰지 않았어요.') + '</p>' : '') +
       '<div style="margin-top:10px">' + link('공고에서 기간 확인하기') + '</div></div>';
   }
   function supFetch(kind, key, url, again) {
@@ -1739,7 +1741,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function houseInc() { var u = sup(); return !u.hh ? undefined : u.hh === 1 ? u.minc : u.hinc; }
   // 소득을 알려 주면 승인 공고가 쓰는 소득 구간(100%·150%)도 같이 맞춘다
   function syncIncome() { var u = sup(), v = houseInc(); if (u.hh && v !== undefined) { var pct = v * 10000 / SP.median(u.hh) * 100; S.income = pct <= 100 ? '100' : pct <= 150 ? '150' : 'over'; } }
-  // 나이는 조건 입력·내 계약과 같은 기준(출생연월 → 계약일 기준 만 나이, curAge)을 쓴다. 생일 달이라 정할 수 없으면 0 + birth
+  // 나이는 조건 입력·내 계약과 같은 curAge. 생일 달이라 정할 수 없으면 0 + birth
   function supUser() { var u = sup(), r = regionOf(); return { age: curAge() || 0, birth: S.birth || '', zip: r.zip, region: regionName(r), mrg: u.mrg, job: u.job, school: u.school, minc: u.minc, hh: u.hh, hinc: u.hinc, traits: u.traits, homeless: S.homeless || undefined, deposit: +S.deposit || 0, rent: +S.rent || 0, earn: u.minc === undefined ? 0 : u.minc * 12 }; }
   function scopeLabel(it, r) { return it.scope === 'sgg' ? r.sgg + ' 거주' : it.scope === 'sido' ? r.sido + ' 거주' : it.scope === 'multi' ? '여러 지역 대상 (내 지역 포함)' : '전국 대상'; }
   function restNote(d) {
@@ -1766,14 +1768,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     var v = x.closed ? 'no' : SP.verdict(res), p = x.p;
     return { kind: 'approved', key: 'ap-' + p.id, name: p.name, one: p.amountText, org: p.org, v: v, conds: res, p: p, x: x, kd: SP.kindOf({ name: p.name + ' ' + p.amountText }), why: p.demo ? '' : '담당자 확인 완료', demo: !!p.demo, score: 300,
-      // 상태 이름은 rules-core.js STATUS에서 정한다 (11/11 PR #16에서 '모집 예정' → '다음 공고 대기'). 글자로 비교하지 않는다
+      // 상태 이름은 글자로 비교하지 않고 rules-core.js STATUS를 쓴다
       st: { k: x.closed ? 'ended' : p.status === JachwiRules.STATUS.wait ? 'soon' : p.periodEnd ? 'open' : 'always', text: p.status + (p.period ? ' · ' + p.period : ''), left: p.periodEnd ? Math.round((pd(p.periodEnd) - today) / 86400000) : 0, to: p.periodEnd ? pd(p.periodEnd) : null, far: !!p.periodEnd && Math.round((pd(p.periodEnd) - today) / 86400000) > 365 }, sort: (x.closed ? 3e6 : 0) - 1e7 };
   }
   function rowYouth(it, user, r, ctx) {
     var lab = scopeLabel(it, r), conds = SP.check(it, user, lab), st = SP.statusAt(it, today), v = st.k === 'ended' ? 'no' : SP.verdict(conds);
     // 등록 정보에 대상 지역만 있으면 '맞음'이라고 하지 않는다. 개인이 신청하는 지원(보조금·바우처·대출 등)을 앞에 둔다.
     var plain = conds.length < 2 && st.k !== 'ended', personal = /보조금|바우처|대출|보험|조세|프로그램/.test(it.method);
-    // 다른 지자체가 '전국 대상'으로 등록한 사업은 서버에서 이미 뺐다 (SP.forRegion). 여기 오는 것은 중앙부처·내 시·도·내 시·군·구 사업뿐이다
+    // 다른 지역 사업은 서버에서 이미 뺐다 (SP.forRegion)
     var away = false;
     var kd = SP.kindOf(it), fit = SP.relevance(it, ctx, kd, away);
     // 순서 점수: 내 상황과의 관련(형태·키워드·지역) + 조건 대조 결과 + 접수 상태
@@ -1858,7 +1860,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var c = row.conds, n = c.length, yes = c.filter(function (x) { return x.ok === true; }).length, asks = c.filter(function (x) { return x.ask; }).length, bad = c.filter(function (x) { return x.ok === false; })[0];
     var head = row.st && row.st.k === 'ended' ? ['지금은 신청할 수 없어요', row.st.text + '. 다음 공고가 등록되면 이 화면에 다시 나와요.']
       : row.v === 'no' ? ['지금은 받기 어려워요', '‘' + bad.label + '’ 조건이 맞지 않아요.' + (bad.mine ? ' (내 정보: ' + bad.mine + ')' : '')]
-      : row.plain ? ['조건은 공고에서 확인해 주세요', '등록 정보에는 대상 지역만 적혀 있어요. 나이·소득 같은 조건은 아래 ‘공고에 적힌 추가 조건’과 공고를 봐 주세요. ' + row.st.text + '.']
+      : row.plain ? ['조건은 공고에서 확인해 주세요', '등록 정보에는 대상 지역만 적혀 있어요. 나이·소득 같은 조건은 아래 ‘공고에 적힌 추가 조건’과 공고를 봐 주세요. ' + (row.st.sure || row.st.pending || /^상시/.test(row.st.text) ? row.st.text + '.' : '접수 기간도 공고에서 확인해 주세요.')]
       : row.v === 'ok' ? [row.kind === 'youth' ? '등록된 조건이 모두 맞아요' : '조건이 모두 맞아요', okSay]
       : ['조건 ' + n + '개 중 ' + yes + '개가 맞아요', row.v === 'ask' ? '아래 질문 ' + asks + '개만 답하면 바로 알려 드려요.' : (asks ? '아래 질문 ' + asks + '개에 답해도 확인할 것이 남아요. ' : '') + spOpenSay(c)];
     var tone = row.plain && row.v === 'ok' ? ['x', 'i'] : [SPV[row.v][3], SPV[row.v][2]];
@@ -1990,7 +1992,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     var selRow = rows.filter(function (x) { return x.key === u.sel; })[0] || rows.filter(function (x) { return x.v !== 'no'; })[0] || rows[0];
     if (selRow && selRow.key !== u.sel) { u.sel = selRow.key; listHtml = listHtml.split('data-v="' + esc(selRow.key) + '" aria-current="false"').join('data-v="' + esc(selRow.key) + '" aria-current="true"'); }
-    // 이번에 할 일: 받을 수 있어 보이는 것 중 마감이 가장 가까운 것. 시연용 예시 공고는 실제 접수 일정이 아니라서 넣지 않는다
+    // 이번에 할 일: 받을 수 있어 보이는 것 중 마감이 가장 가까운 것 (시연용 예시 공고는 뺌)
     var hot = (all || rows).filter(function (x) { return x.v && x.v !== 'no' && !x.plain && !x.demo && x.score > 40 && x.st && x.st.k === 'open' && x.st.sure !== false && x.st.left >= 0 && !x.st.far && !x.st.long; }).sort(function (x, y) { return x.st.left - y.st.left; })[0];
     var hero = hot ? '<section class="sp-todo"><div><small>' + (hot.st.left ? hot.st.left + '일 남았어요' : '오늘 마감이에요') + '</small><b>' + esc(hot.name) + '</b><span>' + esc(hot.st.text) + (hot.v === 'ok' ? ' · 조건이 맞아요' : hot.v === 'ask' ? ' · 질문 몇 개만 답하면 알려 드려요' : ' · 조건을 조금만 더 확인하면 돼요') + '</span></div><button type="button" class="btn" data-sp="pick" data-v="' + esc(hot.key) + '">자세히 보기</button></section>' : '';
     var tabs = '<div class="cats sp-tabs" role="group" aria-label="지원 종류">' + SP_TABS.map(function (t) { return '<button type="button" class="cat" data-sp="tab" data-v="' + esc(t[0]) + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + (counts && counts[t[0]] !== undefined ? ' <i>' + counts[t[0]] + '</i>' : '') + '</button>'; }).join('') + '</div>';

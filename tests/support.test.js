@@ -105,6 +105,30 @@ test('접수 상태: 공고로 확인 못 하면 마감일을 말하지 않는�
   assert.equal(S.statusAt(Object.assign(S.normalize(raw()), { notice: { state: 'pending' } }), on).text, '접수 기간 확인 중');
 });
 
+test("접수 상태 문구: 못 읽었다고 하지 않고 '공고에서 확인'으로, 상시는 공고에도 기간이 없을 때만 말한다", () => {
+  const on = day('20261111'), al = () => S.normalize(raw({ aplyPrdSeCd: '0057002', aplyYmd: '' }));
+  const at = (it, notice) => S.statusAt(notice ? Object.assign(it, { notice }) : it, on);
+  // 등록 기간을 믿을 수 없고 공고에서도 못 읽음
+  assert.equal(at(S.normalize(raw({ aplyYmd: '20260101 ~ 20261231' })), { state: 'none', why: 'unrelated' }).text, '접수 기간은 공고에서 확인');
+  // 상시 등록 + 공고 페이지에 기간이 글로 없음 → 상시로 보여 준다
+  const quiet = at(al(), { state: 'none', why: 'notstated' });
+  assert.deepEqual([quiet.k, quiet.sure, quiet.text], ['always', false, '상시 접수(온통청년 등록 기준)']);
+  // 상시 등록이라도 공고를 못 열었거나 주소가 없으면 '상시'라고 하지 않는다
+  ['nolink', 'unreachable', 'unrelated', 'stale', 'ambiguous'].forEach((why) => {
+    const st = at(al(), { state: 'none', why });
+    assert.deepEqual([st.k, st.text], ['always', '접수 기간은 공고에서 확인'], why);
+  });
+  assert.equal(at(al()).text, '접수 기간은 공고에서 확인'); // 아직 공고를 열기 전
+  // 읽는 중이면 등록 종류와 상관없이 '확인 중'
+  assert.deepEqual([at(al(), { state: 'pending' }).k, at(al(), { state: 'pending' }).text], ['always', '접수 기간 확인 중']);
+});
+
+test("등록 주소의 '&amp;'는 '&'로 풀어서 연다", () => {
+  const it = S.normalize(raw({ refUrlAddr2: 'https://x.go.kr/boardView.do?pageId=1&amp;boardId=2&amp;seq=3' }));
+  assert.deepEqual(it.notices, ['https://x.go.kr/boardView.do?pageId=1&boardId=2&seq=3']);
+  assert.equal(S.normalize(raw({ aplyUrlAddr: 'https://x.go.kr/a.do?b=1&AMP;c=2' })).url, 'https://x.go.kr/a.do?b=1&c=2');
+});
+
 test('나이 경계: 하한·상한 당일은 맞고 하루 차이는 안 맞는다', () => {
   const it = S.normalize(raw());
   const v = (age) => S.verdict(S.check(it, me({ age }), '수원시 거주'));
