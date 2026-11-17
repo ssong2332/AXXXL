@@ -2605,14 +2605,14 @@ document.addEventListener('DOMContentLoaded', function () {
     ['FD6', 'food', 2, 1], ['CE7', 'cafe', 2, '카페'], ['CS2', 'life', 1, '편의점'], ['MT1', 'life', 1, '마트'],
     ['HP8', 'medical', 1, -1], ['PM9', 'medical', 1, '약국'], ['SW8', 'transit', 1, '지하철역'], ['PO3', 'public', 1, -1],
     ['기차역', 'transit', 1, '기차역', /기차역/, /역$/], ['스터디카페', 'study', 1, '스터디카페', /스터디|독서실/], ['도서관', 'study', 1, '도서관', /도서관/],
-    ['헬스장', 'gym', 1, '헬스장', /헬스|피트니스|체육관|수영/], ['공원', 'park', 1, '공원', /공원/], ['빨래방', 'life', 1, '빨래방·세탁소', /빨래|세탁/], ['시장', 'life', 1, '시장', /전통시장|> 시장/]
+    ['헬스장', 'gym', 1, '헬스장', /헬스|피트니스|체육관|수영/], ['공원', 'park', 1, '공원', /공원/], ['빨래방', 'life', 1, '빨래방·세탁소', /빨래|세탁/], ['시장', 'life', 1, '시장', /전통시장|> 시장/], ['다이소', 'life', 1, '다이소', /다이소/], ['드럭스토어', 'life', 1, '드럭스토어', /드럭스토어/]
   ];
   var KAKAO_SRC = { name: '카카오맵 장소 검색', url: 'https://map.kakao.com', license: '카카오 지도 API' };
   // 동네봇·물어보기가 밝히는 장소 출처: 실제로 받아 온 곳(카카오맵·공공데이터포털 등). 없으면 OpenStreetMap
   function placeSrcName() { var n = (DATA.sources || []).map(function (x) { return x && x.name; }).filter(Boolean); return n.length ? n.map(function (x) { return x.replace(/ 장소 검색$/, ''); }).join(' · ') : 'OpenStreetMap'; }
   // v7: 기차역을 검색어 '역' 대신 '기차역'으로 찾음 — '역'으로는 가까운 15곳이 '○○역점' 가게·출구로 차서 수원역(KTX) 같은 기차역이 빠졌다
-  var KPLACES_LS = 'jachwi-places-kakao-v10';   // v10: 카카오 분류 전체(cn) 저장 — 동네봇이 브랜드·프랜차이즈를 가려내려고   // v9: 전화번호·버스 도착 정보용 정류장 번호 포함   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리, v8: 버스정류장을 못 받은 결과는 저장하지 않음(v7에 남은 것 버림)
-  try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
+  var KPLACES_LS = 'jachwi-places-kakao-v11';   // v11: 생활 편의에 다이소·드럭스토어(올리브영 등) 추가   // v10: 카카오 분류 전체(cn) 저장 — 동네봇이 브랜드·프랜차이즈를 가려내려고   // v9: 전화번호·버스 도착 정보용 정류장 번호 포함   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리, v8: 버스정류장을 못 받은 결과는 저장하지 않음(v7에 남은 것 버림)
+  try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
   function kakaoItem(d, q) {
     var seg = String(d.category_name || '').split(' > '), cat = q[1], sub = typeof q[3] === 'number' ? (q[3] < 0 ? seg[seg.length - 1] : seg[q[3]] || seg[seg.length - 1]) : q[3];
     if (cat === 'public' && /경찰/.test(d.category_name)) cat = 'safety';   // 공공기관 중 지구대·치안센터는 '안전'
