@@ -25,7 +25,7 @@ async function readOne(it) {
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const zip = String(req.query.zip || ''), ids = String(req.query.ids || '').split(',').filter((x) => /^\w{6,40}$/.test(x)).slice(0, 12);
-  if (!/^\d{5}$/.test(zip) || !ids.length) return O.send(res, 400, { ok: false, error: '요청을 확인해 주세요.' });
+  if (!support.isZip(zip) || !ids.length) return O.send(res, 400, { ok: false, error: '요청을 확인해 주세요.' });
   const key = process.env.YOUTH_API_KEY;
   if (!key) return O.send(res, 200, { ok: false, reason: 'nokey' });
   if (O.limited(req, 'period', 240, 60000)) return O.send(res, 429, { ok: false, error: '잠시 뒤 다시 시도해 주세요.' });

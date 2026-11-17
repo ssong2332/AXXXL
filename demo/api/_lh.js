@@ -8,13 +8,14 @@ const REGIONS = require('../data/regions.js');
 const SIDO = REGIONS.map((r) => r[0]);
 const LIVE = /공고중|접수중/;
 
-function ymd(d) { return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); }
+// 공고 날짜는 한국 날짜로 센다. 서버(UTC)의 날짜를 쓰면 오전 9시 전에는 하루 전이라 오늘 올라온 공고가 빠진다
+function kstYmd(ms) { const d = new Date(ms + 9 * 3600e3); return d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, '0') + String(d.getUTCDate()).padStart(2, '0'); }
 function rowsOf(j, name) { let out = []; (Array.isArray(j) ? j : []).forEach((d) => { if (d && Array.isArray(d[name])) out = out.concat(d[name]); }); return out; }
 function lhUrl(u) { return /^https:\/\/apply\.lh\.or\.kr\//.test(String(u || '')) ? u : 'https://apply.lh.or.kr'; }
 
 async function loadList(key) {
-  const to = new Date(), from = new Date(Date.now() - 90 * 864e5);
-  const j = await O.getJson('https://apis.data.go.kr/B552555/lhLeaseNoticeInfo1/lhLeaseNoticeInfo1?serviceKey=' + key + '&PG_SZ=500&PAGE=1&UPP_AIS_TP_CD=06&PAN_ST_DT=' + ymd(from) + '&PAN_ED_DT=' + ymd(to), 20000);
+  const now = Date.now();
+  const j = await O.getJson('https://apis.data.go.kr/B552555/lhLeaseNoticeInfo1/lhLeaseNoticeInfo1?serviceKey=' + key + '&PG_SZ=500&PAGE=1&UPP_AIS_TP_CD=06&PAN_ST_DT=' + kstYmd(now - 90 * 864e5) + '&PAN_ED_DT=' + kstYmd(now), 20000);
   return rowsOf(j, 'dsList').filter((r) => LIVE.test(r.PAN_SS || '')).map((r) => ({
     id: String(r.PAN_ID || ''), name: String(r.PAN_NM || '').slice(0, 120), type: r.AIS_TP_CD_NM || '', sido: r.CNP_CD_NM || '', state: r.PAN_SS || '',
     posted: String(r.PAN_NT_ST_DT || ''), close: String(r.CLSG_DT || ''), url: lhUrl(r.DTL_URL), spl: r.SPL_INF_TP_CD || '', ccr: r.CCR_CNNT_SYS_DS_CD || '', ais: r.AIS_TP_CD || ''
@@ -51,3 +52,4 @@ module.exports = async (req, res) => {
     return O.send(res, 502, { ok: false, reason: 'upstream', error: 'LH 공고를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.' });
   }
 };
+module.exports.kstYmd = kstYmd;
