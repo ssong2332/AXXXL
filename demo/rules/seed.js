@@ -365,7 +365,7 @@
       },
       move: {
         id: 'move', version: 2, basis: '2026.08.18', approvedAt: '2026-11-15T21:05:00+09:00', approvedBy: '운영팀', real: true,
-        source: { name: '서울시 청년몽땅정보통 안내 · 2026-11-13 수집', url: 'https://youth.seoul.go.kr/youthConts.do?key=2310100044' }, sourceText: MOVE_SRC,
+        source: { name: '서울시 청년몽땅정보통 안내 · 2026-11-13 수집', url: 'https://youth.seoul.go.kr/youthConts.do?key=2310100044&sc_pbancSeCd=015' }, sourceText: MOVE_SRC,
         fields: {
           name: gm('청년 부동산 중개보수·이사비 지원', '2026년 청년 부동산 중개보수 및 이사비 지원사업'),
           org: gm('서울특별시', '2024.1.1.이후 서울시로 전입'),
@@ -375,7 +375,7 @@
           period_start: gm('2026-08-18', '2026. 8. 18.(화)'),
           period_end: gm('2026-08-31', '2026. 8. 18.(화)'),
           select: gm('사회적 약자 및 주거취약청년 우선 선발 후 소득 낮은 순 선정', '사회적 약자 및 주거취약청년 우선 선발 후'),
-          url: gm('https://youth.seoul.go.kr/youthConts.do?key=2310100044', '2026년 청년 부동산 중개보수 및 이사비 지원사업'),
+          url: gm('https://youth.seoul.go.kr/youthConts.do?key=2310100044&sc_pbancSeCd=015', '2026년 청년 부동산 중개보수 및 이사비 지원사업'),
           age_min: gm(19, ': 2026년 기준 만 19~39세'),
           age_max: gm(39, ': 2026년 기준 만 19~39세'),
           income_pct: gm(150, ': 가구당 기준 중위소득 150% 이하'),
