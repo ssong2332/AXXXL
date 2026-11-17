@@ -181,7 +181,8 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: '응답을 읽지 못했어요.' }; }).then(function (j) { j._status = r.status; return j; }); });
   }
   function boot() {
-    api('GET', '/api/admin').then(function (j) {
+    // 저장된 운영자 코드가 없으면 데이터 대신 설정 여부만 묻는다(?probe=1 → 200). 코드가 있으면 바로 불러온다
+    (A.token ? api('GET', '/api/admin') : api('GET', '/api/admin?probe=1').then(function (j) { return j.configured === false ? { ok: false, _status: 503 } : { ok: false, _status: 401 }; })).then(function (j) {
       if (j.ok) { A.mode = 'server'; A.st = { published: j.published, drafts: j.drafts, unanswered: j.unanswered }; A.storage = j.storage; A.ai = j.ai; A.serverConfigured = true; }
       else if (j._status !== 401) { startLocal(); }
       else { A.serverConfigured = true; A.mode = 'login'; if (A.token) A.err = j.error || ''; A.token = ''; ss('jachwi-admin-token', null); }
@@ -260,15 +261,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var body = '';
     if (t === 'sample') body = '<div class="grid">' + SAMPLES.map(function (s) {
       var prev = notices()[s.noticeId];
-      return '<section class="card c4 stack"><div class="row"><span class="badge">' + (prev ? '기존 공고 v' + prev.version + '의 새 버전' : '새 공고') + '</span>' + (s.real ? '<span class="badge ok">실제 안내문</span>' : '<span class="badge">시연용 예시</span>') + '</div><h2>' + esc(s.title) + '</h2>' + (s.real ? '<a class="s12" href="' + esc(J.safeUrl(s.source.url)) + '" target="_blank" rel="noopener">' + esc(s.source.name) + ' ↗</a>' : '') + '<p class="s13 muted">' + esc(s.hint) + '</p><pre class="srcbox" style="max-height:140px">' + esc(s.text.slice(0, 400)) + '…</pre><button class="btn" data-act="extract-sample" data-v="' + s.id + '"' + (busy ? ' disabled' : '') + '>이 공고 추출하기</button></section>';
-    }).join('') + '</div><p class="s12 muted" style="margin-top:10px">‘시연용 예시’는 시연을 위해 만든 공고, ‘실제 안내문’은 서울시·부산시 홈페이지에 게시된 안내문을 그대로 옮긴 거예요(2026-11-13 수집, 출처는 공고 이름 아래 링크).</p>';
+      return '<section class="card c4 stack"><div class="row"><span class="badge">' + (prev ? '기존 공고 v' + prev.version + '의 새 버전' : '새 공고') + '</span>' + (s.real ? '<span class="badge ok">실제 안내문</span>' : '<span class="badge">연습용 가상 공고</span>') + '</div><h2>' + esc(s.title) + '</h2>' + (s.real ? '<a class="s12" href="' + esc(J.safeUrl(s.source.url)) + '" target="_blank" rel="noopener">' + esc(s.source.name) + ' ↗</a>' : '') + '<p class="s13 muted">' + esc(s.hint) + '</p><pre class="srcbox" style="max-height:140px">' + esc(s.text.slice(0, 400)) + '…</pre><button class="btn" data-act="extract-sample" data-v="' + s.id + '"' + (busy ? ' disabled' : '') + '>이 공고 추출하기</button></section>';
+    }).join('') + '</div><p class="s12 muted" style="margin-top:10px">‘연습용 가상’은 검수 연습을 위해 만든 가상 공고(실제 공고 아님), ‘실제 안내문’은 서울시·부산시 홈페이지에 게시된 안내문을 그대로 옮긴 거예요(2026-11-13 수집, 출처는 공고 이름 아래 링크).</p>';
     else if (t === 'youth') body = viewYouth(busy);
     else body = '<section class="card stack"><div class="grid"><label class="field c7">공고 이름이나 출처<input class="inp" id="nsrc" placeholder="예: 서울주거포털 · 2026 청년월세 2차 공고" maxlength="120"></label><label class="field c5">원문 주소 (선택)<input class="inp" id="nurl" placeholder="https://" maxlength="300"></label></div>' +
       '<label class="field">공고 원문<textarea class="inp" id="ntext" rows="14" placeholder="공고문 전체나 지원 대상·지원 내용·접수 기간·제출 서류 부분을 붙여 넣으세요"></textarea></label>' +
       '<div class="row"><label class="btn ghost">파일에서 불러오기 (PDF · HWPX · TXT)<input type="file" accept=".pdf,.hwpx,.txt,text/plain,application/pdf" data-act="file" hidden></label><span class="s12 muted" id="fileinfo">HWP(구형 한글 파일)는 한글에서 HWPX나 PDF로 저장해 올려 주세요. 파일은 이 브라우저에서 글자만 뽑고, 원문 글자만 서버로 보내요.</span></div>' +
       '<div class="row"><button class="btn" data-act="extract-text"' + (busy ? ' disabled' : '') + '>추출하기</button><span class="s12 muted">' + (A.mode === 'server' && A.ai ? 'Claude로 추출해요. 실패하면 내장 AI가 대신해요.' : '내장 AI가 이 기기 안에서 추출해요. 원문은 서버로 가지 않아요.') + '</span></div></section>';
     return head('공고 검수', '새 공고 추출') +
-      '<div class="tabs" role="tablist">' + [['sample', '시연 공고로 해 보기'], ['youth', '온통청년에서 불러오기'], ['paste', '원문 붙여넣기 · 파일']].map(function (x) { return '<button class="tab" role="tab" aria-selected="' + (t === x[0]) + '" data-act="tab" data-k="new" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="tabs" role="tablist">' + [['sample', '연습 공고로 해 보기'], ['youth', '온통청년에서 불러오기'], ['paste', '원문 붙여넣기 · 파일']].map(function (x) { return '<button class="tab" role="tab" aria-selected="' + (t === x[0]) + '" data-act="tab" data-k="new" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       (busy ? '<div class="banner" style="margin-bottom:14px;flex-direction:column;gap:6px"><div class="row"><span class="spin"></span><b>' + (A.exMode === 'ai' ? 'Claude가' : '내장 AI가') + ' 공고를 읽고 있어요</b></div><ol class="s13" style="margin:0;padding-left:20px">' + (A.exSteps || []).slice(0, A.exN || 0).map(function (x) { return '<li>' + esc(x) + ' ✓</li>'; }).join('') + '</ol></div>' : '') + body;
   }
   // ---------- 온통청년에서 불러오기: 지역의 실제 주거 정책(등록 정보)을 검수 초안으로 ----------
@@ -500,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<section class="card c12 stack" style="gap:4px;flex-direction:row;align-items:center;justify-content:space-between"><span class="s12 muted">틀린 답 (코치 전체)</span><b style="font-size:28px;letter-spacing:-0.04em">' + (c.wrong + h.wrong) + '</b><span class="s12 muted">모르면 답하지 않은 질문 ' + (c.safe + h.safe) + '개</span></section></div>' +
       '<div class="stack">' + fails(c, '코치 · 기본 질문') + fails(h, '코치 · 처음 보는 질문') + fails(as, 'AI 비서 · 봇 연결') +
       '<section class="card"><div class="card-h"><h2>페르소나별 결과</h2><span class="s12 muted">계약 조건이 다른 자취생이 같은 질문을 해도 내 조건에 맞게 답하는지</span></div><table><thead><tr><th>페르소나</th><th>조건</th><th>통과</th></tr></thead><tbody>' + ps.personas.map(function (p) { return '<tr' + (p.pass < p.total ? ' class="chg"' : '') + '><th>' + esc(p.name) + '</th><td class="s12 muted">' + esc(p.who) + '</td><td>' + p.pass + ' / ' + p.total + '</td></tr>'; }).join('') + '</tbody></table></section>' + fails(ps, '페르소나 · 통과 못 한 질문') + fails(st, '말투 · 통과 못 한 질문') +
-      '<section class="card"><div class="card-h"><h2>공고 추출 · 시연 공고 + 실제 안내문</h2><span class="s12 muted">내장 AI가 뽑은 값과 정답 비교</span></div><table><thead><tr><th>공고</th><th>맞음</th><th>틀린 항목</th></tr></thead><tbody>' + xr + '</tbody></table></section></div>';
+      '<section class="card"><div class="card-h"><h2>공고 추출 · 연습용 가상 공고 + 실제 안내문</h2><span class="s12 muted">내장 AI가 뽑은 값과 정답 비교</span></div><table><thead><tr><th>공고</th><th>맞음</th><th>틀린 항목</th></tr></thead><tbody>' + xr + '</tbody></table></section></div>';
   }
 
   // ---------- 시스템 프롬프트 ----------

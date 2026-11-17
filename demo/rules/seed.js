@@ -351,7 +351,7 @@
           amount_months: gr(12, '월 20만원 월세지원'),
           select: gr('기준 중위소득 150% 이하 구간별 선정', '기준중위소득 150% 이하 구간별 선정'),
           channel: gr('서울주거포털 청년월세지원 페이지', '신청방법 서울주거포털'),
-          url: gr('https://housing.seoul.go.kr', '신청방법 서울주거포털'),
+          url: gr('https://housing.seoul.go.kr/site/main/content/sh01_060513', '신청방법 서울주거포털'),   // 첫 화면 대신 청년월세 '자격확인 및 신청하기' 페이지
           age_min: gr(19, '신청일 기준 만19세~만39세 청년'),
           age_max: gr(39, '신청일 기준 만19세~만39세 청년'),
           income_pct: gr(150, '기준중위소득 150% 이하 구간별 선정'),
@@ -486,7 +486,7 @@
           always: g5(true, '상시'),
           select: g5('은행 심사 후 대출', '융자최대한도'),
           channel: g5('서울주거포털 청년 임차보증금 지원 페이지', "청년 임차보증금 지원 페이지 '"),
-          url: g5('https://housing.seoul.go.kr', '서울주거포털'),
+          url: g5('https://housing.seoul.go.kr/site/main/content/sh01_040901', '서울주거포털'),   // 첫 화면 대신 청년 임차보증금 이자지원 신청 페이지
           age_min: g5(19, '만 19~39세'),
           age_max: g5(39, '만 19~39세'),
           homeless: g5(true, '무주택세대주'),

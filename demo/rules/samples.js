@@ -6,8 +6,8 @@
 })(typeof self !== 'undefined' ? self : this, [
   {
     id: 'rent-2026-2', noticeId: 'rent',
-    title: '2026년 서울시 청년월세 지원 2차 모집 공고',
-    source: { name: '서울주거포털 게시 공고 (시연용 예시)', url: 'https://housing.seoul.go.kr' },
+    title: '[연습용 가상] 2026년 서울시 청년월세 지원 2차 모집 공고',
+    source: { name: '서울주거포털 게시 공고 (연습용 가상 공고 · 실제 공고 아님)', url: 'https://housing.seoul.go.kr' },
     hint: '지난 승인본(1차)과 비교해 바뀐 항목을 찾아야 해요.',
     text: [
       '서울특별시 공고 제2026-1874호',
@@ -49,8 +49,8 @@
   },
   {
     id: 'deposit-2026', noticeId: 'deposit',
-    title: '2026년 서울시 청년 임차보증금 이자 지원 공고',
-    source: { name: '서울주거포털 게시 공고 (시연용 예시)', url: 'https://housing.seoul.go.kr' },
+    title: '[연습용 가상] 2026년 서울시 청년 임차보증금 이자 지원 공고',
+    source: { name: '서울주거포털 게시 공고 (연습용 가상 공고 · 실제 공고 아님)', url: 'https://housing.seoul.go.kr' },
     hint: '처음 등록하는 공고예요. 소득 기준이 중위소득이 아니라 연소득이라 사람이 판단해야 해요.',
     text: [
       '서울특별시 공고 제2026-1902호',
@@ -88,8 +88,8 @@
   },
   {
     id: 'move-2026-fix', noticeId: 'move',
-    title: '2026년 청년 부동산 중개보수 및 이사비 지원 공고 (정정)',
-    source: { name: '서울주거포털 정정 공고 (시연용 예시)', url: 'https://housing.seoul.go.kr' },
+    title: '[연습용 가상] 2026년 청년 부동산 중개보수 및 이사비 지원 공고 (정정)',
+    source: { name: '서울주거포털 정정 공고 (연습용 가상 공고 · 실제 공고 아님)', url: 'https://housing.seoul.go.kr' },
     hint: '정정 공고예요. 접수 마감일이 앞당겨졌는지 확인해야 해요.',
     text: [
       '서울특별시 공고 제2026-1911호 (정정 공고)',
