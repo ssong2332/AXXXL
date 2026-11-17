@@ -1328,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var ACC_OWNER = 'jachwi-owner';   // 이 기기 기록의 주인(계정 id). 다른 계정이 로그인하면 이 기기 기록을 비우고 시작한다
   var HAS_SESS = (function () { try { return !!localStorage.getItem('jachwi-auth'); } catch (e) { return false; } })();
   // 로그인 화면을 보여야 하나: 예시 둘러보기·휴대폰 캘린더 링크는 로그인 없이. 설정을 불러오는 동안, 로그인했던 기기는 기다리지 않고 바로 연다
-  function accGate() { return !!JA && !S.demo && !PHONE_D && !accOn() && (ACC.loading ? !HAS_SESS : ACC.ready); }
+  function accGate() { return !!JA && !S.demo && !PHONE_D && !PHONE_U && !accOn() && (ACC.loading ? !HAS_SESS : ACC.ready); }
   function accLocalAt() { try { return +localStorage.getItem(ACC_AT) || 0; } catch (e) { return 0; } }
   function accSetLocalAt(t) { try { localStorage.setItem(ACC_AT, String(t)); } catch (e) {} }
   // 저장할 때마다: 올릴 내용이 실제로 바뀌었을 때만 고친 시각을 남기고, 로그인 중이면 잠시 뒤 서버에도 올린다
@@ -1340,11 +1340,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!accOn()) return;
     clearTimeout(ACC_T); ACC_T = setTimeout(accPush, 1500);
   }
+  // 휴대폰 캘린더 구독 토큰(계정마다 하나, 기기끼리 같이 쓴다). /cal.ics?u=토큰 이 계정에 저장된 최신 일정을 내려준다
+  function accCalToken() {
+    if (!S.calToken) { var a = new Uint8Array(24); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach(function (_, i) { a[i] = Math.random() * 256 | 0; }); S.calToken = b64url(a); save(); }
+    return S.calToken;
+  }
   function accPush() {
     if (!accOn() || S.demo) return;
+    accCalToken();
     var st = JA.pick(S); if (!st) { ACC.state = 'err'; ACC.msg = '기록이 너무 커서 저장하지 못했어요.'; return accPaint(); }
     ACC.state = 'saving';
-    ACC.cli.push(st).then(function (at) { if (at) { accSetLocalAt(at); ACC.at = at; } ACC.state = 'ok'; ACC.msg = ''; accPaint(); },
+    var feed = Promise.resolve('');
+    try { if (S.onboarded) feed = encodePayload(calPayload()).catch(function () { return ''; }); } catch (e) {}
+    feed.then(function (d) { return ACC.cli.push(st, { cal_token: S.calToken, cal_feed: d || null }); }).then(function (at) { if (at) { accSetLocalAt(at); ACC.at = at; } ACC.state = 'ok'; ACC.msg = ''; accPaint(); },
       function (e) { ACC.state = 'err'; ACC.msg = e.message; accPaint(); });
   }
   // 로그인했을 때·앱으로 돌아왔을 때: 서버 기록과 이 기기 기록 중 최근 것을 남긴다
@@ -1364,10 +1372,11 @@ document.addEventListener('DOMContentLoaded', function () {
         ACC_LAST = JSON.stringify(JA.pick(S)); accSetLocalAt(r.at); ACC.at = r.at;
         PC.k = ''; ACC.state = 'ok'; ACC.open = false;
         if (first) toast('다른 기기에서 쓰던 기록을 불러왔어요.');
-        render(false); return;
+        render(false); accPush(); return;
       }
       if (r) ACC.at = r.at;
-      if (how === 'push' && !S.demo) accPush(); else { ACC.state = 'ok'; accPaint(); }
+      // 'same'이어도 한 번 올린다: 휴대폰 캘린더 구독용 최신 일정 묶음(cal_feed)을 채우려고
+      if (!S.demo) accPush(); else { ACC.state = 'ok'; accPaint(); }
     }, function (e) { ACC.state = 'err'; ACC.msg = e.message; accPaint(); });
   }
   function accPaint() {
@@ -3459,10 +3468,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (c.pending !== key) { c.pending = key; ENC[name] = c; encodePayload(obj).then(function (d) { ENC[name] = { key: key, d: d }; render(true); }); }
     return '';
   }
-  var PHONE_D = '';
-  function phoneLinks(d) {
-    var host = ORIGIN.replace(/^https?:\/\//, ''), webcal = 'webcal://' + host + '/cal.ics?d=' + d;
-    return { https: ORIGIN + '/cal.ics?d=' + d, webcal: webcal, google: 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcal), handoff: ORIGIN + '/app.html#phone=' + d };
+  var PHONE_D = '', PHONE_U = '';
+  // 로그인했으면 계정 구독 주소(u=토큰, 앱에서 고치면 따라 바뀜), 아니면 일정을 담은 주소(d)
+  function phoneLinks(d, u) {
+    var q = u ? 'u=' + u : 'd=' + d, host = ORIGIN.replace(/^https?:\/\//, ''), webcal = 'webcal://' + host + '/cal.ics?' + q;
+    return { https: ORIGIN + '/cal.ics?' + q, webcal: webcal, google: 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcal), handoff: ORIGIN + '/app.html#' + (u ? 'phoneu=' + u : 'phone=' + d) };
   }
   function qrSvg(text) { if (!window.qrcode || !text) return ''; try { var q = qrcode(0, 'L'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 3, margin: 2, scalable: true }); } catch (e) { return ''; } }
   var UA = navigator.userAgent || '', IS_IOS = /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1), IS_PHONE = IS_IOS || /Android/i.test(UA);
@@ -3480,9 +3490,9 @@ document.addEventListener('DOMContentLoaded', function () {
     toast('캘린더 파일을 만들었어요. 휴대폰에서 열면 일정과 알림이 들어가요.');
   }
   function phonePanel() {
-    var fromPc = !!PHONE_D, d = PHONE_D || encoded('cal', calPayload());
-    if (!d) return '<p class="muted s13">구독 주소를 만드는 중…</p>';
-    var L2 = phoneLinks(d), qr = !IS_PHONE && !fromPc ? qrSvg(L2.handoff) : '';
+    var u = PHONE_U || (accOn() && !S.demo ? accCalToken() : ''), fromPc = !!(PHONE_D || PHONE_U), d = u ? '' : PHONE_D || encoded('cal', calPayload());
+    if (!d && !u) return '<p class="muted s13">구독 주소를 만드는 중…</p>';
+    var L2 = phoneLinks(d, u), qr = !IS_PHONE && !fromPc ? qrSvg(L2.handoff) : '';
     return (fromPc ? '<div class="banner" style="margin-bottom:12px">' + ic('info') + '<span>PC에서 보낸 일정이에요. 아래 버튼으로 이 휴대폰 캘린더에 넣으세요.</span></div>' : '') +
       '<p class="s13 sub" style="margin-bottom:12px">기한·월세·공과금·내 일정을 휴대폰 기본 캘린더에 넣어요. <b>구독</b>하면 휴대폰 캘린더 앱이 알아서 다시 받아 와요.</p>' +
       '<div class="stack" style="gap:8px">' +
@@ -3492,7 +3502,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<button type="button" class="btn line block" data-act="copysub" data-v="' + L2.https + '">' + ic('copy', 'sm') + '구독 주소 복사</button></div>' +
       (qr ? '<div class="qr-box"><div class="qr">' + qr + '</div><p class="s13"><b>휴대폰 카메라로 찍어 보세요</b><br><span class="muted">휴대폰에서 이 화면이 열리고, 바로 구독할 수 있어요.</span></p></div>' : '') +
       '<div style="margin-top:12px">' + remindSelect() + '</div>' +
-      '<ul class="tips s12 muted"><li>아이폰은 구독할 때 ‘알림 제거’를 끄면 미리 알림도 와요.</li><li>구글 캘린더는 새 내용이 반영되기까지 몇 시간 걸릴 수 있어요.</li><li>월세·일정을 바꾸면 주소가 바뀌어요. 예전 구독은 지우고 다시 구독하세요.</li><li>구독 주소에는 날짜·금액·일정 제목만 들어가고, 이름·주소는 들어가지 않아요. 서버는 저장하지 않아요.</li></ul>';
+      '<ul class="tips s12 muted"><li>아이폰은 구독할 때 ‘알림 제거’를 끄면 미리 알림도 와요.</li><li>구글 캘린더는 새 내용이 반영되기까지 몇 시간 걸릴 수 있어요.</li>' + (u ? '<li>내 계정 구독이라 앱에서 바꾼 일정·월세가 휴대폰 캘린더에도 따라 바뀌어요. 아이폰은 설정 › 캘린더 › 계정 › 데이터 가져오기에서 받아 오는 주기를 정할 수 있어요.</li><li>구독한 일정은 휴대폰 캘린더에서 직접 고칠 수 없어요. 앱에서 고쳐 주세요.</li>' : '<li>월세·일정을 바꾸면 주소가 바뀌어요. 예전 구독은 지우고 다시 구독하세요.</li>') + '<li>구독 주소에는 날짜·금액·일정 제목만 들어가고, 이름·주소는 들어가지 않아요. 서버는 저장하지 않아요.</li></ul>';
   }
 
   function viewCalendar() {
@@ -4161,7 +4171,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!S.demo) S.sim = null;
     today = S.sim === null || S.sim === undefined || S.sim === '' ? realToday() : add(pd(S.move), +S.sim);
     var r = route();
-    if (!S.onboarded && !(r === 'calendar' && PHONE_D)) r = 'start';
+    if (!S.onboarded && !(r === 'calendar' && (PHONE_D || PHONE_U))) r = 'start';
     if (S.onboarded && r === 'start') r = 'home';
     if (accGate()) r = 'start';
     document.body.classList.toggle('ob', r === 'start');
@@ -4364,6 +4374,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 예시 데이터 둘러보기는 없앴다(실제 서비스로만). 예전 링크(#demo)는 처음 화면으로, 예시 데이터로 보던 기기는 빈 상태로 돌린다
     if (h === '#demo') history.replaceState(null, '', location.pathname + location.search + '#start');
     if (S.demo) { S = clone(FRESH); AMT_NOTE = {}; save(); }
+    if (h.indexOf('#phoneu=') === 0) { PHONE_U = h.slice(8).replace(/[^\w-]/g, '').slice(0, 64); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
     if (h.indexOf('#phone=') === 0) { PHONE_D = h.slice(7).replace(/[^\w-]/g, ''); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
     if (h.indexOf('#import=') === 0) {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
