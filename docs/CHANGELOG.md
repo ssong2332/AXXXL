@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- 2026-11-17 QR 받기(`#import=`) 집 위치·로드뷰 주소·날짜 검사 보강 (T-29, PR #80 병합 a5af051) — 받을 때 집 위치 위도·경도가 숫자·범위(위도 -90~90, 경도 -180~180) 안인지 검사하고 허용 필드만 복원(`cleanHome`), 로드뷰 주소는 카카오 주소만 허용(`rvUrlOk` — 받을 때와 그릴 때 모두), 실제 날짜·계약 기간은 정수만 허용. 회귀 테스트 `tests/t29-import-home-date.test.js`. 후속 이슈 #95·#96. 확인: 배포 사이트, 사용자 휴대폰 QR "정상 복원됨"
 - 2026-11-17 QR 받기(`#import=`) 계약 값 형식 검사 (T-25, PRD F-13, DECISIONS #32) — `demo/screens-core.js` `checkImport`가 값 형식을 검사해 하나라도 틀리면 받지 않고 'QR 정보를 읽지 못했어요.'만 보임(기존 값·저장 불변). 통과하면 덮어쓴 뒤 `migrate(S)`. `demo/app.html` `boot()`, `tests/t25-import-check.test.js`. 미검증 수용: 정상 QR '바꾼다' 승낙 후 덮어쓰기 실물(Browser pane이 confirm 창을 막는 환경 제약, 단위 테스트로 확인) 등 — Tasks.md T-25 행 기준
 - 2026-11-17 조건 입력 금액 단위 안내 (T-26, PRD F-14, DECISIONS #33) — 보증금 20억 원(200000만 원) 초과·월세 1000만 원 초과면 입력 칸 아래 '만 원 단위가 맞나요?' 안내(`amountUnitWarn`). `demo/screens-core.js`, `demo/app.html` `viewInput`, `tests/t26-amount-unit.test.js`. 미검증 수용: 390×844 레이아웃·가로 넘침 — Tasks.md T-26 행 기준
 - 2026-11-17 로그인한 PC는 내 계약 '휴대폰으로 이어서 보기'에 QR 대신 계정 안내 (T-28, PRD F-15) — 로그인 상태에서 '휴대폰에서 같은 계정으로 로그인하면 그대로 이어져요.'만 보이고 QR을 만들지 않음. 로그인 꺼짐·미로그인·휴대폰은 기존과 같음. `demo/app.html` `deviceCards`, `tests/t28-contract-login-qr.test.js`. 미검증 수용: 로그인 상태 실물 화면·로그인/로그아웃 직후 재그리기(로컬에 로그인 설정 없음, 단위 테스트로 갈래 확인) — Tasks.md T-28 행 기준
@@ -41,6 +42,7 @@
 - {{DATE}} 프로젝트 초기화 (start_coding 템플릿)
 
 ### Changed
+- 2026-11-17 테스트 500/500 통과 (T-29, PR #80 병합 후, 증거 `.artifacts/verification/T-29/20261117-regress-4-main`)
 - 2026-11-17 테스트 474/474 통과 (T-25~T-28, 이전 423/423, QA 증거 `.artifacts/verification/T-25/qa-20261117-1/`), 사용자 화면 확인 T-26·T-27·T-28 통과 기록(Tasks.md)
 - 2026-11-17 홈 '남은 납부' 카드 납부 항목 이름을 `esc`로 이스케이프 (T-27, 보안 결함 수정 — `<b>` 같은 이름이 태그로 그려지던 문제). `demo/app.html` `payH`, `tests/t27-home-pay-escape.test.js`. 미검증 수용: 390×844 레이아웃 — Tasks.md T-27 행 기준
 - 2026-11-16 테스트 423/423 통과 (T-24, 이전 398/398), 사용자 화면 확인 통과("통과, push까지")
