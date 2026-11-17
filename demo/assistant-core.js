@@ -41,6 +41,11 @@
   var P_WRITE = /뭐라고\s*(보내|말|써|해)|뭐라고\s*\S*\s*(보내|말)|어떻게\s*(말|보내|전해)|문자|메시지|카톡|톡\s|톡$|연락\s*(하고|드리|해야|해서)|말하고\s*싶|말해야|전하고|보내고|보낼|써\s*줘|써줄|작성|요청하고\s*싶|부탁하고\s*싶|알리고\s*싶|통보|답장/;
   var P_REPAIR = /냄새|하수구|습기|배터리|건전지|흘러|물이\s*안\s*빠|찢어|들떴|금\s*갔|고장|수리|고쳐|고치|새요|새는|샌다|샙니다|누수|막혔|막힘|안\s*나와|안\s*켜|안\s*돼요|안\s*돼$|깨졌|부서|곰팡이|결로|보일러|변기|배수|수압|전구|전등|형광등|콘센트|차단기|누전|도어락|에어컨|세탁기|냉장고|방충망|가스\s*냄새|벽지|장판/;
   var P_MONEY = /예산|수입|월급|소득|남는\s*돈|지원금\s*받으면|얼마나\s*줄|공과금|전기세|가스비|난방비|관리비\s*아끼|생활비|고정비|지출|돈이|돈을|아끼|절약|얼마\s*나가|한\s*달에|가계부|예산|공과금\s*(얼마|합)|줄이|부담|비중|많이\s*나가/;
+  // 자주 묻는 가게 이름(브랜드). 동네봇이 '카페'로 뭉뚱그리지 않고 그 이름으로 찾는다 [표시 이름, 질문·장소 이름에서 찾는 글자]
+  var BRANDS = [['스타벅스', /스타벅스|starbucks/i], ['메가MGC커피', /메가\s*(mgc)?\s*커피|메가커피/i], ['이디야커피', /이디야/], ['투썸플레이스', /투썸/], ['빽다방', /빽다방/], ['컴포즈커피', /컴포즈/], ['할리스', /할리스/], ['폴바셋', /폴\s*바셋/], ['커피빈', /커피빈/], ['파스쿠찌', /파스쿠찌/], ['엔제리너스', /엔제리너스/], ['공차', /공차/], ['더벤티', /더벤티/], ['매머드커피', /매머드/], ['파리바게뜨', /파리\s*바게[뜨트]/], ['뚜레쥬르', /뚜레쥬르/],
+    ['다이소', /다이소/], ['올리브영', /올리브\s*영/], ['이마트24', /이마트\s*24/], ['이마트', /이마트(?!\s*24)|emart/i], ['홈플러스', /홈플러스/], ['롯데마트', /롯데마트/], ['노브랜드', /노브랜드/], ['GS25', /gs\s*25|지에스\s*25/i], ['CU', /\bcu\b|씨유/i], ['세븐일레븐', /세븐\s*일레븐|7-?eleven/i],
+    ['맥도날드', /맥도날드|맥날/], ['버거킹', /버거킹/], ['롯데리아', /롯데리아/], ['맘스터치', /맘스터치/], ['서브웨이', /서브웨이/]];
+  function brandOf(q) { return BRANDS.filter(function (b) { return b[1].test(q); })[0] || null; }
   var P_LOCAL = /근처|가까운|가까이|주변|동네|어디\s*있|약국|병원|의원|치과|편의점|마트|다이소|빨래방|세탁소|카페|맛집|식당|밥집|공원|산책|헬스|도서관|스터디|공부하기|지하철|정류장|버스|주민센터|행정복지센터|청년센터|우체국|경찰|지구대|파출소/;
   function route(q, last) {
     if (P_WRITE.test(q)) return 'landlord';
@@ -51,7 +56,7 @@
     }
     if (P_REPAIR.test(q)) return 'repair';
     if (P_MONEY.test(q)) return 'money';
-    if (P_LOCAL.test(q) && !/정책|지원(사업|금)?|공고|임대주택|행복주택|LH/.test(q)) return 'local';
+    if ((P_LOCAL.test(q) || brandOf(q)) && !/정책|지원(사업|금)?|공고|임대주택|행복주택|LH/.test(q)) return 'local';
     if (last && /^(그럼|그러면|그건|그거|더|좀 더|짧게|길게|다시|하나 더)/.test(q)) return last;
     return 'rights';
   }
@@ -285,19 +290,43 @@
   }
 
   // ---------- 동네봇 ----------
-  var LOCAL = [[/지하철|전철|역\b|역\s|역$/, 'transit', /역$|지하철|전철/, '지하철역'], [/버스|정류장/, 'transit', /버스|정류/, '버스정류장'], [/위험|무서|밤길|치안|경찰|지구대|파출소|112/, 'safety', null, '경찰서·지구대'], [/약국/, 'medical', /약국/, '약국'], [/병원|의원|치과|내과/, 'medical', /의원|병원|치과|내과/, '병원'], [/빨래|세탁/, 'life', /빨래|세탁/, '빨래방·세탁소'], [/편의점/, 'life', /편의점/, '편의점'], [/마트|장보|다이소|생활/, 'life', /마트|다이소|슈퍼/, '마트'], [/카페|커피/, 'cafe', null, '카페'], [/지하철|역|버스|정류장|교통/, 'transit', null, '교통'], [/공원|산책/, 'park', null, '공원'], [/헬스|운동|체육/, 'gym', null, '운동할 곳'], [/도서관|스터디|공부/, 'study', null, '공부할 곳'], [/주민센터|행정복지센터|청년센터|우체국|관공서/, 'public', null, '공공시설'], [/밥|식당|맛집|먹/, 'food', null, '식당'], [/안전/, 'safety', null, '경찰서·지구대']];
+  var LOCAL = [[/지하철|전철|역\b|역\s|역$/, 'transit', /역$|지하철|전철/, '지하철역'], [/버스|정류장/, 'transit', /버스|정류/, '버스정류장'], [/위험|무서|밤길|치안|경찰|지구대|파출소|112/, 'safety', null, '경찰서·지구대'], [/약국/, 'medical', /약국/, '약국'], [/병원|의원|치과|내과/, 'medical', /의원|병원|치과|내과/, '병원'], [/빨래|세탁/, 'life', /빨래|세탁/, '빨래방·세탁소'], [/편의점/, 'life', /편의점/, '편의점'], [/마트|장보|생활/, 'life', /^(?!.*이마트\s*24).*(마트|다이소|슈퍼)/, '마트'], [/카페|커피/, 'cafe', null, '카페'], [/지하철|역|버스|정류장|교통/, 'transit', null, '교통'], [/공원|산책/, 'park', null, '공원'], [/헬스|운동|체육/, 'gym', null, '운동할 곳'], [/도서관|스터디|공부/, 'study', null, '공부할 곳'], [/주민센터|행정복지센터|청년센터|우체국|관공서/, 'public', null, '공공시설'], [/밥|식당|맛집|먹/, 'food', null, '식당'], [/안전/, 'safety', null, '경찰서·지구대']];
   function localBot(q, o) {
     var P = (o.facts || {}).places || {};
     if (!P.hasHome) return { kind: 'clarify', text: '집 위치를 먼저 정하면 가까운 곳을 걸어서 몇 분인지 알려 드릴게요.', actions: [{ label: '집 위치 정하기', href: '#map' }], steps: ['집 위치가 없음'] };
     if (!P.list || !P.list.length) return { kind: 'clarify', text: '주변 장소를 불러오는 중이에요. 잠시 뒤 다시 물어봐 주세요.', actions: [{ label: '지도 탐색 열기', href: '#map' }], steps: ['장소 데이터를 불러오는 중'] };
+    // 받아 둔 장소 중 가장 먼 곳 — 못 찾았을 때 '1km' 대신 실제로 살펴본 범위로 말한다
+    var far = function (arr) { return arr.reduce(function (mx, p) { return Math.max(mx, +p.m || 0); }, 0); };
+    var rangeText = function (arr) { var m = far(arr); return m ? '집에서 ' + (m >= 1000 ? (Math.round(m / 100) / 10) + 'km' : (Math.round(m / 10) * 10) + 'm') + ' 안' : '받아 둔 장소'; };
+    var placesAns = function (label, list, why) {
+      var p0 = list[0];
+      return { kind: 'answer', text: '가장 가까운 ' + josa(label, '은는') + ' **' + p0.name + '**, 걸어서 약 **' + p0.min + '분**(' + p0.m + 'm)이에요.' + (list[1] ? ' 다음은 ' + list[1].name + '(' + list[1].min + '분)이에요.' : ''),
+        blocks: [{ type: 'places', items: list }, { type: 'note', text: P.source || '' }], actions: [{ label: '지도 탐색 열기', href: '#map' }], topic: ['local'], chips: ['근처 빨래방', '공부하기 좋은 곳', '주민센터 어디야?'].slice(0, 2), steps: why };
+    };
+    // 1) 가게 이름(브랜드)을 물으면 이름으로 찾는다 (스타벅스·메가커피·다이소 …)
+    var br = brandOf(q);
+    if (br) {
+      var bl = P.list.filter(function (p) { return br[1].test(p.name) || br[1].test(p.cn || ''); }).slice(0, 3);
+      if (bl.length) return placesAns(br[0], bl, ['찾는 곳: ' + br[0] + ' (가게 이름으로 찾음)', '집에서 가까운 순으로 ' + bl.length + '곳 고름']);
+      return { kind: 'answer', text: rangeText(P.list) + '에서 받아 둔 장소 중에는 ' + josa(br[0], '이가') + ' 없어요. 이름으로 더 넓게 찾기는 아직 안 돼요. 지도 탐색에서 찾아 보세요.', actions: [{ label: '지도에서 직접 찾기', href: '#map' }], topic: ['local'], steps: ['‘' + br[0] + '’ 가게 이름으로 찾기: 받아 둔 ' + P.list.length + '곳 중 없음'] };
+    }
     var hit = LOCAL.filter(function (x) { return x[0].test(q); })[0], list;
     if (hit) {
-      list = P.list.filter(function (p) { return p.cat === hit[1] && (!hit[2] || hit[2].test(p.name) || hit[2].test(p.sub || '')); }).slice(0, 3);
-      if (!list.length) return { kind: 'answer', text: '집 주변 1km 안에서 ' + josa(hit[3], '을를') + ' 찾지 못했어요.', actions: [{ label: '지도에서 직접 찾기', href: '#map' }], topic: ['local'], steps: ['‘' + hit[3] + '’ 찾기: 없음'] };
+      var inCat = P.list.filter(function (p) { return p.cat === hit[1]; });
+      list = inCat.filter(function (p) { return !hit[2] || hit[2].test(p.name) || hit[2].test(p.sub || ''); });
+      // 2) '프랜차이즈'는 카카오 분류의 브랜드 단계로 거른다 (예: 음식점 > 카페 > 커피전문점 > 메가MGC커피). 개인 가게는 '음식점 > 카페'처럼 3단계 이하
+      var fr = /프랜차이즈|체인|브랜드/.test(q);
+      if (fr) {
+        if (!inCat.some(function (p) { return p.cn; })) return { kind: 'answer', text: '지금 받아 둔 장소 정보에는 프랜차이즈인지 구분이 없어요. 지도 탐색에서 가게 이름으로 찾아 보세요.', actions: [{ label: '지도에서 직접 찾기', href: '#map' }], topic: ['local'], steps: ['프랜차이즈 구분 정보 없음'] };
+        list = list.filter(function (p) { return String(p.cn || '').split(' > ').length >= 4; });
+      }
+      list = list.slice(0, 3);
+      var label = (fr ? '프랜차이즈 ' : '') + hit[3];
+      if (!list.length) return { kind: 'answer', text: (inCat.length ? rangeText(inCat) + '에서 받아 둔 ' + hit[3] + ' ' + inCat.length + '곳 중에는 ' + josa(label, '이가') + ' 없어요.' : rangeText(P.list) + '에서 받아 둔 장소 중에는 ' + josa(label, '이가') + ' 없어요.') + ' 지도 탐색에서 찾아 보세요.', actions: [{ label: '지도에서 직접 찾기', href: '#map' }], topic: ['local'], steps: ['‘' + label + '’ 찾기: 없음'] };
       var p0 = list[0], extra = hit[1] === 'safety' ? ' 급할 때는 112에 바로 전화하세요.' : '';
-      return { kind: 'answer', text: '가장 가까운 ' + josa(hit[3], '은는') + ' **' + p0.name + '**, 걸어서 약 **' + p0.min + '분**(' + p0.m + 'm)이에요.' + (list[1] ? ' 다음은 ' + list[1].name + '(' + list[1].min + '분)이에요.' : '') + extra,
+      return { kind: 'answer', text: '가장 가까운 ' + josa(label, '은는') + ' **' + p0.name + '**, 걸어서 약 **' + p0.min + '분**(' + p0.m + 'm)이에요.' + (list[1] ? ' 다음은 ' + list[1].name + '(' + list[1].min + '분)이에요.' : '') + extra,
         blocks: [{ type: 'places', items: list }, { type: 'note', text: P.source || '' }], actions: [{ label: '지도 탐색 열기', href: '#map' }], topic: ['local'], chips: ['근처 빨래방', '공부하기 좋은 곳', '주민센터 어디야?'].filter(function (x) { return !hit[0].test(x); }).slice(0, 2),
-        steps: ['찾는 곳: ' + hit[3], '집에서 가까운 순으로 ' + list.length + '곳 고름'] };
+        steps: ['찾는 곳: ' + label, '집에서 가까운 순으로 ' + list.length + '곳 고름'] };
     }
     var pick = ['transit', 'life', 'medical', 'public'].map(function (c) { return P.list.filter(function (p) { return p.cat === c; })[0]; }).filter(Boolean);
     return { kind: 'answer', text: '집 근처에서 자주 쓰게 될 곳을 골라 봤어요.', blocks: [{ type: 'places', items: pick }, { type: 'note', text: P.source || '' }], actions: [{ label: '지도 탐색 열기', href: '#map' }], topic: ['local'], chips: BOTS.local.ex.slice(0, 3), steps: ['교통·생활·병원·공공시설에서 가장 가까운 곳 고름'] };
