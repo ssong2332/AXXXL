@@ -44,7 +44,7 @@ function setup() {
     '\nreturn { render: render, setPend: function () { pendRender = true; }, pend: function () { return pendRender; } };';
   // eslint-disable-next-line no-new-func
   const api = new Function('document', 'setTimeout', 'calls', src)(document, setTimeout, calls);
-  const fire = (ev, target) => (L[ev] || []).forEach((fn) => fn({ target }));
+  const fire = (ev, target, extra) => (L[ev] || []).forEach((fn) => fn(Object.assign({ target }, extra)));
   const run = () => { while (timers.length) timers.shift()(); };
   // 실제 클릭 순서: pointerdown → (이전 칸 change·focusout) → focusin → pointerup → click
   const click = (target, before) => { fire('pointerdown', target); if (before) before(); fire('focusin', target); fire('pointerup', target); fire('click', target); };
@@ -132,6 +132,25 @@ test('예외: 날짜 칸 위 pointercancel만으로 끝나도 이후 render(true
   h.fire('pointerdown', date); h.fire('pointercancel', date); h.run();
   h.render(true);
   assert.deepEqual(h.calls, [true]);
+});
+
+// PR #106 리뷰 1: Escape로 선택 창만 닫으면 포커스가 칸에 남아 change·focusout이 오지 않는다
+test('예외: 선택 창을 Escape로 닫으면 미뤄 둔 다시 그리기를 바로 한다', () => {
+  const h = setup(), date = el('INPUT', 'date');
+  h.click(date); h.run();
+  h.render(true);   // 창이 열린 동안 온 배경 갱신 → 보류
+  assert.deepEqual(h.calls, []);
+  h.fire('keydown', date, { key: 'Escape' }); h.run();
+  assert.deepEqual(h.calls, [true]);
+  h.render(true);   // 닫은 뒤 갱신은 바로
+  assert.deepEqual(h.calls, [true, true]);
+});
+
+test('경계: 다른 키(Tab 아닌 화살표)나 다른 칸의 Escape는 보류를 풀지 않는다', () => {
+  const h = setup(), date = el('INPUT', 'date'), other = el('INPUT', 'text');
+  h.click(date); h.run(); h.render(true);
+  h.fire('keydown', date, { key: 'ArrowDown' }); h.fire('keydown', other, { key: 'Escape' }); h.run();
+  assert.deepEqual(h.calls, []);
 });
 
 test('경계: 누른 날짜 칸이 이미 화면에서 사라졌으면 미루지 않는다', () => {
