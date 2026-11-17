@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>/* 화면 테마(자동·밝게·어둡게)를 그리기 전에 먼저 적용해서 처음 열 때 깜빡이지 않게 한다 */ try { var t0 = localStorage.getItem('jachwi-theme'); if (t0 === 'light' || t0 === 'dark') document.documentElement.setAttribute('data-theme', t0); } catch (e) {}</script>
-<title>자취 계약 내비</title>
+<title>자취대로</title>
 <meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 ">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -27,13 +27,13 @@
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111112" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="자취내비">
+<meta name="apple-mobile-web-app-title" content="자취대로">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <style>
 /* ============================================================
-   자취 내비 디자인 — 계약 후 서비스
-   - 강조색 하나(내비 보라), 기한만 주황으로 구분
+   자취대로 디자인 — 계약 후 서비스
+   - 강조색 하나(보라), 기한만 주황으로 구분
    - 흰 카드 + 헤어라인, 그림자 없음
    - PC: 왼쪽 사이드바 / 휴대폰: 위 바 + 아래 탭바
    ============================================================ */
@@ -383,7 +383,10 @@ a.src { color: var(--ink-3); text-decoration: underline; text-underline-offset: 
 .rv-head b { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .rv-view { position: relative; flex: 1 1 auto; background: #111 }
 .rv-view > .rv-pano { position: absolute; inset: 0 }
-.rv-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; color: #eee; font-size: 14px }
+.rv-msg { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; text-align: center; padding: 24px; color: #fff; font-size: 15px; font-weight: 600 }
+.rv-msg.busy::before { content: ''; width: 36px; height: 36px; border-radius: 50%; border: 3px solid rgba(255,255,255,.25); border-top-color: #fff; animation: rv-spin .8s linear infinite }
+@keyframes rv-spin { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .rv-msg.busy::before { animation: none; border-top-color: rgba(255,255,255,.25) } }
 @media (max-width: 640px) { .rv-modal { padding: 0 } .rv-box { border-radius: 0; width: 100%; height: 100% } }
 /* 카카오 지도 타일 묶음(카카오 로고·확대 버튼 이미지는 제외)도 OpenStreetMap 지도와 같은 톤으로.
    타일마다 걸면 이음매가 비쳐서, 타일만 담은 묶음(div)에 한 번에 건다 */
@@ -1053,6 +1056,38 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
 .ob-out { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer } .ob-out:hover { background: var(--fill) }
 /* 휴대폰: 키보드·보조기기로 이동할 때 버튼이 위쪽 줄·아래 탭바 뒤에 숨지 않게 (WCAG 2.4.11) */
 @media (max-width: 899px) { html { scroll-padding-top: 72px; scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)) } }
+.term { display: inline; padding: 0; margin: 0; border: 0; background: none; font: inherit; color: inherit; cursor: help; text-decoration: underline dotted; text-decoration-color: var(--brand-text); text-decoration-thickness: 1.5px; text-underline-offset: 3px }
+.term:focus-visible { outline: 2px solid var(--brand-text); outline-offset: 2px; border-radius: 3px }
+.term-tip { position: fixed; z-index: 80; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 12px; background: var(--ink); color: var(--surface); font-size: 13.5px; line-height: 1.55; box-shadow: 0 10px 30px rgba(0, 0, 0, .18) }
+.term-tip b { font-size: 13px }
+/* ===== 읽기 쉽게 (녹화 검토 반영) ===== */
+/* 작은 글자를 한 단계 키우고 회색을 조금 진하게(밝은 화면만. 어두운 화면 값은 위의 다크 토큰이 이긴다) */
+:root { --ink-3: #5A5B63 }
+.s12 { font-size: 13px } .s13 { font-size: 14px }
+/* 근거 줄: 이 서비스의 강점이라 아이콘을 붙이고 진하게 */
+.src, a.src { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 500; color: var(--ink-2) }
+.src svg, .src-line svg { width: 14px; height: 14px; flex: none; color: var(--brand-text) }
+.src-line { display: flex; align-items: flex-start; gap: 6px; margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.5 } .src-line svg { margin-top: 2px }
+.src-line a { color: var(--brand-text); font-weight: 600 }
+/* 강조색: '해야 함'은 주황 하나로. 메뉴 숫자 배지도 기한 배지와 같은 주황 계열 */
+.side .nav .cnt { background: var(--due-tint); color: var(--due-text) }
+/* 지원사업 목록: 판정 배지를 이름 앞에 크게 */
+.sp-i1 { justify-content: flex-start !important; gap: 8px }
+.sp-i1 > b { flex: 1 1 auto; min-width: 0; text-align: left }
+.sp-i1 .sp-v { flex: none; order: -1; font-size: 13px; padding: 3px 9px; font-weight: 700 }
+/* 날짜 입력칸 옆 한국식 표기 */
+.date-ko { display: block; margin-top: 4px; font-style: normal; font-size: 13px; font-weight: 600; color: var(--ink-2) }
+/* 처음 입력·로그인: PC에서 카드 옆에 '왜 묻는지' */
+.ob-aside { display: none }
+@media (min-width: 1100px) {
+  body.ob { max-width: 1060px }   /* 처음 입력 화면은 페이지 전체가 620px로 묶여 있어서 옆 패널 자리를 넓힌다 */
+  #app .ob { width: 100%; max-width: 1000px; display: grid; grid-template-columns: minmax(0, 620px) minmax(0, 1fr); column-gap: 28px; align-items: start }
+  #app .ob > * { grid-column: 1 }
+  #app .ob > .ob-aside { display: block; grid-column: 2; grid-row: 1 / span 6; position: sticky; top: 32px; margin-top: 64px; padding: 24px; border-radius: 20px; background: var(--fill) }
+  .ob-aside h2 { font-size: 17px; margin: 0 0 14px }
+  .ob-aside ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px }
+  .ob-aside li { display: flex; flex-direction: column; gap: 3px; font-size: 14px; color: var(--ink-2); line-height: 1.55 } .ob-aside li b { color: var(--ink); font-size: 15px }
+}
 /* ===== mo:T-09 내 화면 6개 모션 (계약·신고 전용) ===== */
 .mo { --mo-short: 250ms; --mo-base: 450ms; --mo-long: 600ms; --mo-step: 80ms; --mo-shift: 20px; --mo-ease: cubic-bezier(0.3, 0.7, 0.4, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
 .mo .mo-fold { display: grid; grid-template-rows: 0fr }
@@ -1171,7 +1206,7 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
 <body>
 <div class="shell">
   <aside class="side" aria-label="주요 메뉴">
-    <a class="brand" href="#home"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></a>
+    <a class="brand" href="#home"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취대로</b><small>첫 자취 길잡이</small></span></a>
     <nav id="side-nav" style="display:flex;flex-direction:column;gap:2px"></nav>
     <div class="side-foot">
       <div id="side-tools"></div>
@@ -1179,7 +1214,7 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
     </div>
   </aside>
   <div>
-    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><b>자취 계약 내비</b></a><span class="row" id="top-acts" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
+    <header class="topbar"><a class="brand" href="#home"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><b>자취대로</b></a><span class="row" id="top-acts" style="gap:6px"><a class="icon-btn" href="#coach" aria-label="AI 자취 코치"><span data-icon="chat"></span></a><a class="icon-btn" href="#contract" aria-label="내 계약"><span data-icon="gear"></span></a></span></header>
     <main class="main" id="app" tabindex="-1"></main>
   </div>
   <nav class="tabbar" id="tab-nav" aria-label="주요 메뉴"></nav>
@@ -1265,6 +1300,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function add(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
   function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function md(d) { return (d.getMonth() + 1) + '.' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
+  // 날짜 입력칸은 브라우저 언어에 따라 11/17/2026처럼 보일 수 있어서, 옆에 한국식 표기를 같이 보여 준다
+  function dateKo(v) { if (!/^\d{4}-\d{2}-\d{2}$/.test(v || '')) return ''; var d = pd(v); return d.getFullYear() + '. ' + (d.getMonth() + 1) + '. ' + d.getDate() + '.(' + '일월화수목금토'[d.getDay()] + ')'; }
+  function monthKo(v) { var m = /^(\d{4})-(\d{2})$/.exec(v || ''); return m ? m[1] + '년 ' + (+m[2]) + '월' : ''; }
+  function koTag(t) { return t ? '<em class="date-ko">' + t + '</em>' : ''; }
   function ymd(d) { return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); }
   var today = realToday();
   function dday(d) { var n = Math.round((d - today) / 86400000); return n > 0 ? 'D-' + n : n === 0 ? 'D-day' : (-n) + '일 지남'; }
@@ -1483,10 +1522,58 @@ document.addEventListener('DOMContentLoaded', function () {
     job.catch(function (er) { done(er.message); });
   });
 
+  // ---------- 용어 설명: 처음 듣는 말에 점선 밑줄, 누르면 한 줄 설명 ----------
+  // 화면을 그린 뒤 #app 글자에서 용어가 처음 나오는 곳 한 군데만 감싼다. 링크·버튼·입력칸·제목 안은 건드리지 않는다
+  var TERMS = [
+    ['계약갱신요구권', '갱신', '세입자가 한 번, 2년 더 살겠다고 요구할 수 있는 권리예요. 이때 보증금·월세는 5% 넘게 올릴 수 없어요.'],
+    ['갱신요구권', '갱신', '세입자가 한 번, 2년 더 살겠다고 요구할 수 있는 권리예요. 이때 보증금·월세는 5% 넘게 올릴 수 없어요.'],
+    ['임차권등기명령', '등기명령', '계약이 끝났는데 보증금을 못 받았을 때 법원에 신청해요. 이사를 가도 보증금을 돌려받을 권리가 그대로 남아요.'],
+    ['기준 중위소득', '중위', '우리나라 가구를 소득 순서로 줄 세웠을 때 딱 가운데 가구의 소득이에요. 지원 자격을 "중위소득 몇 % 이하"처럼 정할 때 써요. 2026년 1인 가구는 월 약 256만 원이에요.'],
+    ['중위소득', '중위', '우리나라 가구를 소득 순서로 줄 세웠을 때 딱 가운데 가구의 소득이에요. 지원 자격을 "중위소득 몇 % 이하"처럼 정할 때 써요. 2026년 1인 가구는 월 약 256만 원이에요.'],
+    ['우선변제권', '우선변제', '집이 경매로 넘어가도 다른 빚보다 먼저 보증금을 돌려받을 수 있는 권리예요. 대항력과 확정일자를 모두 갖추면 생겨요.'],
+    ['확정일자', '확정일자', '계약서에 받는 날짜 도장이에요. 주민센터나 온라인에서 받을 수 있고, 보증금을 돌려받는 순서를 정할 때 이 날짜가 기준이 돼요. 전입신고나 전월세 신고를 할 때 같이 받을 수 있어요.'],
+    ['대항력', '대항력', '집주인이 바뀌어도 계약 기간 동안 계속 살 수 있는 힘이에요. 집에 들어가 살면서 전입신고까지 마친 다음 날 0시부터 생겨요.'],
+    ['전입신고', '전입', '새 주소로 이사했다고 알리는 신고예요. 이사한 날부터 14일 안에 정부24나 주민센터에서 해요.'],
+    ['전월세 신고', '전월세신고', '보증금 6천만 원이나 월세 30만 원이 넘는 계약을 계약일부터 30일 안에 신고하는 제도예요. 전입신고 때 계약서를 같이 내면 한 번에 끝나요.'],
+    ['묵시적 갱신', '묵시', '계약이 끝나기 전에 집주인도 세입자도 아무 말을 안 하면, 같은 조건으로 계약이 자동으로 이어지는 거예요.'],
+    ['원상복구', '원상복구', '나갈 때 집을 처음 상태로 돌려놓는 거예요. 살면서 자연스럽게 낡은 부분은 포함되지 않아요.'],
+    ['무주택', '무주택', '집을 가지고 있지 않다는 뜻이에요. 지원사업에 따라 본인만 보거나, 같은 주민등록에 있는 가족(세대원)까지 봐요.'],
+    ['세대주', '세대주', '주민등록에서 한 세대를 대표하는 사람이에요. 혼자 전입신고를 하면 보통 본인이 세대주가 돼요.'],
+    ['세액공제', '세액공제', '낸 돈의 일부를 세금에서 빼 주는 거예요. 월세는 조건이 맞으면 연말정산 때 일부를 돌려받아요.'],
+    ['바우처', '바우처', '정해진 곳에서 현금처럼 쓸 수 있는 이용권이에요.']
+  ];
+  var TERM_SKIP = 'a, button, select, option, textarea, input, label, h1, h2, .badge, .chip, .term, [data-act], [data-sp], .acc, .term-tip, svg, script, style';
+  function decorateTerms(root) {
+    if (!root || !document.createTreeWalker) return;
+    var used = {};
+    TERMS.forEach(function (t) {
+      if (used[t[1]]) return;
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: function (n) { return n.nodeValue.indexOf(t[0]) >= 0 && n.parentElement && !n.parentElement.closest(TERM_SKIP) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; } });
+      var n = w.nextNode(); if (!n) return;
+      var i = n.nodeValue.indexOf(t[0]), after = n.splitText(i); after.splitText(t[0].length);
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'term'; b.textContent = t[0]; b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'term-tip'); b.dataset.k = t[1];
+      after.parentNode.replaceChild(b, after); used[t[1]] = 1;
+    });
+  }
+  function termTip(btn) {
+    var tip = document.getElementById('term-tip');
+    if (!tip) { tip = document.createElement('div'); tip.id = 'term-tip'; tip.className = 'term-tip'; tip.setAttribute('role', 'note'); document.body.appendChild(tip); }
+    var open = document.querySelector('.term[aria-expanded="true"]'); if (open) open.setAttribute('aria-expanded', 'false');
+    if (!btn) { tip.hidden = true; return; }
+    var t = TERMS.filter(function (x) { return x[1] === btn.dataset.k; })[0]; if (!t) return;
+    tip.innerHTML = '<b>' + esc(btn.textContent) + '</b><span>' + esc(t[2]) + '</span>'; tip.hidden = false; btn.setAttribute('aria-expanded', 'true');
+    var r = btn.getBoundingClientRect(), w = Math.min(320, window.innerWidth - 24);
+    tip.style.width = w + 'px'; tip.style.left = Math.max(12, Math.min(r.left, window.innerWidth - w - 12)) + 'px';
+    var below = r.bottom + 8, h = tip.offsetHeight; tip.style.top = (below + h > window.innerHeight - 70 ? Math.max(8, r.top - h - 8) : below) + 'px';
+  }
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('.term'); if (b) { e.preventDefault(); termTip(b.getAttribute('aria-expanded') === 'true' ? null : b); } else if (!(e.target.closest && e.target.closest('#term-tip'))) termTip(null); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') termTip(null); });
+  window.addEventListener('scroll', function () { termTip(null); }, { passive: true });
+
   // ---------- 승인된 규칙 (시연용 예시 공고) ----------
   var BASIS = '2026.10.28';
   var LAW = 'https://www.law.go.kr';
-  var BASE_SRC = '자취 계약 내비 기본 체크리스트';
+  var BASE_SRC = '자취대로 기본 체크리스트';
   // 신고·기한·나이 계산은 engine.js(계약·신고 담당), 지원 자격은 rules-core.js(evalProgram)
   var JE = window.JachwiEngine;
   function contractEnd() { return JE.contractEnd(pd(S.move), S.term); }
@@ -1613,6 +1700,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (S.done[t.id]) return ['brand', '완료'];
     if (t.dueText) return [t.urgent ? 'due' : '', t.dueText];
     if (!t.due) return ['', ''];
+    // 앱을 쓰기 전에 기한이 지난 일은 '지남'으로 겁주지 않는다(이미 했을 가능성이 크다). 법정 기한이 아직 남았으면 그대로 보여 준다
+    if (S.startedAt && t.due < new Date(S.startedAt + 'T00:00:00') && !(t.legal && t.legal >= today)) return ['', md(t.due) + ' · 이미 했다면 체크'];
     if (t.legal && today > t.due) return ['due', '법정 기한 ' + md(t.legal) + ' · ' + dday(t.legal)];
     return [t.urgent || t.due <= today ? 'due' : '', md(t.due) + (t.legal ? ' 권장' : '') + ' · ' + dday(t.due)];
   }
@@ -1620,7 +1709,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var skip = today >= R.C ? { pre: 1, cday: 1 } : {}, flat = [];
     if (today >= R.M) skip.prep = 1;
     T.forEach(function (s) { s.tasks.forEach(function (t) { flat.push({ t: t, s: s }); }); });
-    var open = flat.filter(function (x) { return !skip[x.s.key] && !S.done[x.t.id] && x.t.due; });
+    var st = S.startedAt ? new Date(S.startedAt + 'T00:00:00') : null;
+    // 앱을 쓰기 전에 기한이 지난 일(법정 기한이 남은 것은 빼고)은 '밀린 일'로 세지 않는다
+    var open = flat.filter(function (x) { return !skip[x.s.key] && !S.done[x.t.id] && x.t.due && !(st && x.t.due < st && !(x.t.legal && x.t.legal >= today)); });
     var byDue = function (a, b) { return a.t.due - b.t.due; };
     return { flat: flat, skip: skip, dueNow: open.filter(function (x) { return x.t.due <= today; }).sort(byDue), upcoming: open.filter(function (x) { return x.t.due > today; }).sort(byDue) };
   }
@@ -1658,7 +1749,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var timed = /^\d{2}:\d{2}$/.test(x.time || ''), a = x.alarm || '1d', trig;
     if (timed) { var hm = x.time.split(':'), st = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), +hm[0] - 9, +hm[1])); L.push('DTSTART:' + utc(st), 'DTEND:' + utc(new Date(st.getTime() + 36e5))); trig = { '0': '-PT0M', '1h': '-PT1H', '1d': '-P1D', '3d': '-P3D' }[a]; }
     else { L.push('DTSTART;VALUE=DATE:' + ymd8(d), 'DTEND;VALUE=DATE:' + ymd8(add(d, 1))); trig = { '0': 'PT9H', '1h': 'PT9H', '1d': '-PT15H', '3d': '-P2DT15H' }[a]; }
-    L.push(icsFold('SUMMARY:' + icsEsc(x.title)), icsFold('DESCRIPTION:' + icsEsc('자취 계약 내비에서 추가한 일정')));
+    L.push(icsFold('SUMMARY:' + icsEsc(x.title)), icsFold('DESCRIPTION:' + icsEsc('자취대로에서 추가한 일정')));
     if (trig) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', icsFold('DESCRIPTION:' + icsEsc(x.title)), 'TRIGGER:' + trig, 'END:VALARM');
     L.push('END:VEVENT', 'END:VCALENDAR');
     return L.join('\r\n') + '\r\n';
@@ -1758,7 +1849,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // ---------- parts ----------
   function badge(t) { return t[1] ? '<span class="badge ' + t[0] + '">' + t[1] + '</span>' : ''; }
   function ext(href) { return href.charAt(0) === '#' ? '' : ' target="_blank" rel="noopener"'; }
-  function srcLink(src) { return /법/.test(src) ? '<a class="src" href="' + LAW + '" target="_blank" rel="noopener">근거 · ' + src + '</a>' : '<span class="src">근거 · ' + src + '</span>'; }
+  function srcLink(src) { if (/기본 체크리스트/.test(src)) return '';   // 앱이 정한 체크리스트는 근거 줄을 매번 달지 않는다(같은 말 반복)
+    return /법/.test(src) ? '<a class="src" href="' + LAW + '" target="_blank" rel="noopener">' + ic('doc', 'sm') + '근거 · ' + src + '</a>' : '<span class="src">' + ic('doc', 'sm') + '근거 · ' + src + '</span>'; }
   function lateNote(t, c) {
     if (c) return '';
     var d = t.legal ? (today > t.legal ? t.legal : null) : t.urgent === true && t.id === 'rp' && t.due < today ? t.due : null;
@@ -1983,7 +2075,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function spItem(row, selKey) {
     var asks = row.conds ? row.conds.filter(function (c) { return c.ask; }).length : 0, V = row.badge || (row.v ? SPV[row.v] : null);
-    return '<button type="button" class="sp-item" data-sp="pick" data-v="' + esc(row.key) + '" aria-current="' + (row.key === selKey) + '"><span class="sp-i1"><b>' + esc(row.name) + '</b>' + (V ? '<span class="badge ' + V[0] + '">' + V[1] + '</span>' : '') + (row.demo ? '<span class="badge due">시연용 예시</span>' : '') + '</span>' +
+    return '<button type="button" class="sp-item" data-sp="pick" data-v="' + esc(row.key) + '" aria-current="' + (row.key === selKey) + '"><span class="sp-i1">' + (V ? '<span class="badge sp-v ' + V[0] + '">' + V[1] + '</span>' : '') + '<b>' + esc(row.name) + '</b>' + (row.demo ? '<span class="badge due">시연용 예시</span>' : '') + '</span>' +
       '<span class="sp-one">' + esc(SP.clip(row.one || '', 70)) + '</span><span class="sp-i3">' + (row.why ? '<span class="sp-why">' + esc(row.why) + '</span>' : '') + (row.kdLabel ? '<span>' + esc(row.kdLabel) + '</span>' : '') + (row.st ? '<span class="' + (row.st.k === 'open' && row.st.sure && row.st.left <= 14 ? 'sp-hot' : row.st.sure === false ? 'sp-unsure' : '') + '">' + esc(row.st.text) + (SP.leftText(row.st) ? ' · ' + SP.leftText(row.st) : '') + '</span>' : '') +
       (row.tag ? '<span>' + esc(row.tag) + '</span>' : '') + (asks && (row.v === 'q' || row.v === 'ask') ? '<span class="sp-ask-n">질문 ' + asks + '개 남음</span>' : '') + '</span></button>';
   }
@@ -2183,7 +2275,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (u.kind) rows = rows.filter(function (x) { return x.kd === u.kind; });
       else rows.forEach(function (x) { x.kdLabel = (SP.KINDS.filter(function (k) { return k[0] === x.kd; })[0] || [])[1]; });
       rows.sort(u.sort === 'due' ? function (x, y) { return (SP.dueRank(x.st) - SP.dueRank(y.st)) || (y.score - x.score) || (x.sort - y.sort); } : function (x, y) { return (y.score - x.score) || (x.sort - y.sort); });
-      var live = rows.filter(function (x) { return x.v !== 'no'; }), off = rows.filter(function (x) { return x.v === 'no'; }), lim = u.more || 20;
+      var live = rows.filter(function (x) { return x.v !== 'no'; }), off = rows.filter(function (x) { return x.v === 'no'; }), lim = u.more || 8;   // 처음엔 나에게 맞는 순 8개만(신규 사용자 점검: 첫 화면이 너무 길었다)
       listHtml = live.slice(0, lim).map(function (x) { return spItem(x, u.sel); }).join('') + (live.length > lim ? '<button type="button" class="btn ghost block sm" data-sp="more">' + (live.length - lim) + '건 더 보기</button>' : '') +
         (yb.status !== 'ok' ? spState(yb, '이 지역 정책을') : '') +
         (off.length ? '<details class="sp-more"' + (off.some(function (x) { return x.key === u.sel; }) ? ' open' : '') + '><summary>지금은 해당 안 되거나 접수가 끝난 지원 ' + off.length + '건</summary>' + off.slice(0, 40).map(function (x) { return spItem(x, u.sel); }).join('') + '</details>' : '');
@@ -2194,10 +2286,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // 이번에 할 일: 받을 수 있어 보이는 것 중 마감이 가장 가까운 것 (시연용 예시 공고는 뺌)
     var hot = (all || rows).filter(function (x) { return x.v && x.v !== 'no' && !x.plain && !x.demo && x.score > 40 && x.st && x.st.k === 'open' && x.st.sure !== false && x.st.left >= 0 && !x.st.far && !x.st.long; }).sort(function (x, y) { return x.st.left - y.st.left; })[0];
     var hero = hot ? '<section class="sp-todo"><div><small>' + (hot.st.left ? hot.st.left + '일 남았어요' : '오늘 마감이에요') + '</small><b>' + esc(hot.name) + '</b><span>' + esc(hot.st.text) + (hot.v === 'ok' ? ' · 조건이 맞아요' : hot.v === 'ask' ? ' · 질문 몇 개만 답하면 알려 드려요' : ' · 조건을 조금만 더 확인하면 돼요') + '</span></div><button type="button" class="btn" data-sp="pick" data-v="' + esc(hot.key) + '">자세히 보기</button></section>' : '';
-    var tabs = '<div class="cats sp-tabs" role="group" aria-label="지원 종류">' + SP_TABS.map(function (t) { return '<button type="button" class="cat" data-sp="tab" data-v="' + esc(t[0]) + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + (counts && counts[t[0]] !== undefined ? ' <i>' + counts[t[0]] + '</i>' : '') + '</button>'; }).join('') + '</div>';
+    var tabs = '<div class="cats sp-tabs" role="group" aria-label="지원 종류">' + SP_TABS.map(function (t) { return '<button type="button" class="cat" data-sp="tab" data-v="' + esc(t[0]) + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + (tab === t[0] && counts && counts[t[0]] !== undefined ? ' <i>' + counts[t[0]] + '</i>' : '') + '</button>'; }).join('') + '</div>';   // 개수는 보고 있는 분류만(다른 분류 '일자리 149' 같은 숫자가 먼저 눈에 띄어 헷갈렸다)
     return head + picker + hero + tabs + sub + extra +
       '<div class="sp-cols"><div class="sp-list">' + listHtml + (meta ? '<p class="sp-meta" style="padding:10px 2px 0">' + esc(meta) + '</p>' : '') + '</div><aside class="card sp-detail" id="sp-detail">' + spDetail(selRow, r) + '</aside></div>' +
-      '<p class="sp-meta" style="padding:16px 2px 0">금액은 사업마다 따로 보여 주고 합치지 않아요. 입력한 내용은 이 기기에만 저장되고, 서버에는 지역 코드와 분류만 보내요. <a href="admin.html">운영자 검수 화면</a></p>';
+      '<p class="sp-meta" style="padding:16px 2px 0">금액은 사업마다 따로 보여 주고 합치지 않아요. 지원 목록을 받을 때 서버에는 지역 코드와 분류만 보내요.</p>';
   }
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-sp]'); if (!t) return;
@@ -2223,7 +2315,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     else if (a === 'guide') u.guide = u.guide === +v ? null : +v;
     else if (a === 'bank') u[k] = v;
-    else if (a === 'more') u.more = (u.more || 20) + 20;
+    else if (a === 'more') u.more = (u.more || 8) + 20;
     else if (a === 'panel') u.panel = !u.panel;
     else if (a === 'copy') { var src = document.getElementById(v); try { navigator.clipboard.writeText(src ? src.textContent : ''); } catch (err) {} toast('문구를 복사했어요.'); return; }
     else if (a === 'retry') { ['youth', 'wf', 'lh'].forEach(function (kind) { Object.keys(SUP[kind]).forEach(function (key) { if (/error|offline|missing/.test(SUP[kind][key].status)) delete SUP[kind][key]; }); }); }
@@ -2328,13 +2420,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('') + '</div>' +
         '<a class="s12" href="#support">지원 상세 보기</a></div>';
     }).join('');
-    var rows = DOC_SLOTS.map(function (d) {
+    // 신규 사용자 점검: 처음부터 '아직 없음' 8칸이 다 보여 숙제처럼 느껴졌다 → 계약 때 받는 서류 4종만 먼저, 나머지는 접어 둔다
+    var slotRow = function (d) {
       var n = filesIn(d[0]).length, was = moChanged('docs:slot:' + d[0], n);
       return '<div class="slot"><div style="min-width:0" class="stack"><div><div class="row"><b>' + d[1] + '</b>' + (n ? '<span class="badge brand' + (was !== undefined && n > was ? ' mo-pop' : '') + '">' + ic('check', 'sm') + n + '개</span>' : '<span class="badge">아직 없음</span>') + (d[3] ? '<span class="s12 muted">· 지원 신청에 필요</span>' : '') + '</div><p class="s13 muted">' + d[2] + '</p></div>' + thumbs(d[0], d[1]) + '</div><div>' + addBtn(d[0], '올리기') + '</div></div>';
-    }).join('');
+    };
+    var NOW_SLOTS = { contract: 1, fixed: 1, deposit: 1, balance: 1 }, later = DOC_SLOTS.filter(function (d) { return !NOW_SLOTS[d[0]]; });
+    var rows = DOC_SLOTS.filter(function (d) { return NOW_SLOTS[d[0]]; }).map(slotRow).join('') +
+      '<details class="fold" style="margin-top:12px"' + (later.some(function (d) { return filesIn(d[0]).length; }) ? ' open' : '') + '><summary>지원 신청·연말정산 때 쓰는 서류 ' + later.length + '종</summary>' + later.map(slotRow).join('') + '</details>';
     return moRoot('docs', '<div class="page-head' + moStep(0) + '"><div><p class="eyebrow">지원 신청·연말정산·퇴거 때 쓰는 서류</p><h1>서류함</h1></div><span class="s13 muted">' + moNum('docs:have', have) + ' / ' + DOC_SLOTS.length + '종 준비</span></div>' +
       (FILES_OK ? '' : '<div class="banner due" style="margin-bottom:16px">' + ic('info') + '<span>이 브라우저에서는 파일을 저장할 수 없어요(사생활 보호 모드 등). 일반 창에서 열어 주세요.</span></div>') +
-      '<div class="grid"><section class="card c7' + moStep(0) + '">' + rows + '</section><aside class="c5 stack">' + (prep ? '<h2 class="s13 muted">지원 신청에 낼 서류</h2>' + prep : '') + '<div class="card stack' + moStep(progs.length + 1) + '"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">이 브라우저 안(IndexedDB)에만 저장하고 서버로 보내지 않아요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 원본은 따로 보관하세요.</p><p class="s12 muted">사진은 용량을 줄여(긴 변 1600px) 저장해요. 서류 내용 확인(OCR·AI)은 아직 없어요.</p></div></aside></div>');
+      '<div class="grid"><section class="card c7' + moStep(0) + '">' + rows + '</section><aside class="c5 stack">' + (prep ? '<details class="fold"><summary>지원 신청에 낼 서류 · ' + progs.length + '개 지원</summary><div class="stack" style="margin-top:10px">' + prep + '</div></details>' : '') + '<div class="card stack' + moStep(progs.length + 1) + '"><h2 style="font-size:16px">' + ic('lock', 'sm') + ' 서류는 이 기기에만</h2><p class="s13 sub">이 브라우저 안(IndexedDB)에만 저장하고 서버로 보내지 않아요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 원본은 따로 보관하세요.</p><p class="s12 muted">사진은 용량을 줄여(긴 변 1600px) 저장해요. 서류 내용 확인(OCR·AI)은 아직 없어요.</p></div></aside></div>');
   }
 
   // ---------- 우리 동네: 실제 데이터 ----------
@@ -3011,7 +3107,7 @@ document.addEventListener('DOMContentLoaded', function () {
     el.innerHTML = '<div class="rv-box" role="dialog" aria-modal="true" aria-label="' + esc(name) + ' 로드뷰"><div class="rv-head"><b>' + esc(name) + ' 로드뷰</b>' +
       '<a class="btn ghost sm" href="' + kakao('rv', p) + '" target="_blank" rel="noopener" data-rv-out>카카오맵에서 열기' + ic('out', 'sm') + '</a>' +
       '<button type="button" class="icon-btn" style="width:36px;height:36px" data-rv-close aria-label="로드뷰 닫기">' + ic('x', 'sm') + '</button></div>' +
-      '<div class="rv-view"><div class="rv-pano"></div><div class="rv-msg">가까운 로드뷰 사진을 찾고 있어요…</div></div></div>';
+      '<div class="rv-view"><div class="rv-pano"></div><div class="rv-msg busy" role="status">가까운 로드뷰 사진을 찾고 있어요…</div></div></div>';
     document.body.appendChild(el);
     var key = rvKey(p);
     RVM = { el: el, rv: null, key: key, back: from || null };
@@ -3019,9 +3115,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('keydown', rvEsc, true);
     el.querySelector('[data-rv-close]').focus({ preventScroll: true });
     var k = window.kakao.maps, msg = el.querySelector('.rv-msg');
-    var none = function () { if (RVM && RVM.key === key) msg.innerHTML = '이 근처에는 로드뷰 사진이 없어요.<br>위쪽 \'카카오맵에서 열기\'로 주변을 둘러볼 수 있어요.'; };
+    var none = function () { if (RVM && RVM.key === key) { msg.classList.remove('busy'); msg.innerHTML = '이 근처에는 로드뷰 사진이 없어요.<br>위쪽 \'카카오맵에서 열기\'로 주변을 둘러볼 수 있어요.'; } };
     var show = function (pano, pan) {
       if (!RVM || RVM.key !== key) return;
+      msg.textContent = '로드뷰 사진을 불러오고 있어요… 몇 초 걸려요';
       var rv = RVM.rv = new k.Roadview(el.querySelector('.rv-pano'));
       k.event.addListener(rv, 'init', function () {
         if (pan !== null && !isNaN(pan)) rv.setViewpoint({ pan: pan, tilt: 0, zoom: 0 });
@@ -3363,7 +3460,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div style="margin-bottom:10px">' + catChips(mc, 'homecat') + '</div><div class="row" style="margin-bottom:10px">' + dataBadge() + (S.home ? '' : ' <a class="s13" href="#map">내 집 위치 정하기</a>') + '</div>' + placeMap(mc, S.mapSel, 360, false) +
       // 지도 탐색과 같게: 분류를 고르면 아래 목록이 바뀌고, 장소를 누르면 지도가 그쪽으로 옮겨 가며 카드가 뜬다
       '<div class="card-h" style="margin:22px 0 14px"><h2>' + (mc === 'all' ? '가까운 순서' : CATS[mc][0]) + '</h2><span class="s12 muted">' + homeList.length + '곳</span></div>' +
-      '<div class="scroll-list" data-rows="5">' + (homeList.length ? homeList.slice(0, 120).map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : mc === 'all' ? '1km 안에서 찾은 곳이 없어요.' : emptyNear(mc)) + '</p>') + '</div>' +
+      '<div class="scroll-list" data-rows="5">' + (homeList.length ? homeList.slice(0, 5).map(function (p) { return placeRow(p, false); }).join('') + (homeList.length > 5 ? '<a class="btn ghost block sm" style="margin-top:8px" href="#map">' + (homeList.length - 5) + '곳 더 보기 · 지도 탐색' + ic('chev', 'sm') + '</a>' : '') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : mc === 'all' ? '1km 안에서 찾은 곳이 없어요.' : emptyNear(mc)) + '</p>') + '</div>' +
       '<div style="margin-top:8px">' + sourceNote() + '</div></section>';
     var near = [nearest('public', /행정복지센터|주민|관공서/), nearest('safety'), nearest('park'), nearest('study', /도서관/)].filter(Boolean);
     var nearCard = '<section class="card c4"><div class="card-h"><h2>가까운 공공시설</h2></div>' + (near.length ? near.map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : noHome ? '집 위치를 정하면 가까운 행정복지센터·지구대·공원을 보여드려요.' : '주변 공공시설을 찾지 못했어요.') + '</p>') + '</section>';
@@ -3430,9 +3527,12 @@ document.addEventListener('DOMContentLoaded', function () {
     ancLoad();
     var rows = ESS.map(function (e) { var ps = places().filter(function (p) { return p.cat === e[0] && kindOk(p, e[1]); }), k = infraPick(e), near = ps.filter(function (p) { return p.m <= NEAR_M; }).length;
       var how = k ? (k.real ? ' · 걸어서 ' + meters(k.dist) : k.loading ? ' · 길 찾는 중…' : ' · 직선 ' + meters(k.dist)) : '';
-      return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(e[0] === 'transit' ? (k ? placeIc(k.p) : /버스/.test(e[2]) ? 'bus' : 'subway') : CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[2] + '</b><p class="s13 muted">' + (k ? '가장 가까운 곳 · ' + esc(k.p.name) + how : e[2] === '버스정류장' && DATA.sources.some(function (s) { return /카카오/.test(s.name); }) ? (DATA.sources.some(function (s) { return /정류소/.test(s.name); }) ? '반경 500m 안에서 못 찾았어요' : '버스정류장 정보를 불러오지 못했어요') : e[3] ? ({ 1: '20km 안에서 못 찾았어요', 2: '카카오 검색을 쓸 수 없어 멀리는 찾지 못했어요', 3: '검색에 실패했어요. 다음에 열 때 다시 찾아요' }[xtra().anc] || '찾는 중…') : '1km 안에서 못 찾았어요') + '</p></div><div style="text-align:right;flex:0 0 auto;white-space:nowrap">' + (k && k.dist > 2000 ? '<b style="font-size:18px">' + meters(k.dist) + '</b><p class="s12 muted">걷기엔 멀어요</p>' : k ? '<b style="font-size:18px">' + (k.real ? '' : '약 ') + k.min + '분</b><p class="s12 muted">' + NEAR_M + 'm 안 ' + near + '곳</p>' : '<span class="muted">—</span>') + '</div></div>'; }).join('');
+      return '<div class="date-line"><span class="ptile" style="width:44px;height:44px;border-radius:12px">' + ic(e[0] === 'transit' ? (k ? placeIc(k.p) : /버스/.test(e[2]) ? 'bus' : 'subway') : CATS[e[0]][1]) + '</span><div style="flex:1 1 auto;min-width:0"><b>' + e[2] + '</b><p class="s13 muted">' + (k ? '가장 가까운 곳 · ' + esc(k.p.name) + how : e[2] === '버스정류장' && DATA.sources.some(function (s) { return /카카오/.test(s.name); }) ? (DATA.sources.some(function (s) { return /정류소/.test(s.name); }) ? '반경 500m 안에서 못 찾았어요' : '버스정류장 정보를 불러오지 못했어요') : e[3] ? ({ 1: '20km 안에서 못 찾았어요', 2: '카카오 검색을 쓸 수 없어 멀리는 찾지 못했어요', 3: '검색에 실패했어요. 다음에 열 때 다시 찾아요' }[xtra().anc] || '찾는 중…') : (S.home && S.home.lat ? '1km 안에서 못 찾았어요' : '집 위치를 정하면 보여요')) + '</p></div><div style="text-align:right;flex:0 0 auto;white-space:nowrap">' + (k && k.dist > 2000 ? '<b style="font-size:18px">' + meters(k.dist) + '</b><p class="s12 muted">걷기엔 멀어요</p>' : k ? '<b style="font-size:18px">' + (k.real ? '' : '약 ') + k.min + '분</b><p class="s12 muted">' + NEAR_M + 'm 안 ' + near + '곳</p>' : '<span class="muted">—</span>') + '</div></div>'; }).join('');
     var chk = S.areaChk || {}, cdone = AREA_CHECK.filter(function (c) { return chk[c[0]]; }).length;
+    var noHome = !(S.home && S.home.lat);
     return '<div class="page-head"><div><p class="eyebrow">주변 탐색 · ' + esc(home().label) + '</p><h1>생활 인프라</h1></div><div class="row">' + dataBadge() + '</div></div>' +
+      // 집 위치를 정하지 않았으면 '못 찾았어요'가 시설 없는 동네처럼 읽혀서, 위에서 먼저 정하도록 권한다
+      (noHome ? '<div class="banner" style="margin-bottom:16px">' + ic('pin') + '<span><b>집 위치를 정하면 보여요.</b> 지금은 동네 중심 기준이라 걸리는 시간이 정확하지 않아요. <button type="button" class="linkbtn" data-act="pickhome">지도에서 집 고르기</button> · <a href="#contract">주소로 찾기</a></span></div>' : '') +
       '<div class="grid"><section class="card c7"><div class="card-h"><h2>꼭 필요한 곳까지</h2><span class="s12 muted">걸어서 = 카카오 도보 경로 · “약”은 직선 ÷ 분당 67m</span></div>' + rows + '<div style="margin-top:10px">' + sourceNote() + '</div></section>' +
       '<aside class="c5 stack">' + commuteCard() + safetyCard() + '<section class="card stack"><div class="card-h" style="margin:0"><h2>주변 환경 요약</h2><span class="s12 muted">데이터로 만든 요약</span></div><p>' + infraSummary() + '</p><p class="s12 muted">좋은 동네·나쁜 동네처럼 판단하거나 점수를 매기지 않아요. 거리와 시설 수만 알려드려요.</p></section>' +
       '<section class="card"><div class="card-h"><h2>현장에서 꼭 볼 것</h2><span class="badge">' + cdone + ' / ' + AREA_CHECK.length + '</span></div>' + AREA_CHECK.map(function (c) { var on = !!chk[c[0]]; return '<div class="task' + (on ? ' done' : '') + '"><input class="chk" type="checkbox" id="ac-' + c[0] + '" data-act="areachk" data-v="' + c[0] + '"' + (on ? ' checked' : '') + '><div class="body"><label for="ac-' + c[0] + '">' + c[1] + '</label><p class="d">' + c[2] + '</p></div></div>'; }).join('') + '</section></aside></div>';
@@ -3481,7 +3581,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var d = e.date, dates;
     if (e.time) { var hm = e.time.replace(':', ''), st = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +hm.slice(0, 2), +hm.slice(2, 4) + 60); dates = ymd8(d) + 'T' + hm + '00/' + ymd8(st) + 'T' + String(st.getHours()).padStart(2, '0') + String(st.getMinutes()).padStart(2, '0') + '00'; }
     else dates = ymd8(d) + '/' + ymd8(add(d, 1));
-    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(e.title) + '&dates=' + dates + '&ctz=Asia/Seoul&details=' + encodeURIComponent('자취 계약 내비에서 추가한 일정');
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(e.title) + '&dates=' + dates + '&ctz=Asia/Seoul&details=' + encodeURIComponent('자취대로에서 추가한 일정');
   }
   function downloadICS() {
     var body = window.JachwiICS ? JachwiICS.build(calPayload(), { name: '자취 캘린더' }) : '';
@@ -3929,16 +4029,36 @@ document.addEventListener('DOMContentLoaded', function () {
   // ===== /mo:T-16 =====
 
   // ---------- 처음 시작하기 (온보딩) ----------
+  // 소득 칸: '중위소득 몇 %'는 처음 듣는 사람이 많아서 1인 가구 월 금액으로 같이 보여 준다(기준 중위소득 표는 support-core)
+  function incomeOpts(first) {
+    var a = SP && SP.medianMan ? SP.medianMan(1, 100) : 0, b = SP && SP.medianMan ? SP.medianMan(1, 150) : 0;
+    var o = a ? [['100', '월 ' + a + '만 원 이하 (중위소득 100% 이하)'], ['150', '월 ' + a + '만~' + b + '만 원 (100~150%)'], ['over', '월 ' + b + '만 원 넘음 (150% 초과)']] : [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과']];
+    return first ? [['unknown', '잘 모르겠어요']].concat(o) : o.concat([['unknown', '잘 모르겠어요']]);
+  }
+  var INCOME_HINT = '혼자 살면 1인 가구 기준, 세금 떼기 전 한 달 소득이에요. 모르면 비워 둬도 돼요';
+
   var GU_LIST = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
   // 온보딩 맨 위: 로고 + (로그인 중이면) 로그아웃
   function obTop() { return accOn() ? '<div class="ob-top">' + obBrand() + '<button type="button" class="ob-out" data-act="acclogout" title="' + esc(accWho()) + '로 로그인 중">' + ic('logout', 'sm') + '로그아웃</button></div>' : obBrand(); }
-  function obBrand() { return '<div class="brand" style="padding:0"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>'; }
+  // PC에서 가운데 카드 옆이 비어 보여서, 이 단계에서 왜 묻는지 옆에 적는다(휴대폰에서는 숨김)
+  var OB_WHY = [
+    ['로그인하면 이런 걸 해요', [['계약부터 퇴거까지 할 일', '전월세 신고·전입신고 기한을 내 날짜로 계산해 타임라인으로 보여 줘요.'], ['우리 동네 지원사업', '내 시·군·구의 청년 주거 지원을 모아 조건별로 판정해요.'], ['기기를 바꿔도 이어서', '기록은 내 계정에 저장돼요. 집 위치·사진·서류는 이 기기에만 남아요.']]],
+    ['왜 날짜를 묻나요?', [['전월세 신고', '계약일부터 30일 안에 해야 해요.'], ['전입신고', '입주한 날부터 14일 안에 해야 해요.'], ['할 일 날짜', '두 날짜로 계약 전·입주·퇴거까지 할 일을 줄 세워요.']]],
+    ['왜 지역과 금액을 묻나요?', [['신고 대상인지', '보증금 6천만 원이나 월세 30만 원을 넘는지, 대상 지역인지 바로 판정해요.'], ['우리 동네 지원', '사는 시·군·구의 지원사업을 찾는 데 써요.'], ['매달 낼 돈', '월세·관리비로 주거비 달력을 만들어요.']]],
+    ['왜 집 위치를 묻나요?', [['걸어서 몇 분', '지하철·버스·편의점·병원까지 실제 걷는 시간을 알려 줘요.'], ['밤길 안전', '집 근처 CCTV와 보안등 수를 보여 줘요.'], ['서버에 안 올려요', '위치 좌표는 이 기기에만 남아요. 나중에 정해도 돼요.']]],
+    ['왜 이걸 묻나요?', [['지원 자격 판정', '나이·무주택·소득은 청년 주거 지원 자격을 따지는 데만 써요.'], ['몰라도 괜찮아요', '"잘 모르겠어요"로 두면 판정에서 "확인 필요"로 표시해요.'], ['월 금액으로', '소득은 1인 가구 한 달 금액으로 골라요.']]]
+  ];
+  function obAside(st) {
+    var w = OB_WHY[st] || OB_WHY[0];
+    return '<aside class="ob-aside" aria-label="' + esc(w[0]) + '"><h2>' + esc(w[0]) + '</h2><ul>' + w[1].map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('') + '</ul></aside>';
+  }
+  function obBrand() { return '<div class="brand" style="padding:0"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취대로</b><small>첫 자취 길잡이</small></span></div>'; }
   // 로그인 화면 (내 기록을 쓰려면 로그인. 예시 데이터는 로그인 없이)
   function viewLogin() {
     moBegin('start');
     return moRoot('start', '<div class="ob">' + obBrand() +
       '<section class="card stack ob-card"><h1>로그인하고 시작해요</h1><p class="sub">계약·할 일·주거비 기록을 내 계정에 저장해서 폰을 바꿔도 이어서 볼 수 있어요.</p>' +
-      (ACC.loading ? '<p class="s13 muted" role="status">로그인 준비 중…</p>' : accountCard()) + '</section>' +
+      (ACC.loading ? '<p class="s13 muted" role="status">로그인 준비 중…</p>' : accountCard()) + '</section>' + obAside(0) +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></div>');
   }
   function viewStart() {
@@ -3947,25 +4067,26 @@ document.addEventListener('DOMContentLoaded', function () {
     moBeginStep('start', st);
     var f = function (lab, inner) { return '<label class="field"><span>' + lab + '</span>' + inner + '</label>'; };
     var num = function (k, unit, ph) { return '<div class="unit"><input class="inp" inputmode="numeric" data-field="' + k + '" data-num value="' + amtVal(k, S[k] || '') + '" placeholder="' + (ph || '0') + '"><em>' + unit + '</em></div>' + amtNote(k); };
-    var steps = ['날짜', '금액', '집 위치', '나에 대해'], body = '';
+    var steps = ['날짜', '지역·금액', '집 위치', '나에 대해'], body = '';
     if (st === 1) body = '<h1>언제 계약하고, 언제 들어가요?</h1><p class="sub">이 두 날짜로 전월세 신고·전입신고 기한과 할 일 날짜를 계산해요.</p><div class="form-grid">' +
-      f('계약일 (계약서 쓴 날 · 예정이면 예정일)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">') + f('입주일 (잔금 내고 이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">') +
+      f('계약일 (계약서 쓴 날 · 예정이면 예정일)', '<input class="inp" type="date" data-field="contract" value="' + S.contract + '">' + koTag(dateKo(S.contract))) + f('입주일 (잔금 내고 이사하는 날)', '<input class="inp" type="date" data-field="move" value="' + S.move + '">' + koTag(dateKo(S.move))) +
       f('계약 기간', '<select class="inp" data-field="term">' + [1, 2].map(function (n) { return '<option value="' + n + '"' + (+S.term === n ? ' selected' : '') + '>' + n + '년</option>'; }).join('') + '</select>') + '</div>' +
       (pd(S.move) < pd(S.contract) ? '<div class="banner due">' + ic('info') + '<span>입주일이 계약일보다 빨라요. 날짜를 확인해 주세요.</span></div>' : '');
-    else if (st === 2) body = '<h1>보증금과 월세는 얼마예요?</h1><p class="sub">전월세 신고 대상인지, 매달 나갈 돈이 얼마인지 계산해요.</p><div class="form-grid">' +
+    // 전월세 신고 대상은 지역을 알아야 판정할 수 있어서, 사는 지역을 금액과 같은 화면에서 먼저 묻는다
+    else if (st === 2) body = '<h1>어디서, 얼마에 계약했어요?</h1><p class="sub">사는 지역과 보증금·월세로 전월세 신고 대상인지, 매달 나갈 돈이 얼마인지 계산해요.</p><div class="form-grid">' + regionFields() +
       f('보증금', num('deposit', '만 원', '예: 500')) + f('월세 (관리비 빼고)', num('rent', '만 원', '예: 50')) + f('관리비 (없으면 0)', num('fee', '만 원', '예: 7')) + '</div>' +
       ((S.deposit || S.rent) ? '<div class="banner">' + ic('info') + '<span>' + (R.report.required === null ? '전월세 신고 대상 지역인지 확인이 필요해요(' + esc(R.report.reason) + '). 대상이면 ' + md(R.report.due) + '까지 신고해야 해요.' : R.report.required ? '<b>전월세 신고 대상이에요</b> (' + R.report.reason + '). 기한은 ' + md(R.report.due) + '까지예요.' : '전월세 신고 대상은 아니에요. 확정일자는 따로 받아 두는 게 좋아요.') + '</span></div>' : '');
-    // 사는 지역을 먼저 고르게 한다(고르기 전엔 집 카드가 서울 예시 위치를 보여서 다른 지역 사람이 헷갈림)
-    else if (st === 3) body = '<h1>집은 어디예요?</h1><p class="sub">사는 지역을 고르면 그 동네 행정복지센터·마트·병원을 찾아요. 정확한 집 위치는 나중에 정해도 돼요.</p>' +
-      '<div class="form-grid">' + regionFields() + f('집 별칭 (화면에 보일 이름)', '<input class="inp" data-field="addr" maxlength="20" placeholder="예: 봉천동 원룸" value="' + esc(S.addr || '') + '">') + '</div>' + (regionOf().sido ? homeCard() : '');
+    // 지역은 2단계에서 고른다. 여기서는 정확한 집 위치를 권한다(정하지 않으면 주변 탐색이 비어 보인다)
+    else if (st === 3) body = '<h1>집은 어디예요?</h1><p class="sub">집 위치를 정하면 지하철·버스·편의점·병원까지 걸어서 몇 분인지, 집 근처 밤길 안전까지 보여 드려요. 주소나 동 이름으로 찾거나 지도에서 골라요.</p>' +
+      homeCard() + '<div class="form-grid">' + f('집 별칭 (화면에 보일 이름)', '<input class="inp" data-field="addr" maxlength="20" placeholder="예: 봉천동 원룸" value="' + esc(S.addr || '') + '">') + '</div>';
     else body = '<h1>지원 자격도 미리 볼까요?</h1><p class="sub">청년 주거 지원을 신청해 볼 수 있는지 따져 볼게요. 몰라도 괜찮아요.</p><div class="form-grid">' +
-      f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">') + f('무주택인가요?', '<select class="inp" data-field="homeless">' + [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + ((S.homeless || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + f('비슷한 주거 지원을 지금 받고 있나요?', '<select class="inp" data-field="dup">' + [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + ((S.dup || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['unknown', '잘 모르겠어요'], ['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') +
+      f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">' + koTag(monthKo(S.birth))) + f('무주택인가요?', '<select class="inp" data-field="homeless">' + [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + ((S.homeless || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + f('비슷한 주거 지원을 지금 받고 있나요?', '<select class="inp" data-field="dup">' + [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + ((S.dup || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + f('한 달 소득', '<select class="inp" data-field="income">' + incomeOpts(true).map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select><em class="s12 muted" style="font-style:normal">' + INCOME_HINT + '</em>') +
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + '</div>';
     var btns = '<div class="row" style="justify-content:space-between;margin-top:8px">' + (st > 1 ? '<button type="button" class="btn ghost" data-act="obprev">이전</button>' : '<span></span>') +
       (st < 4 ? '<button type="button" class="btn" data-act="obnext">' + (st === 3 && !S.home ? '나중에 정하고 다음' : '다음') + '</button>' : '<button type="button" class="btn" data-act="obdone">내 자취 시작하기</button>') + '</div>';
     return moRoot('start', '<div class="ob">' + obTop() +
       '<ol class="ob-steps" aria-label="입력 단계">' + steps.map(function (x, i) { return '<li class="' + (i + 1 < st ? 'done' : i + 1 === st ? 'now' : '') + '"' + (i + 1 === st ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + x + '</li>'; }).join('') + '</ol>' +
-      '<section class="card stack ob-card">' + body + btns + '</section>' +
+      '<section class="card stack ob-card">' + body + btns + '</section>' + obAside(st) +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></div>');
   }
   function backupJson() {
@@ -3980,7 +4101,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!o || !/^\d{4}-\d{2}-\d{2}$/.test(o.contract || '') || !/^\d{4}-\d{2}-\d{2}$/.test(o.move || '')) throw new Error('bad');
       if (!confirm('이 파일의 기록으로 지금 기록을 바꿀까요?')) return;
       S = migrate(Object.assign(clone(FRESH), o, { onboarded: true, demo: false, sim: null })); AMT_NOTE = {}; save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; render(false); toast('기록을 불러왔어요.');
-    }).catch(function () { toast('자취 계약 내비 백업 파일이 아니에요.'); });
+    }).catch(function () { toast('자취대로 백업 파일이 아니에요.'); });
   }
 
   // ---------- 조건 입력 (필수 ①) ----------
@@ -4008,11 +4129,11 @@ document.addEventListener('DOMContentLoaded', function () {
       regionFields() +
       f('계약 기간', sel('term', [['1', '1년'], ['2', '2년']]), 'term') +
       f('보증금', num('deposit', '만 원'), 'deposit', JS && JS.amountUnitWarn && !AMT_NOTE.deposit ? JS.amountUnitWarn('deposit', S.deposit) : '') + f('월세 (관리비 제외)', num('rent', '만 원'), 'rent', JS && JS.amountUnitWarn && !AMT_NOTE.rent ? JS.amountUnitWarn('rent', S.rent) : '') +
-      f('계약일 (예정)', '<input class="inp" type="date" data-field="contract" value="' + esc(S.contract) + '">', 'contract', '전월세 신고 기한의 기준이에요') +
-      f('입주(전입) 예정일', '<input class="inp" type="date" data-field="move" value="' + esc(S.move) + '">', 'move', '전입신고 기한과 계약 기간의 기준이에요') + '</div>' +
+      f('계약일 (예정)', '<input class="inp" type="date" data-field="contract" value="' + esc(S.contract) + '">' + koTag(dateKo(S.contract)), 'contract', '전월세 신고 기한의 기준이에요') +
+      f('입주(전입) 예정일', '<input class="inp" type="date" data-field="move" value="' + esc(S.move) + '">' + koTag(dateKo(S.move)), 'move', '전입신고 기한과 계약 기간의 기준이에요') + '</div>' +
       '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' +
-      f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">', 'birth', '계약일 기준 만 나이로 계산해요') +
-      f('가구 소득 (기준 중위소득 대비)', sel('income', [['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과'], ['unknown', '잘 모르겠어요']]), 'income') +
+      f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">' + koTag(monthKo(S.birth)), 'birth', '계약일 기준 만 나이로 계산해요') +
+      f('한 달 소득', sel('income', incomeOpts(false)), 'income', INCOME_HINT) +
       f('무주택인가요?', sel('homeless', yn), 'homeless', '본인과 세대원 모두 집이 없으면 예') +
       f('비슷한 주거 지원을 지금 받고 있나요?', sel('dup', yn), 'dup', '예: 국토교통부 청년월세 특별지원') + '</div>' +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></section>' +
@@ -4038,7 +4159,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var err = inputErr();
     if (Object.keys(err).length) return moRoot('result', '<div class="page-head"><div><h1>자격 판정</h1></div></div><section class="card stack"><p>조건에 고칠 칸이 있어 판정할 수 없어요.</p><a class="btn" href="#input">조건 입력으로</a></section>');
     var R = evaluate(), rp = R.report;
-    var src = function (name, url, basis) { return '<p class="s12 muted">근거 <a href="' + url + '" target="_blank" rel="noopener">' + name + '</a> · ' + basis + ' 기준</p>'; };
+    var src = function (name, url, basis) { return '<p class="src-line">' + ic('doc', 'sm') + '<span>근거 <a href="' + url + '" target="_blank" rel="noopener">' + name + '</a> · ' + basis + ' 기준</span></p>'; };
     var mark = function (ok) { return ok === true ? '<span class="badge brand">충족</span>' : ok === false ? '<span class="badge no">안 맞음</span>' : '<span class="badge due">확인 필요</span>'; };
     var repBadge = rp.required === true ? '<span class="badge due">신고 대상</span>' : rp.required === false ? '<span class="badge">대상 아님</span>' : '<span class="badge due">확인 필요</span>';
     var reports = '<section class="card c6 stack' + moStep(1) + '"><div class="split"><h2 style="font-size:17px">전월세 신고</h2>' + repBadge + '</div><p>' + esc(rp.reason) + '</p>' +
@@ -4060,7 +4181,7 @@ document.addEventListener('DOMContentLoaded', function () {
         cond +
         (v === '답하면 판정' && !x.closed ? '<p class="s13 sub"><a href="#input">조건 입력</a>에서 무주택·중복 수혜를 답하면 바로 판정해요.</p>' : '') +
         '<p class="s13 sub">지원 내용: ' + esc(p.amountText) + '</p>' +
-        '<p class="s12 muted">원문 <a href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">' + esc(p.channel) + '</a> · ' + progBasis(p) + (p.demo ? ' · 시연용 예시 공고' : '') + '</p></section>';
+        '<p class="src-line">' + ic('doc', 'sm') + '<span>원문 <a href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">' + esc(p.channel) + '</a> · ' + progBasis(p) + (p.demo ? ' · 시연용 예시 공고' : '') + '</span></p></section>';
     }).join('');
     var none = R.eligible.length ? '' : '<section class="card c12' + moStep(3 + R.programs.length) + '"><p>지금 조건으로 해당되는 지원이 없어요. 꼭 해야 하는 신고는 위에서 확인하세요.</p></section>';
     return moRoot('result', '<div class="page-head"><div><p class="eyebrow">' + resultPlace() + ageText() + ' · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>자격 판정</h1></div><a class="btn line" href="#input">조건 바꾸기</a></div>' +
@@ -4182,7 +4303,8 @@ document.addEventListener('DOMContentLoaded', function () {
     try { if (act && typeof ae.selectionStart === 'number') sel = [ae.selectionStart, ae.selectionEnd]; } catch (x) {}
     var R = evaluate(), T = buildTimeline(R), n = openTasks(R, T).dueNow.length;
     var cnt = function (k) { return k === 'timeline' && n ? '<span class="cnt" aria-label="밀린 할 일 ' + n + '개">' + n + '</span>' : ''; };
-    document.getElementById('side-nav').innerHTML = GROUPS.map(function (gr) {
+    // 사이드바는 핵심인 '지원 & 상담'(지원사업·AI 코치)을 홈 바로 아래에 둔다(메뉴가 길어 맨 아래가 잘렸다). 휴대폰 탭 순서는 그대로
+    document.getElementById('side-nav').innerHTML = GROUPS.slice(0, 1).concat(GROUPS.filter(function (g) { return g.k === 'help'; }), GROUPS.slice(1).filter(function (g) { return g.k !== 'help'; })).map(function (gr) {
       return (gr.label ? '<span class="g-label">' + gr.label + '' + '</span>' : '') + gr.items.map(function (x) { return '<a class="nav" href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + ic(x[2]) + x[1] + cnt(x[0]) + '</a>'; }).join('');
     }).join('');
     document.getElementById('tab-nav').innerHTML = GROUPS.map(function (gr) { return '<a class="tab" href="#' + gr.def + '"' + (gr === g ? ' aria-current="page"' : '') + '>' + ic(gr.tab[1]) + gr.tab[0] + (gr.k === 'house' ? cnt('timeline') : '') + '</a>'; }).join('');
@@ -4194,6 +4316,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var ta = document.getElementById('top-acts'); if (ta) ta.innerHTML = '<a class="icon-btn" href="#coach" aria-label="AI 자취 코치">' + ic('chat') + '</a>' + bellBtn() + themeBtn() + accTopBtn();
     app.innerHTML = r === 'start' ? viewStart() : headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
     fitLists();
+    decorateTerms(app); termTip(null);
     listScroll(listPos);
     mountMap();   // 목록 높이를 맞춘 뒤에 붙여야 지도가 최종 크기로 자리를 잡는다(먼저 붙이면 가운데가 어긋남)
     if (app.querySelector('a[data-rv-place]')) kakaoBoot(fixPlaceRoadview);
@@ -4302,7 +4425,7 @@ document.addEventListener('DOMContentLoaded', function () {
       S.obStep = st + 1; save(); render(false);
     }
     else if (a === 'obprev') { S.obStep = Math.max(1, (+S.obStep || 1) - 1); save(); render(false); }
-    else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }
+    else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; S.startedAt = iso(realToday()); save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }
     else if (a === 'backup') backupJson();
     else if (a === 'fdel') { if (confirm('이 파일을 지울까요?')) delFile(v); }
     else if (a === 'sharecond') {

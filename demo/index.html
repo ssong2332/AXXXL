@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>자취 계약 내비</title>
+<title>자취대로</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -200,7 +200,7 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
 <div class="demo-bar"><div class="wrap"><span>시연 버전이에요. 서울 청년 주거지원 공고(2026.10.28 기준) 예시 데이터로 동작해요.</span><span><a href="app.html">계약 후 화면 보기</a> · <a href="admin.html">운영자 콘솔(공고 검수·AI 코치)</a></span></div></div>
 
 <header class="top"><div class="wrap">
-  <a class="logo" href="#home"><span class="logo-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10.5 19v-4.5h3V19"/></svg></span>자취 계약 내비</a>
+  <a class="logo" href="#home"><span class="logo-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10.5 19v-4.5h3V19"/></svg></span>자취대로</a>
   <nav class="nav" aria-label="주요 메뉴">
     <a href="#input" data-nav="input">조건 입력</a>
     <a href="#result" data-nav="result">확인 결과</a>
@@ -215,7 +215,7 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
   <nav aria-label="시연 화면 바로가기">
     <a href="#home">홈</a><a href="#input">조건 입력</a><a href="#result">확인 결과</a><a href="#timeline">타임라인</a><a href="#detail-rent">지원 상세</a><a href="#docs">서류함</a><a href="#room">방 크기 미리보기</a><a href="#admin">관리자 · 공고 검수</a>
   </nav>
-  <p>자취 계약 내비는 법률 자문이나 권리분석을 대신하지 않아요. 지원 자격은 각 기관 심사로 최종 결정돼요.<br>데이터 출처: 온통청년(한국고용정보원), 서울주거포털, 국토교통부, 행정표준코드관리시스템</p>
+  <p>자취대로는 법률 자문이나 권리분석을 대신하지 않아요. 지원 자격은 각 기관 심사로 최종 결정돼요.<br>데이터 출처: 온통청년(한국고용정보원), 서울주거포털, 국토교통부, 행정표준코드관리시스템</p>
 </div></footer>
 
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -307,16 +307,16 @@ footer nav a { color: var(--sub); text-decoration: none; font-weight: 600 }
     st.push({ name: '계약 전', when: '~ ' + md(add(C, -1)), at: add(C, -1), tasks: [
       { id: 't1', title: '안심전세 앱에서 시세·임대인 조회', desc: '보증금이 시세에 맞는지, 보증보험 가입이 막힌 집은 아닌지 봐요.', due: add(C, -1), act: ['안심전세 앱 ↗', 'https://www.khug.or.kr'], src: 'HUG 안심전세 앱' },
       { id: 't2', title: '등기부등본 확인', desc: '계약할 사람이 실제 집주인인지, 근저당이 얼마나 잡혀 있는지 확인해요.', due: add(C, -1), act: ['인터넷등기소 ↗', 'https://www.iros.go.kr'], src: '대법원 인터넷등기소' },
-      { id: 't3', title: '집 보러 가서 수압·곰팡이 체크', desc: '창틀, 화장실 천장, 싱크대 아래를 열어 보세요. 방 치수도 재 두면 가구가 들어가는지 미리 볼 수 있어요.', due: add(C, -1), act: ['방 크기 미리보기', '#room'], keep: true, src: '자취 계약 내비 기본 체크리스트' },
+      { id: 't3', title: '집 보러 가서 수압·곰팡이 체크', desc: '창틀, 화장실 천장, 싱크대 아래를 열어 보세요. 방 치수도 재 두면 가구가 들어가는지 미리 볼 수 있어요.', due: add(C, -1), act: ['방 크기 미리보기', '#room'], keep: true, src: '자취대로 기본 체크리스트' },
       { id: 't4', title: '특약사항 미리 요청하기', desc: '“퇴거 시 보증금 즉시 반환”, “입주 전 도배” 같은 약속은 계약서에 적어야 효력이 있어요.', due: add(C, -1), src: '주택임대차 표준계약서' }
     ] });
     st.push({ name: '계약 당일', when: md(C), at: C, tasks: [
-      { id: 't5', title: '계약금은 집주인 명의 계좌로 이체', desc: '현금 대신 이체하고, 이체 확인증을 서류함에 넣어 두세요.', due: C, act: ['서류함에 넣기', '#docs'], src: '자취 계약 내비 기본 체크리스트' },
-      { id: 't6', title: '계약서 사본 받기', desc: '지원금 신청과 전월세 신고에 계속 쓰여요.', due: C, act: ['서류함에 넣기', '#docs'], src: '자취 계약 내비 기본 체크리스트' }
+      { id: 't5', title: '계약금은 집주인 명의 계좌로 이체', desc: '현금 대신 이체하고, 이체 확인증을 서류함에 넣어 두세요.', due: C, act: ['서류함에 넣기', '#docs'], src: '자취대로 기본 체크리스트' },
+      { id: 't6', title: '계약서 사본 받기', desc: '지원금 신청과 전월세 신고에 계속 쓰여요.', due: C, act: ['서류함에 넣기', '#docs'], src: '자취대로 기본 체크리스트' }
     ] });
     st.push({ name: '이사 당일', when: md(M), at: M, tasks: [
       { id: 't7', title: '전입신고', desc: '이사한 날부터 14일 안에 해야 해요. 정부24에서 온라인으로 할 수 있어요.', due: R.movein.due, urgent: true, act: ['정부24에서 신고 ↗', 'https://www.gov.kr'], src: '주민등록법 제16조' },
-      { id: 't8', title: '집 상태 사진 찍어 두기', desc: '벽지, 바닥, 옵션 가전 상태를 날짜가 보이게 남기면 퇴거 때 분쟁을 줄일 수 있어요.', due: M, act: ['사진 올리기', '#docs'], src: '자취 계약 내비 기본 체크리스트' }
+      { id: 't8', title: '집 상태 사진 찍어 두기', desc: '벽지, 바닥, 옵션 가전 상태를 날짜가 보이게 남기면 퇴거 때 분쟁을 줄일 수 있어요.', due: M, act: ['사진 올리기', '#docs'], src: '자취대로 기본 체크리스트' }
     ] });
     var t30 = [];
     if (R.report.required) {

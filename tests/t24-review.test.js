@@ -121,7 +121,7 @@ function runObdone(oe) {
   let line = lineOf("    else if (a === 'obdone') {").trim().replace(/^else /, '');
   const env = { S: { onboarded: false, obStep: 4, done: { x: true } }, saved: 0, toasts: [], loc: { hash: 'start' }, rendered: 0 };
   // eslint-disable-next-line no-new-func
-  new Function('a', 'S', 'save', 'location', 'render', 'toast', 'inputErr', line)('obdone', env.S, () => env.saved++, env.loc, () => env.rendered++, (m) => env.toasts.push(m), () => oe);
+  new Function('a', 'S', 'save', 'location', 'render', 'toast', 'inputErr', 'iso', 'realToday', line)('obdone', env.S, () => env.saved++, env.loc, () => env.rendered++, (m) => env.toasts.push(m), () => oe, (d) => d.toISOString().slice(0, 10), () => new Date('2026-11-17T00:00:00Z'));
   return env;
 }
 test('R3: 미래 출생연월이면 완료를 막고 그 문구로 안내 (정상 — 리뷰 3)', () => {
@@ -145,7 +145,7 @@ test('R3: 다른 칸 오류(birth 없음)로는 막지 않음 (예외 — 범위
   assert.equal(e.S.onboarded, true);
 });
 test('R3: 완료 줄 뒤쪽은 그대로, 검사는 S.onboarded 앞 (정적)', () => {
-  assert.equal(lineOf("    else if (a === 'obdone') {"), "    else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }");
+  assert.equal(lineOf("    else if (a === 'obdone') {"), "    else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; S.startedAt = iso(realToday()); save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }");
 });
 
 // ---------- R4 값 통째 교체 시 금액 안내 비우기 (DECISIONS #30) ----------
