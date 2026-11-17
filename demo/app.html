@@ -1088,6 +1088,37 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
   .ob-aside ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px }
   .ob-aside li { display: flex; flex-direction: column; gap: 3px; font-size: 14px; color: var(--ink-2); line-height: 1.55 } .ob-aside li b { color: var(--ink); font-size: 15px }
 }
+/* ===== 녹화 검토 3차 ===== */
+/* 금액은 잘리면 안 된다: 요약 카드 숫자의 말줄임을 풀고, 좁은 폰에서는 글자를 조금 줄인다 */
+.stat .v, .mini .v { white-space: normal; overflow: visible; text-overflow: clip; word-break: keep-all; overflow-wrap: anywhere }
+@media (max-width: 640px) { .stat .v { font-size: clamp(19px, 5.4vw, 24px) } .mini .v { font-size: clamp(16px, 4.6vw, 18px) } }
+.pay-row .amt { flex: none; margin-left: auto }
+/* 휴대폰 조건 입력: '판정 보기' 카드가 아래에 떠서 입력칸을 가렸다 → 맨 아래 제자리에 둔다 */
+@media (max-width: 899px) { #app .mo-input .mo-input-go { position: static } }
+/* 누르기 쉽게(휴대폰 44px 기준) */
+@media (max-width: 899px) {
+  .task .chk { width: 28px; height: 28px }
+  .act a.src { min-height: 36px }
+  .acc-links .linkbtn, .ob .linkbtn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px }
+}
+/* 너무 작은 글자 */
+.ev.more { font-size: 11px !important }
+.mo-moveout .mv-chip { font-size: 12px }
+.cat, .sp-kind { font-size: 13px }
+@media (max-width: 899px) { .tab { font-size: 11px !important } }
+.g-label { font-size: 12px !important }
+/* PC 사이드바: 높이 900에서도 계정·화면 모드까지 보이게 촘촘히 */
+.side .nav { min-height: 36px }
+.side .g-label { margin: 10px 0 4px 12px !important }
+.side .side-foot .privacy { display: none }
+.side-acc { display: flex; align-items: center; gap: 4px }
+.side-acc .side-tool:first-child { flex: 1 1 auto; min-width: 0 }
+.side-acc .side-out { flex: none; width: 40px; justify-content: center; padding: 0 }
+/* 옆으로 미는 줄(하위 탭·분류 칩): 끝에 흐림을 줘서 더 있다는 걸 보여 준다 */
+.hs:not(.hs-end) { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent) }
+@media (max-width: 640px) { .home-extra { display: none } }
+/* PC 빈 공간: 자격 판정·내 계약 카드 높이를 억지로 맞추지 않는다 */
+.mo-result .grid, .mo-contract .grid { align-items: start }
 /* ===== mo:T-09 내 화면 6개 모션 (계약·신고 전용) ===== */
 .mo { --mo-short: 250ms; --mo-base: 450ms; --mo-long: 600ms; --mo-step: 80ms; --mo-shift: 20px; --mo-ease: cubic-bezier(0.3, 0.7, 0.4, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
 .mo .mo-fold { display: grid; grid-template-rows: 0fr }
@@ -1407,6 +1438,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (how === 'pull') {
         if (fresh) { var keep = {}; if (!S.demo) JA.PRIVATE.forEach(function (k) { if (k in S) keep[k] = S[k]; }); S = Object.assign(clone(FRESH), keep); AMT_NOTE = {}; }
         JA.apply(S, r.state); migrate(S);
+        if (S.onboarded && !S.startedAt) S.startedAt = iso(realToday());   // 예전 기록은 처음 불러온 날을 가입일로
         try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {}
         ACC_LAST = JSON.stringify(JA.pick(S)); accSetLocalAt(r.at); ACC.at = r.at;
         PC.k = ''; ACC.state = 'ok'; ACC.open = false;
@@ -1480,8 +1512,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function accSideTools() {
     if (!accOn()) return '';
     var u = ACC.cli.user();
-    return '<a class="side-tool" href="#contract" data-act="accgo">' + ic('user') + '<span class="acc-who">' + esc(accWho()) + '</span><small>' + (ACC_PROV[u.provider] || '이메일') + '</small></a>' +
-      '<button type="button" class="side-tool" data-act="acclogout">' + ic('logout') + '로그아웃</button>';
+    return '<div class="side-acc"><a class="side-tool" href="#contract" data-act="accgo" title="' + esc(accWho()) + ' · ' + (ACC_PROV[u.provider] || '이메일') + ' 로그인">' + ic('user') + '<span class="acc-who">' + esc(accWho()) + '</span></a>' +
+      '<button type="button" class="side-tool side-out" data-act="acclogout" aria-label="로그아웃" title="로그아웃">' + ic('logout') + '</button></div>';
   }
   function accTopBtn() {
     if (!accOn()) return '';
@@ -1521,6 +1553,15 @@ document.addEventListener('DOMContentLoaded', function () {
       : ACC.cli.signIn(em, pw).then(function () { done(); toast('로그인했어요.'); accSync(true); });
     job.catch(function (er) { done(er.message); });
   });
+
+  // 옆으로 미는 줄이 넘치면 끝을 흐리게(.hs), 끝까지 밀면 흐림을 뺀다(.hs-end)
+  function markScrollers() {
+    document.querySelectorAll('.subnav, .sp-tabs, .sp-kinds, .cats, .chips, .seg-scroll').forEach(function (el) {
+      var upd = function () { var over = el.scrollWidth > el.clientWidth + 4; el.classList.toggle('hs', over); el.classList.toggle('hs-end', !over || el.scrollLeft + el.clientWidth >= el.scrollWidth - 4); };
+      upd(); if (!el.dataset.hsBound) { el.dataset.hsBound = '1'; el.addEventListener('scroll', upd, { passive: true }); }
+    });
+  }
+  window.addEventListener('resize', function () { markScrollers(); });
 
   // ---------- 용어 설명: 처음 듣는 말에 점선 밑줄, 누르면 한 줄 설명 ----------
   // 화면을 그린 뒤 #app 글자에서 용어가 처음 나오는 곳 한 군데만 감싼다. 링크·버튼·입력칸·제목 안은 건드리지 않는다
@@ -3457,14 +3498,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (mc !== 'all' && !CATS[mc]) mc = 'all';
     var homeList = places().filter(function (p) { return mc === 'all' || p.cat === mc; });
     var explore = noHome ? '<div class="c8">' + homeCard() + '</div>' : '<section class="card c8"><div class="split" style="flex-wrap:wrap;margin-bottom:12px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="ptile" style="width:44px;height:44px">' + ic('pin') + '</span><div><h2 style="font-size:19px;font-weight:800">우리 동네 탐색하기</h2><p class="s13 muted">' + esc(home().label) + '</p></div></div><a class="more s13" href="#map" style="font-weight:700">크게 보기' + ic('chev', 'sm') + '</a></div>' +
-      '<div style="margin-bottom:10px">' + catChips(mc, 'homecat') + '</div><div class="row" style="margin-bottom:10px">' + dataBadge() + (S.home ? '' : ' <a class="s13" href="#map">내 집 위치 정하기</a>') + '</div>' + placeMap(mc, S.mapSel, 360, false) +
+      '<div style="margin-bottom:10px">' + catChips(mc, 'homecat') + '</div><div class="row" style="margin-bottom:10px">' + dataBadge() + (S.home ? '' : ' <a class="s13" href="#map">내 집 위치 정하기</a>') + '</div>' + placeMap(mc, S.mapSel, window.innerWidth < 640 ? 240 : 360, false) +
       // 지도 탐색과 같게: 분류를 고르면 아래 목록이 바뀌고, 장소를 누르면 지도가 그쪽으로 옮겨 가며 카드가 뜬다
       '<div class="card-h" style="margin:22px 0 14px"><h2>' + (mc === 'all' ? '가까운 순서' : CATS[mc][0]) + '</h2><span class="s12 muted">' + homeList.length + '곳</span></div>' +
       '<div class="scroll-list" data-rows="5">' + (homeList.length ? homeList.slice(0, 5).map(function (p) { return placeRow(p, false); }).join('') + (homeList.length > 5 ? '<a class="btn ghost block sm" style="margin-top:8px" href="#map">' + (homeList.length - 5) + '곳 더 보기 · 지도 탐색' + ic('chev', 'sm') + '</a>' : '') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : mc === 'all' ? '1km 안에서 찾은 곳이 없어요.' : emptyNear(mc)) + '</p>') + '</div>' +
       '<div style="margin-top:8px">' + sourceNote() + '</div></section>';
     var near = [nearest('public', /행정복지센터|주민|관공서/), nearest('safety'), nearest('park'), nearest('study', /도서관/)].filter(Boolean);
-    var nearCard = '<section class="card c4"><div class="card-h"><h2>가까운 공공시설</h2></div>' + (near.length ? near.map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : noHome ? '집 위치를 정하면 가까운 행정복지센터·지구대·공원을 보여드려요.' : '주변 공공시설을 찾지 못했어요.') + '</p>') + '</section>';
-    var week = '<section class="card c8"><div class="card-h"><h2>이번 주에 가 볼 곳</h2><a class="more" href="#recommend">주변 추천' + ic('chev', 'sm') + '</a></div><div class="tiles">' +
+    // 휴대폰 홈이 너무 길어서, 다른 탭에 같은 내용이 있는 카드(가까운 공공시설=생활 인프라, 이번 주에 가 볼 곳=주변 추천)는 휴대폰 홈에서 숨긴다
+    var nearCard = '<section class="card c4 home-extra"><div class="card-h"><h2>가까운 공공시설</h2></div>' + (near.length ? near.map(function (p) { return placeRow(p, false); }).join('') : '<p class="muted s13">' + (DATA.status === 'loading' ? '불러오는 중…' : noHome ? '집 위치를 정하면 가까운 행정복지센터·지구대·공원을 보여드려요.' : '주변 공공시설을 찾지 못했어요.') + '</p>') + '</section>';
+    var week = '<section class="card c8 home-extra"><div class="card-h"><h2>이번 주에 가 볼 곳</h2><a class="more" href="#recommend">주변 추천' + ic('chev', 'sm') + '</a></div><div class="tiles">' +
       SIT.map(function (sd) { sitLoad(sd); var n = sitList(sd)[0]; return '<button type="button" class="tile" data-act="rec" data-v="' + sd.id + '"><span class="ptile">' + ic(sd.icon) + '</span><b>' + sd.name + '</b><span class="s12 muted">' + (n ? '가장 가까운 곳 ' + (walkTxt(n, false).real ? '' : '약 ') + walkTxt(n, false).min + '분' : sd.hint) + '</span></button>'; }).join('') + '</div></section>';
     var cd = CHAL.filter(chalDone).length;
     var chal = '<section class="card c4"><div class="card-h"><h2>입주 첫 달 체크리스트</h2><span class="s13 muted">' + cd + ' / ' + CHAL.length + ' 완료</span></div><div class="progress-line" style="margin-bottom:8px"><span style="width:' + Math.round(cd / CHAL.length * 100) + '%"></span></div>' +
@@ -4316,7 +4358,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var ta = document.getElementById('top-acts'); if (ta) ta.innerHTML = '<a class="icon-btn" href="#coach" aria-label="AI 자취 코치">' + ic('chat') + '</a>' + bellBtn() + themeBtn() + accTopBtn();
     app.innerHTML = r === 'start' ? viewStart() : headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
     fitLists();
-    decorateTerms(app); termTip(null);
+    decorateTerms(app); termTip(null); markScrollers();
     listScroll(listPos);
     mountMap();   // 목록 높이를 맞춘 뒤에 붙여야 지도가 최종 크기로 자리를 잡는다(먼저 붙이면 가운데가 어긋남)
     if (app.querySelector('a[data-rv-place]')) kakaoBoot(fixPlaceRoadview);
@@ -4509,6 +4551,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var tidy = function (list) { return (list || []).map(function (c) { if (c && typeof c === 'object') { delete c.shown; delete c.stepN; if (c.mode === 'hello') return null; if (c.mode === 'pending' || !c.a) return c.q || null; } return c; }).filter(Boolean); };
     S.rooms = S.rooms || {}; if ((S.chat || []).length) { S.rooms.auto = (S.rooms.auto || []).concat(S.chat); S.chat = []; }
     Object.keys(S.rooms).forEach(function (k) { S.rooms[k] = tidy(S.rooms[k]); });
+    // 가입일(S.startedAt)이 없던 예전 기록: 처음 보는 오늘을 가입일로 둔다(그 전에 지난 할 일을 '지남'으로 겁주지 않게)
+    if (S.onboarded && !S.demo && !S.startedAt) { S.startedAt = iso(realToday()); save(); }
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () {});
     render(false);
     accInit();
