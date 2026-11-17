@@ -7,6 +7,8 @@ const R = require('../rules-core.js');
 
 module.exports = async (req, res) => {
   const who = L.adminState(req);
+  // 코드 없이 여는 첫 화면: 서버에 운영자 코드가 설정돼 있는지만 알려 준다(401 오류를 브라우저 콘솔에 남기지 않게). 데이터는 주지 않는다
+  if (req.method === 'GET' && req.query && req.query.probe && !(req.headers && req.headers['x-admin-token'])) return L.send(res, 200, { ok: false, configured: who !== 'unset' });
   if (who === 'unset') return L.send(res, 503, { ok: false, code: 'not_configured', error: '서버에 운영자 코드(ADMIN_TOKEN)가 설정되지 않았어요. 이 브라우저 연습 모드로 쓸 수 있어요.' });
   if (who !== 'ok') { if (L.limited(req, 'admin-bad', 10, 600000)) return L.send(res, 429, { ok: false, error: '잠시 뒤 다시 시도해 주세요.' }); return L.send(res, 401, { ok: false, code: 'bad_token', error: '운영자 코드가 맞지 않아요.' }); }
   try {

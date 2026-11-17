@@ -1,4 +1,4 @@
-/* 자취 계약 내비 · 지원사업 공용 로직 (브라우저 + 서버 + 테스트)
+/* 자취대로 · 지원사업 공용 로직 (브라우저 + 서버 + 테스트)
  *  1. 온통청년 정책 한 건을 화면용으로 정리 (normalize)
  *  2. 이용 시점 기준 접수 상태 (statusAt)
  *  3. 등록된 조건과 내 정보 대조 (check) — 구조화된 항목 + 글에서 금액으로 바꿀 수 있는 조건(소득 기준, 무주택, 보증금·월세 상한). 나머지 글 조건은 판정하지 않는다
@@ -30,7 +30,12 @@
   function labels(s, table) { var c = codes(s).filter(function (x) { return !FREE[x]; }); return c.length ? c.map(function (x) { return table[x] || x; }) : null; }
   function ymd8(s) { s = String(s || '').replace(/[^0-9]/g, ''); return s.length === 8 ? s : ''; }
   // 등록 주소에 '&amp;'가 그대로 든 것이 있어 '&'로 푼다 (풀지 않으면 공고가 열리지 않는다)
-  function url(s) { s = String(s || '').trim().replace(/&amp;/gi, '&'); if (!s) return ''; if (!/^https?:\/\//i.test(s)) { if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) return ''; s = 'https://' + s; } return /^https?:\/\/[^\s<>"']+$/i.test(s) ? s : ''; }
+  // 온통청년에 http:// 로 등록된 주소: 공공 누리집(go.kr)과 https 로 열리는 걸 확인한 곳은 https 로 바꾼다
+  //  (예: http://nhuf.molit.go.kr 은 503, https 는 정상). 확인 안 된 곳은 그대로 둔다
+  var HTTPS_OK = /(^|\.)go\.kr$|^(www\.)?mtvs\.kr$/i;
+  function url(s) { s = String(s || '').trim().replace(/&amp;/gi, '&'); if (!s) return ''; if (!/^https?:\/\//i.test(s)) { if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) return ''; s = 'https://' + s; }
+    var h = /^http:\/\/([^\/?#:]+)/i.exec(s); if (h && HTTPS_OK.test(h[1])) s = 'https://' + s.slice(7);
+    return /^https?:\/\/[^\s<>"']+$/i.test(s) ? s : ''; }
 
   // 대상 지역 범위: 코드가 200개 이상이면 전국, 한 시도 코드를 거의 다 가지면 시도, 아니면 시군구
   function scopeOf(zipList, sidoSize) {

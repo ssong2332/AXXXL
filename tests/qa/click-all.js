@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const jwt = (c) => b64({ alg: 'HS256' }) + '.' + b64(c) + '.s';
 const SB = 'https://abcdefghijklmnopqrst.supabase.co', BASE = process.env.BASE || 'http://localhost:8000';
-const SKIP = new Set(['acclogout', 'accdel', 'acclogin', 'reset', 'resethome', 'fdel', 'evdel', 'billdel', 'conddel', 'chatclear', 'install', 'gps', 'restore', 'addfile', 'backup', 'ics', 'evics', 'reload', 'accmode', 'condfold']);
+const SKIP = new Set(['acclogout', 'accdel', 'acclogin', 'reset', 'resethome', 'fdel', 'evdel', 'billdel', 'conddel', 'chatclear', 'install', 'gps', 'restore', 'addfile', 'backup', 'ics', 'evics', 'reload', 'accmode', 'condfold', 'pushon', 'pushoff']);
 const iso = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const SEED = { onboarded: true, demo: false, deposit: 3000, rent: 45, fee: 7, term: 2, contract: iso(-20), move: iso(-5), birth: '2001-04', homeless: 'yes', dup: 'no', income: '150', nick: '점검', addr: '신림동 원룸', sido: '서울특별시', sgg: '관악구', gu: '관악구', zip: '11620',
   home: { lat: 37.4812, lng: 126.9275, label: '서울 관악구 신림동', src: 'pick' }, events: [{ id: 'ev1', date: iso(3), title: '보일러 점검' }], done: { t1: true } };
