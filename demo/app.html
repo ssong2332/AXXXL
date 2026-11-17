@@ -1051,6 +1051,8 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
 .side-tool .acc-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .ob-top { display: flex; align-items: center; justify-content: space-between; gap: 12px }
 .ob-out { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer } .ob-out:hover { background: var(--fill) }
+/* 휴대폰: 키보드·보조기기로 이동할 때 버튼이 위쪽 줄·아래 탭바 뒤에 숨지 않게 (WCAG 2.4.11) */
+@media (max-width: 899px) { html { scroll-padding-top: 72px; scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)) } }
 /* ===== mo:T-09 내 화면 6개 모션 (계약·신고 전용) ===== */
 .mo { --mo-short: 250ms; --mo-base: 450ms; --mo-long: 600ms; --mo-step: 80ms; --mo-shift: 20px; --mo-ease: cubic-bezier(0.3, 0.7, 0.4, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
 .mo .mo-fold { display: grid; grid-template-rows: 0fr }
