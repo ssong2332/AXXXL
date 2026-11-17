@@ -2607,13 +2607,13 @@ document.addEventListener('DOMContentLoaded', function () {
   // 동네봇·물어보기가 밝히는 장소 출처: 실제로 받아 온 곳(카카오맵·공공데이터포털 등). 없으면 OpenStreetMap
   function placeSrcName() { var n = (DATA.sources || []).map(function (x) { return x && x.name; }).filter(Boolean); return n.length ? n.map(function (x) { return x.replace(/ 장소 검색$/, ''); }).join(' · ') : 'OpenStreetMap'; }
   // v7: 기차역을 검색어 '역' 대신 '기차역'으로 찾음 — '역'으로는 가까운 15곳이 '○○역점' 가게·출구로 차서 수원역(KTX) 같은 기차역이 빠졌다
-  var KPLACES_LS = 'jachwi-places-kakao-v9';   // v9: 전화번호·버스 도착 정보용 정류장 번호 포함   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리, v8: 버스정류장을 못 받은 결과는 저장하지 않음(v7에 남은 것 버림)
-  try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
+  var KPLACES_LS = 'jachwi-places-kakao-v10';   // v10: 카카오 분류 전체(cn) 저장 — 동네봇이 브랜드·프랜차이즈를 가려내려고   // v9: 전화번호·버스 도착 정보용 정류장 번호 포함   // v2: 버스정류장(TAGO·서울시) 포함, v3: 겹친 정류장 합침, v4: 같은 자리 합침·집 시 자료 우선, v5: 번호 없고 지나는 버스 없는 정류장 뺌, v6: 미정차·번호 0 처리, v8: 버스정류장을 못 받은 결과는 저장하지 않음(v7에 남은 것 버림)
+  try { ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9'].forEach(function (v) { localStorage.removeItem('jachwi-places-kakao-' + v); }); } catch (e) {}
   function kakaoItem(d, q) {
     var seg = String(d.category_name || '').split(' > '), cat = q[1], sub = typeof q[3] === 'number' ? (q[3] < 0 ? seg[seg.length - 1] : seg[q[3]] || seg[seg.length - 1]) : q[3];
     if (cat === 'public' && /경찰/.test(d.category_name)) cat = 'safety';   // 공공기관 중 지구대·치안센터는 '안전'
     var url = /^https?:\/\/place\.map\.kakao\.com\/\d+$/.test(d.place_url || '') ? d.place_url : '';
-    return { id: 'kakao-' + d.id, src: 'kakao', cat: cat, sub: sub || '', name: String(d.place_name).slice(0, 40), lat: +(+d.y).toFixed(6), lng: +(+d.x).toFixed(6), addr: String(d.road_address_name || d.address_name || '').slice(0, 60), hours: '', url: url, tel: /^[\d-]{7,15}$/.test(d.phone || '') ? d.phone : '' };
+    return { id: 'kakao-' + d.id, src: 'kakao', cat: cat, sub: sub || '', name: String(d.place_name).slice(0, 40), lat: +(+d.y).toFixed(6), lng: +(+d.x).toFixed(6), addr: String(d.road_address_name || d.address_name || '').slice(0, 60), hours: '', url: url, tel: /^[\d-]{7,15}$/.test(d.phone || '') ? d.phone : '', cn: String(d.category_name || '').slice(0, 80) };   // cn: '음식점 > 카페 > 커피전문점 > 메가MGC커피'처럼 브랜드까지 (동네봇이 씀)
   }
   function kakaoPlaces(c, done, qs, radius) {
     qs = qs || KQ;
@@ -3985,7 +3985,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 단계별 체크리스트 (계약 전 · 계약 당일 · 입주 준비 · 입주 당일 · 신고·정리 · 퇴거)
     f.stages = buildTimeline(R).map(function (st) { return { key: st.key, name: st.name, when: st.when, tasks: st.tasks.map(function (t) { return { title: t.title, done: !!S.done[t.id], urgent: !!t.urgent }; }) }; });
     f.money = { month: (mo + 1) + '월', items: billsInMonth(y, mo).map(function (b) { return { name: b.title, amount: b.amount, kind: b.kind, est: b.est }; }) };
-    var hasHome = !!(S.home || S.demo), list = hasHome ? places().slice(0, 60).map(function (p) { return { id: p.id, name: p.name, cat: p.cat, sub: p.sub, min: p.min, m: Math.round(p.m) }; }) : [];
+    var hasHome = !!(S.home || S.demo), list = hasHome ? places().map(function (p) { return { id: p.id, name: p.name, cat: p.cat, sub: p.sub, cn: p.cn || '', min: p.min, m: Math.round(p.m) }; }) : [];   // 전부 넘긴다(가까운 60곳만 넘기면 가게 많은 동네에선 180m 안에서 다 차서 394m 지하철역도 '없다'고 답했다). 이 기기 안에서만 쓰는 값
     f.places = { hasHome: hasHome && DATA.status !== 'nohome', list: list, source: isReal() ? placeSrcName() + ' 기준 · 걸리는 시간은 직선거리로 계산' : '시연용 예시 데이터' };
     return f;
   }
