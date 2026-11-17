@@ -1479,7 +1479,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // 신고·기한·나이 계산은 engine.js(계약·신고 담당), 지원 자격은 rules-core.js(evalProgram)
   var JE = window.JachwiEngine;
   function contractEnd() { return JE.contractEnd(pd(S.move), S.term); }
-  function curAge() { var a = JE.age(S.birth, pd(S.contract)); return a === null && !S.birth && +S.age ? +S.age : a; }
+  // 나이는 지원 자격 판정에만 쓴다. 지원사업은 신청하는 날 기준이라 계약일이 아니라 오늘 기준 만 나이로 센다
+  function curAge() { var a = JE.age(S.birth, today); return a === null && !S.birth && +S.age ? +S.age : a; }
   function ageText() { var a = curAge(); return a === null ? '나이 확인 필요' : '만 ' + a + '세'; }
   function incomeOk(limit) { if (S.income === 'unknown') return null; if (S.income === 'over') return false; return +S.income <= limit; }
   function incomeLabel() { return { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' }[S.income]; }
@@ -1927,7 +1928,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function houseInc() { var u = sup(); return !u.hh ? undefined : u.hh === 1 ? u.minc : u.hinc; }
   // 소득을 알려 주면 승인 공고가 쓰는 소득 구간(100%·150%)도 같이 맞춘다
   function syncIncome() { var u = sup(), v = houseInc(); if (u.hh && v !== undefined) { var pct = v * 10000 / SP.median(u.hh) * 100; S.income = pct <= 100 ? '100' : pct <= 150 ? '150' : 'over'; } }
-  // 나이는 조건 입력·내 계약과 같은 curAge. 생일 달이라 정할 수 없으면 0 + birth
+  // 나이는 오늘 기준 curAge(자격 판정 화면과 같음). 생일 달이라 정할 수 없으면 0 + birth
   function supUser() { var u = sup(), r = regionOf(); return { age: curAge() || 0, birth: S.birth || '', zip: r.zip, region: regionName(r), mrg: u.mrg, job: u.job, school: u.school, minc: u.minc, hh: u.hh, hinc: u.hinc, traits: u.traits, homeless: S.homeless || undefined, deposit: +S.deposit || 0, rent: +S.rent || 0, earn: u.minc === undefined ? 0 : u.minc * 12 }; }
   function scopeLabel(it, r) { return it.scope === 'sgg' ? r.sgg + ' 거주' : it.scope === 'sido' ? r.sido + ' 거주' : it.scope === 'multi' ? '여러 지역 대상 (내 지역 포함)' : '전국 대상'; }
   function restNote(d) {
