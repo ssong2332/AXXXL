@@ -378,16 +378,17 @@ test('검수기: 점으로 이은 날짜와 괄호가 있는 목록 항목도 �
 });
 
 // ---------- 소개 페이지 (landing.html, /intro) ----------
-test('소개 페이지: 앱 시작·예시 링크, 화면 이미지, 스크립트 문법, /intro 주소', () => {
+test('소개 페이지: 앱 시작 링크(예시 링크 없음), 화면 이미지, 스크립트 문법, /intro 주소', () => {
   const html = fs.readFileSync(path.join(__dirname, '../demo/landing.html'), 'utf8');
-  assert.ok(html.includes('href="app.html#start"') && html.includes('href="app.html#demo"'));
+  assert.ok(html.includes('href="app.html#start"') && !html.includes('app.html#demo'));
   for (const m of html.matchAll(/src="(landing\/[\w-]+\.jpg)"/g)) assert.ok(fs.existsSync(path.join(__dirname, '../demo', m[1])), m[1]);
   for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(m[1]);
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '../demo/vercel.json'), 'utf8'));
   assert.ok(vj.rewrites.some((r) => r.source === '/intro' && r.destination === '/landing.html'));
-  // 앱은 #demo로 들어오면 저장된 내 정보가 없을 때만 예시 데이터로 연다
+  // 예시 둘러보기는 없앴다: 예전 #demo 링크는 처음 화면으로, 예시로 보던 기기는 빈 상태로
   const app = fs.readFileSync(path.join(__dirname, '../demo/app.html'), 'utf8');
-  assert.ok(/if \(h === '#demo'\)[\s\S]{0,200}if \(!mine \|\| S\.demo\)/.test(app));
+  assert.ok(/if \(h === '#demo'\) history\.replaceState\([^\n]*'#start'\)/.test(app));
+  assert.ok(app.includes('if (S.demo) { S = clone(FRESH); AMT_NOTE = {}; save(); }'));
 });
 
 test('로고: 배경 없는 독립 로고(글자색을 따름)를 앱·운영자 콘솔·소개 페이지가 같이 쓴다', () => {

@@ -159,13 +159,9 @@ function runBranch(act, opts) {
     (o) => JSON.parse(JSON.stringify(o)), () => env.save++, () => env.render++, (m) => env.toasts.push(m), () => opts.confirm !== false, env.loc, {}, null);
   return Object.assign(env, out);
 }
-test('R4: 예시 reset·demo·startreal 뒤 금액 안내가 빈 객체 (정상)', () => {
+test('R4: 예시 reset 뒤 금액 안내가 빈 객체 (정상 — 예시 둘러보기 demo·startreal은 없앰)', () => {
   const r1 = runBranch('reset', { demo: true, note: { deposit: '이천' } });
   assert.deepEqual(r1.AMT_NOTE, {}); assert.equal(r1.S.deposit, 1000);
-  const r2 = runBranch('demo', { note: { deposit: '이천' } });
-  assert.deepEqual(r2.AMT_NOTE, {}); assert.equal(r2.S.deposit, 1000);
-  const r3 = runBranch('startreal', { note: { rent: 'x', fee: 'y' } });
-  assert.deepEqual(r3.AMT_NOTE, {}); assert.equal(r3.S.deposit, 0);
 });
 test('R4: 실제 사용자 reset 확인 → 비움, 취소 → 안내·값 그대로 (예외)', () => {
   const ok = runBranch('reset', { demo: false, note: { deposit: '이천' }, confirm: true });
@@ -174,25 +170,24 @@ test('R4: 실제 사용자 reset 확인 → 비움, 취소 → 안내·값 그�
   assert.equal(no.AMT_NOTE.deposit, '이천'); assert.equal(no.S.deposit, 500); assert.equal(no.save, 0); assert.equal(no.render, 0);
 });
 test('R4: 이미 빈 객체여도 빈 객체, save·render 호출 수 그대로 (경계)', () => {
-  [['reset', { demo: true }, 1, 1], ['reset', { demo: false, confirm: true }, 1, 1], ['demo', {}, 1, 1], ['startreal', {}, 1, 1]].forEach(([act, o, sv, rd]) => {
+  [['reset', { demo: true }, 1, 1], ['reset', { demo: false, confirm: true }, 1, 1]].forEach(([act, o, sv, rd]) => {
     const r = runBranch(act, Object.assign({ note: {} }, o));
     assert.deepEqual(r.AMT_NOTE, {}); assert.equal(r.save, sv, act); assert.equal(r.render, rd, act);
   });
 });
-test('R4: AMT_NOTE = {}; 정확히 5번, 각각 S 통째 대입 바로 뒤, 다른 줄 불변 (정적)', () => {
-  assert.equal((HTML.match(/(?<!var )AMT_NOTE = \{\};/g) || []).length, 7); // 선언 `var AMT_NOTE = {};` 1번은 빼고 셈 (계정 동기화 2곳 포함)
+test('R4: AMT_NOTE = {}; 정확히 6번, 각각 S 통째 대입 바로 뒤, 다른 줄 불변 (정적)', () => {
+  assert.equal((HTML.match(/(?<!var )AMT_NOTE = \{\};/g) || []).length, 6); // 선언 `var AMT_NOTE = {};` 1번은 빼고 셈 (계정 동기화 2곳·boot 예시 정리 포함)
   ['S = clone(DEMO); AMT_NOTE = {}; save(); render(true);',
     'S = clone(FRESH); AMT_NOTE = {}; save(); DATA = ',
-    "else if (a === 'demo') { S = clone(DEMO); AMT_NOTE = {}; save();",
-    "else if (a === 'startreal') { S = clone(FRESH); AMT_NOTE = {}; save();",
+    'if (S.demo) { S = clone(FRESH); AMT_NOTE = {}; save(); }',   // boot: 예시 데이터로 보던 기기는 빈 상태로
     'S = migrate(Object.assign(clone(FRESH), o, { onboarded: true, demo: false, sim: null })); AMT_NOTE = {}; save();',
     'S = clone(FRESH); AMT_NOTE = {}; try { localStorage.setItem(STORE',   // 계정: 다른 계정이 로그인하면 이 기기 기록 비움
     'S = Object.assign(clone(FRESH), keep); AMT_NOTE = {}; }'                // 계정: 빈 기기에 서버 기록 불러오기
   ].forEach((s) => assert.equal(HTML.split(s).length - 1, 1, s));
   const assigns = HTML.split('\n').filter((l) => /\bS = (clone|migrate)\(/.test(l)).length;
-  assert.equal(assigns, 7); // var S 첫 값·restoreJson·reset(두 갈래 한 줄)·demo·startreal·boot #demo·계정 주인 바뀜
+  assert.equal(assigns, 5); // var S 첫 값·restoreJson·reset(두 갈래 한 줄)·boot 예시 정리·계정 주인 바뀜
   assert.equal(lineOf('  var AMT_NOTE = {};'), '  var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24');
-  assert.match(lineOf('      if (!mine || S.demo) {'), /\{ S = clone\(DEMO\); save\(\); \}/);
+  assert.ok(!/data-act="demo"/.test(HTML) && !/a === 'demo'\)/.test(HTML), '예시 둘러보기 진입점 없음');
 });
 
 // ---------- R5 금액 칸에 입력 원문 보이기 (DECISIONS #31) ----------
