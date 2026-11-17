@@ -1415,7 +1415,7 @@ document.addEventListener('DOMContentLoaded', function () {
         (s.type === 'recovery' ? '<form data-form="accpw" class="acc-form"><label class="field"><span>새 비밀번호 (6자 이상)</span><input class="inp" type="password" name="pw" minlength="6" autocomplete="new-password" required></label><button class="btn" type="submit"' + (ACC.busy ? ' disabled' : '') + '>비밀번호 바꾸기</button></form>' : '') +
         '<div class="row"><button type="button" class="btn line sm" data-act="acclogout">로그아웃</button><button type="button" class="btn ghost sm" data-act="accdel">계정 삭제</button></div>' + note + '</section>';
     }
-    var m = ACC.mode, title = m === 'up' ? '이메일로 회원가입' : m === 'reset' ? '비밀번호 다시 정하기' : '이메일로 로그인';
+    var m = ACC.mode, title = m === 'up' ? '이메일로 회원가입' : m === 'reset' ? '비밀번호 찾기' : '이메일로 로그인';
     return '<div class="stack acc">' +
       (ACC.prov.kakao || ACC.prov.google ? '<div class="acc-sns">' + (ACC.prov.kakao ? '<button type="button" class="acc-btn acc-kakao" data-act="acclogin" data-v="kakao">' + KAKAO_SYM + '카카오로 계속하기</button>' : '') + (ACC.prov.google ? '<button type="button" class="acc-btn acc-google" data-act="acclogin" data-v="google">' + GOOGLE_G + 'Google로 계속하기</button>' : '') + '</div>' : '') +
       (!ACC.prov.email ? '' : (ACC.prov.kakao || ACC.prov.google ? '<div class="acc-or"><span>또는 ' + title + '</span></div>' : '<p class="s13" style="font-weight:650">' + title + '</p>') +
@@ -1423,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', function () {
       (m === 'reset' ? '' : '<label class="field"><span>비밀번호' + (m === 'up' ? ' (6자 이상)' : '') + '</span><input class="inp" type="password" name="pw" minlength="6" autocomplete="' + (m === 'up' ? 'new-password' : 'current-password') + '" required></label>') +
       (ACC.msg ? '<p class="s13" style="color:' + (/메일함|보냈어요/.test(ACC.msg) ? 'var(--brand-text)' : 'var(--no)') + '" role="alert">' + esc(ACC.msg) + '</p>' : '') +
       '<button class="btn" type="submit"' + (ACC.busy ? ' disabled' : '') + '>' + (m === 'up' ? '회원가입' : m === 'reset' ? '재설정 메일 보내기' : '로그인') + '</button></form>' +
-      '<p class="s13 muted acc-links">' + (m === 'in' ? '<button type="button" class="linkbtn" data-act="accmode" data-v="up">회원가입</button> · <button type="button" class="linkbtn" data-act="accmode" data-v="reset">비밀번호를 잊었어요</button>' : '<button type="button" class="linkbtn" data-act="accmode" data-v="in">로그인으로 돌아가기</button>') + '</p>') + '</div>';
+      '<p class="s13 muted acc-links">' + (m === 'in' ? '<button type="button" class="linkbtn" data-act="accmode" data-v="up">회원가입</button> · <button type="button" class="linkbtn" data-act="accmode" data-v="reset">비밀번호 찾기</button>' : '<button type="button" class="linkbtn" data-act="accmode" data-v="in">로그인으로 돌아가기</button>') + '</p>') + '</div>';
   }
   // 로그아웃 찾기 쉽게: PC는 사이드바 아래, 휴대폰은 위쪽 계정 버튼 메뉴
   function accWho() { var u = ACC.cli && ACC.cli.user(); return u ? (u.name || u.email || '내 계정') : ''; }
