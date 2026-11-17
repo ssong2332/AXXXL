@@ -118,6 +118,22 @@ test('회귀: 화면 이동(render(false))은 날짜 칸을 누른 중에도 미
   assert.deepEqual(h.calls, [false]);
 });
 
+// 리뷰 치명 #1: 선택 창이 안 열린 채 끝난 누르기(휴대폰 스크롤 = pointercancel)는 보류를 남기면 안 된다
+test('예외: 목록 칸에서 시작한 스크롤(pointercancel) 뒤 다른 버튼을 누르면 다시 그린다', () => {
+  const h = setup(), sel = el('SELECT'), btn = el('BUTTON');
+  h.fire('pointerdown', sel); h.fire('pointercancel', sel); h.run();
+  h.click(btn); h.run();
+  h.render(true);   // 납부 체크·항목 추가 등
+  assert.deepEqual(h.calls, [true]);
+});
+
+test('예외: 날짜 칸 위 pointercancel만으로 끝나도 이후 render(true)를 막지 않는다', () => {
+  const h = setup(), date = el('INPUT', 'date');
+  h.fire('pointerdown', date); h.fire('pointercancel', date); h.run();
+  h.render(true);
+  assert.deepEqual(h.calls, [true]);
+});
+
 test('경계: 누른 날짜 칸이 이미 화면에서 사라졌으면 미루지 않는다', () => {
   const h = setup(), date = el('INPUT', 'date');
   h.click(date);

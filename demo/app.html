@@ -4614,9 +4614,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function isPicker(t) { return !!(t && t.matches && t.matches('input[type=date],input[type=month],input[type=time],select')); }
   document.addEventListener('change', function (e) { if (e.target === picking) picking = null; }, true);
   document.addEventListener('focusout', function (e) { if (e.target === picking) { picking = null; if (pendRender) setTimeout(flushRender, 0); } }, true);
-  document.addEventListener('pointerdown', function (e) { ptrDown = true; if (isPicker(e.target)) picking = e.target; }, true);
+  document.addEventListener('pointerdown', function (e) { ptrDown = true; picking = isPicker(e.target) ? e.target : null; }, true);
   document.addEventListener('pointerup', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
-  document.addEventListener('pointercancel', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
+  // 스크롤 등으로 누르기가 취소되면 선택 창은 열리지 않았다 → 보류를 풀어 다른 화면 갱신을 막지 않는다 (리뷰 치명 #1)
+  document.addEventListener('pointercancel', function () { ptrDown = false; picking = null; if (pendRender) setTimeout(flushRender, 0); }, true);
   document.addEventListener('input', function (e) { var t = e.target; if (t.id === 'q') updateSearch(t.value); else if (t.dataset.field && t.hasAttribute('data-num')) setField(t); });
   var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24
   function amtNote(k) { return AMT_NOTE[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">\'' + esc(AMT_NOTE[k]) + '\'은(는) 금액으로 읽지 못했어요. 숫자나 \'1억 2천\'처럼 넣어 주세요.</em>' : ''; }
