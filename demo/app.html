@@ -3959,7 +3959,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="grid mo-input-grid"><section class="card c8 stack' + moStep(0) + '"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
       regionFields() +
       f('계약 기간', sel('term', [['1', '1년'], ['2', '2년']]), 'term') +
-      f('보증금', num('deposit', '만 원'), 'deposit') + f('월세 (관리비 제외)', num('rent', '만 원'), 'rent') +
+      f('보증금', num('deposit', '만 원'), 'deposit', JS && JS.amountUnitWarn && !AMT_NOTE.deposit ? JS.amountUnitWarn('deposit', S.deposit) : '') + f('월세 (관리비 제외)', num('rent', '만 원'), 'rent', JS && JS.amountUnitWarn && !AMT_NOTE.rent ? JS.amountUnitWarn('rent', S.rent) : '') +
       f('계약일 (예정)', '<input class="inp" type="date" data-field="contract" value="' + esc(S.contract) + '">', 'contract', '전월세 신고 기한의 기준이에요') +
       f('입주(전입) 예정일', '<input class="inp" type="date" data-field="move" value="' + esc(S.move) + '">', 'move', '전입신고 기한과 계약 기간의 기준이에요') + '</div>' +
       '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' +
