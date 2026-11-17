@@ -4424,6 +4424,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function render(keep) {
+    if (keep && picking && picking.isConnected) { pendRender = true; return; }   // T-31: 선택 창이 열려 있을 수 있다
     pendRender = false;
     if (!S.demo) S.sim = null;
     today = S.sim === null || S.sim === undefined || S.sim === '' ? realToday() : add(pd(S.move), +S.sim);
@@ -4600,7 +4601,13 @@ document.addEventListener('DOMContentLoaded', function () {
   // (커서가 날아가 다음 칸에 입력이 안 되고, 버튼 클릭이 씹힘). 그래서 누르기가 끝나고 커서가 옮겨 간 뒤에 다시 그린다.
   var pendRender = false, ptrDown = false;
   function flushRender() { if (pendRender && !ptrDown) render(true); }
-  document.addEventListener('pointerdown', function () { ptrDown = true; }, true);
+  // T-31: 날짜·월·시간 칸과 목록(select)은 누르면 브라우저 선택 창이 뜬다. 그 사이 다시 그리면 칸이 새로 만들어져 창이 바로 닫힌다
+  // (다른 칸을 고친 직후의 첫 클릭, 로그인 중 기록 저장이 끝난 순간). 고르거나(change) 칸을 떠날(focusout) 때까지 render(true)를 미룬다
+  var picking = null;
+  function isPicker(t) { return !!(t && t.matches && t.matches('input[type=date],input[type=month],input[type=time],select')); }
+  document.addEventListener('change', function (e) { if (e.target === picking) picking = null; }, true);
+  document.addEventListener('focusout', function (e) { if (e.target === picking) { picking = null; if (pendRender) setTimeout(flushRender, 0); } }, true);
+  document.addEventListener('pointerdown', function (e) { ptrDown = true; if (isPicker(e.target)) picking = e.target; }, true);
   document.addEventListener('pointerup', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
   document.addEventListener('pointercancel', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
   document.addEventListener('input', function (e) { var t = e.target; if (t.id === 'q') updateSearch(t.value); else if (t.dataset.field && t.hasAttribute('data-num')) setField(t); });
