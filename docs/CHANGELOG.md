@@ -5,6 +5,9 @@
 ## [Unreleased]
 
 ### Added
+- 2026-11-17 QR 받기(`#import=`) 계약 값 형식 검사 (T-25, PRD F-13, DECISIONS #32) — `demo/screens-core.js` `checkImport`가 값 형식을 검사해 하나라도 틀리면 받지 않고 'QR 정보를 읽지 못했어요.'만 보임(기존 값·저장 불변). 통과하면 덮어쓴 뒤 `migrate(S)`. `demo/app.html` `boot()`, `tests/t25-import-check.test.js`. 미검증 수용: 정상 QR '바꾼다' 승낙 후 덮어쓰기 실물(Browser pane이 confirm 창을 막는 환경 제약, 단위 테스트로 확인) 등 — Tasks.md T-25 행 기준
+- 2026-11-17 조건 입력 금액 단위 안내 (T-26, PRD F-14, DECISIONS #33) — 보증금 20억 원(200000만 원) 초과·월세 1000만 원 초과면 입력 칸 아래 '만 원 단위가 맞나요?' 안내(`amountUnitWarn`). `demo/screens-core.js`, `demo/app.html` `viewInput`, `tests/t26-amount-unit.test.js`. 미검증 수용: 390×844 레이아웃·가로 넘침 — Tasks.md T-26 행 기준
+- 2026-11-17 로그인한 PC는 내 계약 '휴대폰으로 이어서 보기'에 QR 대신 계정 안내 (T-28, PRD F-15) — 로그인 상태에서 '휴대폰에서 같은 계정으로 로그인하면 그대로 이어져요.'만 보이고 QR을 만들지 않음. 로그인 꺼짐·미로그인·휴대폰은 기존과 같음. `demo/app.html` `deviceCards`, `tests/t28-contract-login-qr.test.js`. 미검증 수용: 로그인 상태 실물 화면·로그인/로그아웃 직후 재그리기(로컬에 로그인 설정 없음, 단위 테스트로 갈래 확인) — Tasks.md T-28 행 기준
 - 2026-11-16 자취 계약 화면 PR #66 리뷰 반영 5건 (T-24, DECISIONS #29~#31) — R1 금액을 못 읽는 동안 조건 입력 '판정 보기' 비활성·자격 판정 직접 이동 차단·첫 실행 길잡이 2단계 '다음' 차단, R2 자격 판정에서도 입주일이 계약일보다 앞서면 차단, R3 길잡이 완료 때 미래 출생연월 차단, R4 예시 값 되돌리기·예시 데이터·새로 시작·파일 불러오기 때 금액 안내 초기화, R5 못 읽은 금액은 칸에 입력한 글자 그대로 표시. 변경 파일 `demo/app.html`, `tests/t23-bugfix.test.js`, `tests/t24-review.test.js`(신규) (커밋 d82569a·82e2159·5de968f)
 - 2026-11-16 자취 계약 화면 버그 10건 수정 (T-23, 팀 단톡방 지적 + 배포 사이트 점검, DECISIONS #24~#28) — B1 길잡이 기본 지역 '관악구' 제거, B2 2단계 신고 안내가 지역 미선택이면 '확인 필요', B3 신고 대상이 아니면 확정일자·신고 확인 할 일에서 과태료 문구 제거, B4 QR 이어 보기에 sido·zip·sgg·birth·homeless·dup 포함, B5 조건 입력 입주일이 계약일보다 앞서면 안내, B6 금액 '1억 2천'을 12000(만 원)으로 환산하고 해석 불가면 저장 없이 안내(#7 대체, #24), B7 입주일이 지나면 입주 준비 할 일을 홈 '다음 할 일'에서 제외(#25), B8 자격 판정 머리 줄 지역이 없으면 구분점 생략, B9 미래 출생연월은 안내하고 판정 안 함(#27), B10 퇴거 준비·타임라인에서 올해가 아닌 미래 날짜에 연도 표시(#28). 변경 파일 `demo/app.html`, `demo/screens-core.js`, `tests/t23-bugfix.test.js`(51개 추가), `tests/screen-timeline.test.js` (커밋 dfdab60, d5155d9)
 - 2026-11-16 내 계약 '집' 칸 빈 구분점 제거 (T-22, PRD F-11 범위 안 결함 수정, 사용자 답 "네, 고쳐") — 시·도만 고르면 "내 자취방 · "처럼 점 뒤가 비던 표시를 시·군·구 > 시·도 > 없음 순으로 지역을 보이고 지역이 비면 " · "를 붙이지 않게 고침. `demo/screens-core.js` 순수 함수 `homeLabel` 추가, `demo/app.html` viewContract '집' 칸이 이를 사용(screens-core.js를 못 불러오면 집 이름만 표시), `tests/screen-input-contract.test.js` 테스트 7개 추가
@@ -38,6 +41,8 @@
 - {{DATE}} 프로젝트 초기화 (start_coding 템플릿)
 
 ### Changed
+- 2026-11-17 테스트 474/474 통과 (T-25~T-28, 이전 423/423, QA 증거 `.artifacts/verification/T-25/qa-20261117-1/`), 사용자 화면 확인 T-26·T-27·T-28 통과 기록(Tasks.md)
+- 2026-11-17 홈 '남은 납부' 카드 납부 항목 이름을 `esc`로 이스케이프 (T-27, 보안 결함 수정 — `<b>` 같은 이름이 태그로 그려지던 문제). `demo/app.html` `payH`, `tests/t27-home-pay-escape.test.js`. 미검증 수용: 390×844 레이아웃 — Tasks.md T-27 행 기준
 - 2026-11-16 테스트 423/423 통과 (T-24, 이전 398/398), 사용자 화면 확인 통과("통과, push까지")
 - 2026-11-16 테스트 398/398 통과 (T-23, origin/main #64 병합분 포함, 이전 345/345), 사용자 화면 확인 통과("통과, PR까지")
 - 2026-11-16 테스트 312/312 통과 (T-22, `.artifacts/verification/T-22/20261114-regress2/`, QA `20261114-qa` 311/311), 사용자 화면 확인 통과("통과, PR까지")

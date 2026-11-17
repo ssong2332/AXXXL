@@ -2977,7 +2977,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function kakao(kind, p) {
     var kid = kakaoId(p);
     if (kid) return 'https://map.kakao.com/link/' + (kind === 'rv' ? 'roadview' : kind === 'to' ? 'to' : 'map') + '/' + kid;
-    if (kind === 'rv') { var rs = RVS[rvKey(p)]; if (rs && rs.url) return rs.url; if (p.rvUrl) return p.rvUrl; }
+    if (kind === 'rv') { var rs = RVS[rvKey(p)]; if (rs && rs.url) return rs.url; if (JS && JS.rvUrlOk && JS.rvUrlOk(p.rvUrl)) return p.rvUrl; }
     var ll = (+p.lat).toFixed(5) + ',' + (+p.lng).toFixed(5);
     if (kind === 'rv' && p.rv) ll = p.rv[0] + ',' + p.rv[1];   // 예전 방식으로 찾아 둔 집 근처 길 위 지점
     return kind === 'rv' ? 'https://map.kakao.com/link/roadview/' + ll : kind === 'to' ? 'https://map.kakao.com/link/to/' + encodeURIComponent(p.name || p.label || '우리 집') + ',' + ll : 'https://map.kakao.com/link/map/' + encodeURIComponent(p.name || p.label || '우리 집') + ',' + ll;
@@ -3060,7 +3060,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function rvTarget(id) { return id === 'home' ? home() : places().filter(function (x) { return x.id === id; })[0]; }
   // 집에 고른 사진은 이 기기에 저장해 두고 30일이 지나면 다시 고른다(그사이 새로 찍은 사진이 생길 수 있음)
   var RV_KEEP = 30 * 864e5;
-  function homeRvFresh(h) { return !!h.rvUrl && Date.now() - (h.rvAt || 0) < RV_KEEP; }
+  function homeRvFresh(h) { return !!(JS && JS.rvUrlOk && JS.rvUrlOk(h.rvUrl)) && Date.now() - (h.rvAt || 0) < RV_KEEP; }
   // 화면의 로드뷰 버튼(data-rv-place)마다 사진을 미리 골라 둔다. 고르기 전에 누르면 새 창을 먼저 열고 다 고르면 그 창을 옮긴다(팝업 차단 방지)
   function fixPlaceRoadview() {
     if (KM.st !== 'ok') return;
@@ -3671,9 +3671,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
     var inst = standalone ? '<p class="s13 sub">이미 앱으로 설치돼 있어요.</p>' : INSTALL ? '<button type="button" class="btn block" data-act="install">' + ic('down', 'sm') + '홈 화면에 앱 설치</button>'
       : IS_IOS ? '<p class="s13 sub">Safari 아래쪽 <b>공유</b> 버튼 → <b>홈 화면에 추가</b>를 누르면 앱처럼 열려요.</p>' : '<p class="s13 sub">휴대폰 브라우저 메뉴에서 <b>홈 화면에 추가</b>(또는 <b>앱 설치</b>)를 누르면 앱처럼 열려요.</p>';
-    var d = IS_PHONE ? '' : devQr(exportObj()), qr = devQrHtml(d);
+    var acc = !IS_PHONE && accOn(); // T-28: 로그인한 PC는 계정 동기화가 이어 보기를 대신한다
+    var d = IS_PHONE || acc ? '' : devQr(exportObj()), qr = devQrHtml(d);
     return '<section class="card stack"><h2 style="font-size:16px">' + ic('home', 'sm') + ' 앱처럼 설치</h2>' + inst + '<p class="s12 muted">설치하면 인터넷이 잠깐 끊겨도 화면이 열려요.</p></section>' +
-      (IS_PHONE ? '' : '<section class="card stack"><h2 style="font-size:16px">휴대폰으로 이어서 보기</h2>' + (qr || '<p class="s13 muted" data-dev-qr>QR을 만드는 중…</p>') + '<p class="s12 muted">정보는 QR 주소의 # 뒤에만 담겨 서버로 보내지지 않아요.</p></section>');
+      (IS_PHONE ? '' : '<section class="card stack"><h2 style="font-size:16px">휴대폰으로 이어서 보기</h2>' + (acc ? '<p class="s13 sub">휴대폰에서 같은 계정으로 로그인하면 그대로 이어져요.</p>'
+        : (qr || '<p class="s13 muted" data-dev-qr>QR을 만드는 중…</p>') + '<p class="s12 muted">정보는 QR 주소의 # 뒤에만 담겨 서버로 보내지지 않아요.</p>') + '</section>');
   }
   // 내 계약 QR (T-17): 압축이 끝나면 화면 전체를 다시 그리지 않고 QR 자리만 바꾼다 — 다시 그리면 진행 중인 등장 모션이 끊긴다.
   // 공용 encoded()는 캘린더 폰 연동도 쓰므로 그대로 두고, 같은 압축 함수(encodePayload)만 재사용한다.
@@ -4126,7 +4128,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="grid mo-input-grid"><section class="card c8 stack' + moStep(0) + '"><h2 style="font-size:17px">집과 계약</h2><div class="form-grid">' +
       regionFields() +
       f('계약 기간', sel('term', [['1', '1년'], ['2', '2년']]), 'term') +
-      f('보증금', num('deposit', '만 원'), 'deposit') + f('월세 (관리비 제외)', num('rent', '만 원'), 'rent') +
+      f('보증금', num('deposit', '만 원'), 'deposit', JS && JS.amountUnitWarn && !AMT_NOTE.deposit ? JS.amountUnitWarn('deposit', S.deposit) : '') + f('월세 (관리비 제외)', num('rent', '만 원'), 'rent', JS && JS.amountUnitWarn && !AMT_NOTE.rent ? JS.amountUnitWarn('rent', S.rent) : '') +
       f('계약일 (예정)', '<input class="inp" type="date" data-field="contract" value="' + esc(S.contract) + '">' + koTag(dateKo(S.contract)), 'contract', '전월세 신고 기한의 기준이에요') +
       f('입주(전입) 예정일', '<input class="inp" type="date" data-field="move" value="' + esc(S.move) + '">' + koTag(dateKo(S.move)), 'move', '전입신고 기한과 계약 기간의 기준이에요') + '</div>' +
       '<h2 style="font-size:17px;margin-top:8px">나</h2><div class="form-grid">' +
@@ -4502,7 +4504,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (h.indexOf('#phone=') === 0) { PHONE_D = h.slice(7).replace(/[^\w-]/g, ''); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
     if (h.indexOf('#import=') === 0) {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
-      decodePayload(dd).then(function (o) { if (o && typeof o === 'object' && confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); S.bills = JL.cleanBills(S.bills) || clone(FRESH).bills; S.events = JL.cleanEvents(S.events) || []; /* 납부 항목·내 일정은 형식 검사 (life-core.js) */ S.onboarded = true; S.demo = false; save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
+      decodePayload(dd).then(function (o) { if (!(JS && JS.checkImport && JS.checkImport(o))) { toast('QR 정보를 읽지 못했어요.'); return; } if (confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); S.bills = JL.cleanBills(S.bills) || clone(FRESH).bills; S.events = JL.cleanEvents(S.events) || []; /* 납부 항목·내 일정은 형식 검사 (life-core.js) */ if ('home' in o) S.home = JS.cleanHome(o.home); S.onboarded = true; S.demo = false; migrate(S); save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
     }
     var tidy = function (list) { return (list || []).map(function (c) { if (c && typeof c === 'object') { delete c.shown; delete c.stepN; if (c.mode === 'hello') return null; if (c.mode === 'pending' || !c.a) return c.q || null; } return c; }).filter(Boolean); };
     S.rooms = S.rooms || {}; if ((S.chat || []).length) { S.rooms.auto = (S.rooms.auto || []).concat(S.chat); S.chat = []; }

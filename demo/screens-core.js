@@ -197,6 +197,14 @@
   };
   // ===== /T-16 =====
 
+  // ===== T-26 =====
+  // 조건 입력 금액 단위 확인 안내 (F-14, DECISIONS #33): 상한(만 원)보다 큰 숫자일 때만 안내, 그 밖은 ''. 던지지 않는다.
+  var UNIT_MAX = { deposit: 200000, rent: 1000 };
+  api.amountUnitWarn = function (k, v) {
+    return (k === 'deposit' || k === 'rent') && typeof v === 'number' && v > UNIT_MAX[k] ? '만 원 단위가 맞나요?' : '';
+  };
+  // ===== /T-26 =====
+
   // ===== T-23 =====
   // 금액 칸(만 원 단위) 해석 (DECISIONS #24): '1억'→10000, '1억 2천'→12000, 끝의 '만'·'만원'·공백·쉼표 허용, 빈 칸 → 0.
   // 해석하지 못하면(음수·소수점·'원'·한글 숫자·숫자 없음) { ok: false, value: null }. 던지지 않는다.
@@ -223,6 +231,53 @@
     });
   };
   // ===== /T-23 =====
+
+  // ===== T-25 =====
+  // QR로 받은 값(#import=)을 통째로 받아도 되는지 (PRD F-13 ② 판정표, DECISIONS #32). 키가 없으면 통과, 하나라도 틀리면 false.
+  // bills·events·표에 없는 키는 보지 않는다(cleanBills·cleanEvents 담당). 던지지 않는다.
+  // T-29(DECISIONS #35): 날짜는 달력에 있는 날짜만, term은 정수만, home은 좌표·허용 필드·카카오 로드뷰 주소만.
+  var IMP_STR = function (v) { return typeof v === 'string'; };
+  var IMP_STR_NULL = function (v) { return v === null || typeof v === 'string'; };
+  var IMP_DATE = function (v) {
+    if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+    var d = new Date(v + 'T00:00:00Z');
+    return !isNaN(d) && d.toISOString().slice(0, 10) === v;
+  };
+  var HOME_KEYS = ['lat', 'lng', 'label', 'src', 'kid', 'named'];
+  api.rvUrlOk = function (u) { return typeof u === 'string' && /^https:\/\/map\.kakao\.com\/\?panoid=\d+[\w.&=]*$/.test(u); };
+  var IMP_NUM = function (v, max) { return typeof v === 'number' && isFinite(v) && v >= -max && v <= max; };
+  var IMP_HOME = function (v) {
+    if (v === null) return true;
+    if (v === undefined || typeof v !== 'object' || Array.isArray(v)) return false;
+    return IMP_NUM(v.lat, 90) && IMP_NUM(v.lng, 180) &&
+      (!('label' in v) || typeof v.label === 'string') && (!('src' in v) || typeof v.src === 'string') &&
+      (!('kid' in v) || (typeof v.kid === 'string' && /^\d+$/.test(v.kid))) && (!('named' in v) || v.named === 1) &&
+      (!('rvUrl' in v) || api.rvUrlOk(v.rvUrl));
+  };
+  // 받은 집 위치에서 허용 필드만 남긴다(rvUrl·rvAt는 로드뷰 캐시라 버림 — 받는 기기에서 다시 찾는다)
+  api.cleanHome = function (h) {
+    if (h === null || typeof h !== 'object' || Array.isArray(h)) return null;
+    var o = {};
+    HOME_KEYS.forEach(function (k) { if (k in h) o[k] = h[k]; });
+    return o;
+  };
+  var IMP_AMT = function (v) { return typeof v === 'number' && isFinite(v) && v >= 0; };
+  var IMP_OBJ = function (v) { return v !== null && typeof v === 'object' && !Array.isArray(v); };
+  var IMP_YNU = function (v) { return v === null || ['', 'yes', 'no', 'unknown'].indexOf(v) >= 0; };
+  var IMP_RULES = {
+    contract: IMP_DATE, move: IMP_DATE, deposit: IMP_AMT, rent: IMP_AMT, fee: IMP_AMT, age: IMP_AMT,
+    term: function (v) { return (typeof v === 'number' || (typeof v === 'string' && /^\d+$/.test(v))) && +v >= 1 && +v <= 10 && +v % 1 === 0; },
+    income: function (v) { return ['100', '150', 'over', 'unknown'].indexOf(v) >= 0; },
+    birth: function (v) { return v === null || v === '' || (typeof v === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(v)); },
+    homeless: IMP_YNU, dup: IMP_YNU,
+    gu: IMP_STR, addr: IMP_STR, nick: IMP_STR, remind: IMP_STR, sido: IMP_STR_NULL, sgg: IMP_STR_NULL, zip: IMP_STR_NULL,
+    done: IMP_OBJ, home: IMP_HOME
+  };
+  api.checkImport = function (o) {
+    if (!IMP_OBJ(o)) return false;
+    return Object.keys(IMP_RULES).every(function (k) { return !(k in o) || IMP_RULES[k](o[k]); });
+  };
+  // ===== /T-25 =====
 
   return api;
 });
