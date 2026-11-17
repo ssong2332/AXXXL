@@ -1119,6 +1119,11 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
 @media (max-width: 640px) { .home-extra { display: none } }
 /* PC 빈 공간: 자격 판정·내 계약 카드 높이를 억지로 맞추지 않는다 */
 .mo-result .grid, .mo-contract .grid { align-items: start }
+/* PC 오른쪽 위 화면 모드·계정 */
+.desk-top { display: flex; justify-content: flex-end; margin: -12px 0 6px }
+.desk-acts { display: flex; align-items: center; gap: 8px; order: 2; margin-left: auto; flex: none }
+.hbar .desk-acts { order: 2 }
+@media (max-width: 899px) { .desk-top, .hbar .desk-acts { display: none } }
 /* ===== mo:T-09 내 화면 6개 모션 (계약·신고 전용) ===== */
 .mo { --mo-short: 250ms; --mo-base: 450ms; --mo-long: 600ms; --mo-step: 80ms; --mo-shift: 20px; --mo-ease: cubic-bezier(0.3, 0.7, 0.4, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
 .mo .mo-fold { display: grid; grid-template-rows: 0fr }
@@ -4325,11 +4330,12 @@ document.addEventListener('DOMContentLoaded', function () {
   // 주변 장소 검색창을 보여 줄 화면 (휴대폰은 지도 탐색만 — 첫 화면 위쪽을 비우려고)
   var SEARCH_ON = ['home', 'map'];
   function bellBtn() { var n = BELL_N; return '<a class="icon-btn bell" href="#timeline" aria-label="할 일 알림' + (n ? ' ' + n + '개' : '') + '">' + ic('bell') + (n ? '<span class="cnt">' + n + '</span>' : '') + '</a>'; }
+  // PC 오른쪽 위: 화면 모드·계정(사이드바 아래에 있으면 메뉴가 길어져 잘렸다). 휴대폰은 위쪽 바(#top-acts)에 같은 버튼이 있다
+  function deskActs() { return '<div class="desk-acts">' + themeBtn() + accTopBtn() + '</div>'; }
   function headerBar(n, bellOnly) {
-    // PC: 알림은 왼쪽 메뉴 '타임라인' 옆 숫자와 같아서 빼고, 화면 모드는 왼쪽 메뉴 아래(#side-tools)로. 휴대폰은 위쪽 바(#top-acts).
-    // 그래서 위쪽 줄은 주변 장소 검색창이 있는 화면(홈·지도 탐색)에서만 그린다.
-    if (bellOnly || SEARCH_ON.indexOf(route()) < 0) return '';
-    return '<div class="hbar desk' + (route() === 'map' ? ' hbar-msearch' : '') + '"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div></div>';
+    // PC: 알림은 왼쪽 메뉴 '타임라인' 옆 숫자와 같아서 뺀다. 검색창이 있는 화면(홈·지도 탐색)은 검색창 줄 오른쪽에, 나머지는 얇은 줄에 화면 모드·계정
+    if (bellOnly || SEARCH_ON.indexOf(route()) < 0) return '<div class="desk-top">' + deskActs() + '</div>';
+    return '<div class="hbar desk' + (route() === 'map' ? ' hbar-msearch' : '') + '">' + deskActs() + '<div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div></div>';
   }
 
   function render(keep) {
@@ -4354,7 +4360,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadPlaces();
     var listPos = keep ? listScroll() : [];
     BELL_N = n;
-    var st = document.getElementById('side-tools'); if (st) { var tt = getTheme(); st.innerHTML = '<button type="button" class="side-tool" data-act="theme" aria-label="화면 모드: ' + THEMES[tt][0] + ' (누르면 ' + THEMES[THEME_NEXT[tt]][0] + ')">' + ic(THEMES[tt][1]) + '화면 모드<small>' + THEMES[tt][0] + '</small></button>' + accSideTools(); }
+    var st = document.getElementById('side-tools'); if (st) st.innerHTML = '';   // 화면 모드·계정은 PC 오른쪽 위(deskActs)로 옮김
     var ta = document.getElementById('top-acts'); if (ta) ta.innerHTML = '<a class="icon-btn" href="#coach" aria-label="AI 자취 코치">' + ic('chat') + '</a>' + bellBtn() + themeBtn() + accTopBtn();
     app.innerHTML = r === 'start' ? viewStart() : headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
     fitLists();
