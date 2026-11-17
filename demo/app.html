@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>/* 화면 테마(자동·밝게·어둡게)를 그리기 전에 먼저 적용해서 처음 열 때 깜빡이지 않게 한다 */ try { var t0 = localStorage.getItem('jachwi-theme'); if (t0 === 'light' || t0 === 'dark') document.documentElement.setAttribute('data-theme', t0); } catch (e) {}</script>
 <title>자취 계약 내비</title>
-<meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 (시연판)">
+<meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 ">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -3892,7 +3892,6 @@ document.addEventListener('DOMContentLoaded', function () {
       '<h3 class="mo-contract-sub">이 화면에서 정하는 칸</h3><div class="form-grid">' +
       f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + f('관리비', num('fee', '만 원')) + regionFields() +
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">', true) + '</div>' +
-      (!S.demo ? '' : '<label class="field"><span>시연용 날짜 (발표용)</span><select class="inp" data-sim>' + [['', '실제 오늘'], ['-1', '입주 전날'], ['0', '입주 당일'], ['10', '입주 10일 후'], ['40', '입주 40일 후']].map(function (o) { var sv = S.sim === null || S.sim === undefined ? '' : String(S.sim); return '<option value="' + o[0] + '"' + (sv === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>') +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div>' +
       '<div class="row"><button type="button" class="btn ghost sm" data-act="backup">' + ic('down', 'sm') + '내 기록 파일로 저장</button><label class="btn ghost sm addfile">' + ic('plus', 'sm') + '파일에서 불러오기<input type="file" accept="application/json,.json" data-act="restore"></label></div><p class="s12 muted">브라우저 데이터를 지우거나 폰을 바꾸기 전에 저장해 두세요. 서류·사진 파일은 들어 있지 않아요.</p></section></div></section>' +
       '<section class="mo-contract-zone" aria-labelledby="mo-contract-other-h"><h2 class="mo-contract-h" id="mo-contract-other-h">집 위치 · 휴대폰 연결</h2>' +
@@ -3924,7 +3923,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return moRoot('start', '<div class="ob">' + obBrand() +
       '<section class="card stack ob-card"><h1>로그인하고 시작해요</h1><p class="sub">계약·할 일·주거비 기록을 내 계정에 저장해서 폰을 바꿔도 이어서 볼 수 있어요.</p>' +
       (ACC.loading ? '<p class="s13 muted" role="status">로그인 준비 중…</p>' : accountCard()) + '</section>' +
-      '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></div>');
   }
   function viewStart() {
@@ -3952,7 +3950,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return moRoot('start', '<div class="ob">' + obTop() +
       '<ol class="ob-steps" aria-label="입력 단계">' + steps.map(function (x, i) { return '<li class="' + (i + 1 < st ? 'done' : i + 1 === st ? 'now' : '') + '"' + (i + 1 === st ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + x + '</li>'; }).join('') + '</ol>' +
       '<section class="card stack ob-card">' + body + btns + '</section>' +
-      '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></div>');
   }
   function backupJson() {
@@ -4155,12 +4152,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bellOnly || SEARCH_ON.indexOf(route()) < 0) return '';
     return '<div class="hbar desk' + (route() === 'map' ? ' hbar-msearch' : '') + '"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div></div>';
   }
-  // 시연용 날짜(예시 데이터일 때만) — 예시 데이터 안내 줄 안에 둔다 (PC만, 휴대폰은 숨김)
-  function simSelect() {
-    if (!S.demo) return '';
-    var simV = S.sim === null || S.sim === undefined ? '' : String(S.sim);
-    return '<select class="inp" data-sim aria-label="시연용 날짜">' + [['', '시연: 실제 오늘'], ['-1', '시연: 입주 전날'], ['0', '시연: 입주 당일'], ['10', '시연: 입주 10일 후'], ['40', '시연: 입주 40일 후']].map(function (o) { return '<option value="' + o[0] + '"' + (simV === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
-  }
 
   function render(keep) {
     pendRender = false;
@@ -4185,8 +4176,7 @@ document.addEventListener('DOMContentLoaded', function () {
     BELL_N = n;
     var st = document.getElementById('side-tools'); if (st) { var tt = getTheme(); st.innerHTML = '<button type="button" class="side-tool" data-act="theme" aria-label="화면 모드: ' + THEMES[tt][0] + ' (누르면 ' + THEMES[THEME_NEXT[tt]][0] + ')">' + ic(THEMES[tt][1]) + '화면 모드<small>' + THEMES[tt][0] + '</small></button>' + accSideTools(); }
     var ta = document.getElementById('top-acts'); if (ta) ta.innerHTML = '<a class="icon-btn" href="#coach" aria-label="AI 자취 코치">' + ic('chat') + '</a>' + bellBtn() + themeBtn() + accTopBtn();
-    var demoBar = S.demo ? '<div class="demo-strip"><span><b>예시 데이터</b>로 둘러보는 중<span class="dm-more">이에요. 체크·입력해도 내 기록이 아니에요.</span></span><span class="row demo-tools-r" style="gap:8px">' + simSelect() + '<button type="button" class="btn sm" data-act="startreal">내 정보로 시작하기</button></span></div>' : '';
-    app.innerHTML = r === 'start' ? viewStart() : demoBar + headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
+    app.innerHTML = r === 'start' ? viewStart() : headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
     fitLists();
     listScroll(listPos);
     mountMap();   // 목록 높이를 맞춘 뒤에 붙여야 지도가 최종 크기로 자리를 잡는다(먼저 붙이면 가운데가 어긋남)
@@ -4297,8 +4287,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     else if (a === 'obprev') { S.obStep = Math.max(1, (+S.obStep || 1) - 1); save(); render(false); }
     else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }
-    else if (a === 'demo') { S = clone(DEMO); AMT_NOTE = {}; save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'home'; render(false); }
-    else if (a === 'startreal') { S = clone(FRESH); AMT_NOTE = {}; save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'start'; render(false); }
     else if (a === 'backup') backupJson();
     else if (a === 'fdel') { if (confirm('이 파일을 지울까요?')) delFile(v); }
     else if (a === 'sharecond') {
@@ -4370,12 +4358,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function boot() {
     var h = location.hash;
-    // 소개 페이지(landing.html)의 '예시로 둘러보기': 저장된 내 정보가 없을 때만 예시 데이터로 연다 (내 정보가 있으면 덮어쓰지 않고 홈으로)
-    if (h === '#demo') {
-      var mine = null; try { mine = localStorage.getItem(STORE); } catch (e) {}
-      if (!mine || S.demo) { S = clone(DEMO); save(); }
-      history.replaceState(null, '', location.pathname + location.search + '#home');
-    }
+    // 예시 데이터 둘러보기는 없앴다(실제 서비스로만). 예전 링크(#demo)는 처음 화면으로, 예시 데이터로 보던 기기는 빈 상태로 돌린다
+    if (h === '#demo') history.replaceState(null, '', location.pathname + location.search + '#start');
+    if (S.demo) { S = clone(FRESH); AMT_NOTE = {}; save(); }
     if (h.indexOf('#phone=') === 0) { PHONE_D = h.slice(7).replace(/[^\w-]/g, ''); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
     if (h.indexOf('#import=') === 0) {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
