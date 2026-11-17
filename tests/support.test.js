@@ -401,3 +401,63 @@ test("'공고 보기'는 기관 첫 화면으로 가지 않는다", () => {
   // 정책번호가 숫자가 아니면 온통청년 검색 화면
   assert.equal(S.noticeLink({ id: 'T1', notices: [] }).url, 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch');
 });
+
+test('열면 기관 첫 화면·오류 화면으로 넘어가는 공고 주소는 죽은 주소로 본다', () => {
+  const big = '<html>' + '가'.repeat(5000) + '</html>';
+  // 글 주소가 첫 화면으로 옮겨짐
+  assert.equal(S.deadPage('https://youth.x.go.kr/infoData/plcyInfo/view.do?key=1&plcyBizId=V1', 'https://youth.x.go.kr/mainA.do', big), 'home');
+  assert.equal(S.deadPage('https://www.x.or.kr/user/boardDetail.do', 'https://www.x.or.kr/main.do', big), 'home');
+  // 오류 화면으로 옮겨짐
+  assert.equal(S.deadPage('https://www.x.go.kr/a/receipt2025.do', 'https://www.x.go.kr/error.jsp', big), 'home');
+  assert.equal(S.deadPage('https://www.x.ac.kr/www/sub.do?no=3', 'https://www.x.ac.kr/resources/Error/404.html', big), 'home');
+  // 옮겨지지 않았거나, 끝 빗금·www·http만 달라진 것은 그대로 둔다
+  assert.equal(S.deadPage('https://x.go.kr/board/view.do?seq=3', 'https://x.go.kr/board/view.do?seq=3', big), '');
+  assert.equal(S.deadPage('https://www.x.go.kr/opencenter', 'https://www.x.go.kr/opencenter/', big), '');
+  assert.equal(S.deadPage('http://x.go.kr/board/view.do?seq=3', 'https://www.x.go.kr/board/view.do?seq=3', big), '');
+  // 그 주소 아래의 첫 화면(/1ingg → /1ingg/main.do)은 같은 곳으로 본다
+  assert.equal(S.deadPage('https://www.x.go.kr/1ingg', 'https://www.x.go.kr/1ingg/main.do', big), '');
+  // 다른 글·로그인 화면으로 옮겨진 것은 죽은 주소가 아니다
+  assert.equal(S.deadPage('https://a.go.kr/www/50?policyId=1', 'https://b.go.kr/www/50?policyId=1', big), '');
+  assert.equal(S.deadPage('https://x.go.kr/depart/apply002', 'https://x.go.kr/member/login?referUrl=https://x.go.kr/depart/apply002', big), '');
+  // 등록 주소가 처음부터 첫 화면이면 따지지 않는다
+  assert.equal(S.deadPage('https://www.x.go.kr', 'https://www.x.go.kr/index.do', big), '');
+  // 알림만 띄우고 앞 화면으로 되돌리는 쪽(지워진 글)
+  assert.equal(S.deadPage('https://x.go.kr/bbs/view.do?dataId=1', 'https://x.go.kr/bbs/view.do?dataId=1', "<script>alert('게시글이 삭제되었거나 존재하지 않습니다.');history.back(-1);</script>"), 'gone');
+  // 본문 글이 있는 작은 쪽(뒤로 가기 단추가 있는 안내 화면)은 따지지 않는다
+  assert.equal(S.deadPage('https://x.or.kr/intro.asp?tmid=13', 'https://x.or.kr/intro.asp?tmid=13', '<html><body><p>요청하신 페이지를 찾을 수 없습니다.</p><a href="javascript:history.back()">이전 페이지로 돌아가기</a></body></html>'), '');
+  // 긴 본문에 섞인 history.back(뒤로 가기 버튼)은 따지지 않는다
+  assert.equal(S.deadPage('https://x.go.kr/bbs/view.do?dataId=1', 'https://x.go.kr/bbs/view.do?dataId=1', big + '<a onclick="history.back()">뒤로</a>'), '');
+});
+
+test('죽은 공고 주소는 공고 보기·신청·참고 링크로 내지 않는다', () => {
+  const YC = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/';
+  const id = '20260614005400213232', dead = 'https://youth.x.go.kr/infoData/plcyInfo/view.do?key=1&plcyBizId=V1', ok = 'https://youth.x.go.kr/youthConts.do?key=2&sc_pbancSeCd=015';
+  // 등록된 공고 주소가 모두 죽었으면 온통청년 상세 화면
+  assert.deepEqual(S.noticeLink({ id, notices: [dead] }, { state: 'none', why: 'dead', dead: [dead] }), { url: YC + id, kind: 'youth', checked: false });
+  // 하나가 죽었으면 살아 있는 다음 주소
+  assert.equal(S.noticeLink({ id, notices: [dead, ok] }, { state: 'none', why: 'unreachable', url: ok, dead: [dead] }).url, ok);
+  // 신청·참고 단추: 죽은 주소는 빈 값, 나머지는 그대로
+  assert.equal(S.liveUrl(dead, { dead: [dead] }), '');
+  assert.equal(S.liveUrl(ok, { dead: [dead] }), ok);
+  assert.equal(S.liveUrl(ok, {}), ok);
+  assert.equal(S.liveUrl(ok), ok);
+});
+
+test('공고 주소를 열어 죽은 주소는 dead로 알리고 살아 있는 주소에서 기간을 읽는다 (api/period readOne)', async () => {
+  const { readOne } = require('../demo/api/_period.js');
+  const dead = 'https://youth.x.go.kr/infoData/plcyInfo/view.do?key=1&plcyBizId=V1', gone = 'https://x.or.kr/notice/view.do?id=9', ok = 'https://youth.x.go.kr/youthConts.do?key=2&sc_pbancSeCd=015';
+  const it = { name: '청년 이사비 지원사업', year: 2026 };
+  const pages = {};
+  pages[dead] = { url: 'https://youth.x.go.kr/mainA.do', html: '<html><body>' + '첫 화면 '.repeat(1200) + '</body></html>' };
+  pages[ok] = { url: ok, html: '<html><body><h1>청년 이사비 지원사업</h1><p>신청기간 : 2026. 3. 2. ~ 2026. 12. 18.</p>' + '안내 '.repeat(1500) + '</body></html>' };
+  const getPage = async (u) => { if (u === gone) throw Object.assign(new Error('HTTP 404'), { gone: true }); if (!pages[u]) throw new Error('fetch failed'); return pages[u]; };
+  // 주소가 하나뿐이고 첫 화면으로 넘어가면 why: dead
+  assert.deepEqual(await readOne(Object.assign({ notices: [dead] }, it), getPage), { state: 'none', why: 'dead', dead: [dead] });
+  // 404도 죽은 주소
+  assert.deepEqual(await readOne(Object.assign({ notices: [gone] }, it), getPage), { state: 'none', why: 'dead', dead: [gone] });
+  // 죽은 주소 뒤의 살아 있는 주소에서 기간을 읽는다
+  const r = await readOne(Object.assign({ notices: [dead, ok] }, it), getPage);
+  assert.equal(r.state, 'found'); assert.equal(r.url, ok); assert.deepEqual(r.dead, [dead]); assert.equal(r.ranges[0].to, '20261218');
+  // 열리지 않은 주소(자동 접속 차단 등)는 죽은 주소로 보지 않는다
+  assert.deepEqual(await readOne(Object.assign({ notices: ['https://blocked.x.go.kr/view.do?id=1'] }, it), getPage), { state: 'none', why: 'unreachable', url: 'https://blocked.x.go.kr/view.do?id=1' });
+});

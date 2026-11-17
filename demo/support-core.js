@@ -125,18 +125,34 @@
     // 폴더 하나로 끝나는 주소(/nysc/)나 흔한 대문 이름(/main, /korean). 사업 이름이 붙은 주소(/youngtech)는 공고로 본다
     return seg.length === 1 && !/\./.test(last) && (/\/$/.test(m[1]) || /^(main|index|home|portal|kor|korean|ko|kr|www|web|site|page)$/i.test(last));
   }
+  // 열어 본 공고 주소가 죽었는지. reqUrl: 등록 주소, finalUrl: 옮겨 간 끝 주소, html: 그 쪽 내용
+  //  'home': 글 주소였는데 기관 첫 화면·오류 화면으로 옮겨짐 / 'gone': 본문 없이 알림만 띄우고 앞 화면으로 되돌림(지워진 글) / '': 살아 있음
+  function addrKey(s) { var m = /^https?:\/\/(?:www\.)?([^\/?#]+)([^?#]*)(\?[^#]*)?/i.exec(String(s || '')); return m ? [m[1].toLowerCase(), m[2].replace(/\/+$/, ''), m[3] || ''] : ['', '', '']; }
+  function deadPage(reqUrl, finalUrl, html) {
+    if (isLanding(reqUrl)) return '';
+    var a = addrKey(reqUrl), b = addrKey(finalUrl || reqUrl);
+    if (a.join('|') !== b.join('|')) {
+      var under = a[0] === b[0] && a[1] !== '' && b[1].indexOf(a[1] + '/') === 0; // 그 주소 아래의 첫 화면
+      if (!under && (isLanding(finalUrl) || /(^|\/)(error|err|404|notfound|not_found)[^\/]*$/i.test(b[1]) || /\/(error|err)\//i.test(b[1]))) return 'home';
+    }
+    var h = String(html || '');
+    // 본문 글이 있는 오류 안내 쪽은 따지지 않는다: 서버에만 그렇게 보이고 브라우저로는 열리는 곳이 있다
+    return h.length < 4000 && /history\.(back|go)\s*\(/.test(h) && htmlText(h).length < 10 ? 'gone' : '';
+  }
+  // 신청·참고 단추에 쓸 주소: 죽은 주소로 확인됐으면 내지 않는다
+  function liveUrl(u, n) { return u && ((n && n.dead) || []).indexOf(u) < 0 ? u : ''; }
   // 온통청년의 그 정책 상세 화면
   function youthUrl(it) { var base = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch'; return /^\d{10,30}$/.test((it && it.id) || '') ? base + '/ythPlcyDetail/' + it.id : base; }
   // '공고 보기'가 갈 곳(기관 첫 화면은 안 됨): 확인한 공고 주소 → 대문이 아닌 등록 주소 → 온통청년 상세 화면
-  // n: api/period 판독 결과. 반환 { url, kind: 'notice' | 'youth', checked }
+  // n: api/period 판독 결과(n.dead: 열어 보니 죽은 주소). 반환 { url, kind: 'notice' | 'youth', checked }
   function noticeLink(it, n) {
     n = n || it.notice || {};
     var yc = { url: youthUrl(it), kind: 'youth', checked: false };
     if (n.url && (n.state === 'found' || n.state === 'always')) return { url: n.url, kind: 'notice', checked: true };
     if (n.url && /^(notstated|stale|ambiguous)$/.test(n.why || '')) return isLanding(n.url) ? yc : { url: n.url, kind: 'notice', checked: true };
-    if (n.why === 'unrelated' || n.why === 'nolink') return yc;
+    if (n.why === 'unrelated' || n.why === 'nolink' || n.why === 'dead') return yc;
     // 확인 전이거나 서버에서 안 열린 경우(브라우저로는 열릴 수 있다)
-    var first = (it.notices || []).filter(function (u) { return !isLanding(u); })[0];
+    var first = (it.notices || []).filter(function (u) { return !isLanding(u) && liveUrl(u, n); })[0];
     return first ? { url: first, kind: 'notice', checked: false } : yc;
   }
 
@@ -578,6 +594,6 @@
   var VR = { ok: 0, ask: 1, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, check: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' && st.sure ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
-  return { CATS: CATS, ASK: ASK, BANK: BANK, median: median, normalize: normalize, scopeOf: scopeOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regText: regText, isDeep: isDeep, isLanding: isLanding, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
+  return { CATS: CATS, ASK: ASK, BANK: BANK, median: median, normalize: normalize, scopeOf: scopeOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regText: regText, isDeep: isDeep, isLanding: isLanding, deadPage: deadPage, liveUrl: liveUrl, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
     docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, amountList: amountList, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });

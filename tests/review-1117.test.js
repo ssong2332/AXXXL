@@ -76,3 +76,15 @@ test('2번: 홈 "남은 납부" 카드와 지원 카드는 납부 항목 이름�
   const sup = /var sup = [^\n]*/.exec(home)[0];
   assert.ok(/esc\(el\.p\.name\)/.test(sup) && /esc\(el\.p\.status\)/.test(sup), sup);
 });
+
+test('작은 쪽이 스크립트·meta로 다른 주소로 넘기면 그 주소를 따라간다 (scriptHop)', () => {
+  assert.equal(O.scriptHop('<html><head><title>데이터 처리중 :</title><script>location.href = "/mainA.do";</script></head></html>'), '/mainA.do');
+  assert.equal(O.scriptHop("<script>document.location.href='/index.do'</script>"), '/index.do');
+  assert.equal(O.scriptHop('<script>location.replace("/ko/main.do");</script>'), '/ko/main.do');
+  assert.equal(O.scriptHop('<meta http-equiv="refresh" content="0; url=/main/main.do">'), '/main/main.do');
+  assert.equal(O.scriptHop('<meta http-equiv="refresh" content="0;URL=default/">'), 'default/');
+  // 긴 본문(실제 화면)에 든 이동 스크립트는 따라가지 않는다
+  assert.equal(O.scriptHop('<html>' + 'x'.repeat(5000) + '<script>function go(){location.href="/a.do";}</script></html>'), '');
+  // 이동이 없으면 빈 값
+  assert.equal(O.scriptHop('<html><body>안내</body></html>'), '');
+});
