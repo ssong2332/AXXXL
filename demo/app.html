@@ -2465,10 +2465,16 @@ document.addEventListener('DOMContentLoaded', function () {
     ['etc', '기타', '영수증, 특약·수리 요청 문자 캡처 등.', false]
   ];
   // 서류 준비 상태 배지 (F-10 ④): 회색 글자 대신 배경 있는 배지 + 아이콘. 칸 안내는 이름 아래 줄로 (F-10 ③ PC 칸 깨짐)
-  function docsState(it, slotName) {
+  // 칸 없는 서류 (T-30): 발급처 링크(docSource) → 그 지원 공고(지원 상세 '공고 원문'과 같은 주소) → 둘 다 없으면 상태만
+  function docsState(it, slotName, p) {
     if (it.ready) return { cls: 'brand', icon: 'check', label: '있음', hint: '' };
     if (it.slot) return { cls: '', icon: 'plus', label: '올리기 전', hint: esc(slotName[it.slot]) + ' 칸에 올리기' };
-    return { cls: '', icon: 'doc', label: '발급 받기', hint: '서류함 칸 없음 · 발급처에서 받기' };
+    var web = function (u) { u = JachwiRules.safeUrl(u); return /^https?:/i.test(u) ? u : ''; };
+    var s = SP.docSource(it.name), u = s && s.t === 'link' ? web(s.url) : '';
+    if (u) return { cls: '', icon: 'doc', label: s.label + ' ↗', hint: '서류함 칸 없음', href: u };
+    u = p ? web(p.source && p.source.url) || web(p.url) : '';
+    if (u) return { cls: '', icon: 'doc', label: '공고에서 확인 ↗', hint: '서류함 칸 없음', href: u };
+    return { cls: '', icon: 'doc', label: '준비 전', hint: '서류함 칸 없음' };
   }
   // 준비 막대 (F-10 ⑤): 들어올 때 0→현재(mo-fill), 같은 화면에서 바뀌면 직전→현재(mo-grow)
   function docsBar(key, ready, total) {
@@ -2489,9 +2495,10 @@ document.addEventListener('DOMContentLoaded', function () {
       return '<div class="card stack' + moStep(pi + 1) + '"><div class="split"><h2 style="font-size:15px">' + esc(x.p.name) + '</h2><span class="badge ' + (r.ready === r.total ? 'brand' : '') + '">' + moNum('docs:ready:' + x.p.id, r.ready) + ' / ' + r.total + ' 준비</span></div>' +
         docsBar('docs:pct:' + x.p.id, r.ready, r.total) +
         '<div class="dq-list">' + r.items.map(function (it, ii) {
-          var st = docsState(it, slotName), was = moChanged('docs:item:' + x.p.id + ':' + ii, !!it.ready);
+          var st = docsState(it, slotName, x.p), was = moChanged('docs:item:' + x.p.id + ':' + ii, !!it.ready);
           return '<div class="dq"><div class="dq-t"><span class="s13">' + esc(it.name) + '</span>' + (st.hint ? '<span class="s12 muted">' + st.hint + '</span>' : '') + '</div>' +
-            '<span class="badge ' + st.cls + (was === false && it.ready ? ' mo-pop' : '') + '">' + ic(st.icon, 'sm') + st.label + '</span></div>';
+            (st.href ? '<a class="sp-get" href="' + esc(st.href) + '" target="_blank" rel="noopener">' + esc(st.label) + '</a></div>' :
+            '<span class="badge ' + st.cls + (was === false && it.ready ? ' mo-pop' : '') + '">' + ic(st.icon, 'sm') + esc(st.label) + '</span></div>');
         }).join('') + '</div>' +
         '<a class="s12" href="#support">지원 상세 보기</a></div>';
     }).join('');
