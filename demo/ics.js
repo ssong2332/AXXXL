@@ -1,5 +1,5 @@
 /*
- * 자취 계약 내비 · 캘린더(.ics) 만들기
+ * 자취대로 · 캘린더(.ics) 만들기
  * 브라우저(window.JachwiICS)와 Vercel 함수(require) 양쪽에서 같은 코드로 쓴다.
  *
  * payload 형식 (짧게 만들어 URL에 담는다. 서버에 저장하지 않는다)
@@ -50,7 +50,7 @@
     }
     (p.e || []).forEach(function (x) {
       if (!Array.isArray(x) || !isYmd(x[0])) return;
-      ev(['DTSTART;VALUE=DATE:' + x[0], 'DTEND;VALUE=DATE:' + addDay(x[0])], clean(x[1]), '자취 계약 내비에서 만든 일정이에요.', 'e' + x[0] + x[1]);
+      ev(['DTSTART;VALUE=DATE:' + x[0], 'DTEND;VALUE=DATE:' + addDay(x[0])], clean(x[1]), '자취대로에서 만든 일정이에요.', 'e' + x[0] + x[1]);
     });
     (p.t || []).forEach(function (x) {
       if (!Array.isArray(x) || !/^\d{12}$/.test(x[0])) return;
@@ -64,7 +64,7 @@
       var y = +start.slice(0, 4), m = +start.slice(4, 6), dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
       var first = y + pad(m) + pad(Math.min(day === 31 ? dim : day, dim));
       var rule = 'FREQ=MONTHLY;INTERVAL=' + every + ';BYMONTHDAY=' + (day === 31 ? -1 : day) + (count ? ';COUNT=' + count : isYmd(until) ? ';UNTIL=' + until : '');
-      ev(['DTSTART;VALUE=DATE:' + first, 'DTEND;VALUE=DATE:' + addDay(first), 'RRULE:' + rule], name + ' ' + amt.toLocaleString('ko-KR') + '원' + (kind === 'i' ? ' 입금' : ' 납부'), '자취 계약 내비에서 만든 반복 일정이에요.', 'b' + name + start);
+      ev(['DTSTART;VALUE=DATE:' + first, 'DTEND;VALUE=DATE:' + addDay(first), 'RRULE:' + rule], name + ' ' + amt.toLocaleString('ko-KR') + '원' + (kind === 'i' ? ' 입금' : ' 납부'), '자취대로에서 만든 반복 일정이에요.', 'b' + name + start);
     });
     L.push('END:VCALENDAR');
     return L.map(fold).join('\r\n') + '\r\n';

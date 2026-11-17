@@ -1,6 +1,6 @@
 {
-  "name": "자취 계약 내비",
-  "short_name": "자취내비",
+  "name": "자취대로",
+  "short_name": "자취대로",
   "description": "처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이",
   "lang": "ko",
   "start_url": "/app.html",
