@@ -30,13 +30,13 @@ test('F-11 ③: 내 계약에 조건 입력과 같은 칸(보증금·월세·날
   }
 });
 
-test('F-11 ③: 내 계약에만 있는 칸(집 별칭·관리비·부를 이름·지역·시연용 날짜·백업)은 남는다', () => {
+test('F-11 ③: 내 계약에만 있는 칸(집 별칭·관리비·부를 이름·지역·백업)은 남는다 (시연용 날짜는 예시 모드와 함께 없앰)', () => {
   const f = fields(CONTRACT);
   assert.ok(f.includes('addr'), '집 별칭');
   assert.ok(f.includes('fee'), '관리비');
   assert.ok(f.includes('nick'), '부를 이름');
   assert.match(CONTRACT, /regionFields\(\)/, '지역');
-  assert.match(CONTRACT, /data-sim/, '시연용 날짜');
+  assert.doesNotMatch(CONTRACT, /data-sim/, '시연용 날짜 없음');
   assert.match(CONTRACT, /data-act="backup"/, '백업 저장');
   assert.match(CONTRACT, /data-act="restore"/, '백업 불러오기');
 });

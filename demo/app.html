@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>/* 화면 테마(자동·밝게·어둡게)를 그리기 전에 먼저 적용해서 처음 열 때 깜빡이지 않게 한다 */ try { var t0 = localStorage.getItem('jachwi-theme'); if (t0 === 'light' || t0 === 'dark') document.documentElement.setAttribute('data-theme', t0); } catch (e) {}</script>
 <title>자취 계약 내비</title>
-<meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 (시연판)">
+<meta name="description" content="처음 자취하는 청년을 위한 계약·신고·지원·동네 생활 길잡이 ">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -1049,6 +1049,10 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
 .acc-menu a, .acc-menu button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; text-align: left }
 .acc-menu a:hover, .acc-menu button:hover { background: var(--fill) }
 .side-tool .acc-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.ob-top { display: flex; align-items: center; justify-content: space-between; gap: 12px }
+.ob-out { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer } .ob-out:hover { background: var(--fill) }
+/* 휴대폰: 키보드·보조기기로 이동할 때 버튼이 위쪽 줄·아래 탭바 뒤에 숨지 않게 (WCAG 2.4.11) */
+@media (max-width: 899px) { html { scroll-padding-top: 72px; scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)) } }
 /* ===== mo:T-09 내 화면 6개 모션 (계약·신고 전용) ===== */
 .mo { --mo-short: 250ms; --mo-base: 450ms; --mo-long: 600ms; --mo-step: 80ms; --mo-shift: 20px; --mo-ease: cubic-bezier(0.3, 0.7, 0.4, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
 .mo .mo-fold { display: grid; grid-template-rows: 0fr }
@@ -1324,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var ACC_OWNER = 'jachwi-owner';   // 이 기기 기록의 주인(계정 id). 다른 계정이 로그인하면 이 기기 기록을 비우고 시작한다
   var HAS_SESS = (function () { try { return !!localStorage.getItem('jachwi-auth'); } catch (e) { return false; } })();
   // 로그인 화면을 보여야 하나: 예시 둘러보기·휴대폰 캘린더 링크는 로그인 없이. 설정을 불러오는 동안, 로그인했던 기기는 기다리지 않고 바로 연다
-  function accGate() { return !!JA && !S.demo && !PHONE_D && !accOn() && (ACC.loading ? !HAS_SESS : ACC.ready); }
+  function accGate() { return !!JA && !S.demo && !PHONE_D && !PHONE_U && !accOn() && (ACC.loading ? !HAS_SESS : ACC.ready); }
   function accLocalAt() { try { return +localStorage.getItem(ACC_AT) || 0; } catch (e) { return 0; } }
   function accSetLocalAt(t) { try { localStorage.setItem(ACC_AT, String(t)); } catch (e) {} }
   // 저장할 때마다: 올릴 내용이 실제로 바뀌었을 때만 고친 시각을 남기고, 로그인 중이면 잠시 뒤 서버에도 올린다
@@ -1336,11 +1340,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!accOn()) return;
     clearTimeout(ACC_T); ACC_T = setTimeout(accPush, 1500);
   }
+  // 휴대폰 캘린더 구독 토큰(계정마다 하나, 기기끼리 같이 쓴다). /cal.ics?u=토큰 이 계정에 저장된 최신 일정을 내려준다
+  function accCalToken() {
+    if (!S.calToken) { var a = new Uint8Array(24); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach(function (_, i) { a[i] = Math.random() * 256 | 0; }); S.calToken = b64url(a); save(); }
+    return S.calToken;
+  }
   function accPush() {
     if (!accOn() || S.demo) return;
+    accCalToken();
     var st = JA.pick(S); if (!st) { ACC.state = 'err'; ACC.msg = '기록이 너무 커서 저장하지 못했어요.'; return accPaint(); }
     ACC.state = 'saving';
-    ACC.cli.push(st).then(function (at) { if (at) { accSetLocalAt(at); ACC.at = at; } ACC.state = 'ok'; ACC.msg = ''; accPaint(); },
+    var feed = Promise.resolve('');
+    try { if (S.onboarded) feed = encodePayload(calPayload()).catch(function () { return ''; }); } catch (e) {}
+    feed.then(function (d) { return ACC.cli.push(st, { cal_token: S.calToken, cal_feed: d || null }); }).then(function (at) { if (at) { accSetLocalAt(at); ACC.at = at; } ACC.state = 'ok'; ACC.msg = ''; accPaint(); },
       function (e) { ACC.state = 'err'; ACC.msg = e.message; accPaint(); });
   }
   // 로그인했을 때·앱으로 돌아왔을 때: 서버 기록과 이 기기 기록 중 최근 것을 남긴다
@@ -1360,10 +1372,11 @@ document.addEventListener('DOMContentLoaded', function () {
         ACC_LAST = JSON.stringify(JA.pick(S)); accSetLocalAt(r.at); ACC.at = r.at;
         PC.k = ''; ACC.state = 'ok'; ACC.open = false;
         if (first) toast('다른 기기에서 쓰던 기록을 불러왔어요.');
-        render(false); return;
+        render(false); accPush(); return;
       }
       if (r) ACC.at = r.at;
-      if (how === 'push' && !S.demo) accPush(); else { ACC.state = 'ok'; accPaint(); }
+      // 'same'이어도 한 번 올린다: 휴대폰 캘린더 구독용 최신 일정 묶음(cal_feed)을 채우려고
+      if (!S.demo) accPush(); else { ACC.state = 'ok'; accPaint(); }
     }, function (e) { ACC.state = 'err'; ACC.msg = e.message; accPaint(); });
   }
   function accPaint() {
@@ -1413,15 +1426,15 @@ document.addEventListener('DOMContentLoaded', function () {
         (s.type === 'recovery' ? '<form data-form="accpw" class="acc-form"><label class="field"><span>새 비밀번호 (6자 이상)</span><input class="inp" type="password" name="pw" minlength="6" autocomplete="new-password" required></label><button class="btn" type="submit"' + (ACC.busy ? ' disabled' : '') + '>비밀번호 바꾸기</button></form>' : '') +
         '<div class="row"><button type="button" class="btn line sm" data-act="acclogout">로그아웃</button><button type="button" class="btn ghost sm" data-act="accdel">계정 삭제</button></div>' + note + '</section>';
     }
-    var m = ACC.mode, title = m === 'up' ? '이메일로 가입' : m === 'reset' ? '비밀번호 다시 정하기' : '이메일로 로그인';
+    var m = ACC.mode, title = m === 'up' ? '이메일로 회원가입' : m === 'reset' ? '비밀번호 찾기' : '이메일로 로그인';
     return '<div class="stack acc">' +
       (ACC.prov.kakao || ACC.prov.google ? '<div class="acc-sns">' + (ACC.prov.kakao ? '<button type="button" class="acc-btn acc-kakao" data-act="acclogin" data-v="kakao">' + KAKAO_SYM + '카카오로 계속하기</button>' : '') + (ACC.prov.google ? '<button type="button" class="acc-btn acc-google" data-act="acclogin" data-v="google">' + GOOGLE_G + 'Google로 계속하기</button>' : '') + '</div>' : '') +
       (!ACC.prov.email ? '' : (ACC.prov.kakao || ACC.prov.google ? '<div class="acc-or"><span>또는 ' + title + '</span></div>' : '<p class="s13" style="font-weight:650">' + title + '</p>') +
       '<form data-form="accmail" class="acc-form"><label class="field"><span>이메일</span><input class="inp" type="email" name="email" autocomplete="email" required></label>' +
       (m === 'reset' ? '' : '<label class="field"><span>비밀번호' + (m === 'up' ? ' (6자 이상)' : '') + '</span><input class="inp" type="password" name="pw" minlength="6" autocomplete="' + (m === 'up' ? 'new-password' : 'current-password') + '" required></label>') +
       (ACC.msg ? '<p class="s13" style="color:' + (/메일함|보냈어요/.test(ACC.msg) ? 'var(--brand-text)' : 'var(--no)') + '" role="alert">' + esc(ACC.msg) + '</p>' : '') +
-      '<button class="btn" type="submit"' + (ACC.busy ? ' disabled' : '') + '>' + (m === 'up' ? '가입하기' : m === 'reset' ? '재설정 메일 보내기' : '로그인') + '</button></form>' +
-      '<p class="s13 muted acc-links">' + (m === 'in' ? '<button type="button" class="linkbtn" data-act="accmode" data-v="up">처음이면 가입하기</button> · <button type="button" class="linkbtn" data-act="accmode" data-v="reset">비밀번호를 잊었어요</button>' : '<button type="button" class="linkbtn" data-act="accmode" data-v="in">로그인으로 돌아가기</button>') + '</p>') + '</div>';
+      '<button class="btn" type="submit"' + (ACC.busy ? ' disabled' : '') + '>' + (m === 'up' ? '회원가입' : m === 'reset' ? '재설정 메일 보내기' : '로그인') + '</button></form>' +
+      '<p class="s13 muted acc-links">' + (m === 'in' ? '<button type="button" class="linkbtn" data-act="accmode" data-v="up">회원가입</button> · <button type="button" class="linkbtn" data-act="accmode" data-v="reset">비밀번호 찾기</button>' : '<button type="button" class="linkbtn" data-act="accmode" data-v="in">로그인으로 돌아가기</button>') + '</p>') + '</div>';
   }
   // 로그아웃 찾기 쉽게: PC는 사이드바 아래, 휴대폰은 위쪽 계정 버튼 메뉴
   function accWho() { var u = ACC.cli && ACC.cli.user(); return u ? (u.name || u.email || '내 계정') : ''; }
@@ -1477,7 +1490,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // 신고·기한·나이 계산은 engine.js(계약·신고 담당), 지원 자격은 rules-core.js(evalProgram)
   var JE = window.JachwiEngine;
   function contractEnd() { return JE.contractEnd(pd(S.move), S.term); }
-  function curAge() { var a = JE.age(S.birth, pd(S.contract)); return a === null && !S.birth && +S.age ? +S.age : a; }
+  // 나이는 지원 자격 판정에만 쓴다. 지원사업은 신청하는 날 기준이라 계약일이 아니라 오늘 기준 만 나이로 센다
+  function curAge() { var a = JE.age(S.birth, today); return a === null && !S.birth && +S.age ? +S.age : a; }
   function ageText() { var a = curAge(); return a === null ? '나이 확인 필요' : '만 ' + a + '세'; }
   function incomeOk(limit) { if (S.income === 'unknown') return null; if (S.income === 'over') return false; return +S.income <= limit; }
   function incomeLabel() { return { '100': '중위 100% 이하', '150': '중위 150% 이하', over: '중위 150% 초과', unknown: '모름' }[S.income]; }
@@ -1883,7 +1897,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
   // 공고에서 기간을 읽지 못한 까닭 (경고가 아니라 안내로)
-  var NT_WHY = { nolink: '등록 자료에 공고 주소가 따로 없어요.', unreachable: '기관 공고 페이지가 이 서비스에서 바로 열리지 않아요.', unrelated: '등록된 주소가 이 사업 공고로 바로 연결되지 않아요.', notstated: '공고 본문에 기간이 글로 적혀 있지 않아요. 첨부 파일이나 그림에 있을 수 있어요.', stale: '연결된 공고가 지난해 것이라 올해 기간과 다를 수 있어요.', ambiguous: '공고에 기간이 여러 개 적혀 있어 어느 것이 접수 기간인지 직접 봐 주세요.' };
+  var NT_WHY = { nolink: '등록 자료에 공고 주소가 따로 없어요.', unreachable: '기관 공고 페이지가 이 서비스에서 바로 열리지 않아요.', unrelated: '등록된 주소가 이 사업 공고로 바로 연결되지 않아요.', dead: '등록된 공고 주소가 지금은 열리지 않거나 기관 첫 화면으로 넘어가요.', notstated: '공고 본문에 기간이 글로 적혀 있지 않아요. 첨부 파일이나 그림에 있을 수 있어요.', stale: '연결된 공고가 지난해 것이라 올해 기간과 다를 수 있어요.', ambiguous: '공고에 기간이 여러 개 적혀 있어 어느 것이 접수 기간인지 직접 봐 주세요.' };
   function ntDay(s) { return s ? s.slice(0, 4) + '.' + +s.slice(4, 6) + '.' + +s.slice(6, 8) : ''; }
   function spPeriod(row) {
     var it = row.it, st = row.st, n = it.notice || {}, left = SP.leftText(st), nl = SP.noticeLink(it, n), go = nl.kind === 'notice';
@@ -1925,7 +1939,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function houseInc() { var u = sup(); return !u.hh ? undefined : u.hh === 1 ? u.minc : u.hinc; }
   // 소득을 알려 주면 승인 공고가 쓰는 소득 구간(100%·150%)도 같이 맞춘다
   function syncIncome() { var u = sup(), v = houseInc(); if (u.hh && v !== undefined) { var pct = v * 10000 / SP.median(u.hh) * 100; S.income = pct <= 100 ? '100' : pct <= 150 ? '150' : 'over'; } }
-  // 나이는 조건 입력·내 계약과 같은 curAge. 생일 달이라 정할 수 없으면 0 + birth
+  // 나이는 오늘 기준 curAge(자격 판정 화면과 같음). 생일 달이라 정할 수 없으면 0 + birth
   function supUser() { var u = sup(), r = regionOf(); return { age: curAge() || 0, birth: S.birth || '', zip: r.zip, region: regionName(r), mrg: u.mrg, job: u.job, school: u.school, minc: u.minc, hh: u.hh, hinc: u.hinc, traits: u.traits, homeless: S.homeless || undefined, deposit: +S.deposit || 0, rent: +S.rent || 0, earn: u.minc === undefined ? 0 : u.minc * 12 }; }
   function scopeLabel(it, r) { return it.scope === 'sgg' ? r.sgg + ' 거주' : it.scope === 'sido' ? r.sido + ' 거주' : it.scope === 'multi' ? '여러 지역 대상 (내 지역 포함)' : '전국 대상'; }
   function restNote(d) {
@@ -2078,7 +2092,8 @@ document.addEventListener('DOMContentLoaded', function () {
         (w.length ? '<div class="sp-sec"><h3>이럴 땐 못 받게 돼요<small>등록된 조건으로 계산</small></h3><ul class="sp-watch">' + w.map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('') + '</ul></div>' : '') +
         (it.how || it.select ? '<div class="sp-sec"><h3>신청·선정</h3>' + (it.how ? '<p class="sp-lbl">신청 방법</p>' + spLong(it.how) : '') + (it.select ? '<p class="sp-lbl" style="margin-top:12px">선정 방식</p>' + spLong(it.select) : '') + '</div>' : '') +
         spDocs(SP.docLines(it.docs), SP.noticeLink(it).url) +
-        '<div class="sp-acts">' + (it.url ? '<a class="btn' + (row.v === 'ok' ? '' : ' ghost') + '" href="' + esc(it.url) + '" target="_blank" rel="noopener">' + (SP.isLanding(it.url) ? '신청 누리집 (첫 화면)' : '신청하러 가기') + ic('out', 'sm') + '</a>' : '') + (it.ref && it.ref !== it.url ? '<a class="btn ghost" href="' + esc(it.ref) + '" target="_blank" rel="noopener">' + (SP.isLanding(it.ref) ? '기관 누리집 (첫 화면)' : '참고 누리집') + '</a>' : '') +
+        '<div class="sp-acts">' + (function (au, ru) { return (au ? '<a class="btn' + (row.v === 'ok' ? '' : ' ghost') + '" href="' + esc(au) + '" target="_blank" rel="noopener">' + (SP.isLanding(au) ? '신청 누리집 (첫 화면)' : '신청하러 가기') + ic('out', 'sm') + '</a>' : '') + (ru && ru !== au ? '<a class="btn ghost" href="' + esc(ru) + '" target="_blank" rel="noopener">' + (SP.isLanding(ru) ? '기관 누리집 (첫 화면)' : '참고 누리집') + '</a>' : ''); })(SP.liveUrl(it.url, it.notice), SP.liveUrl(it.ref, it.notice)) + // 열어 보니 죽은 주소(첫 화면·오류 화면으로 넘어감)는 단추로 내지 않는다
+        
         '<a class="btn ghost" href="' + youthUrl(it) + '" target="_blank" rel="noopener">' + (/ythPlcyDetail/.test(youthUrl(it)) ? '온통청년에서 이 정책 보기' : '온통청년에서 찾기') + '</a></div>' +
         '<p class="sp-meta">온통청년에 등록된 내용' + (it.upd ? ' · ' + esc(it.upd) + ' 수정' : '') + ' · 담당자가 공고 원문과 대조하기 전이에요. 신청 전에 공고를 한 번 확인하세요.</p>';
     } else if (row.kind === 'wf') {
@@ -2159,7 +2174,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var ap = tab === '주거' ? R.programs.map(rowApproved) : [];
       // 승인 공고와 같은 사업으로 등록된 온통청년 정책은 목록에서 한 번만 (승인 공고 쪽을 남긴다)
       var apIds = {}; R.programs.forEach(function (x) { ((x.p.source && x.p.source.policyIds) || []).forEach(function (id) { apIds[id] = 1; }); });
-      if (yb.status === 'ok') { ntApply(yb.data.items, r.zip); counts = yb.data.counts; rows = ap.concat(yb.data.items.filter(function (it) { return !apIds[it.id] && SP.forRegion(it, r.sido, r.sgg); }).map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : '') + ' · 중앙부처와 내 지역(시·도, 시·군·구)이 운영하는 사업만 보여 줘요' + (yb.data.hidden ? ' (다른 지역이 전국 대상으로 올린 ' + yb.data.hidden + '건 제외)' : ''); }
+      if (yb.status === 'ok') { ntApply(yb.data.items, r.zip); counts = yb.data.counts; rows = ap.concat(yb.data.items.filter(function (it) { return !apIds[it.id] && SP.forRegion(it, r.sido, r.sgg) && !SP.hideDead(it, today); }).map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : '') + ' · 중앙부처와 내 지역(시·도, 시·군·구)이 운영하는 사업만 보여 줘요' + (yb.data.hidden ? ' (다른 지역이 전국 대상으로 올린 ' + yb.data.hidden + '건 제외)' : ''); }
       else rows = ap;
       all = rows;
       var liveAll = all.filter(function (x) { return x.v !== 'no'; });
@@ -3454,10 +3469,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (c.pending !== key) { c.pending = key; ENC[name] = c; encodePayload(obj).then(function (d) { ENC[name] = { key: key, d: d }; render(true); }); }
     return '';
   }
-  var PHONE_D = '';
-  function phoneLinks(d) {
-    var host = ORIGIN.replace(/^https?:\/\//, ''), webcal = 'webcal://' + host + '/cal.ics?d=' + d;
-    return { https: ORIGIN + '/cal.ics?d=' + d, webcal: webcal, google: 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcal), handoff: ORIGIN + '/app.html#phone=' + d };
+  var PHONE_D = '', PHONE_U = '';
+  // 로그인했으면 계정 구독 주소(u=토큰, 앱에서 고치면 따라 바뀜), 아니면 일정을 담은 주소(d)
+  function phoneLinks(d, u) {
+    var q = u ? 'u=' + u : 'd=' + d, host = ORIGIN.replace(/^https?:\/\//, ''), webcal = 'webcal://' + host + '/cal.ics?' + q;
+    return { https: ORIGIN + '/cal.ics?' + q, webcal: webcal, google: 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcal), handoff: ORIGIN + '/app.html#' + (u ? 'phoneu=' + u : 'phone=' + d) };
   }
   function qrSvg(text) { if (!window.qrcode || !text) return ''; try { var q = qrcode(0, 'L'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 3, margin: 2, scalable: true }); } catch (e) { return ''; } }
   var UA = navigator.userAgent || '', IS_IOS = /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1), IS_PHONE = IS_IOS || /Android/i.test(UA);
@@ -3475,9 +3491,9 @@ document.addEventListener('DOMContentLoaded', function () {
     toast('캘린더 파일을 만들었어요. 휴대폰에서 열면 일정과 알림이 들어가요.');
   }
   function phonePanel() {
-    var fromPc = !!PHONE_D, d = PHONE_D || encoded('cal', calPayload());
-    if (!d) return '<p class="muted s13">구독 주소를 만드는 중…</p>';
-    var L2 = phoneLinks(d), qr = !IS_PHONE && !fromPc ? qrSvg(L2.handoff) : '';
+    var u = PHONE_U || (accOn() && !S.demo ? accCalToken() : ''), fromPc = !!(PHONE_D || PHONE_U), d = u ? '' : PHONE_D || encoded('cal', calPayload());
+    if (!d && !u) return '<p class="muted s13">구독 주소를 만드는 중…</p>';
+    var L2 = phoneLinks(d, u), qr = !IS_PHONE && !fromPc ? qrSvg(L2.handoff) : '';
     return (fromPc ? '<div class="banner" style="margin-bottom:12px">' + ic('info') + '<span>PC에서 보낸 일정이에요. 아래 버튼으로 이 휴대폰 캘린더에 넣으세요.</span></div>' : '') +
       '<p class="s13 sub" style="margin-bottom:12px">기한·월세·공과금·내 일정을 휴대폰 기본 캘린더에 넣어요. <b>구독</b>하면 휴대폰 캘린더 앱이 알아서 다시 받아 와요.</p>' +
       '<div class="stack" style="gap:8px">' +
@@ -3487,7 +3503,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<button type="button" class="btn line block" data-act="copysub" data-v="' + L2.https + '">' + ic('copy', 'sm') + '구독 주소 복사</button></div>' +
       (qr ? '<div class="qr-box"><div class="qr">' + qr + '</div><p class="s13"><b>휴대폰 카메라로 찍어 보세요</b><br><span class="muted">휴대폰에서 이 화면이 열리고, 바로 구독할 수 있어요.</span></p></div>' : '') +
       '<div style="margin-top:12px">' + remindSelect() + '</div>' +
-      '<ul class="tips s12 muted"><li>아이폰은 구독할 때 ‘알림 제거’를 끄면 미리 알림도 와요.</li><li>구글 캘린더는 새 내용이 반영되기까지 몇 시간 걸릴 수 있어요.</li><li>월세·일정을 바꾸면 주소가 바뀌어요. 예전 구독은 지우고 다시 구독하세요.</li><li>구독 주소에는 날짜·금액·일정 제목만 들어가고, 이름·주소는 들어가지 않아요. 서버는 저장하지 않아요.</li></ul>';
+      '<ul class="tips s12 muted"><li>아이폰은 구독할 때 ‘알림 제거’를 끄면 미리 알림도 와요.</li><li>구글 캘린더는 새 내용이 반영되기까지 몇 시간 걸릴 수 있어요.</li>' + (u ? '<li>내 계정 구독이라 앱에서 바꾼 일정·월세가 휴대폰 캘린더에도 따라 바뀌어요. 아이폰은 설정 › 캘린더 › 계정 › 데이터 가져오기에서 받아 오는 주기를 정할 수 있어요.</li><li>구독한 일정은 휴대폰 캘린더에서 직접 고칠 수 없어요. 앱에서 고쳐 주세요.</li>' : '<li>월세·일정을 바꾸면 주소가 바뀌어요. 예전 구독은 지우고 다시 구독하세요.</li>') + '' + (u ? '<li>휴대폰 캘린더에는 날짜·금액·일정 제목만 가고, 이름·주소는 가지 않아요. 구독 주소를 아는 사람은 이 일정을 볼 수 있으니 다른 사람과 나누지 마세요.</li>' : '<li>구독 주소에는 날짜·금액·일정 제목만 들어가고, 이름·주소는 들어가지 않아요. 서버는 저장하지 않아요.</li>') + '</ul>';
   }
 
   function viewCalendar() {
@@ -3892,7 +3908,6 @@ document.addEventListener('DOMContentLoaded', function () {
       '<h3 class="mo-contract-sub">이 화면에서 정하는 칸</h3><div class="form-grid">' +
       f('집 별칭', '<input class="inp" data-field="addr" maxlength="20" value="' + esc(S.addr) + '">') + f('관리비', num('fee', '만 원')) + regionFields() +
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">', true) + '</div>' +
-      (!S.demo ? '' : '<label class="field"><span>시연용 날짜 (발표용)</span><select class="inp" data-sim>' + [['', '실제 오늘'], ['-1', '입주 전날'], ['0', '입주 당일'], ['10', '입주 10일 후'], ['40', '입주 40일 후']].map(function (o) { var sv = S.sim === null || S.sim === undefined ? '' : String(S.sim); return '<option value="' + o[0] + '"' + (sv === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>') +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div>' +
       '<div class="row"><button type="button" class="btn ghost sm" data-act="backup">' + ic('down', 'sm') + '내 기록 파일로 저장</button><label class="btn ghost sm addfile">' + ic('plus', 'sm') + '파일에서 불러오기<input type="file" accept="application/json,.json" data-act="restore"></label></div><p class="s12 muted">브라우저 데이터를 지우거나 폰을 바꾸기 전에 저장해 두세요. 서류·사진 파일은 들어 있지 않아요.</p></section></div></section>' +
       '<section class="mo-contract-zone" aria-labelledby="mo-contract-other-h"><h2 class="mo-contract-h" id="mo-contract-other-h">집 위치 · 휴대폰 연결</h2>' +
@@ -3915,6 +3930,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- 처음 시작하기 (온보딩) ----------
   var GU_LIST = ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'];
+  // 온보딩 맨 위: 로고 + (로그인 중이면) 로그아웃
+  function obTop() { return accOn() ? '<div class="ob-top">' + obBrand() + '<button type="button" class="ob-out" data-act="acclogout" title="' + esc(accWho()) + '로 로그인 중">' + ic('logout', 'sm') + '로그아웃</button></div>' : obBrand(); }
   function obBrand() { return '<div class="brand" style="padding:0"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>'; }
   // 로그인 화면 (내 기록을 쓰려면 로그인. 예시 데이터는 로그인 없이)
   function viewLogin() {
@@ -3922,7 +3939,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return moRoot('start', '<div class="ob">' + obBrand() +
       '<section class="card stack ob-card"><h1>로그인하고 시작해요</h1><p class="sub">계약·할 일·주거비 기록을 내 계정에 저장해서 폰을 바꿔도 이어서 볼 수 있어요.</p>' +
       (ACC.loading ? '<p class="s13 muted" role="status">로그인 준비 중…</p>' : accountCard()) + '</section>' +
-      '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></div>');
   }
   function viewStart() {
@@ -3939,17 +3955,17 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (st === 2) body = '<h1>보증금과 월세는 얼마예요?</h1><p class="sub">전월세 신고 대상인지, 매달 나갈 돈이 얼마인지 계산해요.</p><div class="form-grid">' +
       f('보증금', num('deposit', '만 원', '예: 500')) + f('월세 (관리비 빼고)', num('rent', '만 원', '예: 50')) + f('관리비 (없으면 0)', num('fee', '만 원', '예: 7')) + '</div>' +
       ((S.deposit || S.rent) ? '<div class="banner">' + ic('info') + '<span>' + (R.report.required === null ? '전월세 신고 대상 지역인지 확인이 필요해요(' + esc(R.report.reason) + '). 대상이면 ' + md(R.report.due) + '까지 신고해야 해요.' : R.report.required ? '<b>전월세 신고 대상이에요</b> (' + R.report.reason + '). 기한은 ' + md(R.report.due) + '까지예요.' : '전월세 신고 대상은 아니에요. 확정일자는 따로 받아 두는 게 좋아요.') + '</span></div>' : '');
-    else if (st === 3) body = '<h1>집은 어디예요?</h1><p class="sub">가까운 행정복지센터·마트·병원을 찾고 지도에 집을 표시해요. 나중에 정해도 돼요.</p>' + homeCard() +
-      '<div class="form-grid">' + f('집 별칭 (화면에 보일 이름)', '<input class="inp" data-field="addr" maxlength="20" placeholder="예: 봉천동 원룸" value="' + esc(S.addr || '') + '">') + regionFields() + '</div>';
+    // 사는 지역을 먼저 고르게 한다(고르기 전엔 집 카드가 서울 예시 위치를 보여서 다른 지역 사람이 헷갈림)
+    else if (st === 3) body = '<h1>집은 어디예요?</h1><p class="sub">사는 지역을 고르면 그 동네 행정복지센터·마트·병원을 찾아요. 정확한 집 위치는 나중에 정해도 돼요.</p>' +
+      '<div class="form-grid">' + regionFields() + f('집 별칭 (화면에 보일 이름)', '<input class="inp" data-field="addr" maxlength="20" placeholder="예: 봉천동 원룸" value="' + esc(S.addr || '') + '">') + '</div>' + (regionOf().sido ? homeCard() : '');
     else body = '<h1>지원 자격도 미리 볼까요?</h1><p class="sub">청년 주거 지원을 신청해 볼 수 있는지 따져 볼게요. 몰라도 괜찮아요.</p><div class="form-grid">' +
       f('출생연월', '<input class="inp" type="month" data-field="birth" value="' + esc(S.birth || '') + '">') + f('무주택인가요?', '<select class="inp" data-field="homeless">' + [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + ((S.homeless || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + f('비슷한 주거 지원을 지금 받고 있나요?', '<select class="inp" data-field="dup">' + [['', '아직 안 정함'], ['yes', '예'], ['no', '아니오'], ['unknown', '잘 모르겠어요']].map(function (o) { return '<option value="' + o[0] + '"' + ((S.dup || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') + f('가구 소득 (기준 중위소득 대비)', '<select class="inp" data-field="income">' + [['unknown', '잘 모르겠어요'], ['100', '100% 이하'], ['150', '100% 초과 ~ 150% 이하'], ['over', '150% 초과']].map(function (o) { return '<option value="' + o[0] + '"' + (S.income === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>') +
       f('부를 이름 (선택)', '<input class="inp" data-field="nick" maxlength="10" placeholder="예: 성준" value="' + esc(S.nick || '') + '">') + '</div>';
     var btns = '<div class="row" style="justify-content:space-between;margin-top:8px">' + (st > 1 ? '<button type="button" class="btn ghost" data-act="obprev">이전</button>' : '<span></span>') +
       (st < 4 ? '<button type="button" class="btn" data-act="obnext">' + (st === 3 && !S.home ? '나중에 정하고 다음' : '다음') + '</button>' : '<button type="button" class="btn" data-act="obdone">내 자취 시작하기</button>') + '</div>';
-    return moRoot('start', '<div class="ob"><div class="brand" style="padding:0"><span class="brand-mark"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 30.5 32 11.5l23.5 19"/><path d="M18.5 25.5v13.5c-5.5 1.6-8.5 4.4-8.5 7.6 0 3.9 4.4 6.4 12 6.4h15"/><path d="M45.5 25.5v5.5"/></g><g fill="currentColor"><rect x="26.4" y="23" width="5" height="5" rx="1.3"/><rect x="32.6" y="23" width="5" height="5" rx="1.3"/><rect x="26.4" y="29.2" width="5" height="5" rx="1.3"/><rect x="32.6" y="29.2" width="5" height="5" rx="1.3"/></g><path d="M36.5 42 58 33.5l-8.4 21.5-3.8-9.4z" fill="#12A27B" stroke="#12A27B" stroke-width="2.6" stroke-linejoin="round"/></svg></span><span><b>자취 계약 내비</b><small>첫 자취 길잡이</small></span></div>' +
+    return moRoot('start', '<div class="ob">' + obTop() +
       '<ol class="ob-steps" aria-label="입력 단계">' + steps.map(function (x, i) { return '<li class="' + (i + 1 < st ? 'done' : i + 1 === st ? 'now' : '') + '"' + (i + 1 === st ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + x + '</li>'; }).join('') + '</ol>' +
       '<section class="card stack ob-card">' + body + btns + '</section>' +
-      '<p class="s13 muted" style="text-align:center">먼저 둘러보고 싶다면 <button type="button" class="linkbtn" data-act="demo">예시 데이터로 보기</button></p>' +
       '<div class="privacy">' + ic('lock', 'sm') + '<span>' + privacyText() + '</span></div></div>');
   }
   function backupJson() {
@@ -4152,19 +4168,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bellOnly || SEARCH_ON.indexOf(route()) < 0) return '';
     return '<div class="hbar desk' + (route() === 'map' ? ' hbar-msearch' : '') + '"><div class="search">' + ic('search') + '<input id="q" type="search" autocomplete="off" placeholder="주변 장소, 편의시설, 가게를 검색해 보세요" aria-label="주변 장소 검색"><div id="q-res" class="q-res" hidden></div></div></div>';
   }
-  // 시연용 날짜(예시 데이터일 때만) — 예시 데이터 안내 줄 안에 둔다 (PC만, 휴대폰은 숨김)
-  function simSelect() {
-    if (!S.demo) return '';
-    var simV = S.sim === null || S.sim === undefined ? '' : String(S.sim);
-    return '<select class="inp" data-sim aria-label="시연용 날짜">' + [['', '시연: 실제 오늘'], ['-1', '시연: 입주 전날'], ['0', '시연: 입주 당일'], ['10', '시연: 입주 10일 후'], ['40', '시연: 입주 40일 후']].map(function (o) { return '<option value="' + o[0] + '"' + (simV === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
-  }
 
   function render(keep) {
     pendRender = false;
     if (!S.demo) S.sim = null;
     today = S.sim === null || S.sim === undefined || S.sim === '' ? realToday() : add(pd(S.move), +S.sim);
     var r = route();
-    if (!S.onboarded && !(r === 'calendar' && PHONE_D)) r = 'start';
+    if (!S.onboarded && !(r === 'calendar' && (PHONE_D || PHONE_U))) r = 'start';
     if (S.onboarded && r === 'start') r = 'home';
     if (accGate()) r = 'start';
     document.body.classList.toggle('ob', r === 'start');
@@ -4182,8 +4192,7 @@ document.addEventListener('DOMContentLoaded', function () {
     BELL_N = n;
     var st = document.getElementById('side-tools'); if (st) { var tt = getTheme(); st.innerHTML = '<button type="button" class="side-tool" data-act="theme" aria-label="화면 모드: ' + THEMES[tt][0] + ' (누르면 ' + THEMES[THEME_NEXT[tt]][0] + ')">' + ic(THEMES[tt][1]) + '화면 모드<small>' + THEMES[tt][0] + '</small></button>' + accSideTools(); }
     var ta = document.getElementById('top-acts'); if (ta) ta.innerHTML = '<a class="icon-btn" href="#coach" aria-label="AI 자취 코치">' + ic('chat') + '</a>' + bellBtn() + themeBtn() + accTopBtn();
-    var demoBar = S.demo ? '<div class="demo-strip"><span><b>예시 데이터</b>로 둘러보는 중<span class="dm-more">이에요. 체크·입력해도 내 기록이 아니에요.</span></span><span class="row demo-tools-r" style="gap:8px">' + simSelect() + '<button type="button" class="btn sm" data-act="startreal">내 정보로 시작하기</button></span></div>' : '';
-    app.innerHTML = r === 'start' ? viewStart() : demoBar + headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
+    app.innerHTML = r === 'start' ? viewStart() : headerBar(n, BELL_ONLY.indexOf(r) >= 0) + sub + ROUTES[r]();
     fitLists();
     listScroll(listPos);
     mountMap();   // 목록 높이를 맞춘 뒤에 붙여야 지도가 최종 크기로 자리를 잡는다(먼저 붙이면 가운데가 어긋남)
@@ -4294,8 +4303,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     else if (a === 'obprev') { S.obStep = Math.max(1, (+S.obStep || 1) - 1); save(); render(false); }
     else if (a === 'obdone') { var oe = inputErr(); if (oe.birth) { toast(oe.birth); return; } S.onboarded = true; S.obStep = 1; S.done = {}; save(); location.hash = 'home'; render(false); toast('내 일정으로 계산했어요. 할 일을 하나씩 체크해 보세요.'); }
-    else if (a === 'demo') { S = clone(DEMO); AMT_NOTE = {}; save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'home'; render(false); }
-    else if (a === 'startreal') { S = clone(FRESH); AMT_NOTE = {}; save(); PC.k = ''; DATA = { key: '', status: 'idle', items: [], sources: [], fetchedAt: '', notes: [], error: '' }; location.hash = 'start'; render(false); }
     else if (a === 'backup') backupJson();
     else if (a === 'fdel') { if (confirm('이 파일을 지울까요?')) delFile(v); }
     else if (a === 'sharecond') {
@@ -4367,12 +4374,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function boot() {
     var h = location.hash;
-    // 소개 페이지(landing.html)의 '예시로 둘러보기': 저장된 내 정보가 없을 때만 예시 데이터로 연다 (내 정보가 있으면 덮어쓰지 않고 홈으로)
-    if (h === '#demo') {
-      var mine = null; try { mine = localStorage.getItem(STORE); } catch (e) {}
-      if (!mine || S.demo) { S = clone(DEMO); save(); }
-      history.replaceState(null, '', location.pathname + location.search + '#home');
-    }
+    // 예시 데이터 둘러보기는 없앴다(실제 서비스로만). 예전 링크(#demo)는 처음 화면으로, 예시 데이터로 보던 기기는 빈 상태로 돌린다
+    if (h === '#demo') history.replaceState(null, '', location.pathname + location.search + '#start');
+    if (S.demo) { S = clone(FRESH); AMT_NOTE = {}; save(); }
+    if (h.indexOf('#phoneu=') === 0) { PHONE_U = h.slice(8).replace(/[^\w-]/g, '').slice(0, 64); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
     if (h.indexOf('#phone=') === 0) { PHONE_D = h.slice(7).replace(/[^\w-]/g, ''); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
     if (h.indexOf('#import=') === 0) {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
