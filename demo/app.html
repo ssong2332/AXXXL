@@ -539,6 +539,9 @@ details.how summary { cursor: pointer; list-style: none } details.how summary::-
 .q-item { display: flex; gap: 10px; align-items: center; width: 100%; padding: 8px 10px; border: 0; background: transparent; border-radius: 10px; text-align: left; cursor: pointer }
 .q-item:hover, .q-item:focus-visible { background: var(--fill) }
 .q-item .ptile { width: 36px; height: 36px; border-radius: 10px }
+.q-res { max-height: min(420px, 60vh); overflow-y: auto }
+.q-note { padding: 8px 10px; font-size: 12px; color: var(--ink-3) }
+.q-note a { font-weight: 700 }
 .hbar-r { margin-left: auto; display: flex; gap: 8px; align-items: center }
 /* 알림만 있는 위쪽 줄(주변 추천·생활 인프라): 줄 높이 0 → 아래 내용이 위로 올라오고, 알림은 원래 자리(46px 줄 가운데 = 위에서 3px)에 떠 있는다 */
 .hbar.hbar-float { height: 0; margin-bottom: 0; align-items: flex-start }
@@ -4461,12 +4464,74 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (r !== last) window.scrollTo(0, 0);
     last = r;
   }
-  function updateSearch(q) {
+  // ---------- 위쪽 검색창: 카카오 키워드 검색 ----------
+  // 받아 둔 주변 목록(반경 1km·정해진 분류)에는 다이소·올리브영·미용실·은행 같은 가게가 없어서, 검색어가 들어오면 카카오 키워드 검색을 따로 부른다.
+  // 반경 없이 집 위치 기준 가까운 순(최대 3쪽 × 15 = 45곳). 전국에서 찾으므로 다른 도시 장소도 나온다.
+  // 카카오 지도를 못 쓰면(OpenStreetMap 대체) done(null, 'local') — 받아 둔 목록에서만 찾는다. 동네봇 등 다른 곳에서도 searchPlaces()를 쓰면 된다.
+  var QS = { q: '', items: [], st: '' }, QS_CACHE = {}, qsT;
+  function kakaoCatOf(d) {
+    var g = d.category_group_code || '', cn = d.category_name || '';
+    if (g === 'CE7') return 'cafe'; if (g === 'FD6') return 'food'; if (g === 'HP8' || g === 'PM9') return 'medical'; if (g === 'SW8') return 'transit';
+    if (/경찰|소방/.test(cn)) return 'safety'; if (g === 'PO3') return 'public';
+    if (/스터디|독서실|도서관/.test(cn)) return 'study'; if (/헬스|피트니스|체육|수영|요가|필라테스/.test(cn)) return 'gym';
+    if (/공원|산책|둘레길/.test(cn)) return 'park'; if (/기차역|교통,수송/.test(cn)) return 'transit';
+    return 'life';
+  }
+  function searchPlaces(q, done) {
+    q = String(q || '').trim().slice(0, 40); if (!q) return done(null, []);
+    var h = home(), ck = q + '|' + h.lat.toFixed(3) + ',' + h.lng.toFixed(3);
+    if (QS_CACHE[ck]) return done(null, QS_CACHE[ck]);
+    kakaoBoot(function () {
+      if (!kakaoSearchOk()) return done(null, 'local');
+      var sv = window.kakao.maps.services, out = [], seen = {};
+      new sv.Places().keywordSearch(q, function (res, st, pg) {
+        if (st === sv.Status.OK) res.forEach(function (d) { if (seen[d.id]) return; seen[d.id] = 1; out.push(kakaoItem(d, [q, kakaoCatOf(d), 1, -1])); });
+        else if (st !== sv.Status.ZERO_RESULT) return done('error', out);
+        if (st === sv.Status.OK && pg && pg.hasNextPage && pg.current < 3) return pg.nextPage();
+        // 가장 가까운 곳도 20km 넘게 멀면(다른 지역 이름을 찾은 경우) 가까운 순보다 정확도 순이 맞다 — '해운대해수욕장'이 근처 호텔에 밀리지 않게
+        if (out.length && distM(h, out[0]) > 20000) return new sv.Places().keywordSearch(q, function (r2, st2) {
+          var top = st2 === sv.Status.OK ? r2.map(function (d) { return kakaoItem(d, [q, kakaoCatOf(d), 1, -1]); }) : [], ids = {};
+          top.forEach(function (p) { ids[p.id] = 1; }); out = top.concat(out.filter(function (p) { return !ids[p.id]; }));
+          QS_CACHE[ck] = out; done(null, out);
+        }, { location: new window.kakao.maps.LatLng(h.lat, h.lng), sort: sv.SortBy.ACCURACY, size: 15 });
+        QS_CACHE[ck] = out; done(null, out);
+      }, { location: new window.kakao.maps.LatLng(h.lat, h.lng), sort: sv.SortBy.DISTANCE, size: 15 });
+    });
+  }
+  function qDist(m) { return m < 1000 ? m + 'm' : (m < 10000 ? (m / 1000).toFixed(1) : Math.round(m / 1000)) + 'km'; }
+  function qRow(p, attr) { var m = p.m != null ? p.m : distM(home(), p); return '<button type="button" class="q-item" data-act="place" data-v="' + esc(p.id) + '" data-go="map"' + (attr || '') + '><span class="ptile">' + ic(placeIc(p), 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + esc(p.name) + '</b><span class="s12 muted" style="display:block">' + esc(p.sub || CATS[p.cat][0]) + (m >= 2000 ? (p.addr ? ' · ' + esc(p.addr) : '') : ' · ' + qDist(m)) + '</span></span><span class="s13"><b>' + (m < 2000 ? Math.max(1, Math.ceil(m / 67)) + '분' : qDist(m)) + '</b></span></button>'; }
+  function kakaoLink(q) { return '<a href="https://map.kakao.com/link/search/' + encodeURIComponent(q) + '" target="_blank" rel="noopener">카카오맵에서 ‘' + esc(q) + '’ 찾기</a>'; }
+  function updateSearch(q, now) {
     var box = document.getElementById('q-res'); if (!box) return;
-    q = q.trim(); if (!q) { box.hidden = true; return; }
-    var hits = places().filter(function (p) { return (p.name + ' ' + CATS[p.cat][0] + ' ' + p.sub + ' ' + (p.tags || []).join(' ')).indexOf(q) >= 0; }).slice(0, 6);
-    box.innerHTML = hits.map(function (p) { return '<button type="button" class="q-item" data-act="place" data-v="' + p.id + '" data-go="map"><span class="ptile">' + ic(placeIc(p), 'sm') + '</span><span style="flex:1 1 auto;min-width:0"><b>' + esc(p.name) + '</b><span class="s12 muted" style="display:block">' + esc(p.sub) + ' · ' + p.m + 'm</span></span><span class="s13"><b>' + p.min + '분</b></span></button>'; }).join('') || '<p class="s13 muted" style="padding:10px">‘' + esc(q) + '’에 맞는 곳이 없어요. 예: 카페, 약국, 전입신고</p>';
-    box.hidden = false;
+    q = q.trim(); clearTimeout(qsT); if (!q) { QS = { q: '', items: [], st: '' }; box.hidden = true; return; }
+    var local = places().filter(function (p) { return (p.name + ' ' + CATS[p.cat][0] + ' ' + p.sub + ' ' + (p.tags || []).join(' ')).indexOf(q) >= 0; });
+    if (QS.q !== q) QS = { q: q, items: [], st: isReal() ? 'wait' : 'local' };
+    var paint = function () {
+      if (QS.q !== q) return;
+      var rows, note = '';
+      if (QS.st === 'ok') {
+        var have = {}; QS.items.forEach(function (p) { have[p.id] = 1; });
+        rows = local.filter(function (p) { return !have[p.id]; }).slice(0, 5).map(function (p) { return qRow(p); }).concat(QS.items.map(function (p, i) { return qRow(p, ' data-qk="' + i + '"'); }));
+        if (!rows.length) note = '‘' + esc(q) + '’을(를) 카카오맵에서도 못 찾았어요. 다른 이름으로 찾아보세요.';
+      } else {
+        rows = local.slice(0, 6).map(function (p) { return qRow(p); });
+        if (QS.st === 'wait') note = '카카오맵에서 더 찾는 중…';
+        else if (QS.st === 'error') note = '카카오맵 검색이 잠시 안 돼요. ' + kakaoLink(q);
+        else if (!rows.length) note = '‘' + esc(q) + '’에 맞는 곳이 받아 둔 목록에 없어요. ' + kakaoLink(q);
+        else note = (isReal() ? '카카오 지도를 쓸 수 없어서 ' : '') + '집 주변에서 받아 둔 장소에서만 찾았어요. ' + kakaoLink(q);
+      }
+      box.innerHTML = rows.join('') + (note ? '<p class="q-note">' + note + '</p>' : '');
+      box.hidden = false;
+    };
+    paint();
+    if (QS.st !== 'wait') return;
+    qsT = setTimeout(function () {
+      searchPlaces(q, function (err, items) {
+        if (QS.q !== q) return;   // 그 사이 검색어가 바뀌었으면 버린다
+        if (items === 'local') QS.st = 'local'; else if (err && !(items || []).length) QS.st = 'error'; else { QS.items = items || []; QS.st = 'ok'; }
+        paint();
+      });
+    }, now ? 0 : 400);   // 글자마다 부르지 않고 입력이 멈춘 뒤(또는 엔터)에
   }
   window.addEventListener('hashchange', function () { render(false); });
   // 장소 목록(data-rows="5")은 위에서 5개까지만 보이게 높이를 맞추고 나머지는 목록 안에서 스크롤한다.
@@ -4497,6 +4562,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!e.target.closest('.search')) { var qr = document.getElementById('q-res'); if (qr) qr.hidden = true; }
     if (!b) return;
     var a = b.dataset.act, v = b.dataset.v;
+    if (a === 'place' && b.dataset.qk != null && QS.items[+b.dataset.qk] && isReal()) xtraKeep([QS.items[+b.dataset.qk]]);   // 검색창에서 카카오로 찾은 곳
     if (a === 'place') { e.preventDefault(); S.mapSel = v; if (v && b.dataset.go) { var pl = findPlace(v); if (S.mapCat && S.mapCat !== 'all' && pl && pl.cat !== S.mapCat) S.mapCat = 'all'; save(); if (location.hash !== '#map') { location.hash = 'map'; return; } } save(); render(true); if (v && b.classList.contains('place')) { var mb = app.querySelector('.map-box'); if (mb && mb.getBoundingClientRect().top < 0) mb.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }
     else if (a === 'widen') { widen(v); }
     else if (a === 'safeRetry') { SAFE = { key: '' }; render(true); }
@@ -4604,6 +4670,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('pointerdown', function () { ptrDown = true; }, true);
   document.addEventListener('pointerup', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
   document.addEventListener('pointercancel', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing && e.target.id === 'q') { e.preventDefault(); updateSearch(e.target.value, true); } });
   document.addEventListener('input', function (e) { var t = e.target; if (t.id === 'q') updateSearch(t.value); else if (t.dataset.field && t.hasAttribute('data-num')) setField(t); });
   var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24
   function amtNote(k) { return AMT_NOTE[k] ? '<em class="s12" style="color:var(--no);font-style:normal" role="alert">\'' + esc(AMT_NOTE[k]) + '\'은(는) 금액으로 읽지 못했어요. 숫자나 \'1억 2천\'처럼 넣어 주세요.</em>' : ''; }
