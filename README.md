@@ -11,6 +11,7 @@
 
 | 화면 | 주소 | 비고 |
 |---|---|---|
+| 시연 영상 | https://youtu.be/9e2izGzR7uE | 서비스 주요 기능 시연(유튜브) |
 | 소개 페이지 | https://jachwi-navi.vercel.app/intro | 서비스 소개·기능·원칙·자주 묻는 질문 |
 | 서비스 | https://jachwi-navi.vercel.app | 휴대폰·PC 모두. 이메일·카카오·Google로 로그인해서 쓴다. 홈 화면에 앱으로 설치 가능 |
 | 운영자 콘솔 | https://jachwi-navi.vercel.app/admin.html | 운영자 코드 없이 **'코드 없이 연습 모드로 둘러보기'** 로 들어가면 이 브라우저 안에서만 검수·승인을 해 볼 수 있다 |
