@@ -121,3 +121,32 @@ test('client: 켜진 로그인 방식만 알려 준다 (가입 막힘이면 이�
   assert.deepEqual(await mk({ external: { email: true, kakao: false, google: true }, disable_signup: false }).providers(), { email: true, kakao: false, google: true });
   assert.deepEqual(await mk({ external: { email: true }, disable_signup: true }).providers(), { email: false, kakao: false, google: false });
 });
+
+test('client.push: 휴대폰 캘린더 구독 토큰·일정 묶음을 같이 올리고, 모양이 틀리면 빼고 올린다', async () => {
+  const sent = []; const c = A.client({ url: 'https://abcdefghijklmnopqrst.supabase.co', key: 'k' }, { now: () => 1_700_000_000_000, store: { get: () => JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: 2_000_000_000, user: { id: 'u1' } }), set() {}, del() {} },
+    fetch: (url, opt) => { sent.push(JSON.parse(opt.body)); return Promise.resolve({ ok: true, status: 201, text: () => Promise.resolve('') }); } });
+  await c.push({ a: 1 }, { cal_token: 'x'.repeat(32), cal_feed: 'zAbc' });
+  await c.push({ a: 1 }, { cal_token: 'bad token!', cal_feed: 'zAbc' });
+  await c.push({ a: 1 });
+  assert.equal(sent[0].cal_token, 'x'.repeat(32)); assert.equal(sent[0].cal_feed, 'zAbc');
+  assert.ok(!('cal_token' in sent[1]) && !('cal_feed' in sent[1]));
+  assert.ok(!('cal_token' in sent[2]));
+});
+
+test('/cal.ics?u=토큰: 계정에 저장된 일정 묶음으로 .ics를 만든다 (토큰 모양 검사·없는 토큰·설정 없음)', async () => {
+  const cal = require('../demo/api/calendar.js');
+  const zlib = require('zlib');
+  const d = 'z' + zlib.deflateRawSync(Buffer.from(JSON.stringify({ r: '1d', e: [['20261201', '전입신고 법정 기한']], t: [], b: [] }))).toString('base64url');
+  const env = { SUPABASE_URL: 'https://abcdefghijklmnopqrst.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abcdefghijklmnopqrstuv' };
+  const run = async (q, fetchFn, e) => { const r = { code: 0, headers: {}, body: '' }; const res = { status(c) { r.code = c; return this; }, setHeader(k, v) { r.headers[k] = v; }, send(b) { r.body = b; } };
+    await cal.handler({ query: q }, res, { env: e || env, fetch: fetchFn }); return r; };
+  const calls = [];
+  const ok = await run({ u: 't'.repeat(32) }, (url, opt) => { calls.push([url, JSON.parse(opt.body)]); return Promise.resolve({ ok: true, json: () => Promise.resolve(d) }); });
+  assert.equal(ok.code, 200); assert.match(ok.body, /BEGIN:VCALENDAR/); assert.match(ok.body, /전입신고 법정 기한/); assert.match(ok.headers['Cache-Control'], /s-maxage=300/);
+  assert.match(calls[0][0], /\/rest\/v1\/rpc\/cal_feed$/); assert.equal(calls[0][1].p_token, 't'.repeat(32));
+  assert.equal((await run({ u: 'short' }, () => { throw new Error('x'); })).code, 400);
+  assert.equal((await run({ u: 't'.repeat(32) }, () => Promise.resolve({ ok: true, json: () => Promise.resolve(null) }))).code, 404);
+  assert.equal((await run({ u: 't'.repeat(32) }, () => Promise.resolve({ ok: true, json: () => Promise.resolve(d) }), {})).code, 503);
+  const old = await run({ d }, () => { throw new Error('d 주소는 서버에 묻지 않음'); });
+  assert.equal(old.code, 200); assert.match(old.headers['Cache-Control'], /s-maxage=3600/);
+});

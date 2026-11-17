@@ -182,11 +182,13 @@
             .then(function (rows) { var r = rows && rows[0]; return r ? { state: r.state, at: Date.parse(r.updated_at) || 0 } : null; });
         });
       },
-      push: function (state) {
+      // extra: { cal_token, cal_feed } 휴대폰 캘린더 구독용 (있을 때만 같이 올린다)
+      push: function (state, extra) {
         return token().then(function (tk) {
           if (!tk) return null;
-          var at = new Date(now()).toISOString();
-          return call('/rest/v1/user_state?on_conflict=user_id', { method: 'POST', token: tk, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: { user_id: sess.user.id, state: state, updated_at: at } })
+          var at = new Date(now()).toISOString(), body = { user_id: sess.user.id, state: state, updated_at: at };
+          if (extra && /^[A-Za-z0-9_-]{24,64}$/.test(extra.cal_token || '')) { body.cal_token = extra.cal_token; body.cal_feed = typeof extra.cal_feed === 'string' && extra.cal_feed.length <= 6000 ? extra.cal_feed : null; }
+          return call('/rest/v1/user_state?on_conflict=user_id', { method: 'POST', token: tk, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: body })
             .then(function () { return Date.parse(at); });
         });
       },
