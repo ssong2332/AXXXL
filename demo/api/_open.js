@@ -41,15 +41,26 @@ async function publicUrl(s) {
   try { const addrs = await dns.promises.lookup(h, { all: true }); if (!addrs.length || addrs.some((a) => privateIp(a.address))) return null; } catch (e) { return null; }
   return u;
 }
+// 내용 없이 다른 주소로 넘기기만 하는 작은 쪽(스크립트·meta refresh)의 갈 곳. 없으면 빈 값
+function scriptHop(html) {
+  const h = String(html || ''); if (h.length >= 4000) return '';
+  const m = /<meta[^>]+http-equiv=["']?refresh["']?[^>]*content=["']?\s*\d*\s*;\s*url\s*=\s*([^"'>\s]+)/i.exec(h) || /location(?:\.href)?\s*=\s*["']([^"']{1,300})["']/i.exec(h) || /location\.(?:replace|assign)\s*\(\s*["']([^"']{1,300})["']/i.exec(h);
+  return m ? m[1] : '';
+}
+// 반환 { html, url(옮겨 간 끝 주소) }. 실패하면 던진다: e.gone = true 는 주소가 없어진 것(404·410, 없는 도메인)
 async function getPage(url, ms, maxBytes) {
   const end = Date.now() + (ms || 8000); let cur = url;
-  for (let hop = 0; hop < 4; hop++) {
-    const u = await publicUrl(cur); if (!u) throw new Error('blocked');
+  for (let hop = 0; hop < 5; hop++) {
+    const u = await publicUrl(cur);
+    if (!u) {
+      let gone = false; try { await dns.promises.lookup(new URL(cur).hostname); } catch (e) { gone = !!e && e.code === 'ENOTFOUND'; }
+      throw Object.assign(new Error(gone ? 'no host' : 'blocked'), { gone });
+    }
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), Math.max(500, end - Date.now()));
     try {
       const r = await fetch(u.href, { headers: { 'User-Agent': PAGE_UA, Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5', 'Accept-Language': 'ko-KR,ko;q=0.9' }, signal: ctl.signal, redirect: 'manual' });
       if (r.status >= 300 && r.status < 400 && r.headers.get('location')) { cur = new URL(r.headers.get('location'), u).href; continue; }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { gone: r.status === 404 || r.status === 410 });
       const ct = r.headers.get('content-type') || '';
       if (ct && !/html|xml|text\/plain/i.test(ct)) throw new Error('not a page');
       const chunks = [], rd = r.body.getReader(); let n = 0;
@@ -58,6 +69,8 @@ async function getPage(url, ms, maxBytes) {
       let cs = ((/charset=["']?([\w-]+)/i.exec(ct) || [])[1] || (/<meta[^>]+charset=["']?([\w-]+)/i.exec(buf.toString('latin1', 0, Math.min(buf.length, 4096))) || [])[1] || 'utf-8').toLowerCase();
       if (/ks_c_5601|euc-kr|cp949|ksc5601|windows-949/.test(cs)) cs = 'euc-kr'; // 오래된 공공기관 누리집은 EUC-KR이 많다
       let html; try { html = new TextDecoder(cs).decode(buf); } catch (e) { html = buf.toString('utf8'); }
+      const next = hop < 4 ? scriptHop(html) : '';
+      if (next) { try { const to = new URL(next, u).href; if (to !== u.href) { cur = to; continue; } } catch (e) { /* 주소가 아님 */ } }
       return { html, url: u.href };
     } finally { clearTimeout(t); }
   }
@@ -103,4 +116,4 @@ function unesc(s) { return String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g
 function tag(block, name) { const m = new RegExp('<' + name + '>([\\s\\S]*?)</' + name + '>').exec(block); return m ? unesc(m[1]) : ''; }
 function blocks(xml, name) { return String(xml).split('<' + name + '>').slice(1).map((b) => b.split('</' + name + '>')[0]); }
 
-module.exports = { getText, getJson, getPage, publicUrl, privateIp, retry, portalKey, cached, limited, send, iso, tag, blocks };
+module.exports = { getText, getJson, getPage, scriptHop, publicUrl, privateIp, retry, portalKey, cached, limited, send, iso, tag, blocks };

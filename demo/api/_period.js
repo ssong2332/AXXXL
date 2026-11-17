@@ -1,25 +1,39 @@
 // GET /api/period?zip=41111&ids=정책번호,정책번호   정책마다 공고 원문을 열어 접수 기간을 읽는다 (한 번에 12건까지)
 //  - 등록된 접수 기간은 믿기 어려워 마감일은 공고 원문에서 읽은 것만 쓴다. 규칙으로만 읽고(AI 없음), 못 읽으면 까닭(why)을 돌려준다.
 //  - 등록된 신청·참고 주소 중 첫 화면이 아닌 것만 연다. 내부망 주소는 막는다(_open.js getPage).
+//  - 등록 주소가 공고 대신 기관 첫 화면·오류 화면으로 넘어가거나 없어졌으면 dead로 알려 준다(why: 'dead'는 모두 그런 경우).
 'use strict';
 
 const O = require('./_open.js');
 const S = require('../support-core.js');
 const support = require('./_support.js');
 
-async function readOne(it) {
-  const urls = (it.notices || []).slice(0, 2);
+// 등록된 공고 주소(셋까지)를 모두 열어 본다. 열면 기관 첫 화면·오류 화면으로 넘어가거나 없어진 주소는 dead에 담아 화면에서 링크로 내지 않게 한다
+// 짧은 오류 안내 쪽(soft)은 그 기관 첫 화면도 열어 본다. 첫 화면도 같은 안내면 이 서버의 접속이 막힌 것(브라우저로는 열림)이라 죽은 주소로 보지 않는다
+async function softDead(url, page, get) {
+  try {
+    const home = await get(new URL('/', page.url || url).href, 6000);
+    return S.htmlText(home.html) !== S.htmlText(page.html);
+  } catch (e) { return false; }
+}
+async function readOne(it, getPage) {
+  const urls = (it.notices || []).slice(0, 3), get = getPage || O.getPage;
   if (!urls.length) return { state: 'none', why: 'nolink' };
-  let miss = null;
-  for (const url of urls) {
+  const got = await Promise.all(urls.map(async (url) => {
     try {
-      const page = await O.getPage(url, 8000);
-      const r = S.readNotice(S.htmlText(page.html), it);
-      if (r.state === 'found' || r.state === 'always') return Object.assign({ url }, r);
-      if (!miss || miss.why === 'unreachable') miss = { state: 'none', why: r.why, line: r.line, url };
-    } catch (e) { if (!miss) miss = { state: 'none', why: 'unreachable', url }; }
-  }
-  return miss;
+      const page = await get(url, 8000), d = S.deadPage(url, page.url, page.html);
+      if (d === 'soft' ? await softDead(url, page, get) : d) return { url, dead: true };
+      return { url, r: S.readNotice(S.htmlText(page.html), it) };
+    } catch (e) { return e && e.gone ? { url, dead: true } : { url }; }
+  }));
+  const dead = got.filter((g) => g.dead).map((g) => g.url), live = got.filter((g) => !g.dead);
+  const tag = (o) => (dead.length ? Object.assign(o, { dead }) : o);
+  if (!live.length) return tag({ state: 'none', why: 'dead' });
+  const hit = live.filter((g) => g.r && (g.r.state === 'found' || g.r.state === 'always'))[0];
+  if (hit) return tag(Object.assign({ url: hit.url }, hit.r));
+  // 기간은 못 읽었어도 이 사업 글인 주소를 먼저 쓴다
+  const read = live.filter((g) => g.r && g.r.why !== 'unrelated')[0] || live.filter((g) => g.r)[0];
+  return tag(read ? { state: 'none', why: read.r.why, line: read.r.line, url: read.url } : { state: 'none', why: 'unreachable', url: live[0].url });
 }
 
 module.exports = async (req, res) => {
@@ -42,3 +56,4 @@ module.exports = async (req, res) => {
     return O.send(res, 502, { ok: false, reason: 'upstream' });
   }
 };
+module.exports.readOne = readOne;
