@@ -224,5 +224,29 @@
   };
   // ===== /T-23 =====
 
+  // ===== T-25 =====
+  // QR로 받은 값(#import=)을 통째로 받아도 되는지 (PRD F-13 ② 판정표, DECISIONS #32). 키가 없으면 통과, 하나라도 틀리면 false.
+  // bills·events·표에 없는 키는 보지 않는다(cleanBills·cleanEvents 담당). 날짜는 모양만 본다(restoreJson과 같은 기준). 던지지 않는다.
+  var IMP_STR = function (v) { return typeof v === 'string'; };
+  var IMP_STR_NULL = function (v) { return v === null || typeof v === 'string'; };
+  var IMP_DATE = function (v) { return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v); };
+  var IMP_AMT = function (v) { return typeof v === 'number' && isFinite(v) && v >= 0; };
+  var IMP_OBJ = function (v) { return v !== null && typeof v === 'object' && !Array.isArray(v); };
+  var IMP_YNU = function (v) { return v === null || ['', 'yes', 'no', 'unknown'].indexOf(v) >= 0; };
+  var IMP_RULES = {
+    contract: IMP_DATE, move: IMP_DATE, deposit: IMP_AMT, rent: IMP_AMT, fee: IMP_AMT, age: IMP_AMT,
+    term: function (v) { return (typeof v === 'number' || typeof v === 'string') && +v >= 1 && +v <= 10; },
+    income: function (v) { return ['100', '150', 'over', 'unknown'].indexOf(v) >= 0; },
+    birth: function (v) { return v === null || v === '' || (typeof v === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(v)); },
+    homeless: IMP_YNU, dup: IMP_YNU,
+    gu: IMP_STR, addr: IMP_STR, nick: IMP_STR, remind: IMP_STR, sido: IMP_STR_NULL, sgg: IMP_STR_NULL, zip: IMP_STR_NULL,
+    done: IMP_OBJ, home: function (v) { return v === null || IMP_OBJ(v); }
+  };
+  api.checkImport = function (o) {
+    if (!IMP_OBJ(o)) return false;
+    return Object.keys(IMP_RULES).every(function (k) { return !(k in o) || IMP_RULES[k](o[k]); });
+  };
+  // ===== /T-25 =====
+
   return api;
 });
