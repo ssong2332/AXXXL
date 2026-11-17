@@ -187,3 +187,62 @@ test('선정됐어요 · 켜기: 공고의 월 최대 금액과 기간으로 입
   assert.deepEqual([none.on, none.amount, none.count], [true, 200000, 12], '공고 값이 없으면 원래 값 유지');
   assert.equal(bill.on, false, '원래 항목은 바꾸지 않고 새 값을 돌려준다');
 });
+
+// ── QR로 받은 납부 항목·내 일정 검사 (코드 점검 2번) ──
+const BAD = '"><img src=x onerror=alert(1)>';
+
+test('QR 검사: 납부 항목 id·숫자·선택값이 형식에 안 맞으면 버리거나 기본값으로', () => {
+  const got = JL.cleanBills([
+    { id: 'net', name: '인터넷', kind: 'out', amount: '22000', day: 10, every: 1, on: true, incl: 'incl' },
+    { id: BAD, name: '나쁜 id', amount: 1 },
+    { id: 'gas', name: BAD, amount: BAD, day: BAD, every: 99, kind: BAD, link: BAD, incl: BAD, start: BAD, note: 'x'.repeat(200), on: 'yes' },
+    { id: 'net', name: '겹치는 id' },
+    null, 'text'
+  ]);
+  assert.deepEqual(got.map((b) => b.id), ['net', 'gas']);
+  const net = got[0], gas = got[1];
+  assert.deepEqual([net.amount, net.day, net.incl, net.on], [22000, 10, 'incl', true]);
+  assert.deepEqual([gas.amount, gas.day, gas.every, gas.kind, gas.on], [0, 0, 1, 'out', false]);
+  assert.ok(!('link' in gas) && !('incl' in gas) && !('start' in gas));
+  assert.equal(gas.name.length, 20);
+  assert.equal(gas.note.length, 60);
+});
+
+test('QR 검사: 월세·관리비 연결, 시작 달, 횟수 같은 정상 값은 그대로 남긴다', () => {
+  const [r, s] = JL.cleanBills([
+    { id: 'rent', name: '월세', kind: 'out', link: 'rent', day: 25, every: 1, on: true },
+    { id: 'sup-rent', name: '청년월세 지원 입금', kind: 'in', amount: 200000, day: 25, every: 1, count: 24, start: '2027-3', on: true, est: false }
+  ]);
+  assert.equal(r.link, 'rent');
+  assert.deepEqual([s.kind, s.count, s.start], ['in', 24, '2027-3']);
+});
+
+test('QR 검사: 내 일정은 날짜·시간·색·알림 형식만 통과, 제목은 30자까지', () => {
+  const got = JL.cleanEvents([
+    { id: 'ev1', date: '2026-12-05', time: '18:30', title: '친구 집들이', color: 'purple', alarm: '1h' },
+    { id: 'ev2', date: '2026-12-06', time: BAD, title: BAD + 'x'.repeat(50), color: BAD, alarm: BAD },
+    { id: BAD, date: '2026-12-07', title: '나쁜 id' },
+    { id: 'ev4', date: BAD, title: '나쁜 날짜' },
+    { id: 'ev5', date: '2026-12-08', title: '   ' }
+  ]);
+  assert.deepEqual(got.map((x) => x.id), ['ev1', 'ev2']);
+  assert.deepEqual([got[0].time, got[0].color, got[0].alarm], ['18:30', 'purple', '1h']);
+  assert.deepEqual([got[1].time, got[1].color, got[1].alarm, got[1].title.length], ['', 'blue', '1d', 30]);
+});
+
+test('QR 검사: 목록이 아니면 null (받는 쪽에서 원래 값을 지킨다)', () => {
+  assert.equal(JL.cleanBills(BAD), null);
+  assert.equal(JL.cleanEvents({ a: 1 }), null);
+  assert.deepEqual(JL.cleanBills([]), []);
+});
+
+test('QR 검사: 기본 납부 항목을 통과시켜도 계산 결과가 그대로다', () => {
+  const before = month(BILLS(), 2026, 11).map((e) => [e.bid, e.amount]);
+  const after = month(JL.cleanBills(BILLS()), 2026, 11).map((e) => [e.bid, e.amount]);
+  assert.deepEqual(after, before);
+});
+
+test('app.html: QR로 받을 때 납부 항목·내 일정은 검사하고 넣는다', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../demo/app.html'), 'utf8');
+  assert.ok(html.includes("if (k in o) S[k] = o[k]; }); S.bills = JL.cleanBills(S.bills) || clone(FRESH).bills; S.events = JL.cleanEvents(S.events) || [];"));
+});

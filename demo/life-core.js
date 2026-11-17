@@ -79,6 +79,40 @@
     return b;
   };
 
+  // ── 밖에서 들어온 값 검사 (QR로 옮기기·저장된 값) ──
+  // 납부 항목·내 일정은 정해진 칸과 형식만 남긴다. 이름 같은 글자는 길이를 자르고,
+  // 화면 속성에 들어가는 id·날짜·시간은 형식이 안 맞으면 버린다 (스크립트가 끼어들 틈을 없앤다)
+  var ID = /^[\w-]{1,40}$/;
+  var int = function (v, lo, hi, dflt) { var n = Math.floor(+v); return isFinite(n) && n >= lo && n <= hi ? n : dflt; };
+  var txt = function (v, max) { return typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, max) : ''; };
+  api.cleanBills = function (list) {
+    if (!Array.isArray(list)) return null;
+    var seen = {}, incl = api.INCL.map(function (o) { return o[0]; });
+    return list.slice(0, 30).map(function (b) {
+      if (!b || typeof b !== 'object' || !ID.test(b.id) || seen[b.id]) return null;
+      seen[b.id] = true;
+      var c = { id: b.id, name: txt(b.name, 20) || '이름 없는 항목', kind: b.kind === 'in' ? 'in' : 'out', amount: int(b.amount, 0, 100000000, 0),
+        day: int(b.day, 0, 31, 0), every: int(b.every, 1, 12, 1), on: b.on === true, est: b.est === true };
+      if (b.link === 'rent' || b.link === 'fee') c.link = b.link;
+      if (int(b.count, 1, 120, 0)) c.count = int(b.count, 1, 120, 0);
+      if (int(b.off, 1, 24, 0)) c.off = int(b.off, 1, 24, 0);
+      if (typeof b.start === 'string' && /^\d{4}-(0?[1-9]|1[0-2])$/.test(b.start)) c.start = b.start;
+      if (incl.indexOf(b.incl) >= 0) c.incl = b.incl;
+      if (txt(b.note, 60)) c.note = txt(b.note, 60);
+      return c;
+    }).filter(Boolean);
+  };
+  var ALARMS = ['none', '0', '1h', '1d', '3d'];
+  api.cleanEvents = function (list) {
+    if (!Array.isArray(list)) return null;
+    return list.slice(0, 200).map(function (x) {
+      if (!x || typeof x !== 'object' || !ID.test(x.id) || typeof x.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(x.date)) return null;
+      var title = txt(x.title, 30); if (!title) return null;
+      return { id: x.id, date: x.date, time: typeof x.time === 'string' && /^\d{2}:\d{2}$/.test(x.time) ? x.time : '', title: title,
+        color: typeof x.color === 'string' && /^[a-z]{1,10}$/.test(x.color) ? x.color : 'blue', alarm: ALARMS.indexOf(x.alarm) >= 0 ? x.alarm : '1d' };
+    }).filter(Boolean);
+  };
+
   // 고지서 실제 금액 추천값: 예상 금액 주변(5천 원 단위), 예상이 없으면 흔한 금액
   api.amtPicks = function (base) {
     var r = function (n) { return Math.max(1000, Math.round(n / 5000) * 5000); };
