@@ -21,6 +21,8 @@ function supabase(env) {
 module.exports = (req, res) => {
   const key = String(process.env.KAKAOMAPSDK_KEY || '').trim();
   res.setHeader('Cache-Control', 'public, max-age=300');
-  res.status(200).json({ kakaoMapKey: /^[0-9a-f]{32}$/.test(key) ? key : null, supabase: supabase(process.env) });
+  // 기한 알림(웹 푸시) 공개 키. 비공개 키는 api/_push.js 만 쓴다
+  const vp = String(process.env.VAPID_PUBLIC_KEY || '').trim();
+  res.status(200).json({ kakaoMapKey: /^[0-9a-f]{32}$/.test(key) ? key : null, supabase: supabase(process.env), push: /^[A-Za-z0-9_-]{80,100}$/.test(vp) ? vp : null });
 };
 module.exports.supabase = supabase;

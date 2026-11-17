@@ -21,7 +21,7 @@
       "destination": "/api/calendar"
     },
     {
-      "source": "/api/:fn(support|welfare|lh|holidays|period|bus-arrival|safety)",
+      "source": "/api/:fn(support|welfare|lh|holidays|period|bus-arrival|safety|push)",
       "destination": "/api/public?fn=:fn"
     }
   ],
@@ -60,6 +60,12 @@
           "value": "no-referrer"
         }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/public?fn=push",
+      "schedule": "0 0 * * *"
     }
   ],
   "functions": {
