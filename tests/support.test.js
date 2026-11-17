@@ -505,3 +505,17 @@ test('등록 공고 주소가 모두 죽었고 접수도 끝난 정책은 목록
   assert.equal(S.hideDead(Object.assign({ notice: { state: 'pending' } }, ended), today), false);
   assert.equal(S.hideDead(ended, today), false);
 });
+
+test('공고 주소: 공공 누리집(go.kr)·확인된 곳의 http:// 는 https 로, 나머지는 그대로', () => {
+  const SC = require('../demo/support-core.js');
+  const base = { plcyNo: 'x1', plcyNm: '청년전용 보증부 월세대출', lclsfNm: '주거', mclsfNm: '주거지원', zipCd: '11620' };
+  const n = (a, r1) => SC.normalize(Object.assign({}, base, { aplyUrlAddr: a, refUrlAddr1: r1 || '' }), 1, []);
+  const it = n('http://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020701.jsp', 'http://www.moel.go.kr/policy/policyinfo/young/list18.do');
+  assert.equal(it.url, 'https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020701.jsp');
+  assert.ok(JSON.stringify(it).includes('https://www.moel.go.kr/policy/policyinfo/young/list18.do'));
+  assert.ok(!JSON.stringify(it).includes('http://'), '공공 누리집 http 주소가 남지 않음');
+  assert.equal(n('http://mtvs.kr').url, 'https://mtvs.kr');
+  assert.equal(n('http://www.kaum.or.kr/bbs/board.php?bo_table=recruitment').url, 'http://www.kaum.or.kr/bbs/board.php?bo_table=recruitment', '확인 안 된 곳은 그대로');
+  assert.equal(n('http://evil-go.kr.example.com/a').url, 'http://evil-go.kr.example.com/a', 'go.kr로 끝나는 진짜 도메인만');
+  assert.equal(n('https://www.youthcenter.go.kr/a').url, 'https://www.youthcenter.go.kr/a');
+});
