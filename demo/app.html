@@ -124,7 +124,7 @@ svg.i.sm { width: 16px; height: 16px }
 .card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px }
 .card-h h2 { font-size: 17px; font-weight: 700 }
 @media (max-width: 640px) { .card-h { flex-wrap: wrap; row-gap: 2px } .card-h > h2 { flex: 0 1 auto; word-break: keep-all } }
-.card-h .more { font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px }
+.card-h .more, a.more { font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px }
 .muted { color: var(--ink-3) } .sub { color: var(--ink-2) }
 .s13 { font-size: 13px } .s12 { font-size: 12px }
 .stack { display: flex; flex-direction: column; gap: 12px }
@@ -3315,7 +3315,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var mc = S.homeCat || 'all';
     if (mc !== 'all' && !CATS[mc]) mc = 'all';
     var homeList = places().filter(function (p) { return mc === 'all' || p.cat === mc; });
-    var explore = noHome ? '<div class="c8">' + homeCard() + '</div>' : '<section class="card c8"><div class="split" style="flex-wrap:wrap;margin-bottom:12px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="ptile" style="width:44px;height:44px">' + ic('pin') + '</span><div><h2 style="font-size:19px;font-weight:800">우리 동네 탐색하기</h2><p class="s13 muted">' + esc(home().label) + '</p></div></div><a class="more s13" href="#map" style="font-weight:700">크게 보기' + ic('chev', 'sm') + '</a></div>' +
+    var explore = noHome ? '<div class="c8">' + homeCard() + '</div>' : '<section class="card c8"><div class="split" style="flex-wrap:wrap;margin-bottom:12px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="ptile" style="width:44px;height:44px">' + ic('pin') + '</span><div><h2 style="font-size:19px;font-weight:800">우리 동네 탐색하기</h2><p class="s13 muted">' + esc(home().label) + '</p></div></div><a class="more" href="#map">크게 보기' + ic('chev', 'sm') + '</a></div>' +
       '<div style="margin-bottom:10px">' + catChips(mc, 'homecat') + '</div><div class="row" style="margin-bottom:10px">' + dataBadge() + (S.home ? '' : ' <a class="s13" href="#map">내 집 위치 정하기</a>') + '</div>' + placeMap(mc, S.mapSel, 360, false) +
       // 지도 탐색과 같게: 분류를 고르면 아래 목록이 바뀌고, 장소를 누르면 지도가 그쪽으로 옮겨 가며 카드가 뜬다
       '<div class="card-h" style="margin:22px 0 14px"><h2>' + (mc === 'all' ? '가까운 순서' : CATS[mc][0]) + '</h2><span class="s12 muted">' + homeList.length + '곳</span></div>' +
