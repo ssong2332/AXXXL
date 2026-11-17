@@ -126,21 +126,31 @@
     return seg.length === 1 && !/\./.test(last) && (/\/$/.test(m[1]) || /^(main|index|home|portal|kor|korean|ko|kr|www|web|site|page)$/i.test(last));
   }
   // 열어 본 공고 주소가 죽었는지. reqUrl: 등록 주소, finalUrl: 옮겨 간 끝 주소, html: 그 쪽 내용
-  //  'home': 글 주소였는데 기관 첫 화면·오류 화면으로 옮겨짐 / 'gone': 본문 없이 알림만 띄우고 앞 화면으로 되돌림(지워진 글) / '': 살아 있음
+  //  'home': 글 주소였는데 기관 첫 화면·오류 화면으로 옮겨짐(통합·이전 알림 뒤 이동 포함) / 'gone': 본문 없이 알림만 띄우고 앞 화면으로 되돌림(지워진 글)
+  //  'soft': 짧은 오류 안내 글 + 되돌리기. 자동 접속 차단과 구분하려면 그 기관 첫 화면도 열어 봐야 한다 / '': 살아 있음
   function addrKey(s) { var m = /^https?:\/\/(?:www\.)?([^\/?#]+)([^?#]*)(\?[^#]*)?/i.exec(String(s || '')); return m ? [m[1].toLowerCase(), m[2].replace(/\/+$/, ''), m[3] || ''] : ['', '', '']; }
   function deadPage(reqUrl, finalUrl, html) {
+    var a = addrKey(reqUrl), b = addrKey(finalUrl || reqUrl), h = String(html || '');
+    // '누리집이 통합·이전되어 이동합니다' 알림을 띄우고 첫 화면으로 보내는 쪽. 등록 주소가 대문이어도 다른 누리집으로 옮겨 갔으면 죽은 주소
+    var mv = /alert\s*\(\s*["'`]([^"'`]{0,300})["'`]\s*\)\s*;?\s*(?:(?:window|document|top|self)\.)?location(?:\.href\s*=|\s*=|\.replace\s*\(|\.assign\s*\()\s*["']([^"']{1,300})["']/i.exec(h);
+    if (mv && /통합|이전|이동|폐쇄|종료/.test(mv[1])) { var to = ''; try { to = new URL(mv[2], finalUrl || reqUrl).href; } catch (e) { to = ''; } if (/^https?:\/\//i.test(to) && isLanding(to) && (!isLanding(reqUrl) || addrKey(to)[0] !== a[0])) return 'home'; }
     if (isLanding(reqUrl)) return '';
-    var a = addrKey(reqUrl), b = addrKey(finalUrl || reqUrl);
     if (a.join('|') !== b.join('|')) {
       var under = a[0] === b[0] && a[1] !== '' && b[1].indexOf(a[1] + '/') === 0; // 그 주소 아래의 첫 화면
       if (!under && (isLanding(finalUrl) || /(^|\/)(error|err|404|notfound|not_found)[^\/]*$/i.test(b[1]) || /\/(error|err)\//i.test(b[1]))) return 'home';
     }
-    var h = String(html || '');
-    // 본문 글이 있는 오류 안내 쪽은 따지지 않는다: 서버에만 그렇게 보이고 브라우저로는 열리는 곳이 있다
-    return h.length < 4000 && /history\.(back|go)\s*\(/.test(h) && htmlText(h).length < 10 ? 'gone' : '';
+    if (h.length < 4000 && /history\.(back|go)\s*\(/.test(h)) {
+      // 본문 없이 알림만 띄우고 되돌리는 쪽(지워진 글)
+      if (htmlText(h).length < 10) return 'gone';
+      // 글이 있는 오류 안내 쪽: 서버에만 그렇게 보이고 브라우저로는 열리는 곳이 있어 그 기관 첫 화면과 견줘 봐야 한다(api/period)
+      return 'soft';
+    }
+    return '';
   }
   // 신청·참고 단추에 쓸 주소: 죽은 주소로 확인됐으면 내지 않는다
   function liveUrl(u, n) { return u && ((n && n.dead) || []).indexOf(u) < 0 ? u : ''; }
+  // 목록에서 뺄 정책: 등록된 공고 주소가 모두 죽었고 등록된 접수도 끝난 것(지난해 등록이 그대로 남은 경우). 확인할 공고가 없어 보여 주지 않는다
+  function hideDead(it, today) { return !!(it && it.notice && it.notice.why === 'dead') && statusAt(it, today || new Date()).k === 'ended'; }
   // 온통청년의 그 정책 상세 화면
   function youthUrl(it) { var base = 'https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch'; return /^\d{10,30}$/.test((it && it.id) || '') ? base + '/ythPlcyDetail/' + it.id : base; }
   // '공고 보기'가 갈 곳(기관 첫 화면은 안 됨): 확인한 공고 주소 → 대문이 아닌 등록 주소 → 온통청년 상세 화면
@@ -594,6 +604,6 @@
   var VR = { ok: 0, ask: 1, q: 1, no: 2 }, SR = { open: 0, always: 1, soon: 2, check: 2, ended: 3 }, CR = { sgg: 0, sido: 1, multi: 2, all: 3 };
   function rank(v, st, it) { return VR[v] * 1e6 + SR[st.k] * 1e5 + (st.k === 'open' && st.sure ? Math.min(st.left, 999) * 10 : 0) + CR[it.scope]; }
 
-  return { CATS: CATS, ASK: ASK, BANK: BANK, median: median, normalize: normalize, scopeOf: scopeOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regText: regText, isDeep: isDeep, isLanding: isLanding, deadPage: deadPage, liveUrl: liveUrl, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
+  return { CATS: CATS, ASK: ASK, BANK: BANK, median: median, normalize: normalize, scopeOf: scopeOf, forRegion: forRegion, statusAt: statusAt, regLoose: regLoose, regText: regText, isDeep: isDeep, isLanding: isLanding, deadPage: deadPage, liveUrl: liveUrl, hideDead: hideDead, youthUrl: youthUrl, noticeLink: noticeLink, htmlText: htmlText, readNotice: readNotice, leftText: leftText, dueRank: dueRank, check: check, verdict: verdict, watch: watch,
     docLines: docLines, docSource: docSource, bankSteps: bankSteps, rank: rank, KINDS: KINDS, kindOf: kindOf, relevance: relevance, amounts: amounts, amountList: amountList, incomeRule: incomeRule, textRules: textRules, TRAIT: TRAIT, won: won, medianPct: medianPct, medianMan: medianMan, clip: clip };
 });

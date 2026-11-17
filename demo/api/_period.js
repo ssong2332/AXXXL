@@ -9,13 +9,20 @@ const S = require('../support-core.js');
 const support = require('./_support.js');
 
 // 등록된 공고 주소(셋까지)를 모두 열어 본다. 열면 기관 첫 화면·오류 화면으로 넘어가거나 없어진 주소는 dead에 담아 화면에서 링크로 내지 않게 한다
+// 짧은 오류 안내 쪽(soft)은 그 기관 첫 화면도 열어 본다. 첫 화면도 같은 안내면 이 서버의 접속이 막힌 것(브라우저로는 열림)이라 죽은 주소로 보지 않는다
+async function softDead(url, page, get) {
+  try {
+    const home = await get(new URL('/', page.url || url).href, 6000);
+    return S.htmlText(home.html) !== S.htmlText(page.html);
+  } catch (e) { return false; }
+}
 async function readOne(it, getPage) {
-  const urls = (it.notices || []).slice(0, 3);
+  const urls = (it.notices || []).slice(0, 3), get = getPage || O.getPage;
   if (!urls.length) return { state: 'none', why: 'nolink' };
   const got = await Promise.all(urls.map(async (url) => {
     try {
-      const page = await (getPage || O.getPage)(url, 8000);
-      if (S.deadPage(url, page.url, page.html)) return { url, dead: true };
+      const page = await get(url, 8000), d = S.deadPage(url, page.url, page.html);
+      if (d === 'soft' ? await softDead(url, page, get) : d) return { url, dead: true };
       return { url, r: S.readNotice(S.htmlText(page.html), it) };
     } catch (e) { return e && e.gone ? { url, dead: true } : { url }; }
   }));

@@ -2165,7 +2165,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var ap = tab === '주거' ? R.programs.map(rowApproved) : [];
       // 승인 공고와 같은 사업으로 등록된 온통청년 정책은 목록에서 한 번만 (승인 공고 쪽을 남긴다)
       var apIds = {}; R.programs.forEach(function (x) { ((x.p.source && x.p.source.policyIds) || []).forEach(function (id) { apIds[id] = 1; }); });
-      if (yb.status === 'ok') { ntApply(yb.data.items, r.zip); counts = yb.data.counts; rows = ap.concat(yb.data.items.filter(function (it) { return !apIds[it.id] && SP.forRegion(it, r.sido, r.sgg); }).map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : '') + ' · 중앙부처와 내 지역(시·도, 시·군·구)이 운영하는 사업만 보여 줘요' + (yb.data.hidden ? ' (다른 지역이 전국 대상으로 올린 ' + yb.data.hidden + '건 제외)' : ''); }
+      if (yb.status === 'ok') { ntApply(yb.data.items, r.zip); counts = yb.data.counts; rows = ap.concat(yb.data.items.filter(function (it) { return !apIds[it.id] && SP.forRegion(it, r.sido, r.sgg) && !SP.hideDead(it, today); }).map(function (it) { return rowYouth(it, user, r, ctx); })); meta = yb.data.source + ' · ' + String(yb.data.fetchedAt).slice(0, 10) + ' 받아 옴' + (yb.data.stale ? ' (지난 자료)' : '') + ' · 중앙부처와 내 지역(시·도, 시·군·구)이 운영하는 사업만 보여 줘요' + (yb.data.hidden ? ' (다른 지역이 전국 대상으로 올린 ' + yb.data.hidden + '건 제외)' : ''); }
       else rows = ap;
       all = rows;
       var liveAll = all.filter(function (x) { return x.v !== 'no'; });
