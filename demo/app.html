@@ -1124,6 +1124,22 @@ a.card:active, button.card:active, .room-r:active, .nav:active { opacity: .6 }
 .desk-acts { display: flex; align-items: center; gap: 8px; order: 2; margin-left: auto; flex: none }
 .hbar .desk-acts { order: 2 }
 @media (max-width: 899px) { .desk-top, .hbar .desk-acts { display: none } }
+/* 메뉴 묶음 탭 (내 계약: 계약 정보·조건 입력·서류함·퇴거 준비 / 주변 추천: 추천 장소·생활 인프라) */
+.hubnav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; margin: 0 0 16px; border-bottom: 1px solid var(--line) }
+.hubnav::-webkit-scrollbar { display: none }
+.hubnav a { flex: 0 0 auto; min-height: 44px; padding: 0 12px; display: inline-flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--ink-2); text-decoration: none !important; border-bottom: 2px solid transparent; margin-bottom: -1px }
+.hubnav a:hover { color: var(--ink) }
+.hubnav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--brand); font-weight: 700 }
+/* 지원사업: 필터 버튼 하나 (분야·형태·정렬을 접어 둠) */
+.sp-filt { margin: 4px 0 10px }
+.sp-filt .btn { gap: 6px }
+.sp-filt .btn .muted { font-weight: 500 }
+.sp-filt .btn svg:last-child { transform: rotate(90deg); transition: transform .15s }
+.sp-filt .btn[aria-expanded="true"] svg:last-child { transform: rotate(-90deg) }
+/* 판정 배지 3색: '해당 가능'도 다른 두 단계처럼 바탕색을 깐다 (iOS 테마의 .badge.brand 는 글자색만이라 덜 보였다) */
+.badge.v3.brand, .sp-i1 .sp-v.brand { background: var(--brand-tint); padding: 0 8px }
+.sp-i1 .sp-v.brand { padding: 3px 9px }
+.sp-filt-in { padding: 10px 12px 2px; margin-bottom: 12px; border-radius: var(--r-in); background: var(--fill) }
 /* ===== mo:T-09 내 화면 6개 모션 (계약·신고 전용) ===== */
 .mo { --mo-short: 250ms; --mo-base: 450ms; --mo-long: 600ms; --mo-step: 80ms; --mo-shift: 20px; --mo-ease: cubic-bezier(0.3, 0.7, 0.4, 1); --mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1) }
 .mo .mo-fold { display: grid; grid-template-rows: 0fr }
@@ -1463,7 +1479,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!JA) return;
     fetch(API + '/api/config').then(function (r) { return r.ok ? r.json() : {}; }).then(function (c) {
       if (!c || !c.supabase) { ACC.loading = false; if (AUTH_BACK) toast('로그인을 아직 쓸 수 없어요.'); render(true); return; }
-      ACC.cli = JA.client(c.supabase);
+      ACC.cli = JA.client(c.supabase); PUSH.key = c.push || null; pushCheck();
       return ACC.cli.providers().then(function (pv) { ACC.prov = pv; }, function () {}).then(function () {
       // 켜진 로그인 방식이 하나도 없으면(아직 설정 전) 로그인 화면을 보이지 않는다. 이미 로그인한 사람은 그대로 둔다
       ACC.ready = ACC.prov.email || ACC.prov.kakao || ACC.prov.google || accOn();
@@ -1539,7 +1555,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (a === 'acclogin') { location.href = ACC.cli.oauthUrl(v, location.origin + location.pathname); }
     else if (a === 'accmode') { ACC.mode = v; ACC.msg = ''; render(true); }
     else if (a === 'accopen') { ACC.open = !ACC.open; render(true); }
-    else if (a === 'acclogout') { if (!confirm('로그아웃할까요? 기록은 내 계정에 저장돼 있어요.')) return; ACC.menu = false; ACC.cli.signOut().then(function () { ACC.state = ''; ACC.at = 0; toast('로그아웃했어요.'); accPaint(); render(false); }); }
+    else if (a === 'acclogout') { if (!confirm('로그아웃할까요? 기록은 내 계정에 저장돼 있어요.')) return; ACC.menu = false; pushOff(true).then(function () { return ACC.cli.signOut(); }).then(function () { ACC.state = ''; ACC.at = 0; toast('로그아웃했어요.'); accPaint(); render(false); }); }
     else if (a === 'accdel') {
       if (!confirm('계정과 서버에 저장된 기록을 지울까요? 이 기기에 있는 기록은 남아요.')) return;
       ACC.cli.deleteMe().then(function () { ACC.state = ''; ACC.at = 0; try { localStorage.removeItem(ACC_OWNER); } catch (e) {} toast('계정을 지웠어요.'); accPaint(); render(false); }, function (er) { toast(er.message); });
@@ -1561,7 +1577,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 옆으로 미는 줄이 넘치면 끝을 흐리게(.hs), 끝까지 밀면 흐림을 뺀다(.hs-end)
   function markScrollers() {
-    document.querySelectorAll('.subnav, .sp-tabs, .sp-kinds, .cats, .chips, .seg-scroll').forEach(function (el) {
+    document.querySelectorAll('.subnav, .hubnav, .sp-tabs, .sp-kinds, .cats, .chips, .seg-scroll').forEach(function (el) {
       var upd = function () { var over = el.scrollWidth > el.clientWidth + 4; el.classList.toggle('hs', over); el.classList.toggle('hs-end', !over || el.scrollLeft + el.clientWidth >= el.scrollWidth - 4); };
       upd(); if (!el.dataset.hsBound) { el.dataset.hsBound = '1'; el.addEventListener('scroll', upd, { passive: true }); }
     });
@@ -1672,6 +1688,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var v = JE.verdict(x);
     return [{ '해당 안 됨': 'no', '확인 필요': 'due', '답하면 판정': '', '해당 가능': 'brand' }[v], v];
   }
+  // 화면에 보이는 판정은 3단계만: 해당 가능 · 확인 필요 · 해당 안 됨 (정부24 혜택알리미·HUG 안심전세처럼 한눈에 읽히게).
+  // 엔진 글자('답하면 판정'·'마감')는 그대로 두고, 이유는 배지 대신 작은 글씨로 보여 준다.
+  var V3 = { '해당 가능': ['brand', '해당 가능'], '확인 필요': ['due', '확인 필요'], '답하면 판정': ['due', '확인 필요'], '해당 안 됨': ['no', '해당 안 됨'], '마감': ['no', '해당 안 됨'] };
+  function v3(label) { return V3[label] || ['', label]; }
+  function v3Badge(label) { var v = v3(label); return '<span class="badge v3 ' + v[0] + '">' + v[1] + '</span>'; }
 
   // 기준일 두 개: C = 계약일(전월세 신고 30일), M = 입주일(전입신고 14일). 기간은 첫날을 빼고 센다(민법 제157조).
   function buildTimeline(R) {
@@ -1878,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', function () {
       [/퇴거|갱신|나가|이사\s?가|만료|이사\s?나/, function () { var end = contractEnd(); return { a: '계약 만료는 <b>' + ymd(end) + '</b>이에요. 나갈 거라면 만료 2개월 전(<b>' + ymd(JE.addMonths(end, -JE.LAW.renew.monthsBefore)) + '</b>)까지 집주인에게 알리세요. 둘 다 말이 없으면 같은 조건으로 이어지고(묵시적 갱신), 그때는 언제든 알리면 3개월 뒤에 나갈 수 있어요. 보증금은 꼭 받은 뒤에 전출하세요.', src: [['주택임대차보호법 제6조·제6조의2', LAW], ['퇴거 준비', '#moveout']] }; }],
       [/세액공제|연말정산/, function () { return { a: '직장인이고 무주택 세대주라면 연말정산 때 낸 월세의 일부를 세액공제로 돌려받을 수 있어요. 전입신고가 되어 있어야 하고, 임대차계약서 사본과 월세 이체 내역이 필요해요. 소득 기준과 공제율은 그해 국세청 안내를 확인하세요.', src: [['조세특례제한법 제95조의2', LAW], ['서류함', '#docs']] }; }],
       [/보증금|대항력|안전|사기|경매/, function () { return { a: '① 잔금 보내기 직전에 등기부등본을 다시 떼어 새 근저당이 없는지 보고, ② 입주 당일 전입신고와 확정일자를 받고, ③ 나갈 때는 보증금을 돌려받은 뒤에 주소를 옮기세요. 집 자체의 위험 진단은 안심전세 앱에서 무료로 할 수 있어요.', src: [['주택임대차보호법 제3조·제3조의2', LAW], ['안심전세 앱', 'https://www.khug.or.kr']] }; }],
-      [/지원|청년월세|이사비/, function () { var list = R.eligible.map(function (x) { return x.p.name + '(' + judge(x)[1] + ')'; }); return { a: list.length ? '지금 조건으로 ' + list.join(', ') + '을 신청해 볼 수 있어요. 금액은 공고마다 따로 보여드리고 합치지 않아요. 최종 선정은 기관 심사로 정해져요.' : '지금 조건으로 해당되는 지원이 없어요.', src: R.programs.map(function (x) { return [x.p.name + ' 공고 ' + progBasis(x.p), '#support']; }).slice(0, 3) }; }]
+      [/지원|청년월세|이사비/, function () { var list = R.eligible.map(function (x) { return x.p.name + '(' + v3(judge(x)[1])[1] + ')'; }); return { a: list.length ? '지금 조건으로 ' + list.join(', ') + '을 신청해 볼 수 있어요. 금액은 공고마다 따로 보여드리고 합치지 않아요. 최종 선정은 기관 심사로 정해져요.' : '지금 조건으로 해당되는 지원이 없어요.', src: R.programs.map(function (x) { return [x.p.name + ' 공고 ' + progBasis(x.p), '#support']; }).slice(0, 3) }; }]
     ];
     for (var r = 0; r < RULES.length; r++) if (RULES[r][0].test(q)) return RULES[r][1]();
     var KW = [[/약국/, 'medical', /약국/], [/병원|의원|치과/, 'medical', /의원|병원|치과/], [/마트|다이소|생활용품|빨래|편의점|세탁/, 'life'], [/카페/, 'cafe'], [/지하철|역\b|버스|정류장/, 'transit'], [/공원|산책/, 'park'], [/헬스|운동|체육/, 'gym'], [/도서관|스터디|공부/, 'study'], [/주민센터|행정복지센터|청년센터|우체국/, 'public'], [/밥|식당|맛집/, 'food'], [/경찰|지구대|파출소/, 'safety']];
@@ -1969,7 +1990,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var SP = window.JachwiSupport, REGIONS = window.JACHWI_REGIONS || [];
   var SP_TABS = SP.CATS.concat([['welfare', '지역 복지'], ['lh', '다음 집']]);
   // ask = 아직 답하지 않은 질문만 남음. '확인 필요'(공고에서 직접 봐야 하거나 '모름'이라고 답함)와 따로 보여 준다
-  var SPV = { ok: ['brand', '해당 가능', '✓', 'ok'], q: ['due', '확인 필요', '?', 'q'], ask: ['', '답하면 판정', '?', 'a'], no: ['no', '해당 안 됨', '✕', 'x'] };
+  // 목록 배지는 3단계(해당 가능·확인 필요·해당 안 됨)만. 아직 안 답한 질문은 배지 대신 '질문 N개 남음' 작은 글씨로
+  var SPV = { ok: ['brand', '해당 가능', '✓', 'ok'], q: ['due', '확인 필요', '?', 'q'], ask: ['due', '확인 필요', '?', 'a'], no: ['no', '해당 안 됨', '✕', 'x'] };
   // 무주택·중복 수혜는 조건 입력과 같은 S.homeless·S.dup ('unknown'=모른다고 답함, 값 없음=아직 안 답함)
   var SP_YN = { homeless: { yes: '집 없음', no: '집 있음', unknown: '모름' }, dup: { yes: '받고 있음', no: '받고 있지 않음', unknown: '모름' } };
   var SP_CHIP = { homeless: { yes: '무주택', no: '집 있음', unknown: '무주택 여부 모름' }, dup: { yes: '비슷한 주거 지원 받는 중', no: '비슷한 주거 지원 안 받음', unknown: '중복 수혜 여부 모름' } };
@@ -2117,13 +2139,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // 순서 점수: 내 상황과의 관련(형태·키워드·지역) + 조건 대조 결과 + 접수 상태
     var score = fit.score + (plain ? 0 : v === 'ok' ? 25 : 10) + (st.k === 'open' && st.sure ? 12 + (st.left <= 14 && !st.far && !st.long ? 10 : 0) : st.k === 'always' && st.sure ? 6 : 4);
     return { kind: 'youth', key: 'y-' + it.id, name: it.name, one: it.sum || it.support, org: it.org, v: v, conds: conds, it: it, st: st, scope: lab, tag: it.central ? '중앙부처' : (it.osgg || it.osido || it.top), plain: plain, kd: kd, why: fit.why, score: score,
-      badge: plain ? ['', '공고 확인 필요'] : v === 'ok' ? ['brand', '조건 맞음'] : null, sort: SP.rank(v, st, it) + (plain ? 5e5 : 0) + (away ? 3e5 : 0) + (personal ? 0 : 2e4) };
+      badge: plain ? ['due', '확인 필요'] : null, sort: SP.rank(v, st, it) + (plain ? 5e5 : 0) + (away ? 3e5 : 0) + (personal ? 0 : 2e4) };
   }
   function spItem(row, selKey) {
     var asks = row.conds ? row.conds.filter(function (c) { return c.ask; }).length : 0, V = row.badge || (row.v ? SPV[row.v] : null);
-    return '<button type="button" class="sp-item" data-sp="pick" data-v="' + esc(row.key) + '" aria-current="' + (row.key === selKey) + '"><span class="sp-i1">' + (V ? '<span class="badge sp-v ' + V[0] + '">' + V[1] + '</span>' : '') + '<b>' + esc(row.name) + '</b>' + (row.demo ? '<span class="badge due">시연용 예시</span>' : '') + '</span>' +
+    return '<button type="button" class="sp-item" data-sp="pick" data-v="' + esc(row.key) + '" aria-current="' + (row.key === selKey) + '"><span class="sp-i1">' + (V ? '<span class="badge sp-v ' + V[0] + '">' + V[1] + '</span>' : '') + '<b>' + esc(row.name) + '</b></span>' +
       '<span class="sp-one">' + esc(SP.clip(row.one || '', 70)) + '</span><span class="sp-i3">' + (row.why ? '<span class="sp-why">' + esc(row.why) + '</span>' : '') + (row.kdLabel ? '<span>' + esc(row.kdLabel) + '</span>' : '') + (row.st ? '<span class="' + (row.st.k === 'open' && row.st.sure && row.st.left <= 14 ? 'sp-hot' : row.st.sure === false ? 'sp-unsure' : '') + '">' + esc(row.st.text) + (SP.leftText(row.st) ? ' · ' + SP.leftText(row.st) : '') + '</span>' : '') +
-      (row.tag ? '<span>' + esc(row.tag) + '</span>' : '') + (asks && (row.v === 'q' || row.v === 'ask') ? '<span class="sp-ask-n">질문 ' + asks + '개 남음</span>' : '') + '</span></button>';
+      (row.tag ? '<span>' + esc(row.tag) + '</span>' : '') + (row.plain ? '<span class="sp-ask-n">조건은 공고에서 확인</span>' : asks && (row.v === 'q' || row.v === 'ask') ? '<span class="sp-ask-n">질문 ' + asks + '개 남음</span>' : '') + '</span></button>';
   }
   // 질문 상자: 기준 금액을 먼저 보여 주고, 이용자는 자기 숫자만 넣는다. 견주는 일은 서비스가 한다.
   function spCrit(c, u) {
@@ -2199,7 +2221,7 @@ document.addEventListener('DOMContentLoaded', function () {
       : row.plain ? ['조건은 공고에서 확인해 주세요', '등록 정보에는 대상 지역만 적혀 있어요. 나이·소득 같은 조건은 아래 ‘공고에 적힌 추가 조건’과 공고를 봐 주세요. ' + (row.st.sure || row.st.pending || /^상시/.test(row.st.text) ? row.st.text + '.' : '접수 기간도 공고에서 확인해 주세요.')]
       : row.v === 'ok' ? [row.kind === 'youth' ? '등록된 조건이 모두 맞아요' : '조건이 모두 맞아요', okSay]
       : ['조건 ' + n + '개 중 ' + yes + '개가 맞아요', row.v === 'ask' ? '아래 질문 ' + asks + '개만 답하면 바로 알려 드려요.' : (asks ? '아래 질문 ' + asks + '개에 답해도 확인할 것이 남아요. ' : '') + spOpenSay(c)];
-    var tone = row.plain && row.v === 'ok' ? ['x', 'i'] : [SPV[row.v][3], SPV[row.v][2]];
+    var tone = row.plain && row.v !== 'no' ? ['q', 'i'] : row.v === 'ask' ? ['q', '?'] : [SPV[row.v][3], SPV[row.v][2]];   // 목록 배지와 같은 3색
     return '<div class="sp-verdict ' + tone[0] + '"><span class="sp-vic" aria-hidden="true">' + tone[1] + '</span><div><b>' + esc(head[0]) + '</b><span>' + esc(head[1]) + '</span></div></div>';
   }
   function spDetail(row, r) {
@@ -2207,7 +2229,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var u = sup(), h = '', note = row.st && row.st.k === 'open' && row.st.sure !== false ? restNote(row.st.to) : '';
     if (row.kind === 'approved') {
       var p = row.p, ev = row.conds.filter(function (c) { return c.evidence; }).map(function (c) { return '<div class="ev-row"><b>' + esc(c.label) + '</b><q>' + esc(String(c.evidence).trim()) + '</q></div>'; }).join('');
-      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><div class="row" style="margin-top:8px">' + (p.demo ? '<span class="badge due">시연용 예시 공고</span>' : '<span class="badge solid">담당자 확인 완료</span>') + (p.real ? '<span class="badge">실제 공고 원문 대조</span>' : '') + (p.firstCome ? '<span class="badge due">선착순</span>' : '') + '</div></div>' +
+      h = '<div class="sp-dh"><h2>' + esc(p.name) + '</h2><p class="s13 muted">' + esc(p.org) + ' · ' + esc(row.st.text) + '</p><p class="s12 muted" style="margin-top:6px">' + [p.demo ? '연습용 가상 공고' : '담당자가 공고 원문과 대조함', p.firstCome ? '선착순' : ''].filter(Boolean).join(' · ') + '</p></div>' +
         spVerdictBox(row, '선정 방식: ' + p.select + '. 최종 선정은 기관 심사로 정해져요.') + (note ? '<div class="sp-sec"><div class="banner due">' + ic('info') + '<span>' + esc(note) + '</span></div></div>' : '') +
         '<div class="sp-sec"><h3>지원 내용</h3><p>' + esc(p.amountText) + '</p><div class="kv" style="margin-top:8px"><span class="muted">선정 방식</span><b>' + esc(p.select) + '</b></div><div class="kv"><span class="muted">신청 방법</span><b>' + esc(p.channel) + '</b></div></div>' + spConds(row) +
         (p.exclusions.length ? '<div class="sp-sec"><h3>함께 받을 수 없어요</h3><p class="s13 sub">' + esc(p.exclusions.join(', ')) + '</p></div>' : '') +
@@ -2321,19 +2343,25 @@ document.addEventListener('DOMContentLoaded', function () {
       if (u.kind) rows = rows.filter(function (x) { return x.kd === u.kind; });
       else rows.forEach(function (x) { x.kdLabel = (SP.KINDS.filter(function (k) { return k[0] === x.kd; })[0] || [])[1]; });
       rows.sort(u.sort === 'due' ? function (x, y) { return (SP.dueRank(x.st) - SP.dueRank(y.st)) || (y.score - x.score) || (x.sort - y.sort); } : function (x, y) { return (y.score - x.score) || (x.sort - y.sort); });
-      var live = rows.filter(function (x) { return x.v !== 'no'; }), off = rows.filter(function (x) { return x.v === 'no'; }), lim = u.more || 8;   // 처음엔 나에게 맞는 순 8개만(신규 사용자 점검: 첫 화면이 너무 길었다)
-      listHtml = live.slice(0, lim).map(function (x) { return spItem(x, u.sel); }).join('') + (live.length > lim ? '<button type="button" class="btn ghost block sm" data-sp="more">' + (live.length - lim) + '건 더 보기</button>' : '') +
+      // 기본은 '나에게 맞는 지원'(내 정보로 조건을 따져 본 것)만. 조건이 등록 정보에 없어 공고에서 봐야 하는 것은 접어 둔다 (정부24 혜택알리미의 '나의 혜택'·'전체 혜택'처럼)
+      var live = rows.filter(function (x) { return x.v !== 'no'; }), mine = live.filter(function (x) { return !x.plain; }), plainL = live.filter(function (x) { return x.plain; }), off = rows.filter(function (x) { return x.v === 'no'; }), lim = u.more || 8;   // 처음엔 나에게 맞는 순 8개만(신규 사용자 점검: 첫 화면이 너무 길었다)
+      listHtml = (mine.length ? '<p class="sp-group">나에게 맞는 지원 ' + mine.length + '건</p>' : yb.status === 'ok' ? '<p class="sp-group">내 정보로 조건을 따져 볼 수 있는 지원이 아직 없어요</p>' : '') + mine.slice(0, lim).map(function (x) { return spItem(x, u.sel); }).join('') + (mine.length > lim ? '<button type="button" class="btn ghost block sm" data-sp="more">' + (mine.length - lim) + '건 더 보기</button>' : '') +
         (yb.status !== 'ok' ? spState(yb, '이 지역 정책을') : '') +
+        (plainL.length ? '<details class="sp-more"' + (plainL.some(function (x) { return x.key === u.sel; }) ? ' open' : '') + '><summary>조건을 공고에서 확인해야 하는 지원 ' + plainL.length + '건</summary>' + plainL.slice(0, 60).map(function (x) { return spItem(x, u.sel); }).join('') + '</details>' : '') +
         (off.length ? '<details class="sp-more"' + (off.some(function (x) { return x.key === u.sel; }) ? ' open' : '') + '><summary>지금은 해당 안 되거나 접수가 끝난 지원 ' + off.length + '건</summary>' + off.slice(0, 40).map(function (x) { return spItem(x, u.sel); }).join('') + '</details>' : '');
       if (!rows.length && yb.status === 'ok') listHtml = '<div class="sp-empty"><p class="sub">이 분류에 등록된 정책이 없어요.</p></div>';
     }
-    var selRow = rows.filter(function (x) { return x.key === u.sel; })[0] || rows.filter(function (x) { return x.v !== 'no'; })[0] || rows[0];
+    var selRow = rows.filter(function (x) { return x.key === u.sel; })[0] || rows.filter(function (x) { return x.v !== 'no' && !x.plain; })[0] || rows.filter(function (x) { return x.v !== 'no'; })[0] || rows[0];
     if (selRow && selRow.key !== u.sel) { u.sel = selRow.key; listHtml = listHtml.split('data-v="' + esc(selRow.key) + '" aria-current="false"').join('data-v="' + esc(selRow.key) + '" aria-current="true"'); }
     // 이번에 할 일: 받을 수 있어 보이는 것 중 마감이 가장 가까운 것 (시연용 예시 공고는 뺌)
     var hot = (all || rows).filter(function (x) { return x.v && x.v !== 'no' && !x.plain && !x.demo && x.score > 40 && x.st && x.st.k === 'open' && x.st.sure !== false && x.st.left >= 0 && !x.st.far && !x.st.long; }).sort(function (x, y) { return x.st.left - y.st.left; })[0];
     var hero = hot ? '<section class="sp-todo"><div><small>' + (hot.st.left ? hot.st.left + '일 남았어요' : '오늘 마감이에요') + '</small><b>' + esc(hot.name) + '</b><span>' + esc(hot.st.text) + (hot.v === 'ok' ? ' · 조건이 맞아요' : hot.v === 'ask' ? ' · 질문 몇 개만 답하면 알려 드려요' : ' · 조건을 조금만 더 확인하면 돼요') + '</span></div><button type="button" class="btn" data-sp="pick" data-v="' + esc(hot.key) + '">자세히 보기</button></section>' : '';
     var tabs = '<div class="cats sp-tabs" role="group" aria-label="지원 종류">' + SP_TABS.map(function (t) { return '<button type="button" class="cat" data-sp="tab" data-v="' + esc(t[0]) + '" aria-pressed="' + (tab === t[0]) + '">' + t[1] + (tab === t[0] && counts && counts[t[0]] !== undefined ? ' <i>' + counts[t[0]] + '</i>' : '') + '</button>'; }).join('') + '</div>';   // 개수는 보고 있는 분류만(다른 분류 '일자리 149' 같은 숫자가 먼저 눈에 띄어 헷갈렸다)
-    return head + picker + hero + tabs + sub + extra +
+    // 분야·형태·정렬은 '필터' 버튼 하나로 접어 둔다. 지금 고른 값은 버튼 글자로 보여 준다
+    var kindName = u.kind ? ((SP.KINDS.concat(WF_KINDS).filter(function (k) { return k[0] === u.kind; })[0] || [])[1] || '') : '';
+    var fsum = [(SP_TABS.filter(function (t) { return t[0] === tab; })[0] || ['', ''])[1], kindName, u.sort === 'due' ? '마감 빠른 순' : ''].filter(Boolean).join(' · ');
+    var filt = '<div class="sp-filt"><button type="button" class="btn line sm" data-sp="filt" aria-expanded="' + !!u.filt + '">' + ic('grid', 'sm') + '필터 <span class="muted">' + esc(fsum) + '</span>' + ic('chev', 'sm') + '</button></div>';
+    return head + picker + hero + filt + (u.filt ? '<div class="sp-filt-in">' + tabs + sub + '</div>' : '') + extra +
       '<div class="sp-cols"><div class="sp-list">' + listHtml + (meta ? '<p class="sp-meta" style="padding:10px 2px 0">' + esc(meta) + '</p>' : '') + '</div><aside class="card sp-detail" id="sp-detail">' + spDetail(selRow, r) + '</aside></div>' +
       '<p class="sp-meta" style="padding:16px 2px 0">금액은 사업마다 따로 보여 주고 합치지 않아요. 지원 목록을 받을 때 서버에는 지역 코드와 분류만 보내요.</p>';
   }
@@ -2343,6 +2371,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (a === 'tab') { u.cat = v; u.kind = ''; u.sel = ''; u.more = 0; u.guide = null; }
     else if (a === 'kind') { u.kind = v; u.sel = ''; u.more = 0; u.guide = null; }
     else if (a === 'sort') { u.sort = v; u.sel = ''; u.more = 0; }
+    else if (a === 'filt') u.filt = !u.filt;
     else if (a === 'pick') { u.sel = v; u.guide = null; jump = true; }
     else if (a === 'ans') u[k] = v;
     else if (a === 'yn' && (k === 'homeless' || k === 'dup') && /^(yes|no|unknown)$/.test(v)) S[k] = v;
@@ -3492,7 +3521,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var payH = !mb.length ? (first ? '이번 달 낼 돈이 없어요 · 첫 납부 ' + md(first.date) + ' ' + esc(first.title) : '이번 달 낼 돈이 없어요') : nb ? '다음 · ' + md(nb.date) + ' ' + esc(nb.title) : bm.length ? '지난 납부 ' + bm.length + '건을 아직 체크하지 않았어요' : '이번 달 낼 돈을 모두 냈어요';
     var pay = '<a class="card mini c4" href="#calendar"><span class="k">' + ic('card', 'sm') + (today.getMonth() + 1) + '월 남은 납부</span><span class="v">' + won(bm.reduce(function (s, e) { return s + e.amount; }, 0)) + '원</span><span class="h">' + payH + '</span></a>';
     var el = R.eligible[0];
-    var sup = '<a class="card mini c4" href="#support"><span class="k">' + ic('gift', 'sm') + '신청해 볼 수 있는 지원</span><span class="v">' + R.eligible.length + '건</span><span class="h">' + (el ? esc(el.p.name) + ' · ' + judge(el)[1] + ' · ' + esc(el.p.status) : '지금 조건으로는 없어요') + '</span></a>';
+    var sup = '<a class="card mini c4" href="#support"><span class="k">' + ic('gift', 'sm') + '신청해 볼 수 있는 지원</span><span class="v">' + R.eligible.length + '건</span><span class="h">' + (el ? esc(el.p.name) + ' · ' + v3(judge(el)[1])[1] + ' · ' + esc(el.p.status) : '지금 조건으로는 없어요') + '</span></a>';
     var noHome = DATA.status === 'nohome', ctr = noHome ? null : nearest('public', /행정복지센터|주민|관공서/);
     var repLate = R.report.required && !S.done.rp && R.report.due < today ? Math.round((today - R.report.due) / 864e5) : 0, mvLate = !S.done.mv && today > R.movein.due ? Math.round((today - R.movein.due) / 864e5) : 0;
     var tip = repLate ? '<div class="banner due c12">' + ic('info') + '<span><b>전월세 신고 기한(' + md(R.report.due) + ')이 ' + repLate + '일 지났어요.</b> 지금이라도 바로 신고하세요. 늦으면 과태료가 나올 수 있어요. <a href="https://rtms.molit.go.kr" target="_blank" rel="noopener">부동산거래관리시스템</a></span></div>'
@@ -3637,6 +3666,54 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     toast('캘린더 파일을 만들었어요. 휴대폰에서 열면 일정과 알림이 들어가요.');
   }
+  // ---------- 기한 알림 (웹 푸시) ----------
+  // 이 기기에서 알림을 켜면 푸시 주소를 계정에 저장하고(push_save), 서버가 매일 아침 9시에 그날 할 일·기한과
+  // 미리 알림(3일 전·하루 전)을 보낸다(api/_push.js). 아이폰은 홈 화면에 추가한 앱에서만 된다(iOS 16.4+).
+  var PUSH = { key: null, st: '', busy: false };
+  function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && /^https:$|^http:$/.test(location.protocol); }
+  function pushStandalone() { return navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
+  function pushReg() { return navigator.serviceWorker.getRegistration().then(function (r) { return r || navigator.serviceWorker.register('sw.js'); }).then(function () { return navigator.serviceWorker.ready; }); }
+  function pushCheck() {
+    if (!PUSH.key) { PUSH.st = ''; return; }
+    if (!pushSupported()) { PUSH.st = IS_IOS && !pushStandalone() ? 'ios' : 'no'; return; }
+    if (Notification.permission === 'denied') { PUSH.st = 'denied'; return; }
+    pushReg().then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) { var st = sub ? 'on' : 'off'; if (st !== PUSH.st) { PUSH.st = st; if (route() === 'calendar') render(true); } }, function () { PUSH.st = 'off'; });
+  }
+  function b64key(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); }
+  function pushOn() {
+    if (!PUSH.key || !accOn() || PUSH.busy) return;
+    PUSH.busy = true; render(true);
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') { PUSH.st = perm === 'denied' ? 'denied' : 'off'; throw new Error(perm === 'denied' ? '알림이 막혀 있어요. 브라우저 설정에서 이 사이트 알림을 허용해 주세요.' : '알림을 허용해야 받을 수 있어요.'); }
+      return pushReg();
+    }).then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (old) { return old || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64key(PUSH.key) }); })
+        .then(function (sub) { return ACC.cli.pushSave(sub.toJSON()).then(function () { return reg; }, function (e) { if (e && e.status === 404) { sub.unsubscribe().catch(function () {}); throw new Error('알림 서버를 준비하고 있어요. 잠시 뒤에 다시 켜 주세요.'); } throw e; }); });
+    }).then(function (reg) {
+      PUSH.st = 'on'; PUSH.busy = false; accPush();   // 서버가 쓸 최신 일정 묶음도 같이 올린다
+      reg.showNotification('자취대로 · 알림을 켰어요', { body: '매일 아침 9시에 그날 할 일과 다가오는 기한을 알려 드려요.', icon: 'icons/icon-192.png', tag: 'jachwi-on' }).catch(function () {});
+      toast('기한 알림을 켰어요.'); render(true);
+    }).catch(function (e) { PUSH.busy = false; toast(e && e.message ? e.message : '알림을 켜지 못했어요.'); render(true); });
+  }
+  function pushOff(quiet) {
+    if (!pushSupported()) return Promise.resolve();
+    return navigator.serviceWorker.getRegistration().then(function (reg) { return reg && reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (!sub) return;
+      var ep = sub.endpoint;
+      return (ACC.cli && accOn() ? ACC.cli.pushRemove(ep).catch(function () {}) : Promise.resolve()).then(function () { return sub.unsubscribe(); });
+    }).then(function () { PUSH.st = PUSH.key ? 'off' : ''; if (!quiet) { toast('이 기기의 기한 알림을 껐어요.'); render(true); } }, function () { if (!quiet) toast('알림을 끄지 못했어요.'); });
+  }
+  function pushCard() {
+    if (!PUSH.key || !PUSH.st) return '';
+    var st = PUSH.st, on = st === 'on';
+    var body = st === 'ios' ? '<p class="s13 sub">아이폰은 <b>홈 화면에 추가한 자취대로</b>에서만 알림을 받을 수 있어요. 사파리 공유 버튼 › ‘홈 화면에 추가’로 설치한 뒤 거기서 켜 주세요.</p>'
+      : st === 'no' ? '<p class="s13 sub">이 브라우저는 앱 알림을 지원하지 않아요. 아래 캘린더 구독으로 휴대폰 캘린더 알림을 받을 수 있어요.</p>'
+      : st === 'denied' ? '<p class="s13 sub">이 기기에서 알림이 막혀 있어요. 브라우저(또는 휴대폰) 설정에서 이 사이트의 알림을 허용한 뒤 다시 와 주세요.</p>'
+      : '<p class="s13 sub">매일 아침 9시에 그날 할 일·기한과, 아래 ‘미리 알림’에서 고른 때(3일 전·하루 전)에 다가오는 기한을 이 기기로 알려 드려요.</p>' +
+        '<button type="button" class="btn ' + (on ? 'line' : '') + ' block" data-act="' + (on ? 'pushoff' : 'pushon') + '"' + (PUSH.busy ? ' disabled' : '') + '>' + ic('bell', 'sm') + (PUSH.busy ? '켜는 중…' : on ? '이 기기 알림 끄기' : '이 기기에서 알림 받기') + '</button>' +
+        '<p class="s12 muted">알림에는 일정 제목과 금액만 들어가요. 로그아웃하면 이 기기 알림도 꺼져요.</p>';
+    return '<div class="push-card stack" style="gap:8px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line)"><div class="split"><b class="s14">' + ic('bell', 'sm') + ' 기한 알림</b><span class="badge ' + (on ? 'brand v3' : '') + '">' + (on ? '켜짐' : '꺼짐') + '</span></div>' + body + '</div>';
+  }
   function phonePanel() {
     var u = PHONE_U || (accOn() && !S.demo ? accCalToken() : ''), fromPc = !!(PHONE_D || PHONE_U), d = u ? '' : PHONE_D || encoded('cal', calPayload());
     if (!d && !u) return '<p class="muted s13">구독 주소를 만드는 중…</p>';
@@ -3700,10 +3777,10 @@ document.addEventListener('DOMContentLoaded', function () {
       return '<button type="button" class="todo-row" data-act="calday" data-v="' + iso(e.date) + '"><span class="todo-d' + (late ? ' late' : dd <= 3 ? ' soon' : '') + '"><b>' + (e.date.getMonth() + 1) + '.' + e.date.getDate() + '</b><span>' + (late ? '지남' : dd === 0 ? '오늘' : 'D-' + dd) + '</span></span><span class="what"><b>' + esc(e.title) + '</b><span class="s12 muted">' + esc(e.sub || '') + '</span></span>' + ic('chev', 'sm') + '</button>';
     }).join('') || '<p class="muted s13" style="padding:8px 0">이번 달 챙길 일정을 다 끝냈어요.</p>';
     var todoPanel = '<div role="tabpanel"><div class="split" style="margin-bottom:8px"><b class="s14">' + (m + 1) + '월 챙길 일정 ' + tasks.length + '개</b><button type="button" class="link-btn" data-act="caltab" data-v="day">날짜별로 보기</button></div><p class="s12 muted" style="margin-bottom:6px">안 끝낸 것만 날짜순이에요. 누르면 그날로 가요.</p>' + todoList + '</div>';
-    var panel = '<section class="card" id="cal-panel"><div class="panel-tabs" role="tablist"><button type="button" role="tab" data-act="caltab" data-v="day" aria-selected="' + (tab === 'day') + '">' + md(selD) + '</button><button type="button" role="tab" data-act="caltab" data-v="money" aria-selected="' + (tab === 'money') + '">납부 항목</button><button type="button" role="tab" data-act="caltab" data-v="phone" aria-selected="' + (tab === 'phone') + '">' + ic('bell', 'sm') + ' 폰 연동</button></div>' +
+    var panel = '<section class="card" id="cal-panel"><div class="panel-tabs" role="tablist"><button type="button" role="tab" data-act="caltab" data-v="day" aria-selected="' + (tab === 'day') + '">' + md(selD) + '</button><button type="button" role="tab" data-act="caltab" data-v="money" aria-selected="' + (tab === 'money') + '">납부 항목</button><button type="button" role="tab" data-act="caltab" data-v="phone" aria-selected="' + (tab === 'phone') + '">' + ic('bell', 'sm') + ' 알림·연동</button></div>' +
       (tab === 'todo' ? todoPanel : tab === 'day' ? '<div role="tabpanel">' + agenda + addEv + '</div>'
-        : tab === 'money' ? '<div role="tabpanel"><p class="s13 muted" style="margin-bottom:6px">계약 기간(' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + ') 동안 반복해서 보여줘요.</p>' + (rentP.eligible && sup && !sup.on ? '<div class="banner" style="margin:8px 0;flex-wrap:wrap">' + ic('gift') + '<span style="flex:1;min-width:180px">' + esc(rentP.p.name || '청년월세 지원') + ' <b>' + judge(rentP)[1] + '</b>' + (rentP.p.amountText ? ' · ' + esc(rentP.p.amountText) : '') + '<br><span class="s12 muted">선정되면 입금일과 남은 횟수를 챙겨 드려요.</span></span><button type="button" class="btn sm" data-act="supon">선정됐어요 · 켜기</button></div>' : '') + '<a class="btn line sm block" href="#spend" style="margin:4px 0 10px">' + ic('chart', 'sm') + ' 금액·날짜 수정과 항목 추가는 주거비 관리에서</a>' + bills + '</div>'
-        : '<div role="tabpanel">' + phonePanel() + '</div>') + '</section>';
+        : tab === 'money' ? '<div role="tabpanel"><p class="s13 muted" style="margin-bottom:6px">계약 기간(' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + ') 동안 반복해서 보여줘요.</p>' + (rentP.eligible && sup && !sup.on ? '<div class="banner" style="margin:8px 0;flex-wrap:wrap">' + ic('gift') + '<span style="flex:1;min-width:180px">' + esc(rentP.p.name || '청년월세 지원') + ' <b>' + v3(judge(rentP)[1])[1] + '</b>' + (rentP.p.amountText ? ' · ' + esc(rentP.p.amountText) : '') + '<br><span class="s12 muted">선정되면 입금일과 남은 횟수를 챙겨 드려요.</span></span><button type="button" class="btn sm" data-act="supon">선정됐어요 · 켜기</button></div>' : '') + '<a class="btn line sm block" href="#spend" style="margin:4px 0 10px">' + ic('chart', 'sm') + ' 금액·날짜 수정과 항목 추가는 주거비 관리에서</a>' + bills + '</div>'
+        : '<div role="tabpanel">' + pushCard() + phonePanel() + '</div>') + '</section>';
     return '<div class="page-head"><div><p class="eyebrow">생활 관리 · ' + ymd(pd(S.move)) + ' ~ ' + ymd(end) + '</p><h1>자취 캘린더</h1></div><div class="month-nav"><button type="button" class="icon-btn" data-act="calnav" data-v="-1" aria-label="이전 달">' + ic('back') + '</button><h2 aria-live="polite">' + y + '. ' + (m + 1) + '</h2><button type="button" class="icon-btn" data-act="calnav" data-v="1" aria-label="다음 달">' + ic('chev') + '</button><button type="button" class="btn ghost sm" data-act="calnav" data-v="0">오늘</button></div></div>' +
       '<div class="stats"><a class="stat click" href="#spend"><div class="k">' + (m + 1) + '월 주거비 <span class="go">' + ic('chev', 'sm') + '</span></div><div class="v">' + won(outSum) + '원</div><div class="h">납부 완료 ' + won(paid) + ' · 납부 대기 ' + won(outSum - paid) + '</div></a><button type="button" class="stat click" data-act="caltab" data-v="money"><div class="k">' + (m + 1) + '월 들어올 돈 <span class="go">' + ic('chev', 'sm') + '</span></div><div class="v' + (inSum ? ' in' : '') + '">' + won(inSum) + '원</div><div class="h">' + (ins.length ? '지원금 입금' : '선정된 지원금을 켜 보세요') + '</div></button><button type="button" class="stat click' + (tab === 'todo' ? ' on' : '') + '" data-act="caltab" data-v="todo" aria-pressed="' + (tab === 'todo') + '"><div class="k">챙길 일정 <span class="go">' + ic('chev', 'sm') + '</span></div><div class="v' + (tasks.length ? ' due' : '') + '">' + tasks.length + '개</div><div class="h">기한·내 일정 · 눌러서 모아 보기</div></button></div>' +
       '<div class="cal-wrap"><section class="card"><div class="cal-filter" role="group" aria-label="일정 종류 고르기">' + CAL_F.map(function (f) { return '<button type="button" class="chip" data-act="calf" data-v="' + f[0] + '" aria-pressed="' + (F === f[0]) + '">' + f[1] + '</button>'; }).join('') + '</div><div class="wd" aria-hidden="true">' + WD.map(function (w, i) { return '<span' + (i === 0 ? ' class="sun"' : i === 6 ? ' class="sat"' : '') + '>' + w + '</span>'; }).join('') + '</div><div class="days">' + cells + '</div>' +
@@ -4191,11 +4268,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---------- 자격 판정 (필수 ①) ----------
   // T-10: 결과 요약(F-08 ①) — 숫자는 아래 목록과 같은 판정 글자(judge)로 센다. screens-core가 없으면 요약 없이 목록만
-  var RESULT_V = [['확인 필요', 'due'], ['답하면 판정', ''], ['해당 안 됨', 'no'], ['마감', 'no']];
+  // 요약 칩도 3단계로 묶어 센다 (답하면 판정 → 확인 필요, 마감 → 해당 안 됨)
+  var RESULT_V = [['확인 필요', 'due', ['확인 필요', '답하면 판정']], ['해당 안 됨', 'no', ['해당 안 됨', '마감']]];
   function resultSummaryCard(R) {
     if (!JS || !JS.resultSummary) return '';
     var s = JS.resultSummary({ reportRequired: R.report.required, verdicts: R.programs.map(function (x) { return judge(x)[1]; }) });
-    var chips = RESULT_V.filter(function (v) { return s.byVerdict[v[0]]; }).map(function (v) { return '<span class="badge ' + v[1] + '">' + v[0] + ' ' + s.byVerdict[v[0]] + '개</span>'; });
+    var chips = RESULT_V.map(function (v) { return [v, v[2].reduce(function (n, k) { return n + (s.byVerdict[k] || 0); }, 0)]; }).filter(function (x) { return x[1]; }).map(function (x) { return '<span class="badge ' + x[0][1] + '">' + x[0][0] + ' ' + x[1] + '개</span>'; });
     if (s.taskUnsure) chips.unshift('<span class="badge due">전월세 신고 확인 필요</span>');
     return '<section class="card stack mo-result-sum' + moStep(0) + '" aria-label="결과 요약"><p class="mo-result-sum-main">할 일 <b>' + moNum('result:sum:tasks', s.tasks) + '</b>개 · 지원 <b>' + moNum('result:sum:ok', s.ok) + '</b>개 해당 가능</p>' +
       (chips.length ? '<div class="row">' + chips.join('') + '</div>' : '') + '</section>';
@@ -4218,17 +4296,17 @@ document.addEventListener('DOMContentLoaded', function () {
     var VB = { '해당 안 됨': 'no', '확인 필요': 'due', '답하면 판정': '', '해당 가능': 'brand' };
     var progs = R.programs.map(function (x, i) {
       var p = x.p, v = JE.verdict(x), j = x.closed ? judge(x) : [VB[v], v];
-      var rows = x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + (notAsked(r) ? '아직 안 답함 <a class="badge" href="#input">답하면 판정</a>' : esc(r.mine) + ' ' + mark(r.ok)) + '</span></div>'; }).join('');
+      var rows = x.res.map(function (r) { return '<div class="kv"><span class="s13">' + esc(r.label) + '</span><span class="s13">' + (notAsked(r) ? '아직 안 답함 · <a href="#input">답하기</a> ' + mark(null) : esc(r.mine) + ' ' + mark(r.ok)) + '</span></div>'; }).join('');
       // 조건이 모두 충족이면 접힌 채, 하나라도 충족이 아니면 펼친 채 시작 (F-08 ③)
       var met = !!(JS && JS.allMet(x.res)), open = moOpen('result:cond:' + p.id, !(JS && JS.allMet(x.res)));
       var left = x.res.filter(function (r) { return r.ok !== true; }).length;
       var cond = !x.res.length ? '' : '<div>' + moToggle('result:cond:' + p.id, open, '<span>조건 ' + x.res.length + '개 ' + (met ? '모두 충족' : '중 확인할 조건 ' + left + '개') + '</span>' + ic('chev', 'sm'), 'mo-result-fold') + moPanel('result:cond:' + p.id, open, rows) + '</div>';
       return '<section class="card c6 stack' + moStep(3 + i) + '"><div><p class="s12 muted">' + esc(p.org) + '</p><h2 style="font-size:18px;font-weight:800">' + esc(p.name) + '</h2></div>' +
-        '<div class="row"><span class="badge ' + j[0] + '">' + j[1] + '</span>' + (j[1] === p.status ? '' : '<span class="badge ' + p.statusCls + '">' + p.status + '</span>') + '<span class="badge">' + esc(p.select) + '</span></div>' +
+        '<div class="row">' + v3Badge(j[1]) + '<span class="s13 muted">' + esc([p.status, p.select].filter(Boolean).join(' · ')) + '</span></div>' +
         cond +
         (v === '답하면 판정' && !x.closed ? '<p class="s13 sub"><a href="#input">조건 입력</a>에서 무주택·중복 수혜를 답하면 바로 판정해요.</p>' : '') +
         '<p class="s13 sub">지원 내용: ' + esc(p.amountText) + '</p>' +
-        '<p class="src-line">' + ic('doc', 'sm') + '<span>원문 <a href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">' + esc(p.channel) + '</a> · ' + progBasis(p) + (p.demo ? ' · 시연용 예시 공고' : '') + '</span></p></section>';
+        '<p class="src-line">' + ic('doc', 'sm') + '<span>원문 <a href="' + esc(p.url || '#support') + '" target="_blank" rel="noopener">' + esc(p.channel) + '</a> · ' + progBasis(p) + (p.demo ? ' · 연습용 가상 공고' : '') + '</span></p></section>';
     }).join('');
     var none = R.eligible.length ? '' : '<section class="card c12' + moStep(3 + R.programs.length) + '"><p>지금 조건으로 해당되는 지원이 없어요. 꼭 해야 하는 신고는 위에서 확인하세요.</p></section>';
     return moRoot('result', '<div class="page-head"><div><p class="eyebrow">' + resultPlace() + ageText() + ' · ' + incomeLabel() + ' · 보증금 ' + won(S.deposit) + '만 / 월세 ' + S.rent + '만</p><h1>자격 판정</h1></div><a class="btn line" href="#input">조건 바꾸기</a></div>' +
@@ -4315,13 +4393,20 @@ document.addEventListener('DOMContentLoaded', function () {
   // ---------- 메뉴 구조 ----------
   var GROUPS = [
     { k: 'home', label: '', def: 'home', tab: ['홈', 'home'], items: [['home', '홈', 'home']] },
-    { k: 'house', label: '내 주거 관리', def: 'timeline', tab: ['내 주거', 'doc'], items: [['input', '조건 입력', 'doc'], ['result', '자격 판정', 'shield'], ['contract', '내 계약', 'doc'], ['timeline', '타임라인', 'route'], ['docs', '서류함', 'folder'], ['moveout', '퇴거 준비', 'box']] },
-    { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'compass'], ['infra', '생활 인프라', 'grid']] },
+    { k: 'house', label: '내 주거 관리', def: 'timeline', tab: ['내 주거', 'doc'], items: [['timeline', '타임라인', 'route'], ['result', '자격 판정', 'shield'], ['contract', '내 계약', 'doc']] },
+    { k: 'area', label: '주변 탐색', core: true, def: 'map', tab: ['주변', 'pin'], items: [['map', '지도 탐색', 'pin'], ['recommend', '주변 추천', 'compass']] },
     { k: 'life', label: '생활 관리', def: 'calendar', tab: ['생활', 'chart'], items: [['spend', '주거비 관리', 'chart'], ['calendar', '자취 캘린더', 'cal'], ['condition', '집 상태 기록', 'camera']] },
     { k: 'help', label: '지원 & 상담', def: 'support', tab: ['지원', 'gift'], items: [['support', '지원사업', 'gift'], ['coach', 'AI 자취 코치', 'chat']] }
   ];
   var ROUTES = { start: viewStart, home: viewHome, input: viewInput, result: viewResult, contract: viewContract, timeline: viewTimeline, docs: viewDocs, moveout: viewMoveout, map: viewMap, recommend: viewRecommend, infra: viewInfra, spend: viewSpend, calendar: viewCalendar, condition: viewCondition, support: viewSupport, coach: viewCoach };
-  function groupOf(r) { return GROUPS.filter(function (g) { return g.items.some(function (i) { return i[0] === r; }); })[0]; }
+  // 메뉴 묶음: 메뉴에는 대표 화면 하나만 두고, 화면 위 탭으로 오간다 (메뉴 15개 → 11개. 주소 #input·#docs 등은 그대로)
+  var HUBS = {
+    contract: { label: '내 계약', items: [['contract', '계약 정보'], ['input', '조건 입력'], ['docs', '서류함'], ['moveout', '퇴거 준비']] },
+    recommend: { label: '주변 추천', items: [['recommend', '추천 장소'], ['infra', '생활 인프라']] }
+  };
+  function hubOf(r) { for (var k in HUBS) if (HUBS[k].items.some(function (i) { return i[0] === r; })) return k; return r; }
+  function hubNav(r) { var h = HUBS[hubOf(r)]; return h ? '<nav class="hubnav" aria-label="' + h.label + '">' + h.items.map(function (x) { return '<a href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : ''; }
+  function groupOf(r) { r = hubOf(r); return GROUPS.filter(function (g) { return g.items.some(function (i) { return i[0] === r; }); })[0]; }
   var app = document.getElementById('app'), last = '';
   function route() { var h = location.hash.slice(1); return ROUTES[h] ? h : 'home'; }
   // BELL_ONLY: 위쪽 줄에 알림만 남기는 화면 (주변 추천·생활 인프라 — 검색창·시연 날짜 없음).
@@ -4353,10 +4438,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var cnt = function (k) { return k === 'timeline' && n ? '<span class="cnt" aria-label="밀린 할 일 ' + n + '개">' + n + '</span>' : ''; };
     // 사이드바는 핵심인 '지원 & 상담'(지원사업·AI 코치)을 홈 바로 아래에 둔다(메뉴가 길어 맨 아래가 잘렸다). 휴대폰 탭 순서는 그대로
     document.getElementById('side-nav').innerHTML = GROUPS.slice(0, 1).concat(GROUPS.filter(function (g) { return g.k === 'help'; }), GROUPS.slice(1).filter(function (g) { return g.k !== 'help'; })).map(function (gr) {
-      return (gr.label ? '<span class="g-label">' + gr.label + '' + '</span>' : '') + gr.items.map(function (x) { return '<a class="nav" href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + ic(x[2]) + x[1] + cnt(x[0]) + '</a>'; }).join('');
+      return (gr.label ? '<span class="g-label">' + gr.label + '' + '</span>' : '') + gr.items.map(function (x) { return '<a class="nav" href="#' + x[0] + '"' + (x[0] === hubOf(r) ? ' aria-current="page"' : '') + '>' + ic(x[2]) + x[1] + cnt(x[0]) + '</a>'; }).join('');
     }).join('');
     document.getElementById('tab-nav').innerHTML = GROUPS.map(function (gr) { return '<a class="tab" href="#' + gr.def + '"' + (gr === g ? ' aria-current="page"' : '') + '>' + ic(gr.tab[1]) + gr.tab[0] + (gr.k === 'house' ? cnt('timeline') : '') + '</a>'; }).join('');
-    var sub = g.items.length > 1 ? '<nav class="subnav" aria-label="' + g.label + '">' + g.items.map(function (x) { return '<a href="#' + x[0] + '"' + (x[0] === r ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '';
+    var sub = g.items.length > 1 ? '<nav class="subnav" aria-label="' + g.label + '">' + g.items.map(function (x) { return '<a href="#' + x[0] + '"' + (x[0] === hubOf(r) ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '';
+    sub += hubNav(r);
     loadPlaces();
     var listPos = keep ? listScroll() : [];
     BELL_N = n;
@@ -4454,6 +4540,8 @@ document.addEventListener('DOMContentLoaded', function () {
     else if (a === 'billdel') { var bd = findBill(v); if (!bd || !confirm('‘' + bd.name + '’ 항목을 삭제할까요? 직접 추가한 항목이라 되돌릴 수 없어요.')) return; S.bills = S.bills.filter(function (x) { return x.id !== v; }); S.calEdit = ''; save(); render(true); toast('삭제했어요.'); }
     else if (a === 'billoff') { var bf = findBill(v); if (bf) { if (!confirm('‘' + bf.name + '’ 항목을 삭제할까요?')) return; bf.on = false; S.calEdit = ''; save(); render(true); toast(bf.name + ' 항목을 삭제했어요. ‘항목 더 보기’에서 다시 켤 수 있어요.'); } }
     else if (a === 'ics') downloadICS();
+    else if (a === 'pushon') pushOn();
+    else if (a === 'pushoff') pushOff();
     else if (a === 'reload') { try { localStorage.removeItem(PLACES_LS); localStorage.removeItem(KPLACES_LS); } catch (er) {} loadPlaces(true); render(true); }
     else if (a === 'sethome') { var gi = GEO.items[+b.dataset.i]; if (gi) { GEO = { items: [], status: '', q: '' }; setHome(gi.lat, gi.lng, gi.label, 'search', gi.kid); if (route() === 'map' && !/\d/.test(gi.label)) { S.pickHome = true; save(); render(true); toast('번지까지는 못 찾았어요. 지도에서 정확한 집 자리를 한 번 눌러 주세요.'); } } }
     else if (a === 'gps') useGps();

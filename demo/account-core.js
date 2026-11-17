@@ -192,6 +192,21 @@
             .then(function () { return Date.parse(at); });
         });
       },
+      // 기한 알림: 이 기기(브라우저)의 푸시 주소를 계정에 저장/삭제한다. sub = PushSubscription.toJSON()
+      pushSave: function (sub) {
+        var k = sub && sub.keys || {};
+        if (!sub || !/^https:\/\//.test(sub.endpoint || '') || !k.p256dh || !k.auth) return Promise.reject(new Error('알림 주소를 만들지 못했어요.'));
+        return token().then(function (tk) {
+          if (!tk) throw new Error('다시 로그인해 주세요.');
+          return call('/rest/v1/rpc/push_save', { method: 'POST', token: tk, body: { p_endpoint: sub.endpoint, p_p256dh: k.p256dh, p_auth: k.auth } });
+        });
+      },
+      pushRemove: function (endpoint) {
+        return token().then(function (tk) {
+          if (!tk || !endpoint) return null;
+          return call('/rest/v1/push_subs?endpoint=eq.' + encodeURIComponent(endpoint), { method: 'DELETE', token: tk, headers: { Prefer: 'return=minimal' } });
+        });
+      },
       // 탈퇴: 서버의 내 기록과 계정을 지운다 (이 기기 기록은 남는다)
       deleteMe: function () {
         return token().then(function (tk) {
