@@ -240,6 +240,7 @@ footer a { color: var(--ink-2); display: inline-flex; align-items: center; min-h
 .feat.rv { opacity: 1; transform: none }
 .feat.rv .shot { opacity: 0; transform: translateX(-32px); transition: opacity .7s ease, transform .8s cubic-bezier(.2,.8,.2,1) }
 .feat.flip.rv .shot { transform: translateX(32px) }
+.feat.rv { overflow-x: clip }   /* 옆에서 들어오는 그림이 나타나기 전 휴대폰 화면에 가로 스크롤이 생기지 않게 */
 .feat.rv > div:not(.shot) { opacity: 0; transform: translateY(18px); transition: opacity .6s ease .15s, transform .7s cubic-bezier(.2,.8,.2,1) .15s }
 .feat.rv.in .shot, .feat.rv.in > div:not(.shot) { opacity: 1; transform: none }
 .feat .shot .phone { transition: transform .4s cubic-bezier(.2,.8,.2,1) }
