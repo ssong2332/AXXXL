@@ -2866,7 +2866,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function kakao(kind, p) {
     var kid = kakaoId(p);
     if (kid) return 'https://map.kakao.com/link/' + (kind === 'rv' ? 'roadview' : kind === 'to' ? 'to' : 'map') + '/' + kid;
-    if (kind === 'rv') { var rs = RVS[rvKey(p)]; if (rs && rs.url) return rs.url; if (p.rvUrl) return p.rvUrl; }
+    if (kind === 'rv') { var rs = RVS[rvKey(p)]; if (rs && rs.url) return rs.url; if (JS && JS.rvUrlOk && JS.rvUrlOk(p.rvUrl)) return p.rvUrl; }
     var ll = (+p.lat).toFixed(5) + ',' + (+p.lng).toFixed(5);
     if (kind === 'rv' && p.rv) ll = p.rv[0] + ',' + p.rv[1];   // 예전 방식으로 찾아 둔 집 근처 길 위 지점
     return kind === 'rv' ? 'https://map.kakao.com/link/roadview/' + ll : kind === 'to' ? 'https://map.kakao.com/link/to/' + encodeURIComponent(p.name || p.label || '우리 집') + ',' + ll : 'https://map.kakao.com/link/map/' + encodeURIComponent(p.name || p.label || '우리 집') + ',' + ll;
@@ -2949,7 +2949,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function rvTarget(id) { return id === 'home' ? home() : places().filter(function (x) { return x.id === id; })[0]; }
   // 집에 고른 사진은 이 기기에 저장해 두고 30일이 지나면 다시 고른다(그사이 새로 찍은 사진이 생길 수 있음)
   var RV_KEEP = 30 * 864e5;
-  function homeRvFresh(h) { return !!h.rvUrl && Date.now() - (h.rvAt || 0) < RV_KEEP; }
+  function homeRvFresh(h) { return !!(JS && JS.rvUrlOk && JS.rvUrlOk(h.rvUrl)) && Date.now() - (h.rvAt || 0) < RV_KEEP; }
   // 화면의 로드뷰 버튼(data-rv-place)마다 사진을 미리 골라 둔다. 고르기 전에 누르면 새 창을 먼저 열고 다 고르면 그 창을 옮긴다(팝업 차단 방지)
   function fixPlaceRoadview() {
     if (KM.st !== 'ok') return;
@@ -4376,7 +4376,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (h.indexOf('#phone=') === 0) { PHONE_D = h.slice(7).replace(/[^\w-]/g, ''); S.calTab = 'phone'; history.replaceState(null, '', location.pathname + location.search + '#calendar'); }
     if (h.indexOf('#import=') === 0) {
       var dd = h.slice(8).replace(/[^\w-]/g, ''); history.replaceState(null, '', location.pathname + location.search + '#home');
-      decodePayload(dd).then(function (o) { if (!(JS && JS.checkImport && JS.checkImport(o))) { toast('QR 정보를 읽지 못했어요.'); return; } if (confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); S.bills = JL.cleanBills(S.bills) || clone(FRESH).bills; S.events = JL.cleanEvents(S.events) || []; /* 납부 항목·내 일정은 형식 검사 (life-core.js) */ S.onboarded = true; S.demo = false; migrate(S); save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
+      decodePayload(dd).then(function (o) { if (!(JS && JS.checkImport && JS.checkImport(o))) { toast('QR 정보를 읽지 못했어요.'); return; } if (confirm('PC에서 보낸 계약 정보·일정·집 위치로 이 기기 내용을 바꿀까요?')) { Object.keys(exportObj()).forEach(function (k) { if (k in o) S[k] = o[k]; }); S.bills = JL.cleanBills(S.bills) || clone(FRESH).bills; S.events = JL.cleanEvents(S.events) || []; /* 납부 항목·내 일정은 형식 검사 (life-core.js) */ if ('home' in o) S.home = JS.cleanHome(o.home); S.onboarded = true; S.demo = false; migrate(S); save(); PC.k = ''; loadPlaces(); render(false); toast('PC에서 보낸 정보로 바꿨어요.'); } }).catch(function () { toast('QR 정보를 읽지 못했어요.'); });
     }
     var tidy = function (list) { return (list || []).map(function (c) { if (c && typeof c === 'object') { delete c.shown; delete c.stepN; if (c.mode === 'hello') return null; if (c.mode === 'pending' || !c.a) return c.q || null; } return c; }).filter(Boolean); };
     S.rooms = S.rooms || {}; if ((S.chat || []).length) { S.rooms.auto = (S.rooms.auto || []).concat(S.chat); S.chat = []; }
