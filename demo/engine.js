@@ -1,4 +1,4 @@
-/* 자취 계약 내비 — 계약·신고 계산 엔진 (브라우저·Node 공용, 순수 함수)
+/* 자취대로 — 계약·신고 계산 엔진 (브라우저·Node 공용, 순수 함수)
  * 맡는 일: 전월세 신고 의무·기한, 전입신고 기한, 계약 만료일, 갱신 통지 마감, 만 나이, 입력 검사
  * 지원 자격 판정은 rules-core.js(운영자 승인 공고 → evalProgram)가 맡는다. 여기서는 toUser()로 입력만 넘긴다.
  * 브라우저: <script src="engine.js"> → window.JachwiEngine / Node: require('./engine.js')

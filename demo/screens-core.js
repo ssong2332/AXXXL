@@ -1,4 +1,4 @@
-/* 자취 계약 내비 — 계약·신고 6개 화면(#input #result #timeline #contract #moveout #docs) 전용 순수 함수
+/* 자취대로 — 계약·신고 6개 화면(#input #result #timeline #contract #moveout #docs) 전용 순수 함수
  * 맡는 일: 모션 토큰(길이·지연·곡선의 단일 원본), 등장 판정, 차례 지연, 숫자 카운트 값 + 화면별 순수 함수(T-10~T-13 구역)
  * 팀 공통 규칙이 아니다. DOM·저장소·앱 상태를 읽지 않는다 — 입력은 plain 값, 날짜도 인자로 받는다.
  * 브라우저: <script src="screens-core.js"> → 전역 JachwiScreens / Node: require('./screens-core.js')

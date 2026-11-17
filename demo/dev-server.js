@@ -56,6 +56,6 @@ http.createServer(async (req, res) => {
   fs.createReadStream(file).pipe(res);
 }).listen(PORT, () => {
   const has = (k) => (process.env[k] ? '있음' : '없음');
-  console.log('자취 계약 내비 로컬 서버  http://localhost:' + PORT + '/app.html');
+  console.log('자취대로 로컬 서버  http://localhost:' + PORT + '/app.html');
   console.log('키: YOUTH_API_KEY ' + has('YOUTH_API_KEY') + ' · DATA_GO_KR_KEY ' + has('DATA_GO_KR_KEY') + ' · KAKAO_REST_KEY ' + has('KAKAO_REST_KEY'));
 });
