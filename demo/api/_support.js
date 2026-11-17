@@ -13,6 +13,8 @@ REGIONS.forEach(([sido, list]) => list.forEach(([code, name]) => { ZIP[code] = s
 const CATS = S.CATS.map((c) => c[0]);
 
 async function loadZip(zip, key) {
+  // 지역 목록에 없는 코드는 온통청년을 부르지 않는다. 실패는 기억하지 않아 요청마다 API 한도를 쓰게 된다
+  if (!ZIP[zip]) throw new Error('unknown zip');
   // 한 번에 많이 받으면 응답이 25초를 넘길 때가 있어 200건씩 나눠 동시에 받는다
   const SIZE = 200, base = 'https://www.youthcenter.go.kr/go/ythip/getPlcy?rtnType=json&pageSize=' + SIZE + '&zipCd=' + zip + '&apiKeyNm=' + encodeURIComponent(key);
   // 한 쪽이라도 실패하면 목록 전체가 안 나오므로, 쪽마다 세 번까지 다시 부른다
@@ -56,3 +58,4 @@ module.exports = async (req, res) => {
   }
 };
 module.exports.loadZip = loadZip;
+module.exports.isZip = (zip) => !!ZIP[zip];
