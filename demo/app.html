@@ -2469,10 +2469,16 @@ document.addEventListener('DOMContentLoaded', function () {
     ['etc', '기타', '영수증, 특약·수리 요청 문자 캡처 등.', false]
   ];
   // 서류 준비 상태 배지 (F-10 ④): 회색 글자 대신 배경 있는 배지 + 아이콘. 칸 안내는 이름 아래 줄로 (F-10 ③ PC 칸 깨짐)
-  function docsState(it, slotName) {
+  // 칸 없는 서류 (T-30): 발급처 링크(docSource) → 그 지원 공고(지원 상세 '공고 원문'과 같은 주소) → 둘 다 없으면 상태만
+  function docsState(it, slotName, p) {
     if (it.ready) return { cls: 'brand', icon: 'check', label: '있음', hint: '' };
     if (it.slot) return { cls: '', icon: 'plus', label: '올리기 전', hint: esc(slotName[it.slot]) + ' 칸에 올리기' };
-    return { cls: '', icon: 'doc', label: '발급 받기', hint: '서류함 칸 없음 · 발급처에서 받기' };
+    var web = function (u) { u = JachwiRules.safeUrl(u); return /^https?:/i.test(u) ? u : ''; };
+    var s = SP.docSource(it.name), u = s && s.t === 'link' ? web(s.url) : '';
+    if (u) return { cls: '', icon: 'doc', label: s.label + ' ↗', hint: '서류함 칸 없음', href: u };
+    u = p ? web(p.source && p.source.url) || web(p.url) : '';
+    if (u) return { cls: '', icon: 'doc', label: '공고에서 확인 ↗', hint: '서류함 칸 없음', href: u };
+    return { cls: '', icon: 'doc', label: '준비 전', hint: '서류함 칸 없음' };
   }
   // 준비 막대 (F-10 ⑤): 들어올 때 0→현재(mo-fill), 같은 화면에서 바뀌면 직전→현재(mo-grow)
   function docsBar(key, ready, total) {
@@ -2493,9 +2499,10 @@ document.addEventListener('DOMContentLoaded', function () {
       return '<div class="card stack' + moStep(pi + 1) + '"><div class="split"><h2 style="font-size:15px">' + esc(x.p.name) + '</h2><span class="badge ' + (r.ready === r.total ? 'brand' : '') + '">' + moNum('docs:ready:' + x.p.id, r.ready) + ' / ' + r.total + ' 준비</span></div>' +
         docsBar('docs:pct:' + x.p.id, r.ready, r.total) +
         '<div class="dq-list">' + r.items.map(function (it, ii) {
-          var st = docsState(it, slotName), was = moChanged('docs:item:' + x.p.id + ':' + ii, !!it.ready);
+          var st = docsState(it, slotName, x.p), was = moChanged('docs:item:' + x.p.id + ':' + ii, !!it.ready);
           return '<div class="dq"><div class="dq-t"><span class="s13">' + esc(it.name) + '</span>' + (st.hint ? '<span class="s12 muted">' + st.hint + '</span>' : '') + '</div>' +
-            '<span class="badge ' + st.cls + (was === false && it.ready ? ' mo-pop' : '') + '">' + ic(st.icon, 'sm') + st.label + '</span></div>';
+            (st.href ? '<a class="sp-get" href="' + esc(st.href) + '" target="_blank" rel="noopener">' + esc(st.label) + '</a></div>' :
+            '<span class="badge ' + st.cls + (was === false && it.ready ? ' mo-pop' : '') + '">' + ic(st.icon, 'sm') + esc(st.label) + '</span></div>');
         }).join('') + '</div>' +
         '<a class="s12" href="#support">지원 상세 보기</a></div>';
     }).join('');
@@ -4428,6 +4435,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function render(keep) {
+    if (keep && picking && picking.isConnected) { pendRender = true; return; }   // T-31: 선택 창이 열려 있을 수 있다
     pendRender = false;
     if (!S.demo) S.sim = null;
     today = S.sim === null || S.sim === undefined || S.sim === '' ? realToday() : add(pd(S.move), +S.sim);
@@ -4667,9 +4675,19 @@ document.addEventListener('DOMContentLoaded', function () {
   // (커서가 날아가 다음 칸에 입력이 안 되고, 버튼 클릭이 씹힘). 그래서 누르기가 끝나고 커서가 옮겨 간 뒤에 다시 그린다.
   var pendRender = false, ptrDown = false;
   function flushRender() { if (pendRender && !ptrDown) render(true); }
-  document.addEventListener('pointerdown', function () { ptrDown = true; }, true);
+  // T-31: 날짜·월·시간 칸과 목록(select)은 누르면 브라우저 선택 창이 뜬다. 그 사이 다시 그리면 칸이 새로 만들어져 창이 바로 닫힌다
+  // (다른 칸을 고친 직후의 첫 클릭, 로그인 중 기록 저장이 끝난 순간). 고르거나(change) 칸을 떠날(focusout) 때까지 render(true)를 미룬다
+  var picking = null;
+  function isPicker(t) { return !!(t && t.matches && t.matches('input[type=date],input[type=month],input[type=time],select')); }
+  document.addEventListener('change', function (e) { if (e.target === picking) picking = null; }, true);
+  document.addEventListener('focusout', function (e) { if (e.target === picking) { picking = null; if (pendRender) setTimeout(flushRender, 0); } }, true);
+  document.addEventListener('pointerdown', function (e) { ptrDown = true; picking = isPicker(e.target) ? e.target : null; }, true);
   document.addEventListener('pointerup', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
-  document.addEventListener('pointercancel', function () { ptrDown = false; if (pendRender) setTimeout(flushRender, 0); }, true);
+  // Escape로 선택 창만 닫으면 포커스가 칸에 남아 change·focusout이 안 온다 → 여기서 보류를 푼다 (PR #106 리뷰 1)
+  // shortcut: 선택 창 자체의 '취소' 단추는 페이지에 이벤트가 없어 다음 누르기·키·칸 이동 때 풀린다
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && picking && e.target === picking) { picking = null; if (pendRender) setTimeout(flushRender, 0); } }, true);
+  // 스크롤 등으로 누르기가 취소되면 선택 창은 열리지 않았다 → 보류를 풀어 다른 화면 갱신을 막지 않는다 (리뷰 치명 #1)
+  document.addEventListener('pointercancel', function () { ptrDown = false; picking = null; if (pendRender) setTimeout(flushRender, 0); }, true);
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing && e.target.id === 'q') { e.preventDefault(); updateSearch(e.target.value, true); } });
   document.addEventListener('input', function (e) { var t = e.target; if (t.id === 'q') updateSearch(t.value); else if (t.dataset.field && t.hasAttribute('data-num')) setField(t); });
   var AMT_NOTE = {};   // T-23 B6: 금액으로 읽지 못한 원문(칸별, 저장 안 함) — DECISIONS #24
